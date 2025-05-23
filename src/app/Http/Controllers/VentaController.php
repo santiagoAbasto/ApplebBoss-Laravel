@@ -35,29 +35,113 @@ class VentaController extends Controller
     {
         $request->validate([
             'nombre_cliente' => 'required|string',
+            'telefono_cliente' => 'nullable|string',
             'tipo_venta' => 'required|in:producto,servicio_tecnico',
             'es_permuta' => 'boolean',
             'tipo_permuta' => 'nullable|in:celular,computadora,producto_general',
             'precio_venta' => 'required|numeric',
+            'precio_invertido' => 'required|numeric',
             'cantidad' => 'required|numeric|min:1',
+            'descuento' => 'nullable|numeric|min:0',
+            'metodo_pago' => 'required|in:efectivo,qr,tarjeta',
         ]);
 
-        // Calcular campos
-        $ganancia = $request->precio_venta - $request->precio_invertido;
-        $subtotal = $request->precio_venta * $request->cantidad - $request->descuento;
+        $permutaCosto = 0;
+
+        if ($request->es_permuta && $request->has('permuta')) {
+            switch ($request->tipo_permuta) {
+                case 'celular':
+                    $request->validate([
+                        'permuta.modelo' => 'required|string',
+                        'permuta.capacidad' => 'required|string',
+                        'permuta.color' => 'required|string',
+                        'permuta.bateria' => 'required|string',
+                        'permuta.imei_1' => 'required|string|max:15|unique:celulares,imei_1',
+                        'permuta.imei_2' => 'nullable|string|max:15|unique:celulares,imei_2',
+                        'permuta.procedencia' => 'required|string',
+                        'permuta.estado_imei' => 'required|string',
+                        'permuta.precio_costo' => 'required|numeric',
+                        'permuta.precio_venta' => 'required|numeric',
+                    ]);
+                    $permutaCosto = $request->permuta['precio_costo'];
+                    break;
+
+                case 'computadora':
+                    $request->validate([
+                        'permuta.nombre' => 'required|string',
+                        'permuta.numero_serie' => 'required|string|unique:computadoras,numero_serie',
+                        'permuta.bateria' => 'required|string',
+                        'permuta.ram' => 'required|string',
+                        'permuta.almacenamiento' => 'required|string',
+                        'permuta.color' => 'required|string',
+                        'permuta.procedencia' => 'required|string',
+                        'permuta.precio_costo' => 'required|numeric',
+                        'permuta.precio_venta' => 'required|numeric',
+                    ]);
+                    $permutaCosto = $request->permuta['precio_costo'];
+                    break;
+
+                case 'producto_general':
+                    $request->validate([
+                        'permuta.tipo' => 'required|string',
+                        'permuta.nombre' => 'required|string',
+                        'permuta.codigo' => 'required|string|unique:producto_generals,codigo',
+                        'permuta.procedencia' => 'required|string',
+                        'permuta.precio_costo' => 'required|numeric',
+                        'permuta.precio_venta' => 'required|numeric',
+                    ]);
+                    $permutaCosto = $request->permuta['precio_costo'];
+                    break;
+            }
+        }
+
+        $cantidad = $request->cantidad;
+        $precioVenta = $request->precio_venta;
+        $precioCosto = $request->precio_invertido;
+        $descuento = $request->descuento ?? 0;
+
+        $subtotal = $request->es_permuta
+            ? max(0, $precioVenta - $permutaCosto - $descuento)
+            : ($precioVenta * $cantidad) - $descuento;
+
+        $ganancia = $request->es_permuta
+            ? ($subtotal - $precioCosto)
+            : ($precioVenta - $precioCosto) * $cantidad;
 
         $venta = Venta::create([
             ...$request->only([
-                'nombre_cliente', 'telefono_cliente', 'tipo_venta', 'es_permuta', 'tipo_permuta',
-                'cantidad', 'precio_invertido', 'precio_venta', 'descuento',
-                'celular_id', 'computadora_id', 'producto_general_id'
+                'nombre_cliente',
+                'telefono_cliente',
+                'tipo_venta',
+                'es_permuta',
+                'tipo_permuta',
+                'cantidad',
+                'precio_invertido',
+                'precio_venta',
+                'descuento',
+                'celular_id',
+                'computadora_id',
+                'producto_general_id',
+                'metodo_pago',
+                'inicio_tarjeta',
+                'fin_tarjeta',
+                'notas_adicionales',
             ]),
             'user_id' => auth()->id(),
             'ganancia_neta' => $ganancia,
             'subtotal' => $subtotal,
         ]);
 
-        // Registrar producto entregado por permuta (si corresponde)
+        if ($request->celular_id) {
+            Celular::where('id', $request->celular_id)->update(['estado' => 'vendido']);
+        }
+        if ($request->computadora_id) {
+            Computadora::where('id', $request->computadora_id)->update(['estado' => 'vendido']);
+        }
+        if ($request->producto_general_id) {
+            ProductoGeneral::where('id', $request->producto_general_id)->update(['estado' => 'vendido']);
+        }
+
         if ($request->es_permuta && $request->has('permuta')) {
             switch ($request->tipo_permuta) {
                 case 'celular':

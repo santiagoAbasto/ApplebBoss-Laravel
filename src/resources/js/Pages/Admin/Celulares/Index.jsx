@@ -6,15 +6,30 @@ export default function CelularesIndex({ celulares }) {
     if (confirm('¿Deseas eliminar este celular?')) {
       router.delete(route('admin.celulares.destroy', id), {
         onSuccess: () => {
-          // Opcional: mostrar un mensaje con Toast o alert()
           console.log('Celular eliminado.');
         },
-        onError: (err) => {
+        onError: () => {
           alert('Hubo un error al intentar eliminar el celular.');
         },
       });
     }
   };
+
+  const getBadgeClass = (estado) => {
+    switch (estado) {
+      case 'disponible':
+        return 'success';
+      case 'vendido':
+        return 'danger';
+      case 'permuta':
+        return 'info';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const formatEstado = (estado) =>
+    estado.charAt(0).toUpperCase() + estado.slice(1);
 
   return (
     <AdminLayout>
@@ -46,8 +61,8 @@ export default function CelularesIndex({ celulares }) {
                   <td>{c.imei_1}</td>
                   <td>{parseFloat(c.precio_venta).toFixed(2)}</td>
                   <td>
-                    <span className={`badge bg-${c.estado === 'disponible' ? 'success' : c.estado === 'vendido' ? 'secondary' : 'warning'}`}>
-                      {c.estado}
+                    <span className={`badge bg-${getBadgeClass(c.estado)} px-3 py-2 text-uppercase fw-semibold`}>
+                      {formatEstado(c.estado)}
                     </span>
                   </td>
                   <td className="text-nowrap">

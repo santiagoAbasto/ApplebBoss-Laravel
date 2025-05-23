@@ -32,12 +32,14 @@ class ProductoGeneralController extends Controller
             'precio_venta' => 'required|numeric',
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
-
+    
         ProductoGeneral::create($request->all());
-
-        return redirect()->route('admin.productos-generales.index')
-                         ->with('success', 'Producto registrado correctamente.');
+    
+        return redirect(
+            $request->get('return_to', route('admin.productos-generales.index'))
+        )->with('success', 'Producto registrado correctamente.');
     }
+    
 
     public function show(ProductoGeneral $producto)
     {
@@ -78,4 +80,29 @@ class ProductoGeneralController extends Controller
         return redirect()->route('admin.productos-generales.index')
                          ->with('success', 'Producto eliminado correctamente.');
     }
+    public function apiStore(Request $request)
+{
+    $data = $request->validate([
+        'codigo' => 'required|string|unique:productos_generales,codigo',
+        'nombre' => 'required|string|max:255',
+        'precio_costo' => 'required|numeric',
+        'precio_venta' => 'required|numeric',
+    ]);
+
+    $producto = new ProductoGeneral();
+    $producto->codigo = $data['codigo'];
+    $producto->nombre = $data['nombre'];
+    $producto->precio_costo = $data['precio_costo'];
+    $producto->precio_venta = $data['precio_venta'];
+    $producto->estado = 'disponible';
+
+    // Campos por defecto para permutas
+    $producto->tipo = 'permuta';
+    $producto->procedencia = 'permuta';
+
+    $producto->save();
+
+    return response()->json($producto);
+}
+
 }

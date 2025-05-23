@@ -28,19 +28,23 @@ class CelularController extends Controller
             'capacidad' => 'required|string|max:100',
             'color' => 'required|string|max:100',
             'bateria' => 'nullable|string|max:100',
-            'imei_1' => 'required|string|unique:celulares,imei_1',
-            'imei_2' => 'nullable|string|unique:celulares,imei_2',
+    
+            'imei_1' => 'required|digits:15|unique:celulares,imei_1',
+            'imei_2' => 'nullable|digits:15|unique:celulares,imei_2',
+
             'estado_imei' => 'required|in:libre,registrado,imei1_libre_imei2_registrado,imei1_registrado_imei2_libre',
             'procedencia' => 'required|string|max:100',
             'precio_costo' => 'required|numeric',
             'precio_venta' => 'required|numeric',
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
-
+    
         Celular::create($request->all());
-
-        return redirect()->route('admin.celulares.index')->with('success', 'Celular registrado correctamente.');
-    }
+    
+        return redirect(
+            $request->get('return_to', route('admin.celulares.index'))
+        )->with('success', 'Celular registrado correctamente.');
+    }    
 
     public function show(Celular $celular)
     {
@@ -63,8 +67,11 @@ class CelularController extends Controller
             'capacidad' => 'required|string|max:100',
             'color' => 'required|string|max:100',
             'bateria' => 'nullable|string|max:100',
-            'imei_1' => 'required|string|unique:celulares,imei_1,' . $celular->id,
-            'imei_2' => 'nullable|string|unique:celulares,imei_2,' . $celular->id,
+
+            'imei_1' => 'required|digits:15|unique:celulares,imei_1,' . $celular->id,
+            'imei_2' => 'nullable|digits:15|unique:celulares,imei_2,' . $celular->id,
+
+
             'estado_imei' => 'required|in:libre,registrado,imei1_libre_imei2_registrado,imei1_registrado_imei2_libre',
             'procedencia' => 'required|string|max:100',
             'precio_costo' => 'required|numeric',
@@ -82,4 +89,29 @@ class CelularController extends Controller
         $celular->delete();
         return redirect()->route('admin.celulares.index')->with('success', 'Celular eliminado correctamente.');
     }
+
+    public function apiStore(Request $request)
+{
+    $data = $request->validate([
+        'modelo' => 'required|string|max:255',
+        'imei_1' => 'required|digits:15|unique:celulares,imei_1',
+        'precio_costo' => 'required|numeric',
+        'precio_venta' => 'required|numeric',
+    ]);
+
+    $celular = new Celular();
+    $celular->modelo = $data['modelo'];
+    $celular->imei_1 = $data['imei_1'];
+    $celular->precio_costo = $data['precio_costo'];
+    $celular->precio_venta = $data['precio_venta'];
+    $celular->estado = 'disponible';
+    $celular->capacidad = 'permuta';
+    $celular->color = 'permuta';
+    $celular->estado_imei = 'libre';
+    $celular->procedencia = 'permuta';
+    $celular->save();
+
+    return response()->json($celular);
+}
+
 }

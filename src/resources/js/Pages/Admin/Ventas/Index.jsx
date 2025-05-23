@@ -23,19 +23,32 @@ export default function Index({ ventas }) {
               </tr>
             </thead>
             <tbody>
-              {ventas.map(v => (
-                <tr key={v.id}>
-                  <td>{v.nombre_cliente}</td>
-                  <td>
-                    {v.celular?.modelo || v.computadora?.modelo || v.producto_general?.nombre || '—'}
-                  </td>
-                  <td>{parseFloat(v.precio_venta).toFixed(2)} Bs</td>
-                  <td>{v.vendedor.name}</td>
-                  <td>{new Date(v.created_at).toLocaleString()}</td>
+              {ventas.length > 0 ? (
+                ventas.map(v => (
+                  <tr key={v.id}>
+                    <td>{v.nombre_cliente}</td>
+                    <td>
+                      {v.celular?.modelo ||
+                       v.computadora?.nombre ||
+                       v.producto_general?.nombre ||
+                       '—'}
+                    </td>
+                    <td>
+                      {parseFloat(v.subtotal).toFixed(2)} Bs
+                      {v.descuento > 0 && (
+                        <div className="text-muted small">
+                          Descuento: -{parseFloat(v.descuento).toFixed(2)} Bs
+                        </div>
+                      )}
+                    </td>
+                    <td>{v.vendedor?.name || '—'}</td>
+                    <td>{new Date(v.created_at).toLocaleString()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center text-muted">No hay ventas registradas.</td>
                 </tr>
-              ))}
-              {ventas.length === 0 && (
-                <tr><td colSpan="5" className="text-center text-muted">No hay ventas registradas.</td></tr>
               )}
             </tbody>
           </table>

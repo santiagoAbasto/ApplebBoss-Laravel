@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Venta;
+
 
 use App\Models\ServicioTecnico;
 use Illuminate\Http\Request;
@@ -38,13 +40,31 @@ class ServicioTecnicoController extends Controller
             'tecnico' => 'required|string',
             'fecha' => 'required|date',
         ]);
-
+    
         $data['user_id'] = Auth::id();
-
+    
+        // 1. Registrar el servicio técnico
         ServicioTecnico::create($data);
-
+    
+        // 2. Registrar también una venta asociada
+        Venta::create([
+            'nombre_cliente' => $data['cliente'],
+            'telefono_cliente' => $data['telefono'],
+            'tipo_venta' => 'servicio_tecnico',
+            'es_permuta' => false,
+            'cantidad' => 1,
+            'precio_invertido' => $data['precio_costo'],
+            'precio_venta' => $data['precio_venta'],
+            'ganancia_neta' => $data['precio_venta'] - $data['precio_costo'],
+            'subtotal' => $data['precio_venta'],
+            'descuento' => 0,
+            'user_id' => Auth::id(),
+            'metodo_pago' => 'efectivo',
+            'fecha' => $data['fecha'],
+        ]);
+    
         return redirect()->route(Auth::user()->rol === 'admin'
             ? 'admin.servicios.index'
             : 'vendedor.servicios.index')->with('success', 'Servicio técnico registrado.');
     }
-}
+}    

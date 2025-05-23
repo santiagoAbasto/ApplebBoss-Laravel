@@ -11,7 +11,7 @@ use App\Http\Controllers\ProductoGeneralController;
 use App\Http\Controllers\ComputadoraController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ServicioTecnicoController;
-use App\Http\Controllers\ReporteController; // ✅ Nuevo controlador
+use App\Http\Controllers\ReporteController;
 
 // 🏠 Página pública
 Route::get('/', function () {
@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::resource('ventas', VentaController::class)
         ->names('ventas')
         ->parameters(['ventas' => 'venta']);
+    Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
 
     // 🧰 CRUD Servicio Técnico
     Route::resource('servicios', ServicioTecnicoController::class)
@@ -65,20 +66,16 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
         ->parameters(['servicios' => 'servicio']);
 
     // 📊 Reportes
-    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index'); // ✅ Añadido
+    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+    Route::get('/admin/reportes/exportar', [ReporteController::class, 'exportar'])->name('admin.reportes.exportar');
 });
 
 // 🛒 Rutas del VENDEDOR
 Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
 
-    // 📱 Visualización de celulares
     Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
-
-    // 💻 Visualización de computadoras
     Route::get('/computadoras', [ComputadoraController::class, 'index'])->name('computadoras.index');
-
-    // 📦 Visualización de productos generales
     Route::get('/productos-generales', [ProductoGeneralController::class, 'index'])->name('productos-generales.index');
 
     // 🛒 Registro de ventas
@@ -91,5 +88,23 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
     Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
 });
+
+// 🎯 Ruta API para productos en permuta por tipo
+Route::get('/api/permuta/{tipo}', function ($tipo) {
+    if ($tipo === 'celular') {
+        return \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get();
+    } elseif ($tipo === 'computadora') {
+        return \App\Models\Computadora::where('estado', 'permuta')->latest()->take(10)->get();
+    } elseif ($tipo === 'producto_general') {
+        return \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get();
+    }
+    return response()->json([], 404);
+});
+
+// routes/api.php
+Route::post('/api/permuta/celular', [\App\Http\Controllers\CelularController::class, 'apiStore']);
+Route::post('/api/permuta/computadora', [\App\Http\Controllers\ComputadoraController::class, 'apiStore']);
+Route::post('/api/permuta/producto_general', [\App\Http\Controllers\ProductoGeneralController::class, 'apiStore']);
+
 
 require __DIR__.'/auth.php';

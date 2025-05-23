@@ -21,10 +21,21 @@ export default function CreateCelular() {
     post(route('admin.celulares.store'));
   };
 
+  const handleImeiInput = (field, value) => {
+    const numericValue = value.replace(/\D/g, '').slice(0, 15);
+    setData(field, numericValue);
+  };
+
+  const handleImeiKeyDown = (e) => {
+    const validKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight'];
+    if (!/[0-9]/.test(e.key) && !validKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <AdminLayout>
       <Head title="Registrar Celular" />
-
       <div className="mb-4 d-flex justify-content-between align-items-center">
         <h1 className="h3 text-gray-800">Registrar nuevo celular</h1>
         <Link href={route('admin.celulares.index')} className="btn btn-secondary">← Volver</Link>
@@ -63,14 +74,34 @@ export default function CreateCelular() {
           {/* IMEI 1 */}
           <div className="col-md-6 mb-3">
             <label>IMEI 1</label>
-            <input type="text" className="form-control" value={data.imei_1} onChange={(e) => setData('imei_1', e.target.value)} disabled={processing} />
+            <input
+              type="text"
+              className="form-control"
+              maxLength={15}
+              inputMode="numeric"
+              pattern="\d{15}"
+              value={data.imei_1}
+              onChange={(e) => handleImeiInput('imei_1', e.target.value)}
+              onKeyDown={handleImeiKeyDown}
+              disabled={processing}
+            />
             {errors.imei_1 && <div className="text-danger">{errors.imei_1}</div>}
           </div>
 
           {/* IMEI 2 */}
           <div className="col-md-6 mb-3">
             <label>IMEI 2 (opcional)</label>
-            <input type="text" className="form-control" value={data.imei_2} onChange={(e) => setData('imei_2', e.target.value)} disabled={processing} />
+            <input
+              type="text"
+              className="form-control"
+              maxLength={15}
+              inputMode="numeric"
+              pattern="\d{15}"
+              value={data.imei_2}
+              onChange={(e) => handleImeiInput('imei_2', e.target.value)}
+              onKeyDown={handleImeiKeyDown}
+              disabled={processing}
+            />
             {errors.imei_2 && <div className="text-danger">{errors.imei_2}</div>}
           </div>
 

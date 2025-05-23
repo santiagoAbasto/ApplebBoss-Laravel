@@ -21,6 +21,18 @@ export default function Edit({ celular }) {
     put(route('admin.celulares.update', celular.id));
   };
 
+  const handleImeiInput = (field, value) => {
+    const numericValue = value.replace(/\D/g, '').slice(0, 15);
+    setData(field, numericValue);
+  };
+
+  const handleImeiKeyDown = (e) => {
+    const validKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight'];
+    if (!/[0-9]/.test(e.key) && !validKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <AdminLayout>
       <Head title="Editar Celular" />
@@ -59,14 +71,32 @@ export default function Edit({ celular }) {
           {/* IMEI 1 */}
           <div className="mb-3 col-md-4">
             <label className="form-label">IMEI 1</label>
-            <input type="text" className="form-control" value={data.imei_1} onChange={(e) => setData('imei_1', e.target.value)} />
+            <input
+              type="text"
+              className="form-control"
+              maxLength={15}
+              inputMode="numeric"
+              pattern="\d{15}"
+              value={data.imei_1}
+              onChange={(e) => handleImeiInput('imei_1', e.target.value)}
+              onKeyDown={handleImeiKeyDown}
+            />
             {errors.imei_1 && <div className="text-danger">{errors.imei_1}</div>}
           </div>
 
           {/* IMEI 2 */}
           <div className="mb-3 col-md-4">
             <label className="form-label">IMEI 2</label>
-            <input type="text" className="form-control" value={data.imei_2} onChange={(e) => setData('imei_2', e.target.value)} />
+            <input
+              type="text"
+              className="form-control"
+              maxLength={15}
+              inputMode="numeric"
+              pattern="\d{15}"
+              value={data.imei_2}
+              onChange={(e) => handleImeiInput('imei_2', e.target.value)}
+              onKeyDown={handleImeiKeyDown}
+            />
             {errors.imei_2 && <div className="text-danger">{errors.imei_2}</div>}
           </div>
 
