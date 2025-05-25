@@ -9,6 +9,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const [productoTipo, setProductoTipo] = useState('');
   const [opcionesPermuta, setOpcionesPermuta] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [busquedaCodigo, setBusquedaCodigo] = useState('');
 
   const rutasCRUD = {
     celular: '/admin/celulares/create?return_to=/admin/ventas/create',
@@ -37,6 +38,34 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
     notas_adicionales: '',
     permuta: {},
   });
+
+  const manejarBusquedaCodigo = () => {
+    let producto = null;
+
+    if (productoTipo === 'celular') {
+      producto = celulares.find(p => p.imei_1 === busquedaCodigo);
+      if (producto) {
+        setData('celular_id', producto.id);
+      }
+    } else if (productoTipo === 'computadora') {
+      producto = computadoras.find(p => p.numero_serie === busquedaCodigo);
+      if (producto) {
+        setData('computadora_id', producto.id);
+      }
+    } else if (productoTipo === 'producto_general') {
+      producto = productosGenerales.find(p => p.codigo === busquedaCodigo);
+      if (producto) {
+        setData('producto_general_id', producto.id);
+      }
+    }
+
+    if (producto) {
+      setData('precio_venta', producto.precio_venta || 0);
+      setData('precio_invertido', producto.precio_costo || 0);
+    } else {
+      alert('Producto no encontrado con ese código.');
+    }
+  };
 
   const handleGuardarPermuta = (producto) => {
     setData('permuta', producto);
@@ -99,18 +128,17 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
 
       <form onSubmit={handleSubmit}>
         <div className="row">
-          {/* Datos del cliente */}
           <div className="col-md-6 mb-3">
             <label>Cliente</label>
             <input type="text" className={`form-control ${errors.nombre_cliente ? 'is-invalid' : ''}`} value={data.nombre_cliente} onChange={e => setData('nombre_cliente', e.target.value)} />
             {errors.nombre_cliente && <div className="invalid-feedback">{errors.nombre_cliente}</div>}
           </div>
+
           <div className="col-md-6 mb-3">
             <label>Teléfono</label>
             <input type="text" className="form-control" value={data.telefono_cliente} onChange={e => setData('telefono_cliente', e.target.value)} />
           </div>
 
-          {/* Producto vendido */}
           <div className="col-md-6 mb-3">
             <label>Tipo de producto vendido</label>
             <select className="form-control" value={productoTipo} onChange={e => {
@@ -119,6 +147,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
               setData('celular_id', '');
               setData('computadora_id', '');
               setData('producto_general_id', '');
+              setBusquedaCodigo('');
             }}>
               <option value="">-- Seleccionar --</option>
               <option value="celular">Celular</option>
@@ -127,38 +156,25 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
             </select>
           </div>
 
-          {/* Selección específica */}
-          {productoTipo === 'celular' && (
+          {productoTipo && (
             <div className="col-md-6 mb-3">
-              <label>IMEI</label>
-              <select className="form-control" value={data.celular_id} onChange={e => setData('celular_id', e.target.value)}>
-                <option value="">-- Seleccionar Celular --</option>
-                {celulares.map(c => (
-                  <option key={c.id} value={c.id}>{c.modelo} - {c.imei_1}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          {productoTipo === 'computadora' && (
-            <div className="col-md-6 mb-3">
-              <label>Número de Serie</label>
-              <select className="form-control" value={data.computadora_id} onChange={e => setData('computadora_id', e.target.value)}>
-                <option value="">-- Seleccionar Computadora --</option>
-                {computadoras.map(c => (
-                  <option key={c.id} value={c.id}>{c.nombre} - {c.numero_serie}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          {productoTipo === 'producto_general' && (
-            <div className="col-md-6 mb-3">
-              <label>Código</label>
-              <select className="form-control" value={data.producto_general_id} onChange={e => setData('producto_general_id', e.target.value)}>
-                <option value="">-- Seleccionar Producto --</option>
-                {productosGenerales.map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre} - {p.codigo}</option>
-                ))}
-              </select>
+              <label>
+                {productoTipo === 'celular' && 'Ingrese IMEI'}
+                {productoTipo === 'computadora' && 'Ingrese Número de Serie'}
+                {productoTipo === 'producto_general' && 'Ingrese Código del Producto'}
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={busquedaCodigo}
+                onChange={e => setBusquedaCodigo(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    manejarBusquedaCodigo();
+                  }
+                }}
+              />
             </div>
           )}
 

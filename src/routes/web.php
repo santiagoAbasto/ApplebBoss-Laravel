@@ -12,6 +12,7 @@ use App\Http\Controllers\ComputadoraController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ServicioTecnicoController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\DashboardController;
 
 // 🏠 Página pública
 Route::get('/', function () {
@@ -38,36 +39,57 @@ Route::middleware(['auth'])->group(function () {
 
 // 🛡️ Rutas del ADMINISTRADOR
 Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('Admin/Dashboard'))->name('dashboard');
+    // 📊 Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 📱 CRUD Celulares
+    // 📱 Celulares
     Route::resource('celulares', CelularController::class)
         ->names('celulares')
         ->parameters(['celulares' => 'celular']);
 
-    // 💻 CRUD Computadoras
+    // 💻 Computadoras
     Route::resource('computadoras', ComputadoraController::class)
         ->names('computadoras');
 
-    // 📦 CRUD Productos Generales
+    // 📦 Productos Generales
     Route::resource('productos-generales', ProductoGeneralController::class)
         ->names('productos-generales')
         ->parameters(['productos-generales' => 'producto']);
 
-    // 🛒 CRUD Ventas
+    // 🛒 Ventas
     Route::resource('ventas', VentaController::class)
         ->names('ventas')
         ->parameters(['ventas' => 'venta']);
     Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
 
-    // 🧰 CRUD Servicio Técnico
+    // 🧰 Servicios Técnicos
     Route::resource('servicios', ServicioTecnicoController::class)
+        ->only(['index', 'create', 'store'])
         ->names('servicios')
         ->parameters(['servicios' => 'servicio']);
+    Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
 
-    // 📊 Reportes
+    // Exportar Servicios Técnicos por período
+    Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
+    Route::get('/servicios/exportar-dia', [ServicioTecnicoController::class, 'exportarDia'])->name('servicios.exportar-dia');
+    Route::get('/servicios/exportar-semana', [ServicioTecnicoController::class, 'exportarSemana'])->name('servicios.exportar-semana');
+    Route::get('/servicios/exportar-mes', [ServicioTecnicoController::class, 'exportarMes'])->name('servicios.exportar-mes');
+    Route::get('/servicios/exportar-anio', [ServicioTecnicoController::class, 'exportarAnio'])->name('servicios.exportar-anio');
+    Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
+
+    
+    // 📊 Reportes de ventas
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
-    Route::get('/admin/reportes/exportar', [ReporteController::class, 'exportar'])->name('admin.reportes.exportar');
+    Route::get('/reportes/exportar', [ReporteController::class, 'exportar'])->name('reportes.exportar');
+    Route::get('/reportes/exportar-dia', [ReporteController::class, 'exportDia'])->name('reportes.exportar-dia');
+    Route::get('/reportes/exportar-semana', [ReporteController::class, 'exportSemana'])->name('reportes.exportar-semana');
+    Route::get('/reportes/exportar-mes', [ReporteController::class, 'exportMes'])->name('reportes.exportar-mes');
+    Route::get('/reportes/exportar-anio', [ReporteController::class, 'exportAnio'])->name('reportes.exportar-anio');
+
+    // ✔️ Habilitar productos entregados por permuta
+    Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])->name('celulares.habilitar');
+    Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])->name('computadoras.habilitar');
+    Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])->name('productos-generales.habilitar');
 });
 
 // 🛒 Rutas del VENDEDOR

@@ -104,5 +104,11 @@ class ProductoGeneralController extends Controller
 
     return response()->json($producto);
 }
+public function habilitar(ProductoGeneral $producto)
+{
+    $producto->update(['estado' => 'disponible']);
+    return back()->with('success', 'Producto habilitado para la venta.');
+}
+
 
 }

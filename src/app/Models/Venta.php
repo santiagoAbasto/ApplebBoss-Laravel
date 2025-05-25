@@ -2,8 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+use App\Models\User;
+use App\Models\Celular;
+use App\Models\Computadora;
+use App\Models\ProductoGeneral;
 
 class Venta extends Model
 {
@@ -18,25 +23,24 @@ class Venta extends Model
         'cantidad',
         'precio_invertido',
         'precio_venta',
-        'ganancia_neta',
-        'subtotal',
         'descuento',
-        'celular_id',
-        'computadora_id',
-        'producto_general_id',
         'metodo_pago',
         'inicio_tarjeta',
         'fin_tarjeta',
         'notas_adicionales',
+        'fecha', // ⚠️ Esto debe estar
         'user_id',
-    ];
+        'ganancia_neta',
+        'subtotal',
+        'celular_id',
+        'computadora_id',
+        'producto_general_id',
+        'entregado_celular_id',
+        'entregado_computadora_id',
+        'entregado_producto_general_id',
+    ];    
 
-    // Relaciones
-    public function vendedor()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
+    // Producto vendido
     public function celular()
     {
         return $this->belongsTo(Celular::class);
@@ -50,5 +54,38 @@ class Venta extends Model
     public function productoGeneral()
     {
         return $this->belongsTo(ProductoGeneral::class);
+    }
+
+    // Producto entregado (permuta)
+    public function entregadoCelular()
+    {
+        return $this->belongsTo(Celular::class, 'entregado_celular_id');
+    }
+
+    public function entregadoComputadora()
+    {
+        return $this->belongsTo(Computadora::class, 'entregado_computadora_id');
+    }
+
+    public function entregadoProductoGeneral()
+    {
+        return $this->belongsTo(ProductoGeneral::class, 'entregado_producto_general_id');
+    }
+
+    // Usuario que hizo la venta
+    public function vendedor()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Relación auxiliar opcional
+    public function productoEntregado()
+    {
+        return match ($this->tipo_permuta) {
+            'celular' => $this->entregadoCelular,
+            'computadora' => $this->entregadoComputadora,
+            'producto_general' => $this->entregadoProductoGeneral,
+            default => null,
+        };
     }
 }

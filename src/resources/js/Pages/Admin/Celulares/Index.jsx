@@ -5,26 +5,27 @@ export default function CelularesIndex({ celulares }) {
   const eliminar = (id) => {
     if (confirm('¿Deseas eliminar este celular?')) {
       router.delete(route('admin.celulares.destroy', id), {
-        onSuccess: () => {
-          console.log('Celular eliminado.');
-        },
-        onError: () => {
-          alert('Hubo un error al intentar eliminar el celular.');
-        },
+        onSuccess: () => console.log('Celular eliminado.'),
+        onError: () => alert('Hubo un error al intentar eliminar el celular.'),
+      });
+    }
+  };
+
+  const habilitar = (id) => {
+    if (confirm('¿Deseas habilitar este celular para la venta?')) {
+      router.patch(route('admin.celulares.habilitar', id), {
+        onSuccess: () => console.log('Celular habilitado.'),
+        onError: () => alert('Hubo un error al intentar habilitar el celular.'),
       });
     }
   };
 
   const getBadgeClass = (estado) => {
     switch (estado) {
-      case 'disponible':
-        return 'success';
-      case 'vendido':
-        return 'danger';
-      case 'permuta':
-        return 'info';
-      default:
-        return 'secondary';
+      case 'disponible': return 'success';
+      case 'vendido': return 'danger';
+      case 'permuta': return 'info';
+      default: return 'secondary';
     }
   };
 
@@ -51,7 +52,7 @@ export default function CelularesIndex({ celulares }) {
                 <th>IMEI 1</th>
                 <th>Precio Venta (Bs)</th>
                 <th>Estado</th>
-                <th style={{ width: 160 }}>Acciones</th>
+                <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -65,13 +66,22 @@ export default function CelularesIndex({ celulares }) {
                       {formatEstado(c.estado)}
                     </span>
                   </td>
-                  <td className="text-nowrap">
-                    <Link
-                      href={route('admin.celulares.edit', c.id)}
-                      className="btn btn-sm btn-warning me-2"
-                    >
-                      Editar
-                    </Link>
+                  <td className="text-nowrap d-flex gap-2">
+                    {c.estado === 'permuta' ? (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => habilitar(c.id)}
+                      >
+                        Habilitar
+                      </button>
+                    ) : (
+                      <Link
+                        href={route('admin.celulares.edit', c.id)}
+                        className="btn btn-sm btn-warning"
+                      >
+                        Editar
+                      </Link>
+                    )}
                     <button
                       onClick={() => eliminar(c.id)}
                       className="btn btn-sm btn-danger"

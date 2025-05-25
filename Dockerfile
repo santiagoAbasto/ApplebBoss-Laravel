@@ -3,11 +3,11 @@ FROM php:8.2-apache
 
 # ✅ Instalación de extensiones y utilidades necesarias
 RUN apt-get update && apt-get install -y \
-    zip unzip git curl libpq-dev libzip-dev libpng-dev \
+    zip unzip git curl libpq-dev libzip-dev libpng-dev libonig-dev \
     && docker-php-ext-install pdo pdo_pgsql zip gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ✅ Copiar Composer
+# ✅ Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # ✅ Establecer directorio de trabajo

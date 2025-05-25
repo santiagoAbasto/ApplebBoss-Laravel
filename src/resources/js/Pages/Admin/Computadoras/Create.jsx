@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 export default function CreateComputadora() {
   const { data, setData, post, processing, errors } = useForm({
     nombre: '',
+    procesador: '', // 👈 nuevo campo
     numero_serie: '',
     color: '',
     bateria: '',
@@ -30,8 +31,32 @@ export default function CreateComputadora() {
 
       <form onSubmit={handleSubmit} className="card shadow p-4">
         <div className="row">
+          {/* Campo nombre */}
+          <div className="col-md-6 mb-3">
+            <label>Nombre</label>
+            <input
+              type="text"
+              className="form-control"
+              value={data.nombre}
+              onChange={(e) => setData('nombre', e.target.value)}
+            />
+            {errors.nombre && <div className="text-danger">{errors.nombre}</div>}
+          </div>
+
+          {/* Campo procesador */}
+          <div className="col-md-6 mb-3">
+            <label>Procesador</label>
+            <input
+              type="text"
+              className="form-control"
+              value={data.procesador}
+              onChange={(e) => setData('procesador', e.target.value)}
+            />
+            {errors.procesador && <div className="text-danger">{errors.procesador}</div>}
+          </div>
+
+          {/* Resto de los campos */}
           {[
-            { label: 'Nombre', key: 'nombre' },
             { label: 'Número de Serie', key: 'numero_serie' },
             { label: 'Color', key: 'color' },
             { label: 'Batería (opcional)', key: 'bateria' },

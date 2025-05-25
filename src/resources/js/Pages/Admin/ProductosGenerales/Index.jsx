@@ -5,15 +5,32 @@ export default function ProductosGeneralesIndex({ productos }) {
   const eliminarProducto = (id) => {
     if (confirm('¿Deseas eliminar este producto?')) {
       router.delete(route('admin.productos-generales.destroy', id), {
-        onSuccess: () => {
-          console.log('Producto eliminado correctamente.');
-        },
-        onError: () => {
-          alert('Hubo un error al intentar eliminar el producto.');
-        },
+        onSuccess: () => console.log('Producto eliminado correctamente.'),
+        onError: () => alert('Hubo un error al intentar eliminar el producto.'),
       });
     }
   };
+
+  const habilitarProducto = (id) => {
+    if (confirm('¿Deseas habilitar este producto para la venta?')) {
+      router.patch(route('admin.productos-generales.habilitar', id), {
+        onSuccess: () => console.log('Producto habilitado correctamente.'),
+        onError: () => alert('No se pudo habilitar el producto.'),
+      });
+    }
+  };
+
+  const getBadgeClass = (estado) => {
+    switch (estado) {
+      case 'disponible': return 'success';
+      case 'vendido': return 'danger';
+      case 'permuta': return 'info';
+      default: return 'secondary';
+    }
+  };
+
+  const formatEstado = (estado) =>
+    estado.charAt(0).toUpperCase() + estado.slice(1);
 
   return (
     <AdminLayout>
@@ -36,7 +53,7 @@ export default function ProductosGeneralesIndex({ productos }) {
                 <th>Nombre</th>
                 <th>Precio Venta (Bs)</th>
                 <th>Estado</th>
-                <th style={{ width: 160 }}>Acciones</th>
+                <th style={{ width: 220 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -47,17 +64,26 @@ export default function ProductosGeneralesIndex({ productos }) {
                   <td>{p.nombre}</td>
                   <td>{parseFloat(p.precio_venta).toFixed(2)}</td>
                   <td>
-                    <span className={`badge bg-${p.estado === 'disponible' ? 'success' : p.estado === 'vendido' ? 'secondary' : 'warning'}`}>
-                      {p.estado}
+                    <span className={`badge bg-${getBadgeClass(p.estado)} px-3 py-2 text-uppercase fw-semibold`}>
+                      {formatEstado(p.estado)}
                     </span>
                   </td>
-                  <td className="text-nowrap">
-                    <Link
-                      href={route('admin.productos-generales.edit', p.id)}
-                      className="btn btn-sm btn-warning me-2"
-                    >
-                      Editar
-                    </Link>
+                  <td className="text-nowrap d-flex gap-2">
+                    {p.estado === 'permuta' ? (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => habilitarProducto(p.id)}
+                      >
+                        Habilitar
+                      </button>
+                    ) : (
+                      <Link
+                        href={route('admin.productos-generales.edit', p.id)}
+                        className="btn btn-sm btn-warning"
+                      >
+                        Editar
+                      </Link>
+                    )}
                     <button
                       onClick={() => eliminarProducto(p.id)}
                       className="btn btn-sm btn-danger"

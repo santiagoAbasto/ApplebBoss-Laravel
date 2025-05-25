@@ -11,7 +11,16 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Validación especial para IMEI
+    if (name === 'imei_1' || name === 'imei_2') {
+      const cleaned = value.replace(/\D/g, ''); // Solo números
+      if (cleaned.length <= 15) {
+        setFormData(prev => ({ ...prev, [name]: cleaned }));
+      }
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleGuardar = () => {
@@ -36,8 +45,28 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
             <div className="col-md-6 mb-2"><input name="capacidad" className="form-control" placeholder="Capacidad" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="color" className="form-control" placeholder="Color" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="bateria" className="form-control" placeholder="Batería (%)" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="imei_1" className="form-control" placeholder="IMEI 1" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="imei_2" className="form-control" placeholder="IMEI 2" onChange={handleChange} /></div>
+
+            <div className="col-md-6 mb-2">
+              <input
+                name="imei_1"
+                className="form-control"
+                placeholder="IMEI 1"
+                maxLength={15}
+                value={formData.imei_1 || ''}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-6 mb-2">
+              <input
+                name="imei_2"
+                className="form-control"
+                placeholder="IMEI 2"
+                maxLength={15}
+                value={formData.imei_2 || ''}
+                onChange={handleChange}
+              />
+            </div>
+
             <div className="col-md-6 mb-2">
               <select name="estado_imei" className="form-control" onChange={handleChange}>
                 <option value="">-- Estado IMEI --</option>
@@ -54,12 +83,12 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
         {tipo === 'computadora' && (
           <div className="row">
             <div className="col-md-6 mb-2"><input name="nombre" className="form-control" placeholder="Nombre" onChange={handleChange} /></div>
+            <div className="col-md-6 mb-2"><input name="procesador" className="form-control" placeholder="Procesador" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="numero_serie" className="form-control" placeholder="Número de Serie" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="color" className="form-control" placeholder="Color" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="bateria" className="form-control" placeholder="Batería" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="ram" className="form-control" placeholder="RAM" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="almacenamiento" className="form-control" placeholder="Almacenamiento" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="procesador" className="form-control" placeholder="Procesador" onChange={handleChange} /></div>
             <div className="col-md-6 mb-2"><input name="procedencia" className="form-control" placeholder="Procedencia" onChange={handleChange} /></div>
           </div>
         )}

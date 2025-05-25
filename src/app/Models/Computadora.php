@@ -9,6 +9,7 @@ class Computadora extends Model
     protected $fillable = [
         'numero_serie',
         'nombre',
+        'procesador', // 👈 nuevo campo
         'bateria',
         'color',
         'ram',
@@ -18,4 +19,4 @@ class Computadora extends Model
         'precio_venta',
         'estado',
     ];
-}
+}    

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('numero_serie')->unique();
             $table->string('nombre');
+            $table->string('procesador')->nullable();
             $table->string('bateria')->nullable();
             $table->string('color');
             $table->string('ram');

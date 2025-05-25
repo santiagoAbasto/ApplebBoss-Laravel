@@ -114,4 +114,11 @@ class CelularController extends Controller
     return response()->json($celular);
 }
 
+public function habilitar(Celular $celular)
+{
+    $celular->update(['estado' => 'disponible']);
+    return back()->with('success', 'Celular habilitado para la venta.');
+}
+
+
 }

@@ -13,9 +13,17 @@ class VentaController extends Controller
 {
     public function index()
     {
-        $ventas = Venta::with(['vendedor', 'celular', 'computadora', 'productoGeneral'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $ventas = Venta::with([
+            'vendedor',
+            'celular',
+            'computadora',
+            'productoGeneral',
+            'entregadoCelular',
+            'entregadoComputadora',
+            'entregadoProductoGeneral'
+        ])
+        ->orderBy('created_at', 'desc')
+        ->get();
 
         return Inertia::render('Admin/Ventas/Index', [
             'ventas' => $ventas,
@@ -47,6 +55,7 @@ class VentaController extends Controller
         ]);
 
         $permutaCosto = 0;
+        $entregado = null;
 
         if ($request->es_permuta && $request->has('permuta')) {
             switch ($request->tipo_permuta) {
@@ -64,11 +73,13 @@ class VentaController extends Controller
                         'permuta.precio_venta' => 'required|numeric',
                     ]);
                     $permutaCosto = $request->permuta['precio_costo'];
+                    $entregado = Celular::create(array_merge($request->permuta, ['estado' => 'permuta']));
                     break;
 
                 case 'computadora':
                     $request->validate([
                         'permuta.nombre' => 'required|string',
+                        'permuta.procesador' => 'nullable|string',
                         'permuta.numero_serie' => 'required|string|unique:computadoras,numero_serie',
                         'permuta.bateria' => 'required|string',
                         'permuta.ram' => 'required|string',
@@ -79,6 +90,7 @@ class VentaController extends Controller
                         'permuta.precio_venta' => 'required|numeric',
                     ]);
                     $permutaCosto = $request->permuta['precio_costo'];
+                    $entregado = Computadora::create(array_merge($request->permuta, ['estado' => 'permuta']));
                     break;
 
                 case 'producto_general':
@@ -91,6 +103,7 @@ class VentaController extends Controller
                         'permuta.precio_venta' => 'required|numeric',
                     ]);
                     $permutaCosto = $request->permuta['precio_costo'];
+                    $entregado = ProductoGeneral::create(array_merge($request->permuta, ['estado' => 'permuta']));
                     break;
             }
         }
@@ -108,6 +121,9 @@ class VentaController extends Controller
             ? ($subtotal - $precioCosto)
             : ($precioVenta - $precioCosto) * $cantidad;
 
+        // 🟢 Garantizar zona horaria Bolivia para reportes por día
+        $request->merge(['fecha' => now('America/La_Paz')]);
+
         $venta = Venta::create([
             ...$request->only([
                 'nombre_cliente',
@@ -119,19 +135,24 @@ class VentaController extends Controller
                 'precio_invertido',
                 'precio_venta',
                 'descuento',
-                'celular_id',
-                'computadora_id',
-                'producto_general_id',
                 'metodo_pago',
                 'inicio_tarjeta',
                 'fin_tarjeta',
                 'notas_adicionales',
+                'fecha',
             ]),
             'user_id' => auth()->id(),
             'ganancia_neta' => $ganancia,
             'subtotal' => $subtotal,
+            'celular_id' => $request->celular_id,
+            'computadora_id' => $request->computadora_id,
+            'producto_general_id' => $request->producto_general_id,
+            'entregado_celular_id' => $request->tipo_permuta === 'celular' ? $entregado?->id : null,
+            'entregado_computadora_id' => $request->tipo_permuta === 'computadora' ? $entregado?->id : null,
+            'entregado_producto_general_id' => $request->tipo_permuta === 'producto_general' ? $entregado?->id : null,
         ]);
 
+        // Marcar el producto vendido como 'vendido'
         if ($request->celular_id) {
             Celular::where('id', $request->celular_id)->update(['estado' => 'vendido']);
         }
@@ -140,20 +161,6 @@ class VentaController extends Controller
         }
         if ($request->producto_general_id) {
             ProductoGeneral::where('id', $request->producto_general_id)->update(['estado' => 'vendido']);
-        }
-
-        if ($request->es_permuta && $request->has('permuta')) {
-            switch ($request->tipo_permuta) {
-                case 'celular':
-                    Celular::create(array_merge($request->permuta, ['estado' => 'permuta']));
-                    break;
-                case 'computadora':
-                    Computadora::create(array_merge($request->permuta, ['estado' => 'permuta']));
-                    break;
-                case 'producto_general':
-                    ProductoGeneral::create(array_merge($request->permuta, ['estado' => 'permuta']));
-                    break;
-            }
         }
 
         return redirect()->route('admin.ventas.index')->with('success', 'Venta registrada correctamente.');
