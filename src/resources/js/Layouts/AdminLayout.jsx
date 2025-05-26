@@ -92,6 +92,14 @@ export default function AdminLayout({ children }) {
             </Link>
           </li>
 
+          {/* Cotizaciones */}
+          <li className="nav-item">
+            <Link className="nav-link" href={route('admin.cotizaciones.index')}>
+              <i className="fas fa-file-invoice-dollar"></i>
+              <span>Cotizaciones</span>
+            </Link>
+          </li>
+
           <hr className="sidebar-divider" />
 
           {/* Cerrar Sesión */}

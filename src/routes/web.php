@@ -13,6 +13,8 @@ use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ServicioTecnicoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\CotizacionController;
+
 
 // 🏠 Página pública
 Route::get('/', function () {
@@ -90,10 +92,21 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])->name('celulares.habilitar');
     Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])->name('computadoras.habilitar');
     Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])->name('productos-generales.habilitar');
-});
+    
+    // 📦 Cotizaciones
+    Route::resource('cotizaciones', CotizacionController::class)
+    ->only(['index', 'create', 'store'])
+    ->names('cotizaciones');
 
-// 🛒 Rutas del VENDEDOR
-Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
+    Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])
+    ->name('cotizaciones.pdf');
+
+
+    });
+
+
+    // 🛒 Rutas del VENDEDOR
+    Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
 
     Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
