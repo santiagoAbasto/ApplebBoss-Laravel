@@ -14,6 +14,18 @@ services:
     depends_on:
       - db
 
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: appleboss-queue
+    depends_on:
+      - db
+    volumes:
+      - ./src:/var/www/html
+      - ./src/docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    command: php artisan queue:work --tries=3 --timeout=90
+
   db:
     image: postgres:15
     container_name: appleboss-db

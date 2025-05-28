@@ -12,18 +12,24 @@ return new class extends Migration {
 
             // Datos del cliente
             $table->string('nombre_cliente');
+            $table->string('codigo_pais')->nullable();   // ✅ nuevo campo
+            $table->string('codigo_area')->nullable();   // ✅ nuevo campo
             $table->string('telefono_cliente')->nullable();
+
             $table->string('correo_cliente')->nullable();
 
             // Detalle de ítems cotizados (servicios o productos)
             $table->json('items');
 
-        // Cálculos de precios
+            // Cálculos de precios
             $table->decimal('precio_base', 10, 2)->nullable();
             $table->decimal('precio_sin_factura', 10, 2)->nullable();
             $table->decimal('precio_con_factura', 10, 2)->nullable();
-            $table->decimal('descuento', 10, 2)->default(0); // 👈 Aquí agregas el campo
+            $table->decimal('descuento', 10, 2)->default(0);
             $table->decimal('total', 10, 2);
+
+            // Link al PDF en Google Drive
+            $table->string('drive_url')->nullable();
 
             // Información adicional
             $table->text('notas_adicionales')->nullable();

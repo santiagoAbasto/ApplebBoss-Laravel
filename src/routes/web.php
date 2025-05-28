@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 // Controladores
 use App\Http\Controllers\ProfileController;
@@ -93,16 +94,24 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])->name('computadoras.habilitar');
     Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])->name('productos-generales.habilitar');
     
-    // 📦 Cotizaciones
-    Route::resource('cotizaciones', CotizacionController::class)
+// 📦 Cotizaciones
+Route::resource('cotizaciones', CotizacionController::class)
     ->only(['index', 'create', 'store'])
     ->names('cotizaciones');
 
-    Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])
+Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])
     ->name('cotizaciones.pdf');
 
+Route::post('cotizaciones/{id}/reenviar', [CotizacionController::class, 'reenviarCorreo'])
+    ->name('cotizaciones.reenviar');
 
-    });
+Route::post('cotizaciones/enviar-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])
+    ->name('cotizaciones.enviar-lote');
+
+// 🟢 NUEVO: WhatsApp con detección de dispositivo y mensaje limpio
+Route::get('cotizaciones/whatsapp-final', [CotizacionController::class, 'whatsappFinalLibre'])
+    ->name('cotizaciones.enviar-whatsapp-libre');
+});
 
 
     // 🛒 Rutas del VENDEDOR
@@ -134,6 +143,12 @@ Route::get('/api/permuta/{tipo}', function ($tipo) {
         return \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get();
     }
     return response()->json([], 404);
+});
+
+// 🌐 Test Drive Google Drive (opcional)
+Route::get('/test-drive', function () {
+    Storage::disk('google')->put('archivo-prueba.txt', 'Hola desde Laravel 🧾');
+    return 'Archivo subido a Google Drive correctamente.';
 });
 
 // routes/api.php

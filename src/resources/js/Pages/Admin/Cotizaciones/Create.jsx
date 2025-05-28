@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm, router, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import PhoneInput, { parsePhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+
+
 
 export default function Create({ fechaHoy, celulares = [], computadoras = [], productosGenerales = [] }) {
   const { data, setData, post, errors } = useForm({
     nombre_cliente: '',
+    codigo_pais: '',
+    codigo_area: '',
     telefono_cliente: '',
     correo_cliente: '',
     fecha_cotizacion: fechaHoy,
@@ -16,6 +22,30 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
 
   const [nuevoItem, setNuevoItem] = useState({ nombre: '', cantidad: 1, precio: 0 });
   const [tipoItem, setTipoItem] = useState('producto');
+  const [numeroCompleto, setNumeroCompleto] = useState('');
+  const [telefonoInvalido, setTelefonoInvalido] = useState(false);
+
+  useEffect(() => {
+    if (numeroCompleto) {
+      try {
+        const parsed = parsePhoneNumber(numeroCompleto);
+        if (parsed && parsed.isValid()) {
+          setTelefonoInvalido(false);
+          setData('codigo_pais', `+${parsed.countryCallingCode}`);
+          const national = parsed.nationalNumber;
+          const area = national.length >= 10 ? national.slice(0, 3) : national.slice(0, 2);
+          const phone = national.slice(area.length);
+          setData('codigo_area', area);
+          setData('telefono_cliente', phone);
+        }
+      } catch (e) {
+        setTelefonoInvalido(true);
+        console.warn('Número inválido o incompleto:', e.message);
+      }
+    } else {
+      setTelefonoInvalido(false);
+    }
+  }, [numeroCompleto]);
 
   const agregarItem = () => {
     if (!nuevoItem.nombre || nuevoItem.cantidad <= 0 || nuevoItem.precio < 0) return;
@@ -46,13 +76,9 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
 
   const handleProductoSeleccionado = (tipo, value) => {
     let producto = null;
-    if (tipo === 'celular') {
-      producto = celulares.find(p => p.id.toString() === value);
-    } else if (tipo === 'computadora') {
-      producto = computadoras.find(p => p.id.toString() === value);
-    } else if (tipo === 'producto_general') {
-      producto = productosGenerales.find(p => p.id.toString() === value);
-    }
+    if (tipo === 'celular') producto = celulares.find(p => p.id.toString() === value);
+    if (tipo === 'computadora') producto = computadoras.find(p => p.id.toString() === value);
+    if (tipo === 'producto_general') producto = productosGenerales.find(p => p.id.toString() === value);
 
     if (producto) {
       const precio = parseFloat(producto.precio_venta);
@@ -76,28 +102,43 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
       <Head title="Nueva Cotización" />
       <h1 className="h3 mb-4">📝 Nueva Cotización</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div className="row">
-          {/* Datos del cliente */}
-          <div className="col-md-6 mb-3">
-            <label>Nombre del Cliente</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
             <input className="form-control" value={data.nombre_cliente} onChange={e => setData('nombre_cliente', e.target.value)} />
           </div>
-          <div className="col-md-3 mb-3">
-            <label>Teléfono</label>
-            <input className="form-control" value={data.telefono_cliente} onChange={e => setData('telefono_cliente', e.target.value)} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Teléfono con código de país</label>
+            <PhoneInput
+              international
+              countryCallingCodeEditable={true}
+              value={numeroCompleto}
+              onChange={setNumeroCompleto}
+              className="!w-full !rounded-md !border-gray-300 !shadow-sm focus:!border-blue-500 focus:!ring focus:!ring-blue-200 focus:!ring-opacity-50 text-sm"
+              placeholder="Ej: +54 9 11 3416 6916"
+            />
+            {telefonoInvalido && (
+              <p className="text-red-500 text-xs mt-1">
+                Número inválido o incompleto. Revisa el código de país y área.
+              </p>
+            )}
+            {data.codigo_pais && data.codigo_area && data.telefono_cliente && (
+              <p className="text-gray-500 text-xs mt-1">
+                Número detectado: {data.codigo_pais} {data.codigo_area} {data.telefono_cliente}
+              </p>
+            )}
           </div>
-          <div className="col-md-3 mb-3">
+          <div className="col-md-6 mb-3">
             <label>Correo</label>
             <input className="form-control" type="email" value={data.correo_cliente} onChange={e => setData('correo_cliente', e.target.value)} />
           </div>
 
-          <div className="col-md-12 mb-3">
+          <div className="col-md-6 mb-3">
             <label>Fecha</label>
             <input type="date" className="form-control" value={data.fecha_cotizacion} onChange={e => setData('fecha_cotizacion', e.target.value)} />
           </div>
 
-          {/* Tipo de ítem */}
           <div className="col-md-12 mb-3">
             <label>Tipo de ítem</label>
             <select className="form-control" value={tipoItem} onChange={e => setTipoItem(e.target.value)}>
@@ -138,7 +179,6 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
             </div>
           )}
 
-          {/* Agregar ítem */}
           {(tipoItem === 'servicio' || tipoItem === 'producto') && (
             <div className="col-md-12 mb-3">
               <h5>Agregar Ítem</h5>
@@ -159,7 +199,6 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
             </div>
           )}
 
-          {/* Tabla de ítems */}
           <div className="col-md-12 mb-3">
             <table className="table table-bordered">
               <thead>
@@ -185,23 +224,16 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
             </table>
           </div>
 
-          {/* Descuento */}
           <div className="col-md-4 mb-3">
             <label>Descuento (Bs)</label>
-            <input
-              type="number"
-              className="form-control"
-              value={data.descuento}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value) || 0;
-                const descuento = Math.min(value, subtotalActual);
-                setData('descuento', descuento);
-                setData('total', calcularTotal(data.items, descuento));
-              }}
-            />
+            <input type="number" className="form-control" value={data.descuento} onChange={(e) => {
+              const value = parseFloat(e.target.value) || 0;
+              const descuento = Math.min(value, subtotalActual);
+              setData('descuento', descuento);
+              setData('total', calcularTotal(data.items, descuento));
+            }} />
           </div>
 
-          {/* Subtotal, descuento y total */}
           <div className="col-md-12 text-end mb-2">
             <p>Subtotal: <strong>Bs {subtotalActual.toFixed(2)}</strong></p>
             <p>Descuento aplicado: <strong>Bs {data.descuento.toFixed(2)}</strong></p>
@@ -213,7 +245,6 @@ export default function Create({ fechaHoy, celulares = [], computadoras = [], pr
             <textarea className="form-control" value={data.notas_adicionales} onChange={e => setData('notas_adicionales', e.target.value)} />
           </div>
 
-          {/* Botones */}
           <div className="col-md-12 text-end">
             <button type="submit" className="btn btn-success">Guardar Cotización</button>
             <Link href={route('admin.cotizaciones.index')} className="btn btn-secondary ms-2">Cancelar</Link>

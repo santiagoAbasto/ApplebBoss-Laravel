@@ -59,6 +59,12 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        'google' => [
+            'driver' => 'google',
+            'credentialsPath' => storage_path('app/google/credentials.json'),
+            'folderId' => env('GOOGLE_DRIVE_FOLDER_ID'),
+    ],
+
 
     ],
 
