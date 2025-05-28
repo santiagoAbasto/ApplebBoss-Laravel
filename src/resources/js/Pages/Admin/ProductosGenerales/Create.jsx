@@ -21,36 +21,42 @@ export default function CreateProductoGeneral() {
     <AdminLayout>
       <Head title="Registrar Producto General" />
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 text-gray-800">Registrar nuevo producto general</h1>
-        <Link href={route('admin.productos-generales.index')} className="btn btn-secondary">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">📦 Registrar Producto General</h1>
+        <Link
+          href={route('admin.productos-generales.index')}
+          className="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-sm font-semibold rounded-md"
+        >
           ← Volver
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="card shadow p-4">
-        <div className="row">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow rounded-lg p-6 space-y-6"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Código */}
-          <div className="col-md-6 mb-3">
-            <label>Código</label>
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Código</label>
             <input
               type="text"
-              className="form-control"
               value={data.codigo}
               onChange={(e) => setData('codigo', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
-            {errors.codigo && <div className="text-danger">{errors.codigo}</div>}
+            {errors.codigo && <div className="text-red-600 text-sm mt-1">{errors.codigo}</div>}
           </div>
 
           {/* Tipo */}
-          <div className="col-md-6 mb-3">
-            <label>Tipo</label>
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Tipo</label>
             <select
-              className="form-select"
               value={data.tipo}
               onChange={(e) => setData('tipo', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">-- Selecciona --</option>
               <option value="vidrio_templado">Vidrio Templado</option>
@@ -61,66 +67,73 @@ export default function CreateProductoGeneral() {
               <option value="cargador_20w">Cargador 20W</option>
               <option value="otro">Otro</option>
             </select>
-            {errors.tipo && <div className="text-danger">{errors.tipo}</div>}
+            {errors.tipo && <div className="text-red-600 text-sm mt-1">{errors.tipo}</div>}
           </div>
 
-          {/* Nombre (opcional) */}
-          <div className="col-md-6 mb-3">
-            <label>Nombre (opcional)</label>
+          {/* Nombre */}
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Nombre (opcional)</label>
             <input
               type="text"
-              className="form-control"
               value={data.nombre}
               onChange={(e) => setData('nombre', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Procedencia */}
-          <div className="col-md-6 mb-3">
-            <label>Procedencia</label>
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Procedencia</label>
             <input
               type="text"
-              className="form-control"
               value={data.procedencia}
               onChange={(e) => setData('procedencia', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
-            {errors.procedencia && <div className="text-danger">{errors.procedencia}</div>}
+            {errors.procedencia && <div className="text-red-600 text-sm mt-1">{errors.procedencia}</div>}
           </div>
 
-          {/* Precio costo */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Costo</label>
+          {/* Precio Costo */}
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Precio de Costo</label>
             <input
               type="number"
-              className="form-control"
               value={data.precio_costo}
               onChange={(e) => setData('precio_costo', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
-            {errors.precio_costo && <div className="text-danger">{errors.precio_costo}</div>}
+            {errors.precio_costo && <div className="text-red-600 text-sm mt-1">{errors.precio_costo}</div>}
           </div>
 
-          {/* Precio venta */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Venta</label>
+          {/* Precio Venta */}
+          <div>
+            <label className="block font-medium text-sm text-gray-700">Precio de Venta</label>
             <input
               type="number"
-              className="form-control"
               value={data.precio_venta}
               onChange={(e) => setData('precio_venta', e.target.value)}
               disabled={processing}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
-            {errors.precio_venta && <div className="text-danger">{errors.precio_venta}</div>}
+            {errors.precio_venta && <div className="text-red-600 text-sm mt-1">{errors.precio_venta}</div>}
           </div>
         </div>
 
-        <div className="mt-3 d-flex justify-content-between">
-          <Link href={route('admin.productos-generales.index')} className="btn btn-outline-secondary">
+        <div className="flex items-center justify-end gap-3">
+          <Link
+            href={route('admin.productos-generales.index')}
+            className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm font-medium rounded-md"
+          >
             Cancelar
           </Link>
-          <button type="submit" className="btn btn-primary" disabled={processing}>
+          <button
+            type="submit"
+            disabled={processing}
+            className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md"
+          >
             Guardar
           </button>
         </div>

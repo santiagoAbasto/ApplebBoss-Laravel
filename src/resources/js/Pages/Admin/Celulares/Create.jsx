@@ -1,8 +1,11 @@
+import React, { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
+import { Loader2 } from 'lucide-react';
 
 export default function CreateCelular() {
-  const { data, setData, post, processing, errors } = useForm({
+  const { data, setData, post, processing, errors, reset } = useForm({
     modelo: '',
     capacidad: '',
     color: '',
@@ -16,149 +19,117 @@ export default function CreateCelular() {
     estado: 'disponible',
   });
 
+  const handleImei = (field, value) => {
+    const onlyDigits = value.replace(/\D/g, '').slice(0, 15);
+    setData(field, onlyDigits);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    post(route('admin.celulares.store'));
-  };
-
-  const handleImeiInput = (field, value) => {
-    const numericValue = value.replace(/\D/g, '').slice(0, 15);
-    setData(field, numericValue);
-  };
-
-  const handleImeiKeyDown = (e) => {
-    const validKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight'];
-    if (!/[0-9]/.test(e.key) && !validKeys.includes(e.key)) {
-      e.preventDefault();
-    }
+    post(route('admin.celulares.store'), {
+      onSuccess: () => {
+        showSuccess('✅ Celular registrado con éxito');
+        reset();
+      },
+      onError: () => showError('❌ Error al registrar el celular'),
+    });
   };
 
   return (
     <AdminLayout>
       <Head title="Registrar Celular" />
-      <div className="mb-4 d-flex justify-content-between align-items-center">
-        <h1 className="h3 text-gray-800">Registrar nuevo celular</h1>
-        <Link href={route('admin.celulares.index')} className="btn btn-secondary">← Volver</Link>
+
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          📱 Registrar nuevo celular
+        </h1>
+        <Link href={route('admin.celulares.index')} className="text-sm text-gray-600 hover:underline">
+          ← Volver
+        </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="card shadow p-4">
-        <div className="row">
-          {/* Modelo */}
-          <div className="col-md-6 mb-3">
-            <label>Modelo</label>
-            <input type="text" className="form-control" value={data.modelo} onChange={(e) => setData('modelo', e.target.value)} disabled={processing} />
-            {errors.modelo && <div className="text-danger">{errors.modelo}</div>}
-          </div>
-
-          {/* Capacidad */}
-          <div className="col-md-6 mb-3">
-            <label>Capacidad</label>
-            <input type="text" className="form-control" value={data.capacidad} onChange={(e) => setData('capacidad', e.target.value)} disabled={processing} />
-            {errors.capacidad && <div className="text-danger">{errors.capacidad}</div>}
-          </div>
-
-          {/* Color */}
-          <div className="col-md-6 mb-3">
-            <label>Color</label>
-            <input type="text" className="form-control" value={data.color} onChange={(e) => setData('color', e.target.value)} disabled={processing} />
-            {errors.color && <div className="text-danger">{errors.color}</div>}
-          </div>
-
-          {/* Batería */}
-          <div className="col-md-6 mb-3">
-            <label>Batería (opcional)</label>
-            <input type="text" className="form-control" value={data.bateria} onChange={(e) => setData('bateria', e.target.value)} disabled={processing} />
-            {errors.bateria && <div className="text-danger">{errors.bateria}</div>}
-          </div>
-
-          {/* IMEI 1 */}
-          <div className="col-md-6 mb-3">
-            <label>IMEI 1</label>
-            <input
-              type="text"
-              className="form-control"
-              maxLength={15}
-              inputMode="numeric"
-              pattern="\d{15}"
-              value={data.imei_1}
-              onChange={(e) => handleImeiInput('imei_1', e.target.value)}
-              onKeyDown={handleImeiKeyDown}
-              disabled={processing}
-            />
-            {errors.imei_1 && <div className="text-danger">{errors.imei_1}</div>}
-          </div>
-
-          {/* IMEI 2 */}
-          <div className="col-md-6 mb-3">
-            <label>IMEI 2 (opcional)</label>
-            <input
-              type="text"
-              className="form-control"
-              maxLength={15}
-              inputMode="numeric"
-              pattern="\d{15}"
-              value={data.imei_2}
-              onChange={(e) => handleImeiInput('imei_2', e.target.value)}
-              onKeyDown={handleImeiKeyDown}
-              disabled={processing}
-            />
-            {errors.imei_2 && <div className="text-danger">{errors.imei_2}</div>}
-          </div>
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            { label: 'Modelo', field: 'modelo' },
+            { label: 'Capacidad', field: 'capacidad' },
+            { label: 'Color', field: 'color' },
+            { label: 'Batería (opcional)', field: 'bateria' },
+            { label: 'IMEI 1', field: 'imei_1', type: 'imei' },
+            { label: 'IMEI 2 (opcional)', field: 'imei_2', type: 'imei' },
+            { label: 'Procedencia', field: 'procedencia' },
+            { label: 'Precio de Costo', field: 'precio_costo', type: 'number' },
+            { label: 'Precio de Venta', field: 'precio_venta', type: 'number' },
+          ].map(({ label, field, type }) => (
+            <div key={field}>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
+              <input
+                type={type === 'number' ? 'number' : 'text'}
+                className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-400"
+                value={data[field]}
+                onChange={(e) =>
+                  type === 'imei'
+                    ? handleImei(field, e.target.value)
+                    : setData(field, e.target.value)
+                }
+                maxLength={type === 'imei' ? 15 : undefined}
+              />
+              {errors[field] && <div className="text-sm text-red-500 mt-1">{errors[field]}</div>}
+            </div>
+          ))}
 
           {/* Estado IMEI */}
-          <div className="col-md-6 mb-3">
-            <label>Estado IMEI</label>
-            <select className="form-select" value={data.estado_imei} onChange={(e) => setData('estado_imei', e.target.value)} disabled={processing}>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Estado IMEI</label>
+            <select
+              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              value={data.estado_imei}
+              onChange={(e) => setData('estado_imei', e.target.value)}
+            >
               <option value="libre">Libre</option>
               <option value="registrado">Registrado</option>
               <option value="imei1_libre_imei2_registrado">IMEI 1 libre, IMEI 2 registrado</option>
               <option value="imei1_registrado_imei2_libre">IMEI 1 registrado, IMEI 2 libre</option>
             </select>
-            {errors.estado_imei && <div className="text-danger">{errors.estado_imei}</div>}
-          </div>
-
-          {/* Procedencia */}
-          <div className="col-md-6 mb-3">
-            <label>Procedencia</label>
-            <input type="text" className="form-control" value={data.procedencia} onChange={(e) => setData('procedencia', e.target.value)} disabled={processing} />
-            {errors.procedencia && <div className="text-danger">{errors.procedencia}</div>}
-          </div>
-
-          {/* Precio costo */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Costo</label>
-            <input type="number" className="form-control" value={data.precio_costo} onChange={(e) => setData('precio_costo', e.target.value)} disabled={processing} />
-            {errors.precio_costo && <div className="text-danger">{errors.precio_costo}</div>}
-          </div>
-
-          {/* Precio venta */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Venta</label>
-            <input type="number" className="form-control" value={data.precio_venta} onChange={(e) => setData('precio_venta', e.target.value)} disabled={processing} />
-            {errors.precio_venta && <div className="text-danger">{errors.precio_venta}</div>}
+            {errors.estado_imei && <div className="text-sm text-red-500 mt-1">{errors.estado_imei}</div>}
           </div>
 
           {/* Estado */}
-          <div className="col-md-6 mb-3">
-            <label>Estado</label>
-            <select className="form-select" value={data.estado} onChange={(e) => setData('estado', e.target.value)} disabled={processing}>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+            <select
+              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              value={data.estado}
+              onChange={(e) => setData('estado', e.target.value)}
+            >
               <option value="disponible">Disponible</option>
               <option value="vendido">Vendido</option>
               <option value="permuta">Permuta</option>
             </select>
-            {errors.estado && <div className="text-danger">{errors.estado}</div>}
+            {errors.estado && <div className="text-sm text-red-500 mt-1">{errors.estado}</div>}
           </div>
         </div>
 
-        <div className="mt-4 d-flex justify-content-between">
-          <Link href={route('admin.celulares.index')} className="btn btn-outline-secondary">
+        {/* Botones */}
+        <div className="mt-6 flex justify-end gap-4">
+          <Link
+            href={route('admin.celulares.index')}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+          >
             Cancelar
           </Link>
-          <button type="submit" className="btn btn-primary" disabled={processing}>
+          <button
+            type="submit"
+            disabled={processing}
+            className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center gap-2"
+          >
+            {processing && <Loader2 className="w-4 h-4 animate-spin" />}
             Guardar
           </button>
         </div>
       </form>
+
+      <ToastContainer />
     </AdminLayout>
   );
 }

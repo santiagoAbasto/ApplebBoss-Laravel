@@ -10,7 +10,7 @@ export default function CreateServicio() {
     precio_costo: '',
     precio_venta: '',
     tecnico: '',
-    fecha: new Date().toISOString().split('T')[0], // fecha actual
+    fecha: new Date().toISOString().split('T')[0],
   });
 
   const handleSubmit = (e) => {
@@ -22,56 +22,118 @@ export default function CreateServicio() {
     <AdminLayout>
       <Head title="Registrar Servicio Técnico" />
 
-      <h1 className="h3 mb-4">🧰 Registrar Servicio Técnico</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">🧰 Registrar Servicio Técnico</h1>
+        <p className="text-gray-600 dark:text-gray-400">Completa los siguientes campos para registrar un nuevo servicio.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="card card-body shadow">
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label className="form-label">Nombre del Cliente</label>
-            <input type="text" className="form-control" value={data.cliente} onChange={e => setData('cliente', e.target.value)} />
-            {errors.cliente && <div className="text-danger">{errors.cliente}</div>}
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 shadow-xl rounded-2xl p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Nombre del Cliente</label>
+            <input
+              type="text"
+              value={data.cliente}
+              onChange={e => setData('cliente', e.target.value)}
+              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+                errors.cliente ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.cliente && <p className="text-sm text-red-500 mt-1">{errors.cliente}</p>}
           </div>
 
-          <div className="col-md-6 mb-3">
-            <label className="form-label">Teléfono</label>
-            <input type="text" className="form-control" value={data.telefono} onChange={e => setData('telefono', e.target.value)} />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Teléfono</label>
+            <input
+              type="text"
+              value={data.telefono}
+              onChange={e => setData('telefono', e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
           </div>
 
-          <div className="col-md-6 mb-3">
-            <label className="form-label">Equipo</label>
-            <input type="text" className="form-control" value={data.equipo} onChange={e => setData('equipo', e.target.value)} />
-            {errors.equipo && <div className="text-danger">{errors.equipo}</div>}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Equipo</label>
+            <input
+              type="text"
+              value={data.equipo}
+              onChange={e => setData('equipo', e.target.value)}
+              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+                errors.equipo ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.equipo && <p className="text-sm text-red-500 mt-1">{errors.equipo}</p>}
           </div>
 
-          <div className="col-md-6 mb-3">
-            <label className="form-label">Técnico Encargado</label>
-            <input type="text" className="form-control" value={data.tecnico} onChange={e => setData('tecnico', e.target.value)} />
-            {errors.tecnico && <div className="text-danger">{errors.tecnico}</div>}
-          </div>
-
-          <div className="col-md-12 mb-3">
-            <label className="form-label">Detalle del Servicio</label>
-            <textarea className="form-control" rows="3" value={data.detalle_servicio} onChange={e => setData('detalle_servicio', e.target.value)} />
-            {errors.detalle_servicio && <div className="text-danger">{errors.detalle_servicio}</div>}
-          </div>
-
-          <div className="col-md-4 mb-3">
-            <label className="form-label">Precio Costo (Bs)</label>
-            <input type="number" step="0.01" className="form-control" value={data.precio_costo} onChange={e => setData('precio_costo', e.target.value)} />
-          </div>
-
-          <div className="col-md-4 mb-3">
-            <label className="form-label">Precio Venta (Bs)</label>
-            <input type="number" step="0.01" className="form-control" value={data.precio_venta} onChange={e => setData('precio_venta', e.target.value)} />
-          </div>
-
-          <div className="col-md-4 mb-3">
-            <label className="form-label">Fecha</label>
-            <input type="date" className="form-control" value={data.fecha} onChange={e => setData('fecha', e.target.value)} />
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Técnico Encargado</label>
+            <input
+              type="text"
+              value={data.tecnico}
+              onChange={e => setData('tecnico', e.target.value)}
+              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+                errors.tecnico ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.tecnico && <p className="text-sm text-red-500 mt-1">{errors.tecnico}</p>}
           </div>
         </div>
 
-        <button type="submit" className="btn btn-success">Guardar</button>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Detalle del Servicio</label>
+          <textarea
+            rows="4"
+            value={data.detalle_servicio}
+            onChange={e => setData('detalle_servicio', e.target.value)}
+            className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+              errors.detalle_servicio ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.detalle_servicio && <p className="text-sm text-red-500 mt-1">{errors.detalle_servicio}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Precio Costo (Bs)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={data.precio_costo}
+              onChange={e => setData('precio_costo', e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Precio Venta (Bs)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={data.precio_venta}
+              onChange={e => setData('precio_venta', e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={data.fecha}
+              onChange={e => setData('fecha', e.target.value)}
+              className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+          </div>
+        </div>
+
+        <div className="text-right">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl shadow-md transition"
+          >
+            💾 Guardar Servicio
+          </button>
+        </div>
       </form>
     </AdminLayout>
   );

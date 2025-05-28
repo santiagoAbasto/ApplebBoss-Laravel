@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
+// ModalPermutaComponent.jsx rediseñado 200% Tailwind - sin react-bootstrap
+import { Fragment, useEffect, useState } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }) {
   const [formData, setFormData] = useState({});
@@ -11,10 +12,8 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // Validación especial para IMEI
     if (name === 'imei_1' || name === 'imei_2') {
-      const cleaned = value.replace(/\D/g, ''); // Solo números
+      const cleaned = value.replace(/\D/g, '');
       if (cleaned.length <= 15) {
         setFormData(prev => ({ ...prev, [name]: cleaned }));
       }
@@ -28,103 +27,146 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
       alert('Completa los precios y el estado del producto entregado.');
       return;
     }
-
     onGuardar(formData);
     onClose();
   };
 
-  return (
-    <Modal show={show} onHide={onClose} centered size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Registrar producto entregado ({tipo.replace('_', ' ')})</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {tipo === 'celular' && (
-          <div className="row">
-            <div className="col-md-6 mb-2"><input name="modelo" className="form-control" placeholder="Modelo" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="capacidad" className="form-control" placeholder="Capacidad" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="color" className="form-control" placeholder="Color" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="bateria" className="form-control" placeholder="Batería (%)" onChange={handleChange} /></div>
-
-            <div className="col-md-6 mb-2">
+  const renderCampos = () => {
+    switch (tipo) {
+      case 'celular':
+        return (
+          <>
+            {['modelo', 'capacidad', 'color', 'bateria'].map((field) => (
               <input
-                name="imei_1"
-                className="form-control"
-                placeholder="IMEI 1"
-                maxLength={15}
-                value={formData.imei_1 || ''}
+                key={field}
+                name={field}
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                className="input"
                 onChange={handleChange}
               />
-            </div>
-            <div className="col-md-6 mb-2">
-              <input
-                name="imei_2"
-                className="form-control"
-                placeholder="IMEI 2"
-                maxLength={15}
-                value={formData.imei_2 || ''}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="col-md-6 mb-2">
-              <select name="estado_imei" className="form-control" onChange={handleChange}>
-                <option value="">-- Estado IMEI --</option>
-                <option value="libre">Libre</option>
-                <option value="registrado">Registrado</option>
-                <option value="imei1_libre_imei2_registrado">IMEI1 Libre / IMEI2 Registrado</option>
-                <option value="imei1_registrado_imei2_libre">IMEI1 Registrado / IMEI2 Libre</option>
-              </select>
-            </div>
-            <div className="col-md-6 mb-2"><input name="procedencia" className="form-control" placeholder="Procedencia" onChange={handleChange} /></div>
-          </div>
-        )}
-
-        {tipo === 'computadora' && (
-          <div className="row">
-            <div className="col-md-6 mb-2"><input name="nombre" className="form-control" placeholder="Nombre" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="procesador" className="form-control" placeholder="Procesador" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="numero_serie" className="form-control" placeholder="Número de Serie" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="color" className="form-control" placeholder="Color" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="bateria" className="form-control" placeholder="Batería" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="ram" className="form-control" placeholder="RAM" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="almacenamiento" className="form-control" placeholder="Almacenamiento" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="procedencia" className="form-control" placeholder="Procedencia" onChange={handleChange} /></div>
-          </div>
-        )}
-
-        {tipo === 'producto_general' && (
-          <div className="row">
-            <div className="col-md-6 mb-2"><input name="codigo" className="form-control" placeholder="Código" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="tipo" className="form-control" placeholder="Tipo" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="nombre" className="form-control" placeholder="Nombre" onChange={handleChange} /></div>
-            <div className="col-md-6 mb-2"><input name="procedencia" className="form-control" placeholder="Procedencia" onChange={handleChange} /></div>
-          </div>
-        )}
-
-        {/* Campos comunes */}
-        <hr />
-        <div className="row">
-          <div className="col-md-6 mb-2">
-            <input name="precio_costo" type="number" className="form-control" placeholder="Precio Costo (Bs)" onChange={handleChange} />
-          </div>
-          <div className="col-md-6 mb-2">
-            <input name="precio_venta" type="number" className="form-control" placeholder="Precio Venta (Bs)" onChange={handleChange} />
-          </div>
-          <div className="col-md-6 mb-2">
-            <select name="estado" className="form-control" onChange={handleChange}>
-              <option value="">-- Estado del producto --</option>
-              <option value="disponible">Disponible</option>
-              <option value="vendido">Vendido</option>
-              <option value="permuta">Permuta</option>
+            ))}
+            <input name="imei_1" maxLength={15} value={formData.imei_1 || ''} placeholder="IMEI 1" className="input" onChange={handleChange} />
+            <input name="imei_2" maxLength={15} value={formData.imei_2 || ''} placeholder="IMEI 2" className="input" onChange={handleChange} />
+            <select name="estado_imei" className="input" onChange={handleChange}>
+              <option value="">-- Estado IMEI --</option>
+              <option value="libre">Libre</option>
+              <option value="registrado">Registrado</option>
+              <option value="imei1_libre_imei2_registrado">IMEI1 Libre / IMEI2 Registrado</option>
+              <option value="imei1_registrado_imei2_libre">IMEI1 Registrado / IMEI2 Libre</option>
             </select>
+            <input name="procedencia" placeholder="Procedencia" className="input" onChange={handleChange} />
+          </>
+        );
+      case 'computadora':
+        return (
+          <>
+            {['nombre', 'procesador', 'numero_serie', 'color', 'bateria', 'ram', 'almacenamiento', 'procedencia'].map((field) => (
+              <input
+                key={field}
+                name={field}
+                placeholder={field.charAt(0).toUpperCase() + field.replace('_', ' ').slice(1)}
+                className="input"
+                onChange={handleChange}
+              />
+            ))}
+          </>
+        );
+      case 'producto_general':
+        return (
+          <>
+            {['codigo', 'tipo', 'nombre', 'procedencia'].map((field) => (
+              <input
+                key={field}
+                name={field}
+                placeholder={field.charAt(0).toUpperCase() + field.replace('_', ' ').slice(1)}
+                className="input"
+                onChange={handleChange}
+              />
+            ))}
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Transition.Root show={show} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-gray-900">
+                <div className="flex justify-between items-center mb-4">
+                  <Dialog.Title className="text-lg font-bold text-gray-800 dark:text-white">
+                    Registrar producto entregado ({tipo?.replace('_', ' ')})
+                  </Dialog.Title>
+                  <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <XMarkIcon className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {renderCampos()}
+
+                  <hr className="col-span-2 border-t border-gray-200 dark:border-gray-700 my-2" />
+
+                  <input name="precio_costo" type="number" placeholder="Precio Costo (Bs)" className="input" onChange={handleChange} />
+                  <input name="precio_venta" type="number" placeholder="Precio Venta (Bs)" className="input" onChange={handleChange} />
+                  <select name="estado" className="input" onChange={handleChange}>
+                    <option value="">-- Estado del producto --</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="vendido">Vendido</option>
+                    <option value="permuta">Permuta</option>
+                  </select>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGuardar}
+                    className="px-6 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold shadow"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        <Button variant="primary" onClick={handleGuardar}>Guardar</Button>
-      </Modal.Footer>
-    </Modal>
+      </Dialog>
+    </Transition.Root>
   );
 }
+
+// Tailwind utility: agregar esto en tu CSS global o tailwind.config.js si quieres usar 'input'
+// .input {
+//   @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white;
+// }

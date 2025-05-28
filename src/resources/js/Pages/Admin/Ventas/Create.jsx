@@ -41,24 +41,16 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
 
   const manejarBusquedaCodigo = () => {
     let producto = null;
-
     if (productoTipo === 'celular') {
       producto = celulares.find(p => p.imei_1 === busquedaCodigo);
-      if (producto) {
-        setData('celular_id', producto.id);
-      }
+      if (producto) setData('celular_id', producto.id);
     } else if (productoTipo === 'computadora') {
       producto = computadoras.find(p => p.numero_serie === busquedaCodigo);
-      if (producto) {
-        setData('computadora_id', producto.id);
-      }
+      if (producto) setData('computadora_id', producto.id);
     } else if (productoTipo === 'producto_general') {
       producto = productosGenerales.find(p => p.codigo === busquedaCodigo);
-      if (producto) {
-        setData('producto_general_id', producto.id);
-      }
+      if (producto) setData('producto_general_id', producto.id);
     }
-
     if (producto) {
       setData('precio_venta', producto.precio_venta || 0);
       setData('precio_invertido', producto.precio_costo || 0);
@@ -124,24 +116,25 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   return (
     <AdminLayout>
       <Head title="Registrar Venta" />
-      <h1 className="h3 mb-4">🛒 Registrar Venta</h1>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">🛒 Registrar Venta</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label>Cliente</label>
-            <input type="text" className={`form-control ${errors.nombre_cliente ? 'is-invalid' : ''}`} value={data.nombre_cliente} onChange={e => setData('nombre_cliente', e.target.value)} />
-            {errors.nombre_cliente && <div className="invalid-feedback">{errors.nombre_cliente}</div>}
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Cliente</label>
+            <input type="text" className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.nombre_cliente} onChange={e => setData('nombre_cliente', e.target.value)} />
+            {errors.nombre_cliente && <p className="text-sm text-red-500 mt-1">{errors.nombre_cliente}</p>}
           </div>
-
-          <div className="col-md-6 mb-3">
-            <label>Teléfono</label>
-            <input type="text" className="form-control" value={data.telefono_cliente} onChange={e => setData('telefono_cliente', e.target.value)} />
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Teléfono</label>
+            <input type="text" className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.telefono_cliente} onChange={e => setData('telefono_cliente', e.target.value)} />
           </div>
+        </div>
 
-          <div className="col-md-6 mb-3">
-            <label>Tipo de producto vendido</label>
-            <select className="form-control" value={productoTipo} onChange={e => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Tipo de producto vendido</label>
+            <select className="w-full border rounded-xl px-4 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={productoTipo} onChange={e => {
               const tipo = e.target.value;
               setProductoTipo(tipo);
               setData('celular_id', '');
@@ -157,15 +150,15 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
           </div>
 
           {productoTipo && (
-            <div className="col-md-6 mb-3">
-              <label>
+            <div>
+              <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">
                 {productoTipo === 'celular' && 'Ingrese IMEI'}
                 {productoTipo === 'computadora' && 'Ingrese Número de Serie'}
                 {productoTipo === 'producto_general' && 'Ingrese Código del Producto'}
               </label>
               <input
                 type="text"
-                className="form-control"
+                className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 value={busquedaCodigo}
                 onChange={e => setBusquedaCodigo(e.target.value)}
                 onKeyDown={e => {
@@ -177,11 +170,12 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
               />
             </div>
           )}
+        </div>
 
-          {/* Permuta */}
-          <div className="col-md-6 mb-3">
-            <label>¿Es Permuta?</label>
-            <select className="form-control" value={data.es_permuta ? '1' : ''} onChange={e => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">¿Es Permuta?</label>
+            <select className="w-full border rounded-xl px-4 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.es_permuta ? '1' : ''} onChange={e => {
               const es = e.target.value === '1';
               setPermutaActiva(es);
               setData('es_permuta', es);
@@ -192,77 +186,71 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
           </div>
 
           {permutaActiva && (
-            <>
-              <div className="col-md-6 mb-3">
-                <label>Tipo de producto entregado</label>
-                <select className="form-control" value={tipoPermuta} onChange={e => {
-                  setTipoPermuta(e.target.value);
-                  setData('tipo_permuta', e.target.value);
-                }}>
-                  <option value="">-- Seleccionar --</option>
-                  <option value="celular">Celular</option>
-                  <option value="computadora">Computadora</option>
-                  <option value="producto_general">Producto General</option>
-                </select>
-              </div>
-
-
-              {opcionesPermuta.length > 0 && (
-                <div className="col-md-12 mb-3">
-                  <label>Seleccionar producto entregado registrado</label>
-                  <select className="form-control" onChange={e => {
-                    const seleccion = opcionesPermuta.find(p => p.id == e.target.value);
-                    if (seleccion) {
-                      setData('permuta', {
-                        ...seleccion,
-                        precio_costo: seleccion.precio_costo,
-                        precio_venta: seleccion.precio_venta
-                      });
-                    }
-                  }}>
-                    <option value="">-- Seleccionar --</option>
-                    {opcionesPermuta.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {tipoPermuta === 'celular' && `${p.modelo} - ${p.imei_1}`}
-                        {tipoPermuta === 'computadora' && `${p.nombre} - ${p.numero_serie}`}
-                        {tipoPermuta === 'producto_general' && `${p.nombre} - ${p.codigo}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {tipoPermuta && (
-                <div className="col-md-12 mb-3">
-                  <button
-                    type="button"
-                    className="btn btn-outline-info"
-                    onClick={() => setShowModal(true)}
-                  >
-                    ➕ Registrar producto entregado (modal)
-                  </button>
-                </div>
-              )}
-            </>
+            <div>
+              <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Tipo de producto entregado</label>
+              <select className="w-full border rounded-xl px-4 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={tipoPermuta} onChange={e => {
+                setTipoPermuta(e.target.value);
+                setData('tipo_permuta', e.target.value);
+              }}>
+                <option value="">-- Seleccionar --</option>
+                <option value="celular">Celular</option>
+                <option value="computadora">Computadora</option>
+                <option value="producto_general">Producto General</option>
+              </select>
+            </div>
           )}
+        </div>
 
-          {/* Precios y notas */}
-          <div className="col-md-4 mb-3">
-            <label>Precio Venta</label>
-            <input type="number" className="form-control" value={data.precio_venta} onChange={e => setData('precio_venta', e.target.value)} />
+        {permutaActiva && opcionesPermuta.length > 0 && (
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Seleccionar producto entregado registrado</label>
+            <select className="w-full border rounded-xl px-4 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" onChange={e => {
+              const seleccion = opcionesPermuta.find(p => p.id == e.target.value);
+              if (seleccion) {
+                setData('permuta', {
+                  ...seleccion,
+                  precio_costo: seleccion.precio_costo,
+                  precio_venta: seleccion.precio_venta,
+                });
+              }
+            }}>
+              <option value="">-- Seleccionar --</option>
+              {opcionesPermuta.map(p => (
+                <option key={p.id} value={p.id}>
+                  {tipoPermuta === 'celular' && `${p.modelo} - ${p.imei_1}`}
+                  {tipoPermuta === 'computadora' && `${p.nombre} - ${p.numero_serie}`}
+                  {tipoPermuta === 'producto_general' && `${p.nombre} - ${p.codigo}`}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="col-md-4 mb-3">
-            <label>Precio Costo</label>
-            <input type="number" className="form-control" value={data.precio_invertido} onChange={e => setData('precio_invertido', e.target.value)} />
-          </div>
-          <div className="col-md-4 mb-3">
-            <label>Descuento</label>
-            <input type="number" className="form-control" value={data.descuento} onChange={e => setData('descuento', e.target.value)} />
-          </div>
+        )}
 
-          <div className="col-md-4 mb-3">
-            <label>Método de Pago</label>
-            <select className="form-control" value={data.metodo_pago} onChange={e => setData('metodo_pago', e.target.value)}>
+        {permutaActiva && tipoPermuta && (
+          <div className="text-right">
+            <button type="button" onClick={() => setShowModal(true)} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow">➕ Registrar producto entregado</button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Precio Venta (Bs)</label>
+            <input type="number" value={data.precio_venta} onChange={e => setData('precio_venta', e.target.value)} className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Precio Costo (Bs)</label>
+            <input type="number" value={data.precio_invertido} onChange={e => setData('precio_invertido', e.target.value)} className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+          </div>
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Descuento (Bs)</label>
+            <input type="number" value={data.descuento} onChange={e => setData('descuento', e.target.value)} className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Método de Pago</label>
+            <select className="w-full border rounded-xl px-4 py-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.metodo_pago} onChange={e => setData('metodo_pago', e.target.value)}>
               <option value="">-- Seleccionar --</option>
               <option value="efectivo">Efectivo</option>
               <option value="qr">QR</option>
@@ -272,28 +260,29 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
 
           {data.metodo_pago === 'tarjeta' && (
             <>
-              <div className="col-md-4 mb-3">
-                <label>Inicio Tarjeta</label>
-                <input className="form-control" value={data.tarjeta_inicio} onChange={e => setData('tarjeta_inicio', e.target.value)} />
+              <div>
+                <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Inicio Tarjeta</label>
+                <input className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.tarjeta_inicio} onChange={e => setData('tarjeta_inicio', e.target.value)} />
               </div>
-              <div className="col-md-4 mb-3">
-                <label>Fin Tarjeta</label>
-                <input className="form-control" value={data.tarjeta_fin} onChange={e => setData('tarjeta_fin', e.target.value)} />
+              <div>
+                <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Fin Tarjeta</label>
+                <input className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.tarjeta_fin} onChange={e => setData('tarjeta_fin', e.target.value)} />
               </div>
             </>
           )}
-
-          <div className="col-md-12 mb-3">
-            <label>Notas adicionales</label>
-            <textarea className="form-control" value={data.notas_adicionales} onChange={e => setData('notas_adicionales', e.target.value)} />
-          </div>
         </div>
 
-        <button type="submit" className="btn btn-success">Registrar Venta</button>
-        <Link href={route('admin.ventas.index')} className="btn btn-secondary ms-2">Cancelar</Link>
+        <div>
+          <label className="block font-medium text-sm text-gray-700 dark:text-gray-200 mb-1">Notas adicionales</label>
+          <textarea rows="3" className="w-full border rounded-xl px-4 py-2 shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white" value={data.notas_adicionales} onChange={e => setData('notas_adicionales', e.target.value)} />
+        </div>
+
+        <div className="flex justify-end gap-4">
+          <button type="submit" className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl shadow transition">Registrar Venta</button>
+          <Link href={route('admin.ventas.index')} className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm font-medium rounded-xl shadow transition">Cancelar</Link>
+        </div>
       </form>
 
-      {/* Modal para registrar producto entregado */}
       <ModalPermuta
         show={showModal}
         onClose={() => setShowModal(false)}

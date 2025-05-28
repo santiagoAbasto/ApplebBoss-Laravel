@@ -1,109 +1,130 @@
+import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
 
 export default function ProductosGeneralesIndex({ productos }) {
-  const eliminarProducto = (id) => {
-    if (confirm('¿Deseas eliminar este producto?')) {
+  const [busqueda, setBusqueda] = useState('');
+
+  const eliminar = (id) => {
+    if (confirm('¿Seguro que deseas eliminar este producto?')) {
       router.delete(route('admin.productos-generales.destroy', id), {
-        onSuccess: () => console.log('Producto eliminado correctamente.'),
-        onError: () => alert('Hubo un error al intentar eliminar el producto.'),
+        onSuccess: () => showSuccess('Producto eliminado correctamente'),
+        onError: () => showError('Error al eliminar el producto'),
       });
     }
   };
 
-  const habilitarProducto = (id) => {
+  const habilitar = (id) => {
     if (confirm('¿Deseas habilitar este producto para la venta?')) {
       router.patch(route('admin.productos-generales.habilitar', id), {
-        onSuccess: () => console.log('Producto habilitado correctamente.'),
-        onError: () => alert('No se pudo habilitar el producto.'),
+        onSuccess: () => showSuccess('Producto habilitado con éxito'),
+        onError: () => showError('Error al habilitar el producto'),
       });
     }
   };
 
-  const getBadgeClass = (estado) => {
+  const getBadgeColor = (estado) => {
     switch (estado) {
-      case 'disponible': return 'success';
-      case 'vendido': return 'danger';
-      case 'permuta': return 'info';
-      default: return 'secondary';
+      case 'disponible': return 'bg-green-200 text-green-700';
+      case 'vendido': return 'bg-red-200 text-red-700';
+      case 'permuta': return 'bg-blue-200 text-blue-700';
+      default: return 'bg-gray-200 text-gray-700';
     }
   };
 
-  const formatEstado = (estado) =>
-    estado.charAt(0).toUpperCase() + estado.slice(1);
+  const filtrados = productos.filter((p) =>
+    p.codigo.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <AdminLayout>
       <Head title="Productos Generales" />
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 text-gray-800">📦 Productos Generales</h1>
-        <Link href={route('admin.productos-generales.create')} className="btn btn-primary">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">📦 Productos Generales</h1>
+        <Link
+          href={route('admin.productos-generales.create')}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
           + Registrar Producto
         </Link>
       </div>
 
-      <div className="card shadow">
-        <div className="card-body table-responsive">
-          <table className="table table-bordered table-hover">
-            <thead className="table-primary">
-              <tr>
-                <th>Código</th>
-                <th>Tipo</th>
-                <th>Nombre</th>
-                <th>Precio Venta (Bs)</th>
-                <th>Estado</th>
-                <th style={{ width: 220 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.codigo}</td>
-                  <td>{p.tipo}</td>
-                  <td>{p.nombre}</td>
-                  <td>{parseFloat(p.precio_venta).toFixed(2)}</td>
-                  <td>
-                    <span className={`badge bg-${getBadgeClass(p.estado)} px-3 py-2 text-uppercase fw-semibold`}>
-                      {formatEstado(p.estado)}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por código"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full md:w-1/3 px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+        />
+      </div>
+
+      <div className="overflow-x-auto bg-white rounded shadow">
+        <table className="min-w-full text-sm text-left text-gray-700">
+          <thead className="bg-blue-100 text-gray-900 uppercase">
+            <tr>
+              <th className="px-4 py-3">Código</th>
+              <th className="px-4 py-3">Tipo</th>
+              <th className="px-4 py-3">Nombre</th>
+              <th className="px-4 py-3">Procedencia</th>
+              <th className="px-4 py-3">Precio Venta (Bs)</th>
+              <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtrados.length > 0 ? (
+              filtrados.map((p) => (
+                <tr key={p.id} className="border-t hover:bg-gray-50">
+                  <td className="px-4 py-3">{p.codigo}</td>
+                  <td className="px-4 py-3 capitalize">{p.tipo.replace(/_/g, ' ')}</td>
+                  <td className="px-4 py-3">{p.nombre || '—'}</td>
+                  <td className="px-4 py-3">{p.procedencia || '—'}</td>
+                  <td className="px-4 py-3">Bs {parseFloat(p.precio_venta).toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(p.estado)}`}>
+                      {p.estado}
                     </span>
                   </td>
-                  <td className="text-nowrap d-flex gap-2">
+                  <td className="px-4 py-3 flex gap-2 justify-center">
                     {p.estado === 'permuta' ? (
                       <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => habilitarProducto(p.id)}
+                        onClick={() => habilitar(p.id)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
                       >
                         Habilitar
                       </button>
                     ) : (
                       <Link
                         href={route('admin.productos-generales.edit', p.id)}
-                        className="btn btn-sm btn-warning"
+                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
                       >
                         Editar
                       </Link>
                     )}
                     <button
-                      onClick={() => eliminarProducto(p.id)}
-                      className="btn btn-sm btn-danger"
+                      onClick={() => eliminar(p.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                     >
                       Eliminar
                     </button>
                   </td>
                 </tr>
-              ))}
-              {productos.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center text-muted">
-                    No hay productos registrados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="7" className="text-center text-gray-500 py-6">
+                  No se encontraron productos con ese código.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+
+      <ToastContainer />
     </AdminLayout>
   );
 }

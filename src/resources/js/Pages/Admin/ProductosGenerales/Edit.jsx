@@ -20,99 +20,102 @@ export default function Edit({ producto }) {
   return (
     <AdminLayout>
       <Head title="Editar Producto General" />
-      
-      <div className="mb-4 d-flex justify-content-between align-items-center">
-        <h1 className="h3 text-gray-800">Editar Producto</h1>
-        <Link href={route('admin.productos-generales.index')} className="btn btn-secondary">
-          ← Volver
+
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">✏️ Editar Producto</h1>
+        <Link
+          href={route('admin.productos-generales.index')}
+          className="text-sm text-gray-600 hover:text-blue-600 underline"
+        >
+          ← Volver al listado
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="card shadow p-4">
-        <div className="row">
+      <form onSubmit={handleSubmit} className="bg-white rounded shadow-md p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Código */}
-          <div className="col-md-6 mb-3">
-            <label>Código</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Código</label>
             <input
               type="text"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.codigo}
               onChange={(e) => setData('codigo', e.target.value)}
               disabled={processing}
             />
-            {errors.codigo && <div className="text-danger">{errors.codigo}</div>}
+            {errors.codigo && <p className="text-sm text-red-600 mt-1">{errors.codigo}</p>}
           </div>
 
           {/* Tipo */}
-          <div className="col-md-6 mb-3">
-            <label>Tipo</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tipo</label>
             <input
               type="text"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.tipo}
               onChange={(e) => setData('tipo', e.target.value)}
               disabled={processing}
             />
-            {errors.tipo && <div className="text-danger">{errors.tipo}</div>}
+            {errors.tipo && <p className="text-sm text-red-600 mt-1">{errors.tipo}</p>}
           </div>
 
           {/* Nombre */}
-          <div className="col-md-6 mb-3">
-            <label>Nombre</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nombre</label>
             <input
               type="text"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.nombre}
               onChange={(e) => setData('nombre', e.target.value)}
               disabled={processing}
             />
-            {errors.nombre && <div className="text-danger">{errors.nombre}</div>}
+            {errors.nombre && <p className="text-sm text-red-600 mt-1">{errors.nombre}</p>}
           </div>
 
           {/* Procedencia */}
-          <div className="col-md-6 mb-3">
-            <label>Procedencia</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Procedencia</label>
             <input
               type="text"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.procedencia}
               onChange={(e) => setData('procedencia', e.target.value)}
               disabled={processing}
             />
-            {errors.procedencia && <div className="text-danger">{errors.procedencia}</div>}
+            {errors.procedencia && <p className="text-sm text-red-600 mt-1">{errors.procedencia}</p>}
           </div>
 
-          {/* Precio costo */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Costo</label>
+          {/* Precio Costo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Precio de Costo (Bs)</label>
             <input
               type="number"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.precio_costo}
               onChange={(e) => setData('precio_costo', e.target.value)}
               disabled={processing}
             />
-            {errors.precio_costo && <div className="text-danger">{errors.precio_costo}</div>}
+            {errors.precio_costo && <p className="text-sm text-red-600 mt-1">{errors.precio_costo}</p>}
           </div>
 
-          {/* Precio venta */}
-          <div className="col-md-6 mb-3">
-            <label>Precio de Venta</label>
+          {/* Precio Venta */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Precio de Venta (Bs)</label>
             <input
               type="number"
-              className="form-control"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.precio_venta}
               onChange={(e) => setData('precio_venta', e.target.value)}
               disabled={processing}
             />
-            {errors.precio_venta && <div className="text-danger">{errors.precio_venta}</div>}
+            {errors.precio_venta && <p className="text-sm text-red-600 mt-1">{errors.precio_venta}</p>}
           </div>
 
           {/* Estado */}
-          <div className="col-md-6 mb-3">
-            <label>Estado</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Estado</label>
             <select
-              className="form-select"
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               value={data.estado}
               onChange={(e) => setData('estado', e.target.value)}
               disabled={processing}
@@ -121,15 +124,22 @@ export default function Edit({ producto }) {
               <option value="vendido">Vendido</option>
               <option value="permuta">Permuta</option>
             </select>
-            {errors.estado && <div className="text-danger">{errors.estado}</div>}
+            {errors.estado && <p className="text-sm text-red-600 mt-1">{errors.estado}</p>}
           </div>
         </div>
 
-        <div className="mt-4 d-flex justify-content-between">
-          <Link href={route('admin.productos-generales.index')} className="btn btn-outline-secondary">
+        <div className="flex justify-between mt-6">
+          <Link
+            href={route('admin.productos-generales.index')}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 text-sm font-medium"
+          >
             Cancelar
           </Link>
-          <button type="submit" className="btn btn-primary" disabled={processing}>
+          <button
+            type="submit"
+            disabled={processing}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+          >
             Actualizar
           </button>
         </div>

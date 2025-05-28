@@ -1,8 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
-import SalesChart from '@/Components/SalesChart';
 import dayjs from 'dayjs';
+import Chart from 'react-apexcharts';
 
 export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros, vendedores }) {
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || '');
@@ -27,160 +27,109 @@ export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros
     window.open(route('admin.reportes.exportar') + '?' + queryParams, '_blank');
   };
 
-  const badgeEstado = (estado) => {
-    switch (estado) {
-      case 'vendido': return <span className="badge bg-danger">Vendido</span>;
-      case 'permuta': return <span className="badge bg-warning text-dark">Permuta</span>;
-      case 'disponible': return <span className="badge bg-success">Disponible</span>;
-      default: return <span className="badge bg-secondary">—</span>;
-    }
+  const chartData = {
+    series: [
+      resumen.total_ventas || 0,
+      resumen.ganancia_liquida || 0,
+      resumen.ganancia_servicio || 0,
+      resumen.total_descuento || 0,
+    ],
+    options: {
+      chart: { type: 'donut' },
+      labels: ['Ventas Totales', 'Ganancia Productos', 'Ganancia Servicios', 'Descuentos'],
+      colors: ['#10b981', '#3b82f6', '#06b6d4', '#f43f5e'],
+      dataLabels: { style: { fontSize: '14px' } },
+      legend: { position: 'bottom' },
+    },
   };
 
   return (
     <AdminLayout>
       <Head title="Reportes de Ventas" />
-
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 text-primary">📈 Reportes de Ventas</h1>
-        <div className="d-flex gap-2 flex-wrap">
-          <button className="btn btn-outline-primary btn-sm" onClick={() => window.open(route('admin.reportes.exportar-dia'), '_blank')}>📅 Día</button>
-          <button className="btn btn-outline-info btn-sm" onClick={() => window.open(route('admin.reportes.exportar-semana'), '_blank')}>📆 Semana</button>
-          <button className="btn btn-outline-success btn-sm" onClick={() => window.open(route('admin.reportes.exportar-mes'), '_blank')}>📅 Mes</button>
-          <button className="btn btn-outline-dark btn-sm" onClick={() => window.open(route('admin.reportes.exportar-anio'), '_blank')}>📊 Año</button>
-          <button className="btn btn-outline-danger btn-sm" onClick={handleExportarPDF}>🧾 Exportar por Filtros</button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-sky-800 mb-4">📈 Reportes de Ventas</h1>
+        <form onSubmit={handleFiltrar} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-6 rounded-xl shadow">
+          <div>
+            <label className="text-sm font-medium text-gray-700">📅 Fecha Inicio</label>
+            <input type="date" className="w-full mt-1 px-3 py-2 border rounded-lg" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">📅 Fecha Fin</label>
+            <input type="date" className="w-full mt-1 px-3 py-2 border rounded-lg" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700">👤 Vendedor</label>
+            <select className="w-full mt-1 px-3 py-2 border rounded-lg" value={vendedorId} onChange={(e) => setVendedorId(e.target.value)}>
+              <option value="">— Todos —</option>
+              {vendedores.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-2 items-end">
+            <button type="submit" className="w-full bg-sky-600 text-white font-semibold py-2 px-4 rounded-xl hover:bg-sky-700">🔍 Filtrar</button>
+            <button type="button" onClick={handleExportarPDF} className="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-xl hover:bg-green-700">🧾 Exportar PDF</button>
+          </div>
+        </form>
       </div>
 
-      <form onSubmit={handleFiltrar} className="row g-3 mb-4 bg-light p-3 rounded shadow-sm">
-        <div className="col-md-3">
-          <label className="form-label">Fecha Inicio</label>
-          <input type="date" className="form-control" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label">Fecha Fin</label>
-          <input type="date" className="form-control" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
-        </div>
-        <div className="col-md-3">
-          <label className="form-label">Vendedor</label>
-          <select className="form-select" value={vendedorId} onChange={(e) => setVendedorId(e.target.value)}>
-            <option value="">— Todos —</option>
-            {vendedores.map((v) => (
-              <option key={v.id} value={v.id}>{v.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="col-md-3 d-flex align-items-end">
-          <button className="btn btn-primary w-100">Filtrar</button>
-        </div>
-      </form>
-
-      {resumen_grafico?.length > 0 && (
-        <div className="card shadow mb-4">
-          <div className="card-body">
-            <h5 className="text-secondary mb-3">📊 Gráfico de Ventas</h5>
-            <SalesChart datos={resumen_grafico} />
-          </div>
-        </div>
-      )}
-
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <div className="card border-success shadow-sm">
-            <div className="card-body text-success text-center">
-              <h6>Total Ventas</h6>
-              <h5>{resumen.total_ventas.toFixed(2)} Bs</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-primary shadow-sm">
-            <div className="card-body text-primary text-center">
-              <h6>Ganancia Líquida Productos</h6>
-              <h5>{resumen.ganancia_liquida.toFixed(2)} Bs</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-info shadow-sm">
-            <div className="card-body text-info text-center">
-              <h6>Ganancia Servicios Técnicos</h6>
-              <h5>{resumen.ganancia_servicio.toFixed(2)} Bs</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card border-danger shadow-sm">
-            <div className="card-body text-danger text-center">
-              <h6>Descuentos Aplicados</h6>
-              <h5>{resumen.total_descuento.toFixed(2)} Bs</h5>
-            </div>
-          </div>
-        </div>
+      <div className="bg-white p-6 rounded-xl shadow mb-8">
+        <h2 className="text-xl font-bold text-gray-700 mb-4">📊 Visualización General</h2>
+        <Chart options={chartData.options} series={chartData.series} type="donut" height={350} />
       </div>
 
-      <div className="card shadow mb-4">
-        <div className="card-body">
-          <h5 className="text-secondary mb-3">📄 Detalle de Ventas</h5>
-          <div className="table-responsive">
-            <table className="table table-striped table-hover align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>Fecha</th>
-                  <th>Producto Vendido</th>
-                  <th>Tipo</th>
-                  <th>Cant.</th>
-                  <th>Descuento</th>
-                  <th>A Pagar</th>
-                  <th>Ganancia</th>
-                  <th>Vendedor</th>
-                  <th>Estado</th>
-                  <th>Producto Entregado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventas.length > 0 ? (
-                  ventas.map((v) => {
-                    const ganancia = parseFloat(v.ganancia_neta || 0);
-                    return (
-                      <tr key={v.id}>
-                        <td>{dayjs(v.fecha ?? v.created_at).format('DD/MM/YYYY')}</td>
-                        <td>{v.celular?.modelo || v.computadora?.nombre || v.producto_general?.nombre || 'Servicio Técnico'}</td>
-                        <td>{v.tipo_venta?.replace('_', ' ') || '-'}</td>
-                        <td>{v.cantidad}</td>
-                        <td>{parseFloat(v.descuento || 0).toFixed(2)} Bs</td>
-                        <td>
-                          {parseFloat(v.subtotal).toFixed(2)} Bs
-                          {v.es_permuta && <div className="text-muted small">(Permuta)</div>}
-                        </td>
-                        <td className={ganancia < 0 ? 'text-danger' : 'text-success'}>
-                          {ganancia < 0
-                            ? `Se invirtió ${Math.abs(ganancia).toFixed(2)} Bs`
-                            : `${ganancia.toFixed(2)} Bs`}
-                        </td>
-                        <td>{v.vendedor?.name || '—'}</td>
-                        <td>{badgeEstado(v.celular?.estado || v.computadora?.estado || v.producto_general?.estado)}</td>
-                        <td>
-                          {v.es_permuta ? (
-                            <>
-                              {v.tipo_permuta === 'celular' && v.permuta?.modelo && <span>{v.permuta.modelo} ({v.permuta.imei_1})</span>}
-                              {v.tipo_permuta === 'computadora' && v.permuta?.nombre && <span>{v.permuta.nombre} (Serie: {v.permuta.numero_serie})</span>}
-                              {v.tipo_permuta === 'producto_general' && v.permuta?.nombre && <span>{v.permuta.nombre} (Código: {v.permuta.codigo})</span>}
-                            </>
-                          ) : (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="10" className="text-center text-muted">No hay resultados para los filtros seleccionados.</td>
+      <div className="bg-white p-6 rounded-xl shadow">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">📄 Detalle de Ventas</h3>
+        <div className="overflow-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
+              <tr>
+                <th className="px-3 py-2">Fecha</th>
+                <th className="px-3 py-2">Producto</th>
+                <th className="px-3 py-2">Tipo</th>
+                <th className="px-3 py-2">Cant.</th>
+                <th className="px-3 py-2">Precio Venta</th>
+                <th className="px-3 py-2">Descuento</th>
+                <th className="px-3 py-2">Permuta</th>
+                <th className="px-3 py-2">Capital</th>
+                <th className="px-3 py-2">Subtotal</th>
+                <th className="px-3 py-2">Ganancia</th>
+                <th className="px-3 py-2">Vendedor</th>
+                <th className="px-3 py-2">Entregado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {ventas.length > 0 ? ventas.map((v) => {
+                const valorPermuta = parseFloat(v.valor_permuta || 0);
+                const descuento = parseFloat(v.descuento || 0);
+                const precioVenta = parseFloat(v.precio_venta || 0);
+                const capital = parseFloat(v.precio_invertido || 0);
+                const subtotal = precioVenta - descuento - valorPermuta;
+                const ganancia = subtotal - capital;
+
+                return (
+                  <tr key={v.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2">{dayjs(v.fecha ?? v.created_at).format('DD/MM/YYYY')}</td>
+                    <td className="px-3 py-2">{v.celular?.modelo || v.computadora?.nombre || v.producto_general?.nombre || 'Servicio Técnico'}</td>
+                    <td className="px-3 py-2 capitalize">{v.tipo_venta?.replace('_', ' ') || '-'}</td>
+                    <td className="px-3 py-2 text-center">{v.cantidad}</td>
+                    <td className="px-3 py-2 text-blue-700 font-semibold">{precioVenta.toFixed(2)} Bs</td>
+                    <td className="px-3 py-2 text-red-600">- {descuento.toFixed(2)} Bs</td>
+                    <td className="px-3 py-2 text-yellow-600">- {valorPermuta.toFixed(2)} Bs</td>
+                    <td className="px-3 py-2 text-orange-600">{capital.toFixed(2)} Bs</td>
+                    <td className="px-3 py-2 font-medium">{subtotal.toFixed(2)} Bs</td>
+                    <td className={`px-3 py-2 font-bold ${ganancia < 0 ? 'text-red-600' : 'text-green-600'}`}>{ganancia < 0 ? `Se invirtió ${Math.abs(ganancia).toFixed(2)} Bs` : `${ganancia.toFixed(2)} Bs`}</td>
+                    <td className="px-3 py-2">{v.vendedor?.name || '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.permuta_celular?.modelo || v.permuta_computadora?.nombre || v.permuta_producto_general?.nombre || '—'}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                );
+              }) : (
+                <tr>
+                  <td colSpan="12" className="text-center text-gray-500 py-4">No hay resultados.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </AdminLayout>

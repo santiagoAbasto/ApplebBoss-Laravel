@@ -1,5 +1,8 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Phone } from 'lucide-react';
+import ToastNotification from '@/Components/ToastNotification';
+import { useState } from 'react';
 
 export default function Edit({ celular }) {
   const { data, setData, put, errors } = useForm({
@@ -16,9 +19,16 @@ export default function Edit({ celular }) {
     estado: celular.estado || 'disponible',
   });
 
+  const [toastVisible, setToastVisible] = useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    put(route('admin.celulares.update', celular.id));
+    put(route('admin.celulares.update', celular.id), {
+      onSuccess: () => {
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 3000);
+      }
+    });
   };
 
   const handleImeiInput = (field, value) => {
@@ -34,119 +44,126 @@ export default function Edit({ celular }) {
   };
 
   return (
-    <AdminLayout>
-      <Head title="Editar Celular" />
-      <h1 className="h3 mb-4">Editar Celular</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div className="row">
-          {/* Modelo */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Modelo</label>
-            <input type="text" className="form-control" value={data.modelo} onChange={(e) => setData('modelo', e.target.value)} />
-            {errors.modelo && <div className="text-danger">{errors.modelo}</div>}
-          </div>
-
-          {/* Capacidad */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Capacidad</label>
-            <input type="text" className="form-control" value={data.capacidad} onChange={(e) => setData('capacidad', e.target.value)} />
-            {errors.capacidad && <div className="text-danger">{errors.capacidad}</div>}
-          </div>
-
-          {/* Color */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Color</label>
-            <input type="text" className="form-control" value={data.color} onChange={(e) => setData('color', e.target.value)} />
-            {errors.color && <div className="text-danger">{errors.color}</div>}
-          </div>
-
-          {/* Batería */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Batería</label>
-            <input type="text" className="form-control" value={data.bateria} onChange={(e) => setData('bateria', e.target.value)} />
-            {errors.bateria && <div className="text-danger">{errors.bateria}</div>}
-          </div>
-
-          {/* IMEI 1 */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">IMEI 1</label>
-            <input
-              type="text"
-              className="form-control"
-              maxLength={15}
-              inputMode="numeric"
-              pattern="\d{15}"
-              value={data.imei_1}
-              onChange={(e) => handleImeiInput('imei_1', e.target.value)}
-              onKeyDown={handleImeiKeyDown}
-            />
-            {errors.imei_1 && <div className="text-danger">{errors.imei_1}</div>}
-          </div>
-
-          {/* IMEI 2 */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">IMEI 2</label>
-            <input
-              type="text"
-              className="form-control"
-              maxLength={15}
-              inputMode="numeric"
-              pattern="\d{15}"
-              value={data.imei_2}
-              onChange={(e) => handleImeiInput('imei_2', e.target.value)}
-              onKeyDown={handleImeiKeyDown}
-            />
-            {errors.imei_2 && <div className="text-danger">{errors.imei_2}</div>}
-          </div>
-
-          {/* Estado IMEI */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Estado IMEI</label>
-            <select className="form-select" value={data.estado_imei} onChange={(e) => setData('estado_imei', e.target.value)}>
-              <option value="libre">Libre</option>
-              <option value="registrado">Registrado</option>
-              <option value="imei1_libre_imei2_registrado">IMEI1 Libre / IMEI2 Registrado</option>
-              <option value="imei1_registrado_imei2_libre">IMEI1 Registrado / IMEI2 Libre</option>
-            </select>
-            {errors.estado_imei && <div className="text-danger">{errors.estado_imei}</div>}
-          </div>
-
-          {/* Procedencia */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Procedencia</label>
-            <input type="text" className="form-control" value={data.procedencia} onChange={(e) => setData('procedencia', e.target.value)} />
-            {errors.procedencia && <div className="text-danger">{errors.procedencia}</div>}
-          </div>
-
-          {/* Precio Costo */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Precio Costo</label>
-            <input type="number" className="form-control" value={data.precio_costo} onChange={(e) => setData('precio_costo', e.target.value)} />
-            {errors.precio_costo && <div className="text-danger">{errors.precio_costo}</div>}
-          </div>
-
-          {/* Precio Venta */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Precio Venta</label>
-            <input type="number" className="form-control" value={data.precio_venta} onChange={(e) => setData('precio_venta', e.target.value)} />
-            {errors.precio_venta && <div className="text-danger">{errors.precio_venta}</div>}
-          </div>
-
-          {/* Estado */}
-          <div className="mb-3 col-md-4">
-            <label className="form-label">Estado</label>
-            <select className="form-select" value={data.estado} onChange={(e) => setData('estado', e.target.value)}>
-              <option value="disponible">Disponible</option>
-              <option value="vendido">Vendido</option>
-              <option value="permuta">Permuta</option>
-            </select>
-            {errors.estado && <div className="text-danger">{errors.estado}</div>}
-          </div>
+    <>
+      <AdminLayout>
+        <Head title="Editar Celular" />
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Phone className="w-6 h-6 text-blue-600" /> Editar Celular
+          </h1>
+          <Link href={route('admin.celulares.index')} className="text-sm text-gray-500 hover:underline">
+            ← Volver al listado
+          </Link>
         </div>
 
-        <button type="submit" className="btn btn-success">💾 Actualizar</button>
-      </form>
-    </AdminLayout>
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Campo */}
+            {[
+              ['Modelo', 'modelo'],
+              ['Capacidad', 'capacidad'],
+              ['Color', 'color'],
+              ['Batería (opcional)', 'bateria'],
+              ['Procedencia', 'procedencia'],
+              ['Precio de Costo', 'precio_costo', 'number'],
+              ['Precio de Venta', 'precio_venta', 'number'],
+            ].map(([label, name, type = 'text']) => (
+              <div key={name}>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
+                <input
+                  type={type}
+                  className="w-full border border-gray-300 rounded-md px-4 py-2"
+                  value={data[name]}
+                  onChange={(e) => setData(name, e.target.value)}
+                />
+                {errors[name] && <p className="text-red-500 text-sm mt-1">{errors[name]}</p>}
+              </div>
+            ))}
+
+            {/* IMEI 1 */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">IMEI 1</label>
+              <input
+                type="text"
+                maxLength={15}
+                pattern="\d{15}"
+                className="w-full border border-gray-300 rounded-md px-4 py-2"
+                value={data.imei_1}
+                onChange={(e) => handleImeiInput('imei_1', e.target.value)}
+                onKeyDown={handleImeiKeyDown}
+              />
+              {errors.imei_1 && <p className="text-red-500 text-sm mt-1">{errors.imei_1}</p>}
+            </div>
+
+            {/* IMEI 2 */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">IMEI 2 (opcional)</label>
+              <input
+                type="text"
+                maxLength={15}
+                pattern="\d{15}"
+                className="w-full border border-gray-300 rounded-md px-4 py-2"
+                value={data.imei_2}
+                onChange={(e) => handleImeiInput('imei_2', e.target.value)}
+                onKeyDown={handleImeiKeyDown}
+              />
+              {errors.imei_2 && <p className="text-red-500 text-sm mt-1">{errors.imei_2}</p>}
+            </div>
+
+            {/* Estado IMEI */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Estado IMEI</label>
+              <select
+                className="w-full border border-gray-300 rounded-md px-4 py-2"
+                value={data.estado_imei}
+                onChange={(e) => setData('estado_imei', e.target.value)}
+              >
+                <option value="libre">Libre</option>
+                <option value="registrado">Registrado</option>
+                <option value="imei1_libre_imei2_registrado">IMEI1 Libre / IMEI2 Registrado</option>
+                <option value="imei1_registrado_imei2_libre">IMEI1 Registrado / IMEI2 Libre</option>
+              </select>
+              {errors.estado_imei && <p className="text-red-500 text-sm mt-1">{errors.estado_imei}</p>}
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+              <select
+                className="w-full border border-gray-300 rounded-md px-4 py-2"
+                value={data.estado}
+                onChange={(e) => setData('estado', e.target.value)}
+              >
+                <option value="disponible">Disponible</option>
+                <option value="vendido">Vendido</option>
+                <option value="permuta">Permuta</option>
+              </select>
+              {errors.estado && <p className="text-red-500 text-sm mt-1">{errors.estado}</p>}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <Link
+              href={route('admin.celulares.index')}
+              className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200 transition"
+            >
+              Cancelar
+            </Link>
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition"
+            >
+              💾 Actualizar
+            </button>
+          </div>
+        </form>
+
+        <ToastNotification
+          show={toastVisible}
+          type="success"
+          message="✅ Celular actualizado con éxito"
+        />
+      </AdminLayout>
+    </>
   );
 }
