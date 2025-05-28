@@ -43,38 +43,34 @@ class CotizacionController extends Controller
     {
         $request->validate([
             'nombre_cliente' => 'required|string|max:255',
-            'codigo_pais' => 'required|string|max:5',
-            'codigo_area' => 'required|string|max:5',
-            'telefono_cliente' => 'required|string|max:20',
+            'telefono_completo' => 'required|string|regex:/^\+\d{8,15}$/',
             'correo_cliente' => 'nullable|email|max:255',
             'items' => 'required|array|min:1',
             'fecha_cotizacion' => 'required|date',
             'descuento' => 'nullable|numeric|min:0',
         ]);
-
+    
         $items = collect($request->items)->map(function ($item) {
-            $base = floatval($item['precio']);
-            $iva = $base * 0.13;
-            $it = $base * 0.03;
-
+            $sinFactura = floatval($item['precio_sin_factura'] ?? 0);
+            $conFactura = floatval($item['precio_con_factura'] ?? 0);
+        
             return [
                 'nombre' => $item['nombre'],
                 'cantidad' => intval($item['cantidad']),
-                'precio_base' => $base,
-                'precio_sin_factura' => $base,
-                'precio_con_factura' => round($base + $iva + $it, 2),
+                'precio_base' => $sinFactura,
+                'precio_sin_factura' => $sinFactura,
+                'precio_con_factura' => $conFactura,
             ];
         });
-
+        
+    
         $subtotalConFactura = $items->sum(fn($item) => $item['precio_con_factura'] * $item['cantidad']);
         $descuento = floatval($request->descuento ?? 0);
         $totalConFactura = max(0, $subtotalConFactura - $descuento);
-
+    
         $cotizacion = Cotizacion::create([
             'nombre_cliente' => $request->nombre_cliente,
-            'codigo_pais' => $request->codigo_pais,
-            'codigo_area' => $request->codigo_area,
-            'telefono_cliente' => $request->telefono_cliente,
+            'telefono' => $request->telefono_completo,
             'correo_cliente' => $request->correo_cliente,
             'fecha_cotizacion' => $request->fecha_cotizacion,
             'notas_adicionales' => $request->filled('notas_adicionales') ? $request->notas_adicionales : '',
@@ -84,7 +80,6 @@ class CotizacionController extends Controller
             'total' => $totalConFactura,
         ]);
     
-        // ✅ Generar y guardar el PDF correctamente
         $this->exportarPDFYGuardar($cotizacion->id);
     
         if ($request->correo_cliente) {
@@ -155,7 +150,7 @@ class CotizacionController extends Controller
     {
         $cotizacion = Cotizacion::findOrFail($id);
 
-        $numero = preg_replace('/\D/', '', $cotizacion->codigo_pais . $cotizacion->codigo_area . $cotizacion->telefono_cliente);
+        $numero = preg_replace('/\D/', '', $cotizacion->telefono);
         if (!$numero || strlen($numero) < 8) {
             return back()->with('error', 'El número no es válido.');
         }
@@ -203,7 +198,7 @@ class CotizacionController extends Controller
             $cotizacion = Cotizacion::find($id);
             if (!$cotizacion) continue;
 
-            $numero = preg_replace('/\D/', '', $cotizacion->codigo_pais . $cotizacion->codigo_area . $cotizacion->telefono_cliente);
+            $numero = preg_replace('/\D/', '', $cotizacion->telefono);
             if (!$numero || strlen($numero) < 8) continue;
 
             $pdfUrl = $this->exportarPDFYGuardar($id);

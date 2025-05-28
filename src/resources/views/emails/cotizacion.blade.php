@@ -82,12 +82,7 @@
 
     <div class="info">
       <p><strong>Cliente:</strong> {{ $cotizacion->nombre_cliente }}</p>
-      <p><strong>Teléfono:</strong>
-        {{ $cotizacion->codigo_pais ?? '' }}
-        {{ $cotizacion->codigo_area ?? '' }}
-        {{ $cotizacion->telefono_cliente ?? '' }}
-      </p>
-
+      <p><strong>Teléfono:</strong> {{ $cotizacion->telefono ?? '-' }}</p>
       <p><strong>Correo:</strong> {{ $cotizacion->correo_cliente }}</p>
       <p><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}</p>
     </div>

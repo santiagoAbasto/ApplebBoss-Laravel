@@ -11,6 +11,14 @@ export default function Index({ cotizaciones = [] }) {
     );
   };
 
+  const toggleSeleccionTodos = () => {
+    if (seleccionados.length === cotizaciones.length) {
+      setSeleccionados([]);
+    } else {
+      setSeleccionados(cotizaciones.map(c => c.id));
+    }
+  };
+
   const reenviarCorreo = (id) => {
     if (confirm('¿Deseas reenviar la cotización por correo?')) {
       router.post(route('admin.cotizaciones.reenviar', id), {}, {
@@ -26,14 +34,15 @@ export default function Index({ cotizaciones = [] }) {
     }
     router.post(route('admin.cotizaciones.enviar-lote'), { ids: seleccionados });
   };
+
   const enviarWhatsApp = (cot) => {
-    const numero = `${cot.codigo_pais || ''}${cot.codigo_area || ''}${cot.telefono_cliente || ''}`.replace(/\D/g, '');
+    const numero = `${cot.telefono || ''}`.replace(/\D/g, '');
     if (!numero || numero.length < 8) return alert('Número inválido');
-  
+
     const nombre = cot.nombre_cliente;
     const total = parseFloat(cot.total || 0).toFixed(2);
     const pdf = cot.drive_url || 'https://appleboss.bo/pdf-no-disponible';
-  
+
     const mensaje =
       `Hola ${nombre}, gracias por confiar en *AppleBoss* 😊\n\n` +
       `📝 *Cotización AppleBoss*\n` +
@@ -41,128 +50,173 @@ export default function Index({ cotizaciones = [] }) {
       `📄 Cotización N.º: ${cot.id}\n` +
       `💰 Total: Bs ${total}\n` +
       `🔗 Ver PDF: ${pdf}`;
-  
+
     const encoded = encodeURIComponent(mensaje);
-  
     const linkApp = `whatsapp://send?phone=${numero}&text=${encoded}`;
     const linkWeb = `https://web.whatsapp.com/send?phone=${numero}&text=${encoded}`;
-  
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  
-    // Primero intentamos con app instalada (móvil o escritorio)
+
     const timeout = setTimeout(() => {
-      // Si no abrió la app, abrimos WhatsApp Web como respaldo
       window.open(linkWeb, '_blank');
     }, 2000);
-  
-    // Abrir app
+
     window.location.href = linkApp;
-  
-    // Si la app se abrió, cancelamos el timeout
     window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
-  };  
+  };
+
+  const calcularTotal = (campo, soloSeleccionados = false) => {
+    return cotizaciones.reduce((acc, cot) => {
+      const descuento = parseFloat(cot.descuento || 0);
+      if (soloSeleccionados && !seleccionados.includes(cot.id)) return acc;
+      if (!Array.isArray(cot.items)) return acc;
+
+      const subtotal = cot.items.reduce((sum, item) => {
+        const valor = parseFloat(item[campo]) || 0;
+        return sum + valor * (item.cantidad || 1);
+      }, 0);
+
+      return acc + Math.max(0, subtotal - descuento);
+    }, 0);
+  };
+
   return (
     <AdminLayout>
       <Head title="Cotizaciones" />
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 text-primary fw-bold">
-          <i className="bi bi-file-earmark-text-fill me-2"></i> Cotizaciones Registradas
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+          <i className="bi bi-file-earmark-text-fill"></i> Cotizaciones Registradas
         </h1>
-        <div className="d-flex gap-2">
-          <Link href={route('admin.cotizaciones.create')} className="btn btn-success shadow-sm">
-            <i className="bi bi-plus-circle me-1"></i> Nueva Cotización
+        <div className="flex gap-2">
+          <Link
+            href={route('admin.cotizaciones.create')}
+            className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
+          >
+            <i className="bi bi-plus-circle mr-1"></i> Nueva Cotización
           </Link>
-          <button onClick={enviarLoteWhatsapp} className="btn btn-outline-success shadow-sm">
-            <i className="bi bi-whatsapp me-1"></i> Enviar seleccionados por WhatsApp
+          <button
+            onClick={enviarLoteWhatsapp}
+            className="border border-green-600 text-green-700 px-4 py-2 rounded hover:bg-green-50 transition"
+          >
+            <i className="bi bi-whatsapp mr-1"></i> Enviar seleccionados
           </button>
         </div>
       </div>
 
-      <div className="card shadow-sm border-0">
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-striped align-middle mb-0">
-              <thead className="table-light sticky-top">
-                <tr>
-                  <th></th>
-                  <th>#</th>
-                  <th>Cliente</th>
-                  <th>Teléfono</th>
-                  <th>Correo</th>
-                  <th>Total (Bs)</th>
-                  <th>Fecha</th>
-                  <th className="text-center">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cotizaciones.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" className="text-center py-4 text-muted">
-                      <i className="bi bi-emoji-frown me-2"></i> No hay cotizaciones registradas.
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-gray-100 text-gray-700 sticky top-0 z-10">
+            <tr>
+              <th className="px-4 py-3">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={seleccionados.length === cotizaciones.length && cotizaciones.length > 0}
+                    onChange={toggleSeleccionTodos}
+                    className="form-checkbox rounded text-blue-600"
+                  />
+                  <span className="text-xs">Todos</span>
+                </label>
+              </th>
+              <th className="px-2 py-3">#</th>
+              <th className="px-2 py-3">Cliente</th>
+              <th className="px-2 py-3">Teléfono</th>
+              <th className="px-2 py-3">Correo</th>
+              <th className="px-2 py-3 text-green-700 font-bold">TOTAL C/FACTURA</th>
+              <th className="px-2 py-3 text-blue-700 font-bold">TOTAL S/FACTURA</th>
+              <th className="px-2 py-3">Fecha</th>
+              <th className="px-2 py-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cotizaciones.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="text-center py-6 text-gray-500">
+                  <i className="bi bi-emoji-frown mr-2"></i> No hay cotizaciones registradas.
+                </td>
+              </tr>
+            ) : (
+              cotizaciones.map((cot, index) => {
+                let totalSinFactura = 0;
+                let totalConFactura = 0;
+                const descuento = parseFloat(cot.descuento || 0);
+
+                if (Array.isArray(cot.items)) {
+                  cot.items.forEach(item => {
+                    totalSinFactura += (item.precio_sin_factura || 0) * (item.cantidad || 1);
+                    totalConFactura += (item.precio_con_factura || 0) * (item.cantidad || 1);
+                  });
+                }
+
+                return (
+                  <tr key={cot.id} className={`border-b hover:bg-blue-50 ${seleccionados.includes(cot.id) ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        className="form-checkbox text-blue-600"
+                        checked={seleccionados.includes(cot.id)}
+                        onChange={() => toggleSeleccion(cot.id)}
+                      />
+                    </td>
+                    <td className="px-2 py-3 text-gray-500">{index + 1}</td>
+                    <td className="px-2 py-3">{cot.nombre_cliente}</td>
+                    <td className="px-2 py-3">{cot.telefono || '-'}</td>
+                    <td className="px-2 py-3">{cot.correo_cliente || '-'}</td>
+                    <td className="px-2 py-3 text-green-700 font-semibold">
+                      Bs {(Math.max(0, totalConFactura - descuento)).toFixed(2)}
+                    </td>
+                    <td className="px-2 py-3 text-blue-700 font-semibold">
+                      Bs {(Math.max(0, totalSinFactura - descuento)).toFixed(2)}
+                    </td>
+                    <td className="px-2 py-3">{new Date(cot.fecha_cotizacion).toLocaleDateString()}</td>
+                    <td className="px-2 py-3 text-center space-x-1 flex flex-wrap justify-center">
+                      {cot.drive_url ? (
+                        <a href={cot.drive_url} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
+                          <i className="bi bi-cloud-arrow-down me-1"></i> Ver PDF
+                        </a>
+                      ) : (
+                        <a href={route('admin.cotizaciones.pdf', cot.id)} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
+                          <i className="bi bi-file-earmark-pdf me-1"></i> Generar PDF
+                        </a>
+                      )}
+
+                      <button onClick={() => enviarWhatsApp(cot)} className="border border-green-600 text-green-700 px-2 py-1 rounded hover:bg-green-50">
+                        <i className="bi bi-whatsapp me-1"></i> WhatsApp
+                      </button>
+
+                      {cot.correo_cliente && (
+                        <button onClick={() => reenviarCorreo(cot.id)} className="border border-gray-400 text-gray-700 px-2 py-1 rounded hover:bg-gray-100">
+                          <i className="bi bi-envelope-fill me-1"></i> Reenviar
+                        </button>
+                      )}
                     </td>
                   </tr>
-                ) : (
-                  cotizaciones.map((cot, index) => {
-                    const paisCode = (cot.codigo_pais || '').replace('+', '').toLowerCase();
-                    const telefonoCompleto = cot.codigo_pais && cot.codigo_area && cot.telefono_cliente
-                      ? `${cot.codigo_pais} ${cot.codigo_area} ${cot.telefono_cliente}`
-                      : cot.telefono_cliente || '-';
+                );
+              })
+            )}
+          </tbody>
+        </table>
 
-                    return (
-                      <tr key={cot.id}>
-                        <td>
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            checked={seleccionados.includes(cot.id)}
-                            onChange={() => toggleSeleccion(cot.id)}
-                          />
-                        </td>
-                        <td className="text-muted">{index + 1}</td>
-                        <td>{cot.nombre_cliente}</td>
-                        <td>
-                          {cot.codigo_pais && (
-                            <span
-                              className={`fi fi-${paisCode}`}
-                              style={{ marginRight: '6px' }}
-                            ></span>
-                          )}
-                          {telefonoCompleto}
-                        </td>
-                        <td>{cot.correo_cliente || '-'}</td>
-                        <td><strong>Bs {parseFloat(cot.total || 0).toFixed(2)}</strong></td>
-                        <td>{new Date(cot.fecha_cotizacion).toLocaleDateString()}</td>
-                        <td className="text-center d-flex gap-1 justify-content-center flex-wrap">
-                          {cot.drive_url ? (
-                            <a href={cot.drive_url} className="btn btn-sm btn-outline-primary" target="_blank">
-                              <i className="bi bi-cloud-arrow-down me-1"></i> Ver PDF
-                            </a>
-                          ) : (
-                            <a href={route('admin.cotizaciones.pdf', cot.id)} className="btn btn-sm btn-outline-primary" target="_blank">
-                              <i className="bi bi-file-earmark-pdf me-1"></i> Generar PDF
-                            </a>
-                          )}
-
-                          <button
-                            className="btn btn-sm btn-outline-success"
-                            onClick={() => enviarWhatsApp(cot)}
-                          >
-                            <i className="bi bi-whatsapp me-1"></i> WhatsApp
-                          </button>
-
-                          {cot.correo_cliente && (
-                            <button className="btn btn-sm btn-outline-secondary" onClick={() => reenviarCorreo(cot.id)}>
-                              <i className="bi bi-envelope-fill me-1"></i> Reenviar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+        <div className="bg-gray-50 px-6 py-4 border-t text-right text-sm font-medium flex flex-col sm:flex-row sm:justify-end gap-2 sm:gap-6">
+          <div className="text-green-700">
+            Total Global C/Factura:{' '}
+            <span className="font-bold">Bs {calcularTotal('precio_con_factura').toFixed(2)}</span>
           </div>
+          <div className="text-blue-700">
+            Total Global S/Factura:{' '}
+            <span className="font-bold">Bs {calcularTotal('precio_sin_factura').toFixed(2)}</span>
+          </div>
+
+          {seleccionados.length > 0 && (
+            <>
+              <div className="text-green-700">
+                Total Seleccionados C/Factura:{' '}
+                <span className="font-bold">Bs {calcularTotal('precio_con_factura', true).toFixed(2)}</span>
+              </div>
+              <div className="text-blue-700">
+                Total Seleccionados S/Factura:{' '}
+                <span className="font-bold">Bs {calcularTotal('precio_sin_factura', true).toFixed(2)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </AdminLayout>

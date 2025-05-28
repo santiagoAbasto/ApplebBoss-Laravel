@@ -12,10 +12,7 @@ return new class extends Migration {
 
             // Datos del cliente
             $table->string('nombre_cliente');
-            $table->string('codigo_pais')->nullable();   // ✅ nuevo campo
-            $table->string('codigo_area')->nullable();   // ✅ nuevo campo
-            $table->string('telefono_cliente')->nullable();
-
+            $table->string('telefono')->nullable(); // ✅ número completo con código internacional
             $table->string('correo_cliente')->nullable();
 
             // Detalle de ítems cotizados (servicios o productos)

@@ -197,12 +197,7 @@
   <div class="section-title">Datos del Cliente</div>
   <div class="info">
     <p><strong>Nombre:</strong> {{ $cotizacion->nombre_cliente }}</p>
-    <p><strong>Teléfono:</strong>
-      {{ $cotizacion->codigo_pais ?? '' }}
-      {{ $cotizacion->codigo_area ?? '' }}
-      {{ $cotizacion->telefono_cliente ?? '' }}
-    </p>
-
+    <p><strong>Teléfono:</strong> {{ $cotizacion->telefono ?? '-' }}</p>
     <p><strong>Correo:</strong> {{ $cotizacion->correo_cliente }}</p>
   </div>
 
