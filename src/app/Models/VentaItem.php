@@ -35,4 +35,10 @@ class VentaItem extends Model
     public function productoGeneral() {
         return $this->belongsTo(ProductoGeneral::class, 'producto_id');
     }
+    
+    public function servicio()
+{
+    return $this->belongsTo(ServicioTecnico::class, 'producto_id');
+}
+
 }    

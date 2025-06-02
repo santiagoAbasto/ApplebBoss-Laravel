@@ -66,8 +66,8 @@
     }
 
     .social-icons img {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       vertical-align: middle;
     }
   </style>
@@ -87,16 +87,25 @@
       <p><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}</p>
     </div>
 
-    <div class="footer">
-      <p>Apple Boss | Av. Melchor Urquidi</p>
-      <div class="social-icons">
-        <a href="https://wa.me/59175904313" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp"></a>
-        <a href="https://www.instagram.com/apple_boss_bol/" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram"></a>
-        <a href="https://www.facebook.com/Applebossbo" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook"></a>
-        <a href="https://www.tiktok.com/@apple_boss_bo" target="_blank"><img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok"></a>
-      </div>
-    </div>
+    <div class="footer" style="text-align: center;">
+  <p style="margin-bottom: 10px;"><strong>Apple Boss</strong> | Av. Melchor Urquidi, Cochabamba</p>
+  <div class="social-icons" style="display: inline-block;">
+    <a href="https://wa.me/59175904313" target="_blank" title="Chatea por WhatsApp">
+      <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp" width="26" height="26">
+    </a>
+    <a href="https://www.instagram.com/apple_boss_bol/" target="_blank" title="Instagram">
+      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" width="26" height="26">
+    </a>
+    <a href="https://www.facebook.com/Applebossbo" target="_blank" title="Facebook">
+      <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook" width="26" height="26">
+    </a>
+    <a href="https://www.tiktok.com/@apple_boss_bo" target="_blank" title="TikTok">
+      <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok" width="26" height="26">
+    </a>
+    <a href="https://maps.app.goo.gl/byLr26x8RwSuz4ij7" target="_blank" title="Ver ubicación en Google Maps">
+      <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="Ubicación" width="26" height="26">
+    </a>
   </div>
-</body>
+</div>
 
 </html>

@@ -178,6 +178,19 @@ class VentaController extends Controller
                 }
             }
         }
+
+        if ($request->tipo_venta === 'servicio_tecnico') {
+            $venta->items()->create([
+                'tipo' => 'servicio',
+                'producto_id' => null,
+                'cantidad' => 1,
+                'precio_venta' => $request->precio_venta ?? 0,
+                'precio_invertido' => $request->precio_invertido ?? 0,
+                'descuento' => $request->descuento ?? 0,
+                'subtotal' => $subtotal,
+            ]);
+        }
+        
     
         return response()->json([
             'message' => 'Venta registrada con éxito',

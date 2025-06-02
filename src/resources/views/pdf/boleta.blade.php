@@ -184,7 +184,6 @@ th {
   </table>
   @endif
 
-
   @if ($computadoras->count())
   <div class="section-title">Computadoras Vendidas</div>
   <table>
@@ -253,6 +252,90 @@ th {
   </table>
   @endif
 
+  @if ($venta->entregadoCelular || $venta->entregadoComputadora || $venta->entregadoProductoGeneral)
+  <div class="section-title">Producto Entregado en Permuta</div>
+
+  @if ($venta->entregadoCelular)
+    <table>
+      <thead>
+        <tr>
+          <th>Modelo</th>
+          <th>Capacidad</th>
+          <th>Color</th>
+          <th>IMEI 1</th>
+          <th>IMEI 2</th>
+          <th>Batería</th>
+          <th>Estado IMEI</th>
+          <th class="table-right">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ $venta->entregadoCelular->modelo }}</td>
+          <td>{{ $venta->entregadoCelular->capacidad }}</td>
+          <td>{{ $venta->entregadoCelular->color }}</td>
+          <td>{{ $venta->entregadoCelular->imei_1 }}</td>
+          <td>{{ $venta->entregadoCelular->imei_2 }}</td>
+          <td>{{ $venta->entregadoCelular->bateria }}</td>
+          <td>{{ $venta->entregadoCelular->estado_imei }}</td>
+          <td class="table-right">Bs {{ number_format($venta->entregadoCelular->precio_costo, 2) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  @endif
+
+  @if ($venta->entregadoComputadora)
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Procesador</th>
+          <th>RAM</th>
+          <th>Almacenamiento</th>
+          <th>Batería</th>
+          <th>Color</th>
+          <th>Serie</th>
+          <th class="table-right">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ $venta->entregadoComputadora->nombre }}</td>
+          <td>{{ $venta->entregadoComputadora->procesador }}</td>
+          <td>{{ $venta->entregadoComputadora->ram }}</td>
+          <td>{{ $venta->entregadoComputadora->almacenamiento }}</td>
+          <td>{{ $venta->entregadoComputadora->bateria }}</td>
+          <td>{{ $venta->entregadoComputadora->color }}</td>
+          <td>{{ $venta->entregadoComputadora->numero_serie }}</td>
+          <td class="table-right">Bs {{ number_format($venta->entregadoComputadora->precio_costo, 2) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  @endif
+
+  @if ($venta->entregadoProductoGeneral)
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Código</th>
+          <th class="table-right">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ $venta->entregadoProductoGeneral->nombre }}</td>
+          <td>{{ $venta->entregadoProductoGeneral->tipo }}</td>
+          <td>{{ $venta->entregadoProductoGeneral->codigo }}</td>
+          <td class="table-right">Bs {{ number_format($venta->entregadoProductoGeneral->precio_costo, 2) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  @endif
+@endif
+
+
   <table class="resumen">
   <tr>
     <td>Subtotal:</td>
@@ -271,7 +354,6 @@ th {
     <td><strong>Bs {{ number_format($venta->subtotal - $venta->valor_permuta, 2) }}</strong></td>
   </tr>
 </table>
-
 
   @if ($venta->notas_adicionales)
     <div class="notas">
