@@ -3,8 +3,9 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import Chart from 'react-apexcharts';
+import { route } from 'ziggy-js';
 
-export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros, vendedores }) {
+export default function ReporteIndex({ ventas = [], resumen, resumen_grafico, filtros, vendedores }) {
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || '');
   const [fechaFin, setFechaFin] = useState(filtros.fecha_fin || '');
   const [vendedorId, setVendedorId] = useState(filtros.vendedor_id || '');
@@ -26,6 +27,39 @@ export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros
     }).toString();
     window.open(route('admin.reportes.exportar') + '?' + queryParams, '_blank');
   };
+
+  const itemsDesglosados = ventas.map((item) => {
+    const precio_venta = parseFloat(item.precio_venta || 0);
+    const descuento = parseFloat(item.descuento || 0);
+    const permuta = parseFloat(item.permuta || 0);
+    const capital = parseFloat(item.capital || 0);
+    const subtotal = parseFloat(item.subtotal || 0);
+    const ganancia = subtotal - descuento - permuta - capital;
+
+    let nombreProducto = '—';
+    if (item.celular) nombreProducto = `📱 ${item.celular.marca} ${item.celular.modelo}`;
+    else if (item.computadora) nombreProducto = `💻 ${item.computadora.marca} ${item.computadora.nombre}`;
+    else if (item.producto_general) nombreProducto = `📦 ${item.producto_general.nombre}`;
+    else if (item.tipo === 'servicio_tecnico') nombreProducto = '🛠️ Servicio Técnico';
+
+    const entregado =
+      item.entregado_celular?.modelo ||
+      item.entregado_computadora?.nombre ||
+      item.entregado_producto_general?.nombre ||
+      '—';
+
+    return {
+      ...item,
+      producto: nombreProducto,
+      entregado,
+      precio_venta,
+      descuento,
+      permuta,
+      capital,
+      subtotal,
+      ganancia,
+    };
+  });
 
   const chartData = {
     series: [
@@ -73,11 +107,13 @@ export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros
         </form>
       </div>
 
+      {/* Gráfico */}
       <div className="bg-white p-6 rounded-xl shadow mb-8">
         <h2 className="text-xl font-bold text-gray-700 mb-4">📊 Visualización General</h2>
         <Chart options={chartData.options} series={chartData.series} type="donut" height={350} />
       </div>
 
+      {/* Detalle */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">📄 Detalle de Ventas</h3>
         <div className="overflow-auto">
@@ -99,31 +135,26 @@ export default function ReporteIndex({ ventas, resumen, resumen_grafico, filtros
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {ventas.length > 0 ? ventas.map((v) => {
-                const valorPermuta = parseFloat(v.valor_permuta || 0);
-                const descuento = parseFloat(v.descuento || 0);
-                const precioVenta = parseFloat(v.precio_venta || 0);
-                const capital = parseFloat(v.precio_invertido || 0);
-                const subtotal = precioVenta - descuento - valorPermuta;
-                const ganancia = subtotal - capital;
-
-                return (
-                  <tr key={v.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2">{dayjs(v.fecha ?? v.created_at).format('DD/MM/YYYY')}</td>
-                    <td className="px-3 py-2">{v.celular?.modelo || v.computadora?.nombre || v.producto_general?.nombre || 'Servicio Técnico'}</td>
-                    <td className="px-3 py-2 capitalize">{v.tipo_venta?.replace('_', ' ') || '-'}</td>
-                    <td className="px-3 py-2 text-center">{v.cantidad}</td>
-                    <td className="px-3 py-2 text-blue-700 font-semibold">{precioVenta.toFixed(2)} Bs</td>
-                    <td className="px-3 py-2 text-red-600">- {descuento.toFixed(2)} Bs</td>
-                    <td className="px-3 py-2 text-yellow-600">- {valorPermuta.toFixed(2)} Bs</td>
-                    <td className="px-3 py-2 text-orange-600">{capital.toFixed(2)} Bs</td>
-                    <td className="px-3 py-2 font-medium">{subtotal.toFixed(2)} Bs</td>
-                    <td className={`px-3 py-2 font-bold ${ganancia < 0 ? 'text-red-600' : 'text-green-600'}`}>{ganancia < 0 ? `Se invirtió ${Math.abs(ganancia).toFixed(2)} Bs` : `${ganancia.toFixed(2)} Bs`}</td>
-                    <td className="px-3 py-2">{v.vendedor?.name || '—'}</td>
-                    <td className="px-3 py-2 text-gray-700">{v.permuta_celular?.modelo || v.permuta_computadora?.nombre || v.permuta_producto_general?.nombre || '—'}</td>
-                  </tr>
-                );
-              }) : (
+              {itemsDesglosados.length > 0 ? itemsDesglosados.map((i, idx) => (
+                <tr key={idx} className="hover:bg-gray-50">
+                  <td className="px-3 py-2">{dayjs(i.fecha).format('DD/MM/YYYY')}</td>
+                  <td className="px-3 py-2">{i.producto}</td>
+                  <td className="px-3 py-2 capitalize">{i.tipo?.replace('_', ' ')}</td>
+                  <td className="px-3 py-2 text-center">{i.cantidad}</td>
+                  <td className="px-3 py-2 text-blue-700 font-semibold">{i.precio_venta.toFixed(2)} Bs</td>
+                  <td className="px-3 py-2 text-red-600">- {i.descuento.toFixed(2)} Bs</td>
+                  <td className="px-3 py-2 text-yellow-600">- {i.permuta.toFixed(2)} Bs</td>
+                  <td className="px-3 py-2 text-orange-600">{i.capital.toFixed(2)} Bs</td>
+                  <td className="px-3 py-2 font-medium">{i.subtotal.toFixed(2)} Bs</td>
+                  <td className={`px-3 py-2 font-bold ${i.ganancia < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {i.ganancia < 0
+                      ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)} Bs`
+                      : `${i.ganancia.toFixed(2)} Bs`}
+                  </td>
+                  <td className="px-3 py-2">{i.vendedor}</td>
+                  <td className="px-3 py-2">{i.entregado}</td>
+                </tr>
+              )) : (
                 <tr>
                   <td colSpan="12" className="text-center text-gray-500 py-4">No hay resultados.</td>
                 </tr>

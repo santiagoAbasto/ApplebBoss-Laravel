@@ -5,7 +5,7 @@ use Illuminate\Foundation\Application;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
-// Controladores
+// 📦 Controladores usados
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CelularController;
 use App\Http\Controllers\ProductoGeneralController;
@@ -15,9 +15,12 @@ use App\Http\Controllers\ServicioTecnicoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\CotizacionController;
+use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Api\StockController;
 
 
-// 🏠 Página pública
+
+// 🏠 Ruta pública inicial
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -27,52 +30,54 @@ Route::get('/', function () {
     ]);
 });
 
-// 🚀 Redirección al dashboard según rol
+// 🚀 Redirección al dashboard según el rol autenticado
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $user = auth()->user();
     return redirect()->route($user->rol === 'admin' ? 'admin.dashboard' : 'vendedor.dashboard');
 })->name('dashboard');
 
-// 👤 Perfil de usuario (común)
+// 👤 Perfil del usuario (edición, actualización y eliminación)
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// 🛡️ Rutas del ADMINISTRADOR
+
+// ========================
+// 🛡️ RUTAS ADMINISTRADOR
+// ========================
 Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('admin.')->group(function () {
+
     // 📊 Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 📱 Celulares
+    // 📱 CRUD Celulares
     Route::resource('celulares', CelularController::class)
         ->names('celulares')
         ->parameters(['celulares' => 'celular']);
 
-    // 💻 Computadoras
+    // 💻 CRUD Computadoras
     Route::resource('computadoras', ComputadoraController::class)
         ->names('computadoras');
 
-    // 📦 Productos Generales
+    // 📦 CRUD Productos Generales
     Route::resource('productos-generales', ProductoGeneralController::class)
         ->names('productos-generales')
         ->parameters(['productos-generales' => 'producto']);
 
-    // 🛒 Ventas
-    Route::resource('ventas', VentaController::class)
-        ->names('ventas')
-        ->parameters(['ventas' => 'venta']);
-    Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
+// 🛒 CRUD Ventas
+Route::resource('ventas', VentaController::class)
+    ->names('ventas')
+    ->parameters(['ventas' => 'venta']);
 
-    // 🧰 Servicios Técnicos
+    // 🧰 CRUD Servicios Técnicos
     Route::resource('servicios', ServicioTecnicoController::class)
         ->only(['index', 'create', 'store'])
         ->names('servicios')
         ->parameters(['servicios' => 'servicio']);
-    Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
 
-    // Exportar Servicios Técnicos por período
+    // 📤 Exportaciones de servicios técnicos
     Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
     Route::get('/servicios/exportar-dia', [ServicioTecnicoController::class, 'exportarDia'])->name('servicios.exportar-dia');
     Route::get('/servicios/exportar-semana', [ServicioTecnicoController::class, 'exportarSemana'])->name('servicios.exportar-semana');
@@ -80,7 +85,6 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::get('/servicios/exportar-anio', [ServicioTecnicoController::class, 'exportarAnio'])->name('servicios.exportar-anio');
     Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
 
-    
     // 📊 Reportes de ventas
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
     Route::get('/reportes/exportar', [ReporteController::class, 'exportar'])->name('reportes.exportar');
@@ -93,47 +97,58 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])->name('celulares.habilitar');
     Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])->name('computadoras.habilitar');
     Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])->name('productos-generales.habilitar');
-    
-// 📦 Cotizaciones
-Route::resource('cotizaciones', CotizacionController::class)
-    ->only(['index', 'create', 'store'])
-    ->names('cotizaciones');
 
-Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])
-    ->name('cotizaciones.pdf');
+    // 📦 Cotizaciones
+    Route::resource('cotizaciones', CotizacionController::class)
+        ->only(['index', 'create', 'store'])
+        ->names('cotizaciones');
 
-Route::post('cotizaciones/{id}/reenviar', [CotizacionController::class, 'reenviarCorreo'])
-    ->name('cotizaciones.reenviar');
+    Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
+    Route::post('cotizaciones/{id}/reenviar', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
+    Route::post('cotizaciones/enviar-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.enviar-lote');
 
-Route::post('cotizaciones/enviar-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])
-    ->name('cotizaciones.enviar-lote');
+    // 🟢 WhatsApp con mensaje profesional
+    Route::get('cotizaciones/whatsapp-final', [CotizacionController::class, 'whatsappFinalLibre'])->name('cotizaciones.enviar-whatsapp-libre');
 
-// 🟢 NUEVO: WhatsApp con detección de dispositivo y mensaje limpio
-Route::get('cotizaciones/whatsapp-final', [CotizacionController::class, 'whatsappFinalLibre'])
-    ->name('cotizaciones.enviar-whatsapp-libre');
+    // 📄 Vista índice de exportaciones (Ziggy depende de esta)
+    Route::get('/exportar', [ExportController::class, 'index'])->name('exportaciones.index');
+
+    // 📤 Exportaciones individuales
+    Route::get('/exportar/celulares', [ExportController::class, 'celulares'])->name('exportar.celulares');
+    Route::get('/exportar/computadoras', [ExportController::class, 'computadoras'])->name('exportar.computadoras');
+    Route::get('/exportar/productos-generales', [ExportController::class, 'productosGenerales'])->name('exportar.productos-generales');
+    Route::get('/exportar/productos-generales/{tipo}', [ExportController::class, 'productosGeneralesPorTipo'])->name('exportar.productos-generales.tipo');
+
+    // 📄 Boleta PDF posterior al registro
+    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('admin.ventas.boleta');
+
 });
 
+// ========================
+// 🧑‍💼 RUTAS VENDEDOR
+// ========================
+Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
 
-    // 🛒 Rutas del VENDEDOR
-    Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
 
     Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
     Route::get('/computadoras', [ComputadoraController::class, 'index'])->name('computadoras.index');
     Route::get('/productos-generales', [ProductoGeneralController::class, 'index'])->name('productos-generales.index');
 
-    // 🛒 Registro de ventas
     Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
     Route::get('/ventas/create', [VentaController::class, 'create'])->name('ventas.create');
     Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
 
-    // 🧰 Registro de Servicio Técnico
     Route::get('/servicios', [ServicioTecnicoController::class, 'index'])->name('servicios.index');
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
     Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
 });
 
-// 🎯 Ruta API para productos en permuta por tipo
+
+// ========================
+// 🔄 API & EXTRAS
+// ========================
+
 Route::get('/api/permuta/{tipo}', function ($tipo) {
     if ($tipo === 'celular') {
         return \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get();
@@ -145,16 +160,21 @@ Route::get('/api/permuta/{tipo}', function ($tipo) {
     return response()->json([], 404);
 });
 
-// 🌐 Test Drive Google Drive (opcional)
+Route::prefix('api/stock')->name('api.stock.')->group(function () {
+    Route::get('celulares', [StockController::class, 'celulares'])->name('celulares');
+    Route::get('computadoras', [StockController::class, 'computadoras'])->name('computadoras');
+    Route::get('productos-generales', [StockController::class, 'productosGenerales'])->name('productos_generales');
+    Route::get('/stock/buscar', [StockController::class, 'buscarPorCodigo'])->name('api.stock.buscar');
+
+});
+
 Route::get('/test-drive', function () {
     Storage::disk('google')->put('archivo-prueba.txt', 'Hola desde Laravel 🧾');
     return 'Archivo subido a Google Drive correctamente.';
 });
 
-// routes/api.php
-Route::post('/api/permuta/celular', [\App\Http\Controllers\CelularController::class, 'apiStore']);
-Route::post('/api/permuta/computadora', [\App\Http\Controllers\ComputadoraController::class, 'apiStore']);
-Route::post('/api/permuta/producto_general', [\App\Http\Controllers\ProductoGeneralController::class, 'apiStore']);
-
+Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
+Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
+Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);
 
 require __DIR__.'/auth.php';

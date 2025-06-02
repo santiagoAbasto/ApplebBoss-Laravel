@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function WhatsappLote({ links }) {
   const [copiado, setCopiado] = useState(null);

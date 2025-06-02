@@ -3,6 +3,8 @@ import './bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'react-phone-number-input/style.css';
 import 'flag-icons/css/flag-icons.min.css';
+import { route } from 'ziggy-js';
+import { Ziggy } from './ziggy'; // si lo generaste, opcional
 
 
 

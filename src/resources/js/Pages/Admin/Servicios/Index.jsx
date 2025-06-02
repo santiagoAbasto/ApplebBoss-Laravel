@@ -2,6 +2,8 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import dayjs from 'dayjs';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
 
 export default function ServiciosIndex({ servicios, filtros, vendedores }) {
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || '');

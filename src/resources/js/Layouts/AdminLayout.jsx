@@ -41,23 +41,18 @@ export default function AdminLayout({ children }) {
           <hr className="sidebar-divider" />
           <div className="sidebar-heading">Inventario</div>
 
-          {/* Celulares */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.celulares.index')}>
               <i className="fas fa-mobile"></i>
               <span>Celulares</span>
             </Link>
           </li>
-
-          {/* Computadoras */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.computadoras.index')}>
               <i className="fas fa-laptop"></i>
               <span>Computadoras</span>
             </Link>
           </li>
-
-          {/* Productos Generales */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.productos-generales.index')}>
               <i className="fas fa-box"></i>
@@ -68,35 +63,38 @@ export default function AdminLayout({ children }) {
           <hr className="sidebar-divider" />
           <div className="sidebar-heading">Operaciones</div>
 
-          {/* Ventas */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.ventas.index')}>
               <i className="fas fa-shopping-cart"></i>
               <span>Ventas</span>
             </Link>
           </li>
-
-          {/* Servicio Técnico */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.servicios.index')}>
               <i className="fas fa-tools"></i>
               <span>Servicio Técnico</span>
             </Link>
           </li>
-
-          {/* Reportes */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.reportes.index')}>
               <i className="fas fa-chart-line"></i>
               <span>Reportes</span>
             </Link>
           </li>
-
-          {/* Cotizaciones */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.cotizaciones.index')}>
               <i className="fas fa-file-invoice-dollar"></i>
               <span>Cotizaciones</span>
+            </Link>
+          </li>
+
+          <hr className="sidebar-divider" />
+          <div className="sidebar-heading">Exportaciones</div>
+
+          <li className="nav-item">
+            <Link className="nav-link" href={route('admin.exportaciones.index')}>
+              <i className="fas fa-file-export"></i>
+              <span>Exportaciones</span>
             </Link>
           </li>
 

@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function EnviarWhatsapp({ telefono, mensaje }) {
   useEffect(() => {

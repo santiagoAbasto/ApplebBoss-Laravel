@@ -1,5 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function CreateServicio() {
   const { data, setData, post, errors } = useForm({

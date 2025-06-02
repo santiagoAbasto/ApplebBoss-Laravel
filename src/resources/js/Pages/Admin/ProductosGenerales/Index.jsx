@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
 
 export default function ProductosGeneralesIndex({ productos }) {
   const [busqueda, setBusqueda] = useState('');
@@ -33,9 +35,31 @@ export default function ProductosGeneralesIndex({ productos }) {
     }
   };
 
-  const filtrados = productos.filter((p) =>
-    p.codigo.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const filtrados = productos
+  .filter((p) =>
+    p.codigo.toLowerCase() === busqueda.toLowerCase()
+  )
+  .sort((a, b) => {
+    const getTipo = (codigo) => codigo.split(':')[0].toLowerCase();
+    const getNumero = (codigo) => parseInt(codigo.split(':')[1]) || 0;
+
+    const tipoA = getTipo(a.codigo);
+    const tipoB = getTipo(b.codigo);
+
+    if (tipoA === tipoB) {
+      const numA = getNumero(a.codigo);
+      const numB = getNumero(b.codigo);
+
+      if (numA === numB) {
+        return new Date(b.created_at) - new Date(a.created_at); // más reciente primero
+      }
+
+      return numB - numA; // mayor a menor
+    }
+
+    return tipoB.localeCompare(tipoA);
+  });
+
 
   return (
     <AdminLayout>

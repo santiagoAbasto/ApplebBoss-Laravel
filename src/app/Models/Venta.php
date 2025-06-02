@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
+use App\Models\VentaItem;
 
 class Venta extends Model
 {
@@ -28,17 +29,18 @@ class Venta extends Model
         'inicio_tarjeta',
         'fin_tarjeta',
         'notas_adicionales',
-        'fecha', // ⚠️ Esto debe estar
+        'fecha',
         'user_id',
         'ganancia_neta',
         'subtotal',
+        'valor_permuta', // Agregado recientemente
         'celular_id',
         'computadora_id',
         'producto_general_id',
         'entregado_celular_id',
         'entregado_computadora_id',
         'entregado_producto_general_id',
-    ];    
+    ];
 
     // Producto vendido
     public function celular()
@@ -87,5 +89,10 @@ class Venta extends Model
             'producto_general' => $this->entregadoProductoGeneral,
             default => null,
         };
+    }
+
+    public function items()
+    {
+        return $this->hasMany(VentaItem::class);
     }
 }

@@ -3,6 +3,9 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Phone } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import { useState } from 'react';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function Edit({ celular }) {
   const { data, setData, put, errors } = useForm({

@@ -5,6 +5,9 @@ import { Trash2, CheckCircle } from 'lucide-react';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import Toast from '@/Components/Toast';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function Create({ celulares, computadoras, productosGenerales, fechaHoy }) {
   const { data, setData, post, reset } = useForm({

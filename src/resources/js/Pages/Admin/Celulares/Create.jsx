@@ -3,6 +3,8 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
 import { Loader2 } from 'lucide-react';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
 
 export default function CreateCelular() {
   const { data, setData, post, processing, errors, reset } = useForm({

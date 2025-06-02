@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import SalesChart from '@/Components/SalesChart';
 import dayjs from 'dayjs';
+import { route } from 'ziggy-js';
 
 export default function Dashboard({
   user,
@@ -57,7 +58,7 @@ export default function Dashboard({
         <div className="flex gap-3">
           <QuickButton routeName="admin.ventas.create" color="sky" text="➕ Venta" />
           <QuickButton routeName="admin.servicios.create" color="green" text="⚙️ Servicio" />
-          <QuickButton routeName="admin.celulares.create" color="indigo" text="📦 Producto" />
+          <ProductoSelectorButton />
           <QuickButton routeName="admin.reportes.index" color="rose" text="📄 Reportes" />
         </div>
       </div>
@@ -89,6 +90,19 @@ export default function Dashboard({
               : `Bs ${resumen_total.ganancia_neta?.toLocaleString() || 0}`
           }
           color={resumen_total.ganancia_neta < 0 ? 'rose' : 'green'}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 mb-10">
+        <Card
+          titulo="Productos Generales Disponibles"
+          valor={resumen.stock_detalle?.productos_generales || 0}
+          color="indigo"
+        />
+        <Card
+          titulo="% del Stock Total"
+          valor={`${resumen.stock_detalle?.porcentaje_productos_generales || 0}%`}
+          color="sky"
         />
       </div>
 
@@ -197,5 +211,46 @@ function QuickButton({ routeName, color, text }) {
     >
       {text}
     </Link>
+  );
+}
+
+function ProductoSelectorButton() {
+  const [showOptions, setShowOptions] = useState(false);
+
+  const irACreate = (tipo) => {
+    const rutas = {
+      celular: 'admin.celulares.create',
+      computadora: 'admin.computadoras.create',
+      producto_general: 'admin.productos-generales.create',
+    };
+    router.visit(route(rutas[tipo]));
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowOptions(!showOptions)}
+        className="bg-indigo-600 hover:bg-indigo-700 transition text-white rounded-lg px-4 py-3 font-semibold shadow"
+      >
+        📦 Producto
+      </button>
+      {showOptions && (
+        <div className="absolute z-50 mt-2 bg-white shadow-lg rounded-xl p-3 w-56">
+          <p className="text-gray-600 text-sm mb-2">¿Qué producto deseas registrar?</p>
+          <button
+            onClick={() => irACreate('celular')}
+            className="w-full text-left py-2 px-3 rounded hover:bg-indigo-50"
+          >📱 Celular</button>
+          <button
+            onClick={() => irACreate('computadora')}
+            className="w-full text-left py-2 px-3 rounded hover:bg-indigo-50"
+          >💻 Computadora</button>
+          <button
+            onClick={() => irACreate('producto_general')}
+            className="w-full text-left py-2 px-3 rounded hover:bg-indigo-50"
+          >📦 Producto General</button>
+        </div>
+      )}
+    </div>
   );
 }

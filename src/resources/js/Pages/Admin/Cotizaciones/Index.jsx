@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function Index({ cotizaciones = [] }) {
   const [seleccionados, setSeleccionados] = useState([]);

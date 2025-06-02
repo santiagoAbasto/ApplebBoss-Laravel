@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
+import { route } from 'ziggy-js'; // ✅ CORRECTO
+
+
 
 export default function ComputadorasIndex({ computadoras }) {
   const [busqueda, setBusqueda] = useState('');

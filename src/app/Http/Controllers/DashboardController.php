@@ -22,12 +22,13 @@ class DashboardController extends Controller
             ->whereBetween('fecha', [$fechaInicio, $fechaFin])
             ->get();
 
-        // Datos del día
         $ventasHoy = $ventas->where('fecha', today()->toDateString())->sum('subtotal');
 
-        $stockTotal = Celular::where('estado', 'disponible')->count()
-            + Computadora::where('estado', 'disponible')->count()
-            + ProductoGeneral::where('estado', 'disponible')->count();
+        $celularesDisponibles = Celular::where('estado', 'disponible')->count();
+        $computadorasDisponibles = Computadora::where('estado', 'disponible')->count();
+        $productosGeneralesDisponibles = ProductoGeneral::where('estado', 'disponible')->count();
+
+        $stockTotal = $celularesDisponibles + $computadorasDisponibles + $productosGeneralesDisponibles;
 
         $permutas = $ventas->where('es_permuta', true)->count();
         $servicios = $ventas->where('tipo_venta', 'servicio_tecnico')->count();
@@ -39,12 +40,15 @@ class DashboardController extends Controller
             'fecha' => $v->fecha,
         ]);
 
-        // Gráfico por fecha
         $resumenGrafico = $ventas->groupBy('fecha')->map(function ($ventasDelDia, $fecha) {
             return [
                 'fecha' => $fecha,
                 'total' => $ventasDelDia->sum('subtotal'),
-                'ganancia_productos' => $ventasDelDia->where('tipo_venta', 'producto')->sum(function ($v) {
+                'ganancia_productos' => $ventasDelDia->whereIn('tipo_venta', ['producto'])->sum(function ($v) {
+                    $costo = $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
+                    return $v->subtotal - $costo;
+                }),
+                'ganancia_productos_generales' => $ventasDelDia->whereNotNull('producto_general_id')->sum(function ($v) {
                     $costo = $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
                     return $v->subtotal - $costo;
                 }),
@@ -55,19 +59,11 @@ class DashboardController extends Controller
             ];
         })->values();
 
-        // Totales para torta y tarjetas
         $totalVentas = $ventas->sum('subtotal');
         $totalDescuento = $ventas->sum('descuento');
-
-        $totalCosto = $ventas->sum(function ($v) {
-            return $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
-        });
-
-        $gananciaNeta = $ventas->sum(function ($v) {
-            $costo = $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
-            return $v->subtotal - $costo;
-        });
-
+        $totalCosto = $ventas->sum('precio_invertido');
+        $totalPermuta = $ventas->sum('precio_costo_permuta');
+        $gananciaNeta = $totalVentas - ($totalCosto + $totalPermuta);
         $ventasConDescuento = $ventas->where('descuento', '>', 0)->count();
 
         return Inertia::render('Admin/Dashboard', [
@@ -75,6 +71,14 @@ class DashboardController extends Controller
             'resumen' => [
                 'ventas_hoy' => $ventasHoy,
                 'stock_total' => $stockTotal,
+                'stock_detalle' => [
+                    'celulares' => $celularesDisponibles,
+                    'computadoras' => $computadorasDisponibles,
+                    'productos_generales' => $productosGeneralesDisponibles,
+                    'porcentaje_productos_generales' => $stockTotal > 0
+                        ? round(($productosGeneralesDisponibles / $stockTotal) * 100, 1)
+                        : 0,
+                ],
                 'permutas' => $permutas,
                 'servicios' => $servicios,
                 'ganancia_neta' => $gananciaNeta,
@@ -87,7 +91,16 @@ class DashboardController extends Controller
                 'total_ventas' => $totalVentas,
                 'total_descuento' => $totalDescuento,
                 'total_costo' => $totalCosto,
+                'total_permuta' => $totalPermuta,
                 'ganancia_neta' => $gananciaNeta,
+                'ganancia_productos' => $ventas->whereIn('tipo_venta', ['producto'])->sum(function ($v) {
+                    $costo = $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
+                    return $v->subtotal - $costo;
+                }),
+                'ganancia_productos_generales' => $ventas->whereNotNull('producto_general_id')->sum(function ($v) {
+                    $costo = $v->precio_invertido + ($v->precio_costo_permuta ?? 0);
+                    return $v->subtotal - $costo;
+                }),
             ],
             'vendedores' => User::where('rol', 'vendedor')->select('id', 'name')->get(),
             'filtros' => [
