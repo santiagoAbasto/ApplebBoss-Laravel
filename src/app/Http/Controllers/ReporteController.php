@@ -30,8 +30,13 @@ class ReporteController extends Controller
             'entregadoCelular',
             'entregadoComputadora',
             'entregadoProductoGeneral',
-            'items'
+            'entregadoProductoApple', // NUEVO
+            'items.celular',
+            'items.computadora',
+            'items.productoGeneral',
+            'items.productoApple', // NUEVO
         ])->orderByDesc('fecha');
+        
 
         if ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
@@ -48,6 +53,7 @@ class ReporteController extends Controller
             'celulares' => 0,
             'computadoras' => 0,
             'generales' => 0,
+            'productos_apple' => 0,
             'servicio_tecnico' => 0,
         ];
 
@@ -55,8 +61,11 @@ class ReporteController extends Controller
 
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
-                ?? optional($venta->entregadoComputadora)->precio_costo
-                ?? optional($venta->entregadoProductoGeneral)->precio_costo ?? 0;
+            ?? optional($venta->entregadoComputadora)->precio_costo
+            ?? optional($venta->entregadoProductoGeneral)->precio_costo
+            ?? optional($venta->entregadoProductoApple)->precio_costo
+            ?? 0;
+        
 
             $permutaAplicada = false;
 
@@ -69,6 +78,7 @@ class ReporteController extends Controller
                     'celular' => 'Celular',
                     'computadora' => 'Computadora',
                     'producto_general' => 'Producto General',
+                    'producto_apple' => 'Producto Apple',
                     default => ($venta->tipo_venta === 'servicio_tecnico' ? 'Servicio Técnico' : '—'),
                 };
 
@@ -76,6 +86,7 @@ class ReporteController extends Controller
                     'celular' => $item->celular?->modelo ?? '—',
                     'computadora' => $item->computadora?->nombre ?? '—',
                     'producto_general' => $item->productoGeneral?->nombre ?? '—',
+                    'producto_apple' => $item->productoApple?->modelo ?? '—', // NUEVO
                     default => '—',
                 };
                 $ganancia = $item->precio_venta - $item->descuento - $permuta - $item->precio_invertido;
@@ -85,8 +96,9 @@ class ReporteController extends Controller
                     'Celular' => $gananciasPorTipo['celulares'] += $ganancia,
                     'Computadora' => $gananciasPorTipo['computadoras'] += $ganancia,
                     'Producto General' => $gananciasPorTipo['generales'] += $ganancia,
+                    'Producto Apple' => $gananciasPorTipo['productos_apple'] += $ganancia,
                     default => null,
-                };                
+                };                             
 
                 $items->push([
                     'id' => $item->id,
@@ -105,6 +117,7 @@ class ReporteController extends Controller
                         $venta->entregadoCelular?->modelo
                         ?? $venta->entregadoComputadora?->nombre
                         ?? $venta->entregadoProductoGeneral?->nombre
+                        ?? $venta->entregadoProductoApple?->modelo                    
                     ) : null,
                 ]);
             }
@@ -179,9 +192,11 @@ class ReporteController extends Controller
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
+            'items.productoApple',
             'entregadoCelular',
             'entregadoComputadora',
-            'entregadoProductoGeneral'
+            'entregadoProductoGeneral',
+            'entregadoProductoApple',
         ])->orderByDesc('fecha');
     
         if ($request->filled('vendedor_id')) {
@@ -213,6 +228,7 @@ class ReporteController extends Controller
                     'celular' => $item->celular?->modelo ?? 'Celular',
                     'computadora' => $item->computadora?->nombre ?? 'Computadora',
                     'producto_general' => $item->productoGeneral?->nombre ?? 'Producto General',
+                    'producto_apple' => $item->productoApple?->nombre ?? 'Producto Apple',
                     default => '—',
                 };
                 
@@ -221,6 +237,7 @@ class ReporteController extends Controller
                     'celular' => 'Celular',
                     'computadora' => 'Computadora',
                     'producto_general' => 'Producto General',
+                    'producto_apple' => 'Producto Apple',
                     default => '—'
                 };
     
@@ -281,9 +298,11 @@ class ReporteController extends Controller
                 'items.celular',
                 'items.computadora',
                 'items.productoGeneral',
+                'items.productoApple',
                 'entregadoCelular',
                 'entregadoComputadora',
                 'entregadoProductoGeneral',
+                'entregadoProductoApple',
             ])->get();
     
         return $this->generarPDFDesdeVentas($ventas);
@@ -300,9 +319,11 @@ class ReporteController extends Controller
                 'items.celular',
                 'items.computadora',
                 'items.productoGeneral',
+                'items.productoApple',
                 'entregadoCelular',
                 'entregadoComputadora',
                 'entregadoProductoGeneral',
+                'entregadoProductoApple',
             ])->get();
     
         return $this->generarPDFDesdeVentas($ventas);
@@ -319,9 +340,11 @@ class ReporteController extends Controller
                 'items.celular',
                 'items.computadora',
                 'items.productoGeneral',
+                'items.productoApple',
                 'entregadoCelular',
                 'entregadoComputadora',
                 'entregadoProductoGeneral',
+                'entregadoProductoApple',
             ])->get();
     
         return $this->generarPDFDesdeVentas($ventas);
@@ -338,9 +361,11 @@ class ReporteController extends Controller
                 'items.celular',
                 'items.computadora',
                 'items.productoGeneral',
+                'items.productoApple',
                 'entregadoCelular',
                 'entregadoComputadora',
                 'entregadoProductoGeneral',
+                'entregadoProductoApple',
             ])->get();
     
         return $this->generarPDFDesdeVentas($ventas);
@@ -356,9 +381,11 @@ class ReporteController extends Controller
             'celular',
             'computadora',
             'productoGeneral',
+            'ProductoApple',
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
+            'items.productoApple',
         ]);
     
         foreach ($ventas as $venta) {
@@ -378,6 +405,7 @@ class ReporteController extends Controller
                     'celular' => $item->celular?->modelo ?? '—',
                     'computadora' => $item->computadora?->nombre ?? '—',
                     'producto_general' => $item->productoGeneral?->nombre ?? '—',
+                    'producto_apple' => $item->productoApple?->nombre ?? '—',
                     default => '—'
                 };                
     
@@ -385,6 +413,7 @@ class ReporteController extends Controller
                     'celular' => 'Celular',
                     'computadora' => 'Computadora',
                     'producto_general' => 'Producto General',
+                    'producto_apple' => 'Producto Apple',
                     default => '—'
                 };
     

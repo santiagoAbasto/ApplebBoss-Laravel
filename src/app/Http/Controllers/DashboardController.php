@@ -6,6 +6,8 @@ use App\Models\Venta;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
+use App\Models\ProductoApple;
+
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -23,11 +25,13 @@ class DashboardController extends Controller
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
+            'items.productoApple',
             'entregadoCelular',
             'entregadoComputadora',
             'entregadoProductoGeneral',
+            'entregadoProductoApple',
         ])
-        ->when($vendedorId, fn($q) => $q->where('user_id', $vendedorId))
+        ->when($vendedorId, fn ($q) => $q->where('user_id', $vendedorId))
         ->whereBetween('fecha', [$fechaInicio, $fechaFin])
         ->get();
 
@@ -38,17 +42,21 @@ class DashboardController extends Controller
             'computadoras' => 0,
             'generales' => 0,
             'servicio_tecnico' => 0,
+            'producto_apple' => 0,
         ];
 
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
-                ?? optional($venta->entregadoComputadora)->precio_costo
-                ?? optional($venta->entregadoProductoGeneral)->precio_costo ?? 0;
+            ?? optional($venta->entregadoComputadora)->precio_costo
+            ?? optional($venta->entregadoProductoGeneral)->precio_costo
+            ?? optional($venta->entregadoProductoApple)->precio_costo
+            ?? 0;
+
 
             $permutaAplicada = false;
 
             foreach ($venta->items as $item) {
-                $aplicaPermuta = in_array($item->tipo, ['celular', 'computadora']) && !$permutaAplicada;
+                $aplicaPermuta = in_array($item->tipo, ['celular', 'computadora','producto_apple']) && !$permutaAplicada;
                 $permuta = $aplicaPermuta ? $permutaCosto : 0;
                 $permutaAplicada = $aplicaPermuta;
 
@@ -59,6 +67,7 @@ class DashboardController extends Controller
                     'celular' => $ganancias['celulares'] += $ganancia,
                     'computadora' => $ganancias['computadoras'] += $ganancia,
                     'producto_general' => $ganancias['generales'] += $ganancia,
+                    'producto_apple' => $ganancias['producto_apple'] += $ganancia, // tratamos como celular
                     default => null,
                 };
 
@@ -66,9 +75,10 @@ class DashboardController extends Controller
                     'celular' => $item->celular?->modelo ?? 'Celular',
                     'computadora' => $item->computadora?->nombre ?? 'Computadora',
                     'producto_general' => $item->productoGeneral?->nombre ?? 'Producto General',
+                    'producto_apple' => $item->productoApple?->modelo ?? 'Producto Apple',
                     default => '—',
                 };
-                
+
 
                 $items->push([
                     'fecha' => $venta->fecha,
@@ -103,7 +113,7 @@ class DashboardController extends Controller
             }
         }
 
-        $ultimasVentas = $items->sortByDesc('fecha')->take(5)->values()->map(fn($i) => [
+        $ultimasVentas = $items->sortByDesc('fecha')->take(5)->values()->map(fn ($i) => [
             'cliente' => $i['vendedor'],
             'producto' => $i['producto'],
             'tipo' => $i['tipo'],
@@ -115,13 +125,15 @@ class DashboardController extends Controller
         $stockCel = Celular::where('estado', 'disponible')->count();
         $stockComp = Computadora::where('estado', 'disponible')->count();
         $stockGen = ProductoGeneral::where('estado', 'disponible')->count();
+        $stockApple = ProductoApple::where('estado', 'disponible')->count(); // ✅ variable separada        
+        
         $stockTotal = $stockCel + $stockComp + $stockGen;
 
         $resumenGrafico = $items->groupBy('fecha')->map(function ($itemsDelDia, $fecha) {
             return [
                 'fecha' => $fecha,
-                'total' => $itemsDelDia->sum(fn($i) => $i['ganancia'] + $i['capital'] + $i['descuento'] + $i['permuta']),
-                'ganancia_productos' => $itemsDelDia->whereIn('tipo', ['celular', 'computadora'])->sum('ganancia'),
+                'total' => $itemsDelDia->sum(fn ($i) => $i['ganancia'] + $i['capital'] + $i['descuento'] + $i['permuta']),
+                'ganancia_productos' => $ganancias['celulares'] + $ganancias['computadoras'] + $ganancias['producto_apple'],
                 'ganancia_productos_generales' => $itemsDelDia->where('tipo', 'producto_general')->sum('ganancia'),
                 'ganancia_servicios' => $itemsDelDia->where('tipo', 'servicio_tecnico')->sum('ganancia'),
                 'descuento' => $itemsDelDia->sum('descuento'),
@@ -137,6 +149,7 @@ class DashboardController extends Controller
                     'celulares' => $stockCel,
                     'computadoras' => $stockComp,
                     'productos_generales' => $stockGen,
+                    'productos_apple' => $stockApple,
                     'porcentaje_productos_generales' => $stockTotal > 0 ? round(($stockGen / $stockTotal) * 100, 1) : 0,
                 ],
                 'permutas' => $ventas->where('es_permuta', true)->count(),
@@ -152,7 +165,7 @@ class DashboardController extends Controller
                 'total_costo' => $items->sum('capital'),
                 'total_permuta' => $items->sum('permuta'),
                 'ganancia_neta' => $items->sum('ganancia'),
-                'ganancia_productos' => $ganancias['celulares'] + $ganancias['computadoras'],
+                'ganancia_productos' => $ganancias['celulares'] + $ganancias['computadoras'] + $ganancias['producto_apple'],
                 'ganancia_productos_generales' => $ganancias['generales'],
                 'ganancia_servicios' => $ganancias['servicio_tecnico'],
             ],

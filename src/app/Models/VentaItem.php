@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VentaItem extends Model
 {
-
-    protected $table = 'ventas_items'; // 👈 Corrige el nombre de la tabla
+    protected $table = 'ventas_items';
 
     protected $fillable = [
         'venta_id',
@@ -24,21 +23,30 @@ class VentaItem extends Model
     {
         return $this->belongsTo(Venta::class);
     }
-    public function celular() {
+
+    public function celular()
+    {
         return $this->belongsTo(Celular::class, 'producto_id');
     }
-    
-    public function computadora() {
+
+    public function computadora()
+    {
         return $this->belongsTo(Computadora::class, 'producto_id');
     }
-    
-    public function productoGeneral() {
+
+    public function productoGeneral()
+    {
         return $this->belongsTo(ProductoGeneral::class, 'producto_id');
     }
-    
-    public function servicio()
-{
-    return $this->belongsTo(ServicioTecnico::class, 'producto_id');
-}
 
-}    
+    public function productoApple()
+    {
+        return $this->belongsTo(ProductoApple::class, 'producto_id');
+    }
+
+    public function servicio()
+    {
+        return $this->belongsTo(ServicioTecnico::class, 'producto_id');
+    }
+    
+}

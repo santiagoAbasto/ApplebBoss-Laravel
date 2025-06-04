@@ -34,6 +34,7 @@ export default function ReporteIndex({ ventas = [], resumen, resumen_grafico, fi
       resumen.ganancias_por_tipo?.computadoras || 0,
       resumen.ganancias_por_tipo?.generales || 0,
       resumen.ganancias_por_tipo?.servicio_tecnico || 0,
+      resumen.ganancias_por_tipo?.productos_apple || 0, // nuevo
       resumen.total_inversion || 0,
     ],
     options: {
@@ -42,13 +43,14 @@ export default function ReporteIndex({ ventas = [], resumen, resumen_grafico, fi
         'Ganancia Celulares',
         'Ganancia Computadoras',
         'Ganancia Productos Generales',
+        'Ganancia Productos Apple', // nuevo
         'Ganancia Servicio Técnico',
         'Inversión Total',
       ],
-      colors: ['#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#ef4444'],
+      colors: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#06b6d4', '#ef4444'], // ✅ solo esta línea
       dataLabels: { style: { fontSize: '14px' } },
       legend: { position: 'bottom' },
-    },
+    },    
   };
 
   return (

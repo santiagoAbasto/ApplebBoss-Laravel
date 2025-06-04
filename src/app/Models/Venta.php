@@ -73,6 +73,10 @@ class Venta extends Model
     {
         return $this->belongsTo(ProductoGeneral::class, 'entregado_producto_general_id');
     }
+    public function entregadoProductoApple()
+{
+    return $this->belongsTo(ProductoApple::class, 'entregado_producto_apple_id');
+}
 
     // Usuario que hizo la venta
     public function vendedor()
@@ -87,9 +91,10 @@ class Venta extends Model
             'celular' => $this->entregadoCelular,
             'computadora' => $this->entregadoComputadora,
             'producto_general' => $this->entregadoProductoGeneral,
+            'producto_apple' => $this->entregadoProductoApple,
             default => null,
         };
-    }
+    }    
 
     public function items()
     {

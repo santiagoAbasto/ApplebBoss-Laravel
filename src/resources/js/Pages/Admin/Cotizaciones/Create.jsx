@@ -9,7 +9,7 @@ import { route } from 'ziggy-js'; // ✅ CORRECTO
 
 
 
-export default function Create({ celulares, computadoras, productosGenerales, fechaHoy }) {
+export default function Create({ celulares, computadoras, productosGenerales, productosApple, fechaHoy }) {
   const { data, setData, post, reset } = useForm({
     nombre_cliente: '',
     telefono_completo: '',
@@ -71,6 +71,8 @@ export default function Create({ celulares, computadoras, productosGenerales, fe
     if (tipo === 'celular') seleccionado = celulares.find(c => c.id == id);
     if (tipo === 'computadora') seleccionado = computadoras.find(c => c.id == id);
     if (tipo === 'producto_general') seleccionado = productosGenerales.find(p => p.id == id);
+    if (tipo === 'producto_apple') seleccionado = productosApple.find(p => p.id == id);
+
 
     if (seleccionado) {
       setNuevoItem({
@@ -102,16 +104,16 @@ export default function Create({ celulares, computadoras, productosGenerales, fe
   return (
     <>
       <AdminLayout>
-      <Head title="Nueva Cotización" />
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-blue-700 flex items-center gap-2">
-          <CheckCircle className="w-6 h-6 text-green-500" /> Nueva Cotización
-        </h1>
-        <Link href={route('admin.cotizaciones.index')} className="text-sm text-gray-600 hover:underline">← Volver al listado</Link>
-      </div>
+        <Head title="Nueva Cotización" />
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-blue-700 flex items-center gap-2">
+            <CheckCircle className="w-6 h-6 text-green-500" /> Nueva Cotización
+          </h1>
+          <Link href={route('admin.cotizaciones.index')} className="text-sm text-gray-600 hover:underline">← Volver al listado</Link>
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-xl shadow-md animate-fade-in">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-xl shadow-md animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del Cliente</label>
               <input type="text" className="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring-2 focus:ring-blue-400" value={data.nombre_cliente} onChange={e => setData('nombre_cliente', e.target.value)} />
@@ -162,6 +164,10 @@ export default function Create({ celulares, computadoras, productosGenerales, fe
                   <option value="">-- Productos Generales --</option>
                   {productosGenerales.map(p => <option key={p.id} value={p.id}>{p.nombre} (Código: {p.codigo})</option>)}
                 </select>
+                <select className="w-full border border-gray-300 rounded-md px-4 py-2" onChange={e => handleProductoSeleccionado('producto_apple', e.target.value)}>
+                  <option value="">-- Productos Apple --</option>{productosApple.map(p => (<option key={p.id} value={p.id}>{p.modelo} - {p.capacidad} ({p.numero_serie || p.imei_1})</option>))}
+                </select>
+
               </div>
             )}
 
@@ -226,22 +232,22 @@ export default function Create({ celulares, computadoras, productosGenerales, fe
             </div>
 
             <div className="md:col-span-2 flex justify-end gap-4 pt-4">
-            <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Guardar Cotización</button>
-            <Link href={route('admin.cotizaciones.index')} className="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400 transition">Cancelar</Link>
+              <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Guardar Cotización</button>
+              <Link href={route('admin.cotizaciones.index')} className="bg-gray-300 text-gray-800 px-6 py-2 rounded-md hover:bg-gray-400 transition">Cancelar</Link>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
 
-      <Toast
-        show={toastVisible}
-        type={toastType}
-        message={
-          toastType === 'success'
-            ? '✅ Cotización creada con éxito'
-            : '❌ Ocurrió un error al guardar la cotización'
-        }
-      />
-    </AdminLayout>
+        <Toast
+          show={toastVisible}
+          type={toastType}
+          message={
+            toastType === 'success'
+              ? '✅ Cotización creada con éxito'
+              : '❌ Ocurrió un error al guardar la cotización'
+          }
+        />
+      </AdminLayout>
     </>
   );
 }

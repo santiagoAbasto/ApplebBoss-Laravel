@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
+use App\Models\ProductoApple;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
 
@@ -55,6 +56,21 @@ class ExportController extends Controller
         return $pdf->stream('inventario-computadoras.pdf');
     }
 
+    public function productosApple()
+    {
+        // Productos Apple disponibles
+        $productos = ProductoApple::where('estado', 'disponible')
+            ->orderBy('modelo')
+            ->get();
+
+        $pdf = Pdf::loadView('pdf.exportar_productos', [
+            'productos' => $productos,
+            'tipo' => 'producto_apple',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream('inventario-productos-apple.pdf');
+    }
+
     public function productosGenerales()
     {
         // Todos los productos generales disponibles
@@ -74,6 +90,7 @@ class ExportController extends Controller
 
         return $pdf->stream('inventario-productos-generales.pdf');
     }
+
 
     public function productosGeneralesPorTipo($tipo)
     {

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
+use App\Models\ProductoApple;
 
 class StockController extends Controller
 {
@@ -25,8 +26,14 @@ class StockController extends Controller
         return response()->json(ProductoGeneral::where('estado', 'disponible')->get());
     }
 
+    public function productosApple()
+    {
+        return response()->json(ProductoApple::where('estado', 'disponible')->get());
+    }
+
     /**
-     * Buscar un producto en stock por código.
+     * Buscar un producto disponible en stock por código / serie / IMEI.
+     * Soporta búsqueda en celulares, computadoras, productos Apple y generales.
      */
     public function buscarPorCodigo(Request $request)
     {
@@ -36,11 +43,36 @@ class StockController extends Controller
             return response()->json(['error' => 'Código no proporcionado.'], 400);
         }
 
+        // Buscar en productos Apple (IMEI 1, IMEI 2 o número de serie)
+        $apple = ProductoApple::where(function ($q) use ($codigo) {
+            $q->where('imei_1', $codigo)
+              ->orWhere('imei_2', $codigo)
+              ->orWhere('numero_serie', $codigo);
+        })
+        ->where('estado', 'disponible')
+        ->first();
+
+        if ($apple) {
+            return response()->json([
+                'tipo' => 'producto_apple',
+                'producto' => [
+                    'id' => $apple->id,
+                    'nombre' => $apple->modelo,
+                    'precio_venta' => $apple->precio_venta,
+                    'precio_costo' => $apple->precio_costo,
+                    'stock' => 1,
+                    'estado' => $apple->estado,
+                ]
+            ]);
+        }
+
         // Buscar en celulares (IMEI 1 o 2)
-        $celular = Celular::where('imei_1', $codigo)
-            ->orWhere('imei_2', $codigo)
-            ->where('estado', 'disponible')
-            ->first();
+        $celular = Celular::where(function ($q) use ($codigo) {
+            $q->where('imei_1', $codigo)
+              ->orWhere('imei_2', $codigo);
+        })
+        ->where('estado', 'disponible')
+        ->first();
 
         if ($celular) {
             return response()->json([
@@ -75,7 +107,7 @@ class StockController extends Controller
             ]);
         }
 
-        // Buscar en productos generales (código)
+        // Buscar en productos generales (código exacto)
         $pg = ProductoGeneral::where('codigo', $codigo)
             ->where('estado', 'disponible')
             ->first();

@@ -141,7 +141,10 @@ th {
   @php
     $celulares = $venta->items->where('tipo', 'celular');
     $computadoras = $venta->items->where('tipo', 'computadora');
+    $productosApple = $venta->items->where('tipo', 'producto_apple');
     $generales = $venta->items->where('tipo', 'producto_general');
+@endphp
+
   @endphp
 
 <!-- El contenido del <head> permanece igual (omitido aquí por brevedad) -->
@@ -222,6 +225,51 @@ th {
   </table>
   @endif
 
+  @if ($productosApple->count())
+  <div class="section-title">Productos Apple Vendidos</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Modelo</th>
+        <th>Capacidad</th>
+        <th>Batería</th>
+        <th>Color</th>
+        <th>Serie / IMEI</th>
+        <th>Tiene IMEI</th>
+        <th>Estado IMEI</th>
+        <th class="table-right">Precio</th>
+        <th class="table-right">Descuento</th>
+        <th class="table-right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach ($productosApple as $i => $item)
+        <tr>
+          <td>{{ $i + 1 }}</td>
+          <td>{{ $item->productoApple->modelo }}</td>
+          <td>{{ $item->productoApple->capacidad }}</td>
+          <td>{{ $item->productoApple->bateria }}</td>
+          <td>{{ $item->productoApple->color }}</td>
+          <td>
+            @if($item->productoApple->tiene_imei)
+              IMEI 1: {{ $item->productoApple->imei_1 }}<br>
+              IMEI 2: {{ $item->productoApple->imei_2 }}
+            @else
+              {{ $item->productoApple->numero_serie }}
+            @endif
+          </td>
+          <td>{{ $item->productoApple->tiene_imei ? 'Sí' : 'No' }}</td>
+          <td>{{ $item->productoApple->estado_imei ?? '-' }}</td>
+          <td class="table-right">Bs {{ number_format($item->precio_venta, 2) }}</td>
+          <td class="table-right">Bs {{ number_format($item->descuento, 2) }}</td>
+          <td class="table-right">Bs {{ number_format($item->subtotal, 2) }}</td>
+        </tr>
+      @endforeach
+    </tbody>
+  </table>
+@endif
+
   @if ($generales->count())
   <div class="section-title">Productos Generales Vendidos</div>
   <table>
@@ -252,7 +300,7 @@ th {
   </table>
   @endif
 
-  @if ($venta->entregadoCelular || $venta->entregadoComputadora || $venta->entregadoProductoGeneral)
+  @if ($venta->entregadoCelular || $venta->entregadoComputadora || $venta->entregadoProductoGeneral || $venta->entregadoProductoApple)
   <div class="section-title">Producto Entregado en Permuta</div>
 
   @if ($venta->entregadoCelular)
@@ -333,6 +381,36 @@ th {
       </tbody>
     </table>
   @endif
+  @if ($venta->entregadoProductoApple)
+  <table>
+    <thead>
+      <tr>
+        <th>Modelo</th>
+        <th>Capacidad</th>
+        <th>Batería</th>
+        <th>Color</th>
+        <th>IMEI 1</th>
+        <th>IMEI 2</th>
+        <th>Serie</th>
+        <th>Estado IMEI</th>
+        <th class="table-right">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ $venta->entregadoProductoApple->modelo }}</td>
+        <td>{{ $venta->entregadoProductoApple->capacidad }}</td>
+        <td>{{ $venta->entregadoProductoApple->bateria }}</td>
+        <td>{{ $venta->entregadoProductoApple->color }}</td>
+        <td>{{ $venta->entregadoProductoApple->imei_1 }}</td>
+        <td>{{ $venta->entregadoProductoApple->imei_2 }}</td>
+        <td>{{ $venta->entregadoProductoApple->numero_serie }}</td>
+        <td>{{ $venta->entregadoProductoApple->estado_imei }}</td>
+        <td class="table-right">Bs {{ number_format($venta->entregadoProductoApple->precio_costo, 2) }}</td>
+      </tr>
+    </tbody>
+  </table>
+@endif
 @endif
 
 

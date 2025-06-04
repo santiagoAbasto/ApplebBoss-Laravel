@@ -150,7 +150,7 @@
     'celular' => 'Celulares',
     'computadora' => 'Computadoras',
     'producto_general' => 'Productos Generales' . (isset($subtipo) && $subtipo !== 'todos' ? ': ' . $subtipo : ''),
-    default => ucfirst($tipo),
+    default => $tipo === 'producto_apple' ? 'Productos Apple' : ucfirst($tipo),
   };
 @endphp
 
@@ -161,87 +161,122 @@
 
 <table>
   <thead>
+  <thead>
+  <tr>
+    <th>#</th>
+    @if($tipo === 'celular')
+      <th>Modelo</th>
+      <th>Capacidad</th>
+      <th>Color</th>
+      <th>Batería</th>
+      <th>IMEI 1</th>
+      <th>IMEI 2</th>
+      <th>Estado</th>
+      <th>Precio Costo</th>
+      <th>Precio Venta</th>
+      <th>Observaciones</th>
+    @elseif($tipo === 'computadora')
+      <th>Nombre</th>
+      <th>Procesador</th>
+      <th>N° Serie</th>
+      <th>Color</th>
+      <th>Batería</th>
+      <th>RAM</th>
+      <th>Almacenamiento</th>
+      <th>Procedencia</th>
+      <th>Precio Costo</th>
+      <th>Precio Venta</th>
+      <th>Estado</th>
+      <th>Observaciones</th>
+    @elseif($tipo === 'producto_general')
+      <th>Nombre</th>
+      <th>Tipo</th>
+      <th>Código</th>
+      <th>Procedencia</th>
+      <th>Estado</th>
+      <th>Precio Costo</th>
+      <th>Precio Venta</th>
+      <th>Observaciones</th>
+      @elseif($tipo === 'producto_apple')
+  <th>Modelo</th>
+  <th>Capacidad</th>
+  <th>Batería</th>
+  <th>Color</th>
+  <th>N° Serie</th>
+  <th>¿Tiene IMEI?</th>
+  <th>IMEI 1</th>
+  <th>IMEI 2</th>
+  <th>Estado IMEI</th>
+  <th>Procedencia</th>
+  <th>Estado</th>
+  <th>Precio Costo</th>
+  <th>Precio Venta</th>
+  <th>Observaciones</th>
+@endif
+  </tr>
+</thead>
+  <tbody>
+  @foreach($productos as $p)
     <tr>
-      <th>#</th> <!-- NUEVA COLUMNA -->
+      <td>{{ $loop->iteration }}</td>
+
       @if($tipo === 'celular')
-        <th>Modelo</th>
-        <th>Capacidad</th>
-        <th>Color</th>
-        <th>Batería</th>
-        <th>IMEI 1</th>
-        <th>IMEI 2</th>
-        <th>Estado</th>
-        <th>Precio Costo</th>
-        <th>Precio Venta</th>
-        <th>Observaciones</th>
+        <td>{{ $p->modelo }}</td>
+        <td>{{ $p->capacidad }}</td>
+        <td>{{ $p->color}}</td>
+        <td>{{ $p->bateria}}</td>
+        <td>{{ $p->imei_1 }}</td>
+        <td>{{ $p->imei_2 }}</td>
+        <td>{{ $p->estado }}</td>
+        <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
+        <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
+        <td></td>
+
       @elseif($tipo === 'computadora')
-        <th>Nombre</th>
-        <th>Procesador</th>
-        <th>N° Serie</th>
-        <th>Color</th>
-        <th>Batería</th>
-        <th>RAM</th>
-        <th>Almacenamiento</th>
-        <th>Procedencia</th>
-        <th>Precio Costo</th>
-        <th>Precio Venta</th>
-        <th>Estado</th>
-        <th>Observaciones</th>
+        <td>{{ $p->nombre }}</td>
+        <td>{{ $p->procesador }}</td>
+        <td>{{ $p->numero_serie }}</td>
+        <td>{{ $p->color }}</td>
+        <td>{{ $p->bateria }}</td>
+        <td>{{ $p->ram }}</td>
+        <td>{{ $p->almacenamiento }}</td>
+        <td>{{ $p->procedencia }}</td>
+        <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
+        <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
+        <td>{{ $p->estado }}</td>
+        <td></td>
+
       @elseif($tipo === 'producto_general')
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Código</th>
-        <th>Procedencia</th>
-        <th>Estado</th>
-        <th>Precio Costo</th>
-        <th>Precio Venta</th>
-        <th>Observaciones</th>
+        <td>{{ $p->nombre }}</td>
+        <td>{{ $p->tipo }}</td>
+        <td>{{ $p->codigo }}</td>
+        <td>{{ $p->procedencia }}</td>
+        <td>{{ $p->estado }}</td>
+        <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
+        <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
+        <td></td>
+
+      @elseif($tipo === 'producto_apple')
+        <td>{{ $p->modelo }}</td>
+        <td>{{ $p->capacidad }}</td>
+        <td>{{ $p->bateria }}</td>
+        <td>{{ $p->color }}</td>
+        <td>{{ $p->numero_serie }}</td>
+        <td>{{ $p->tiene_imei ? 'Sí' : 'No' }}</td>
+        <td>{{ $p->imei_1 }}</td>
+        <td>{{ $p->imei_2 }}</td>
+        <td>{{ $p->estado_imei }}</td>
+        <td>{{ $p->procedencia }}</td>
+        <td>{{ $p->estado }}</td>
+        <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
+        <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
+        <td></td>
       @endif
     </tr>
-  </thead>
-  <tbody>
-    @foreach($productos as $p)
-      <tr>
-        <td>{{ $loop->iteration }}</td> <!-- NÚMERO DE FILA -->
-        @if($tipo === 'celular')
-          <td>{{ $p->modelo }}</td>
-          <td>{{ $p->capacidad }}</td>
-          <td>{{ $p->color}}</td>
-          <td>{{ $p->bateria}}</td>
-          <td>{{ $p->imei_1 }}</td>
-          <td>{{ $p->imei_2 }}</td>
-          <td>{{ $p->estado }}</td>
-          <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
-          <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
-          <td></td>
-        @elseif($tipo === 'computadora')
-          <td>{{ $p->nombre }}</td>
-          <td>{{ $p->procesador }}</td>
-          <td>{{ $p->numero_serie }}</td>
-          <td>{{ $p->color }}</td>
-          <td>{{ $p->bateria }}</td>
-          <td>{{ $p->ram }}</td>
-          <td>{{ $p->almacenamiento }}</td>
-          <td>{{ $p->procedencia }}</td>
-          <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
-          <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
-          <td>{{ $p->estado }}</td>
-          <td></td>
-        @elseif($tipo === 'producto_general')
-          <td>{{ $p->nombre }}</td>
-          <td>{{ $p->tipo }}</td>
-          <td>{{ $p->codigo }}</td>
-          <td>{{ $p->procedencia }}</td>
-          <td>{{ $p->estado }}</td>
-          <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
-          <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
-          <td></td>
-        @endif
-      </tr>
-    @endforeach
+  @endforeach
+
   </tbody>
 </table>
-
 
 @php
   $valorInvertido = $productos->sum('precio_costo');

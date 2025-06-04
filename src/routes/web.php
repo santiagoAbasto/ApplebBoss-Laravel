@@ -17,6 +17,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\CotizacionController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Api\StockController;
+use App\Http\Controllers\ProductoAppleController; // 👈 Asegúrate que esté arriba
+
 
 
 
@@ -118,9 +120,15 @@ Route::resource('ventas', VentaController::class)
     Route::get('/exportar/computadoras', [ExportController::class, 'computadoras'])->name('exportar.computadoras');
     Route::get('/exportar/productos-generales', [ExportController::class, 'productosGenerales'])->name('exportar.productos-generales');
     Route::get('/exportar/productos-generales/{tipo}', [ExportController::class, 'productosGeneralesPorTipo'])->name('exportar.productos-generales.tipo');
+    Route::get('/exportar/productos-apple', [ExportController::class, 'productosApple'])->name('exportar.productos-apple');
+
 
     // 📄 Boleta PDF posterior al registro
     Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('admin.ventas.boleta');
+    // 🍎 CRUD Productos Apple
+    Route::resource('productos-apple', ProductoAppleController::class)
+        ->names('productos-apple')
+        ->parameters(['productos-apple' => 'productoApple']);
 
 });
 
@@ -164,9 +172,12 @@ Route::prefix('api/stock')->name('api.stock.')->group(function () {
     Route::get('celulares', [StockController::class, 'celulares'])->name('celulares');
     Route::get('computadoras', [StockController::class, 'computadoras'])->name('computadoras');
     Route::get('productos-generales', [StockController::class, 'productosGenerales'])->name('productos_generales');
-    Route::get('/stock/buscar', [StockController::class, 'buscarPorCodigo'])->name('api.stock.buscar');
+    Route::get('productos-apple', [StockController::class, 'productosApple'])->name('productos_apple');
 
+    // ✅ Búsqueda por código (POST)
+    Route::post('buscar', [StockController::class, 'buscarPorCodigo'])->name('buscar_codigo');
 });
+
 
 Route::get('/test-drive', function () {
     Storage::disk('google')->put('archivo-prueba.txt', 'Hola desde Laravel 🧾');

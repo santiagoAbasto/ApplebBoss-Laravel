@@ -17,16 +17,18 @@ export default function AdminLayout({ children }) {
       <script src="/sbadmin/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
       <script src="/sbadmin/js/sb-admin-2.min.js" defer></script>
 
-      <div id="wrapper">
+      <div id="wrapper" className="bg-gray-100 min-h-screen">
         {/* Sidebar */}
         <ul className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
           {/* Logo */}
-          <Link className="sidebar-brand d-flex align-items-center justify-content-center" href="/admin/dashboard">
-            <div className="sidebar-brand-icon rotate-n-15">
-              <i className="fas fa-mobile-alt"></i>
-            </div>
-            <div className="sidebar-brand-text mx-3">AppleBoss Admin</div>
-          </Link>
+          <li className="nav-item">
+            <Link className="sidebar-brand d-flex align-items-center justify-content-center" href="/admin/dashboard">
+              <div className="sidebar-brand-icon rotate-n-15">
+                <i className="fas fa-mobile-alt"></i>
+              </div>
+              <div className="sidebar-brand-text mx-3">AppleBoss Admin</div>
+            </Link>
+          </li>
 
           <hr className="sidebar-divider my-0" />
 
@@ -39,7 +41,7 @@ export default function AdminLayout({ children }) {
           </li>
 
           <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Inventario</div>
+          <div className="sidebar-heading text-sm text-white px-3">Inventario</div>
 
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.celulares.index')}>
@@ -54,6 +56,12 @@ export default function AdminLayout({ children }) {
             </Link>
           </li>
           <li className="nav-item">
+            <Link className="nav-link" href={route('admin.productos-apple.index')}>
+              <i className="fas fa-apple-alt"></i>
+              <span>Productos Apple</span>
+            </Link>
+          </li>
+          <li className="nav-item">
             <Link className="nav-link" href={route('admin.productos-generales.index')}>
               <i className="fas fa-box"></i>
               <span>Productos Generales</span>
@@ -61,7 +69,7 @@ export default function AdminLayout({ children }) {
           </li>
 
           <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Operaciones</div>
+          <div className="sidebar-heading text-sm text-white px-3">Operaciones</div>
 
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.ventas.index')}>
@@ -89,7 +97,7 @@ export default function AdminLayout({ children }) {
           </li>
 
           <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Exportaciones</div>
+          <div className="sidebar-heading text-sm text-white px-3">Exportaciones</div>
 
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.exportaciones.index')}>
@@ -100,7 +108,7 @@ export default function AdminLayout({ children }) {
 
           <hr className="sidebar-divider" />
 
-          {/* Cerrar Sesión */}
+          {/* Cerrar sesión */}
           <li className="nav-item mt-3">
             <a href="#" className="nav-link text-white" onClick={handleLogout}>
               <i className="fas fa-sign-out-alt"></i>
@@ -110,9 +118,11 @@ export default function AdminLayout({ children }) {
         </ul>
 
         {/* Contenido */}
-        <div id="content-wrapper" className="d-flex flex-column">
-          <div id="content" className="container-fluid pt-4">
-            {children}
+        <div id="content-wrapper" className="d-flex flex-column w-full">
+          <div id="content" className="container-fluid py-4 px-4">
+            <div className="bg-white shadow rounded p-4">
+              {children}
+            </div>
           </div>
         </div>
       </div>

@@ -62,7 +62,7 @@
 <header>
   <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss Logo">
   <h1>REPORTE DE VENTAS</h1>
-  <p class="subtitulo">Apple Boss · Productos Apple</p>
+  <p class="subtitulo">Apple Boss · Productos y Servicios</p>
 </header>
 
 <div class="fecha-reporte">
@@ -98,7 +98,7 @@
         $subtotal = $precioVenta - $descuento - $permuta;
         $ganancia = $subtotal - $precioCosto;
         $total += $subtotal;
-        if ($ganancia > 0) $gananciaTotal += $ganancia;
+        $gananciaTotal += $ganancia;
 
         $tipo = $v->tipo ?? '—';
         $producto = $v->producto ?? '—';
@@ -117,7 +117,7 @@
           @if($ganancia < 0)
             <span class="text-danger">
               -{{ number_format(abs($ganancia), 2) }} Bs<br>
-              <span class="small-note">(Inversión)</span>
+              <span class="small-note">(Se invirtió)</span>
             </span>
           @else
             <span class="text-success">{{ number_format($ganancia, 2) }} Bs</span>
@@ -137,7 +137,7 @@
     @if($gananciaTotal > 0)
       <span class="value">{{ number_format($gananciaTotal, 2) }} Bs</span>
     @else
-      <span class="text-muted">No aplica</span>
+      <span class="text-muted">Se invirtió</span>
     @endif
   </div>
 </div>

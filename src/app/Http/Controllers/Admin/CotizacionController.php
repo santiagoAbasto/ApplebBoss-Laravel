@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\CotizacionMailable;
+use App\Models\ProductoApple;
 
 class CotizacionController extends Controller
 {
@@ -36,6 +37,8 @@ class CotizacionController extends Controller
             'celulares' => Celular::where('estado', 'disponible')->get(),
             'computadoras' => Computadora::where('estado', 'disponible')->get(),
             'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
+            'productosApple' => ProductoApple::where('estado', 'disponible')->get(),
+
         ]);
     }
 
