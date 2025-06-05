@@ -129,7 +129,7 @@ class DashboardController extends Controller
         
         $stockTotal = $stockCel + $stockComp + $stockGen;
 
-        $resumenGrafico = $items->groupBy('fecha')->map(function ($itemsDelDia, $fecha) {
+        $resumenGrafico = $items->groupBy('fecha')->map(function ($itemsDelDia, $fecha) use ($ganancias) {
             return [
                 'fecha' => $fecha,
                 'total' => $itemsDelDia->sum(fn ($i) => $i['ganancia'] + $i['capital'] + $i['descuento'] + $i['permuta']),
@@ -139,7 +139,6 @@ class DashboardController extends Controller
                 'descuento' => $itemsDelDia->sum('descuento'),
             ];
         })->values();
-
         return Inertia::render('Admin/Dashboard', [
             'user' => Auth::user(),
             'resumen' => [

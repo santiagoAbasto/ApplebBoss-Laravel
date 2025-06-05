@@ -145,8 +145,6 @@ th {
     $generales = $venta->items->where('tipo', 'producto_general');
 @endphp
 
-  @endphp
-
 <!-- El contenido del <head> permanece igual (omitido aquí por brevedad) -->
 
 @if ($celulares->count())
@@ -445,10 +443,10 @@ th {
     <td style="width: 50%; position: relative; height: 80px; padding: 0;">
       <img src="{{ public_path('images/firma.png') }}" alt="Firma AppleBoss"
            style="
-             width: 380px;
+             width: 150px;
              height: auto;
              position: absolute;
-             top: -60px;
+             top: 0px;
              left: 50%;
              transform: translateX(-50%);
              opacity: 0.95;

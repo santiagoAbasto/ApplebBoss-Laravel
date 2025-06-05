@@ -279,6 +279,14 @@ class ReporteController extends Controller
                 ]);
             }
         }
+
+        $resultados = $resultados->sortBy([
+            fn ($a, $b) =>
+                array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
+                <=> array_search($b->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico']),
+            fn ($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
+        ])->values();
+        
     
         $pdf = Pdf::loadView('pdf.reporte_ventas', [
             'ventas' => $resultados,
@@ -304,7 +312,7 @@ class ReporteController extends Controller
                 'entregadoProductoGeneral',
                 'entregadoProductoApple',
             ])->get();
-    
+
         return $this->generarPDFDesdeVentas($ventas);
     }
     
@@ -367,6 +375,7 @@ class ReporteController extends Controller
                 'entregadoProductoGeneral',
                 'entregadoProductoApple',
             ])->get();
+
     
         return $this->generarPDFDesdeVentas($ventas);
     }
@@ -453,6 +462,14 @@ class ReporteController extends Controller
                 ]);
             }
         }
+
+        $resultados = $resultados->sortBy([
+            fn ($a, $b) =>
+                array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
+                <=> array_search($b->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico']),
+            fn ($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
+        ])->values();
+        
     
         $pdf = Pdf::loadView('pdf.reporte_ventas', [
             'ventas' => $resultados,
