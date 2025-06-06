@@ -100,6 +100,10 @@ class CotizacionController extends Controller
     {
         $cotizacion = Cotizacion::findOrFail($id);
 
+        if (is_string($cotizacion->items)) {
+            $cotizacion->items = json_decode($cotizacion->items, true);
+        }
+        
         $pdf = Pdf::loadView('pdf.cotizacion', compact('cotizacion'))->setPaper('letter');
         return $pdf->stream('cotizacion_' . $cotizacion->id . '.pdf');
     }
@@ -107,6 +111,10 @@ class CotizacionController extends Controller
     public function exportarPDFYGuardar($id)
     {
         $cotizacion = Cotizacion::findOrFail($id);
+
+        if (is_string($cotizacion->items)) {
+            $cotizacion->items = json_decode($cotizacion->items, true);
+        }        
 
         if ($cotizacion->drive_url && str_contains($cotizacion->drive_url, 'https://drive.google.com')) {
             return $cotizacion->drive_url;
@@ -152,12 +160,17 @@ class CotizacionController extends Controller
     public function whatsappFinal($id)
     {
         $cotizacion = Cotizacion::findOrFail($id);
-
+    
+        // ✅ Solo el vendedor tiene restricción de propiedad
+        if (auth()->user()->rol === 'vendedor' && $cotizacion->user_id !== auth()->id()) {
+            abort(403, 'No autorizado');
+        }
+    
         $numero = preg_replace('/\D/', '', $cotizacion->telefono);
         if (!$numero || strlen($numero) < 8) {
             return back()->with('error', 'El número no es válido.');
         }
-
+    
         $pdfUrl = $this->exportarPDFYGuardar($id);
         $mensaje = "Hola {$cotizacion->nombre_cliente}, gracias por confiar en *AppleBoss* 😊\n\n"
             . "📝 *Cotización AppleBoss*\n"
@@ -165,10 +178,11 @@ class CotizacionController extends Controller
             . "📄 Cotización N.º: {$cotizacion->id}\n"
             . "💰 Total: Bs " . number_format($cotizacion->total, 2) . "\n"
             . "🔗 Ver PDF: $pdfUrl";
-
+    
         $url = "https://wa.me/{$numero}?text=" . rawurlencode($mensaje);
         return redirect()->away($url);
     }
+        
 
     public function whatsappFinalLibre(Request $request)
 {
@@ -196,14 +210,17 @@ class CotizacionController extends Controller
     {
         $ids = $request->input('ids', []);
         $links = [];
-
+    
         foreach ($ids as $id) {
             $cotizacion = Cotizacion::find($id);
             if (!$cotizacion) continue;
-
+    
+            // ✅ Solo aplicar filtro si es vendedor
+            if (auth()->user()->rol === 'vendedor' && $cotizacion->user_id !== auth()->id()) continue;
+    
             $numero = preg_replace('/\D/', '', $cotizacion->telefono);
             if (!$numero || strlen($numero) < 8) continue;
-
+    
             $pdfUrl = $this->exportarPDFYGuardar($id);
             $mensaje = "Hola {$cotizacion->nombre_cliente}, gracias por confiar en *AppleBoss* 😊\n\n"
                 . "📝 *Cotización AppleBoss*\n"
@@ -211,7 +228,7 @@ class CotizacionController extends Controller
                 . "📄 Cotización N.º: {$cotizacion->id}\n"
                 . "💰 Total: Bs " . number_format($cotizacion->total, 2) . "\n"
                 . "🔗 Ver PDF: $pdfUrl";
-
+    
             $links[] = [
                 'nombre' => $cotizacion->nombre_cliente,
                 'telefono' => $numero,
@@ -221,9 +238,90 @@ class CotizacionController extends Controller
                 'link' => "https://wa.me/{$numero}?text=" . rawurlencode($mensaje),
             ];
         }
-
-        return Inertia::render('Admin/Cotizaciones/WhatsappLote', [
+    
+        $layout = auth()->user()->rol === 'admin'
+            ? 'Admin/Cotizaciones/WhatsappLote'
+            : 'Vendedor/Cotizaciones/WhatsappLote';
+    
+        return Inertia::render($layout, [
             'links' => $links
         ]);
-    }
+    }      
+
+    public function indexVendedor()
+{
+    $cotizaciones = Cotizacion::where('user_id', auth()->id())
+        ->latest()
+        ->get();
+
+    return Inertia::render('Vendedor/Cotizaciones/Index', [
+        'cotizaciones' => $cotizaciones
+    ]);
+}
+
+public function createVendedor()
+{
+    $celulares = Celular::where('estado', 'disponible')->get();
+    $computadoras = Computadora::where('estado', 'disponible')->get();
+    $productosGenerales = ProductoGeneral::where('estado', 'disponible')->get();
+    $productosApple = ProductoApple::where('estado', 'disponible')->get();
+
+    return Inertia::render('Vendedor/Cotizaciones/Create', [ // 👈 MUY IMPORTANTE
+        'fechaHoy' => now()->toDateString(),
+        'celulares' => $celulares,
+        'computadoras' => $computadoras,
+        'productosGenerales' => $productosGenerales,
+        'productosApple' => $productosApple,
+    ]);
+}
+
+public function storeVendedor(Request $request)
+{
+    $request->validate([
+        'nombre_cliente' => 'required|string|max:255',
+        'telefono_completo' => 'required|string|regex:/^\+\d{8,15}$/',
+        'correo_cliente' => 'nullable|email|max:255',
+        'fecha_cotizacion' => 'required|date',
+        'items' => 'required|array|min:1',
+        'descuento' => 'nullable|numeric|min:0',
+    ]);
+
+    // Procesamiento de los ítems
+    $items = collect($request->items)->map(function ($item) {
+        $sinFactura = floatval($item['precio_sin_factura'] ?? 0);
+        $conFactura = floatval($item['precio_con_factura'] ?? 0);
+
+        return [
+            'nombre' => $item['nombre'],
+            'cantidad' => intval($item['cantidad']),
+            'precio_base' => $sinFactura,
+            'precio_sin_factura' => $sinFactura,
+            'precio_con_factura' => $conFactura,
+        ];
+    });
+
+    $subtotalConFactura = $items->sum(fn($item) => $item['precio_con_factura'] * $item['cantidad']);
+    $descuento = floatval($request->descuento ?? 0);
+    $totalConFactura = max(0, $subtotalConFactura - $descuento);
+
+    // Crear la cotización
+    $cotizacion = Cotizacion::create([
+        'nombre_cliente' => $request->nombre_cliente,
+        'telefono' => $request->telefono_completo,
+        'correo_cliente' => $request->correo_cliente,
+        'fecha_cotizacion' => $request->fecha_cotizacion,
+        'notas_adicionales' => $request->filled('notas_adicionales') ? $request->notas_adicionales : '',
+        'user_id' => auth()->id(),
+        'items' => $items,
+        'descuento' => $descuento,
+        'total' => $totalConFactura,
+        'enviado_por_correo' => false,
+        'enviado_por_whatsapp' => false,
+    ]);
+
+    // Generar y guardar el PDF
+    $this->exportarPDFYGuardar($cotizacion->id);
+
+    return to_route('vendedor.cotizaciones.index')->with('success', 'Cotización registrada correctamente.');
+}
 }

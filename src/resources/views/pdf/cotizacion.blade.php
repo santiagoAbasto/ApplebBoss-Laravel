@@ -285,16 +285,18 @@
     {{ $cotizacion->notas_adicionales ?? 'La cotización es válida por 7 días. La fecha de ejecución se coordinará según disponibilidad.' }}
   </div>
 
-  <div class="firma" style="margin-top: 10px; display: flex; justify-content: flex-end;">
-    <div class="firma-box" style="text-align: center;">
-      <img src="{{ public_path('images/firma.png') }}"
-        alt="Firma Apple Boss"
-        style="width: 450px; margin-top: -80px; margin-bottom: -60px;">
-      <p style="margin: 2px 0 0; font-size: 12px; color: #003366;">-------------------------------</p>
-      <p style="margin: 0; font-style: italic; font-size: 10.5px; font-weight: bold; color: #003366;">
-        Firma autorizada - Apple Boss
-      </p>
-    </div>
+  <div class="firma" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+  <div class="firma-box" style="text-align: center;">
+    <img src="{{ public_path('images/firma.png') }}"
+      alt="Firma Apple Boss"
+      style="width: 250px; margin: 0 auto 4px;">
+    <p style="margin: 2px 0 0; font-size: 12px; color: #003366;">-------------------------------</p>
+    <p style="margin: 0; font-style: italic; font-size: 10.5px; font-weight: bold; color: #003366;">
+      Firma autorizada - Apple Boss
+    </p>
+  </div>
+</div>
+
   </div>
 
   <footer>

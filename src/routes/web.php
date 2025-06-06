@@ -18,9 +18,7 @@ use App\Http\Controllers\Admin\CotizacionController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\ProductoAppleController; // 👈 Asegúrate que esté arriba
-
-
-
+use App\Http\Controllers\Vendedor\ProductoVendedorController;
 
 // 🏠 Ruta pública inicial
 Route::get('/', function () {
@@ -134,24 +132,41 @@ Route::resource('ventas', VentaController::class)
 
 // ========================
 // 🧑‍💼 RUTAS VENDEDOR
-// ========================
+// =======================
+
 Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
 
     Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
 
+    Route::get('/productos', [ProductoVendedorController::class, 'index'])->name('productos.index');
     Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
     Route::get('/computadoras', [ComputadoraController::class, 'index'])->name('computadoras.index');
     Route::get('/productos-generales', [ProductoGeneralController::class, 'index'])->name('productos-generales.index');
 
+    // VENTAS
     Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
     Route::get('/ventas/create', [VentaController::class, 'create'])->name('ventas.create');
     Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
+    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
+    Route::get('/ventas/exportar/pdf', [VentaController::class, 'exportarVentasVendedor'])->name('ventas.exportar');
 
+    // SERVICIO TÉCNICO
     Route::get('/servicios', [ServicioTecnicoController::class, 'index'])->name('servicios.index');
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
     Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
-});
 
+    // COTIZACIONES PARA VENDEDOR
+    Route::get('/cotizaciones', [CotizacionController::class, 'indexVendedor'])->name('cotizaciones.index');
+    Route::get('/cotizaciones/crear', [CotizacionController::class, 'createVendedor'])->name('cotizaciones.create');
+    Route::post('/cotizaciones', [CotizacionController::class, 'storeVendedor'])->name('cotizaciones.store');
+    Route::get('cotizaciones/pdf/{id}', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
+
+
+    //WHATSAPP
+    Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])->name('cotizaciones.whatsapp');
+    Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
+    Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.whatsapp-lote');
+});
 
 // ========================
 // 🔄 API & EXTRAS

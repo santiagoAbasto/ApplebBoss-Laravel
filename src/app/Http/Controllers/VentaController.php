@@ -9,6 +9,8 @@ use App\Models\ProductoGeneral;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\VentaItem;
+use App\Models\ProductoApple;
+
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class VentaController extends Controller
@@ -20,26 +22,55 @@ class VentaController extends Controller
             'celular',
             'computadora',
             'productoGeneral',
+            'productoApple',
             'entregadoCelular',
             'entregadoComputadora',
             'entregadoProductoGeneral',
-            'items'
-        ])->orderBy('created_at', 'desc')->get();
-
-        return Inertia::render('Admin/Ventas/Index', [
-            'ventas' => $ventas,
-        ]);
-    }
+            'entregadoProductoApple',
+            'items',
+            'items.celular',
+            'items.computadora',
+            'items.productoGeneral',
+            'items.productoApple',
+        ])
+        ->when(auth()->user()->rol === 'vendedor', function ($q) {
+            $q->where('user_id', auth()->id());
+        })
+        ->orderBy('created_at', 'desc')
+        ->get();
+    
+        if (auth()->user()->rol === 'admin') {
+            return Inertia::render('Admin/Ventas/Index', [
+                'ventas' => $ventas,
+            ]);
+        } else {
+            return Inertia::render('Vendedor/Ventas/Index', [
+                'ventas' => $ventas,
+            ]);
+        }
+    }     
 
     public function create()
     {
-        return Inertia::render('Admin/Ventas/Create', [
-            'celulares' => Celular::where('estado', 'disponible')->get(),
-            'computadoras' => Computadora::where('estado', 'disponible')->get(),
-            'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
-        ]);
+        $celulares = Celular::where('estado', 'disponible')->get();
+        $computadoras = Computadora::where('estado', 'disponible')->get();
+        $productosGenerales = ProductoGeneral::where('estado', 'disponible')->get();
+        $productosApple = ProductoApple::where('estado', 'disponible')->get();
+    
+        $data = [
+            'celulares' => $celulares,
+            'computadoras' => $computadoras,
+            'productosGenerales' => $productosGenerales,
+            'productosApple' => $productosApple,
+        ];
+    
+        if (auth()->user()->rol === 'admin') {
+            return Inertia::render('Admin/Ventas/Create', $data);
+        } else {
+            return Inertia::render('Vendedor/Ventas/Create', $data);
+        }
     }
-
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -205,13 +236,43 @@ class VentaController extends Controller
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
-            'vendedor',
+            'items.productoApple', // ✅ <--- AÑADIR            'vendedor',
             'entregadoCelular',
             'entregadoComputadora',
             'entregadoProductoGeneral',
+            'entregadoProductoApple',
+
         ]);
 
         $pdf = PDF::loadView('pdf.boleta', compact('venta'));
         return $pdf->stream("boleta-venta-{$venta->id}.pdf");
     }
+
+    public function exportarVentasVendedor(Request $request)
+{
+    $fechaInicio = $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString();
+    $fechaFin = $request->input('fecha_fin') ?? now()->endOfMonth()->toDateString();
+
+    $ventas = Venta::with([
+        'items.celular',
+        'items.computadora',
+        'items.productoGeneral',
+        'items.productoApple',
+        'vendedor'
+    ])
+    ->where('user_id', auth()->id())
+    ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+    ->orderBy('fecha', 'desc')
+    ->get();
+
+    $pdf = PDF::loadView('pdf.ventas_vendedor', [
+        'ventas' => $ventas,
+        'vendedor' => auth()->user(),
+        'fechaInicio' => $fechaInicio,
+        'fechaFin' => $fechaFin,
+    ]);
+
+    return $pdf->stream("ventas-vendedor.pdf");
+}
+
 }

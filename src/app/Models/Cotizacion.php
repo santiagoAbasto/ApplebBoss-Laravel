@@ -35,6 +35,7 @@ class Cotizacion extends Model
         'enviado_por_correo' => 'boolean',
         'enviado_por_whatsapp' => 'boolean',
         'fecha_cotizacion' => 'date',
+        'items' => 'array'
     ];
 
     public function usuario()

@@ -78,6 +78,10 @@ class Venta extends Model
     return $this->belongsTo(ProductoApple::class, 'entregado_producto_apple_id');
 }
 
+public function productoApple() {
+    return $this->belongsTo(ProductoApple::class, 'producto_apple_id');
+}
+
     // Usuario que hizo la venta
     public function vendedor()
     {
