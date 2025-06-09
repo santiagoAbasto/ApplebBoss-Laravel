@@ -93,7 +93,7 @@
     }
 
     .firma-box img {
-      width: 360px;
+      width: 140px;
       position: relative;
       top: 30px;
     }

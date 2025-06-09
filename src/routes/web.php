@@ -154,6 +154,8 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/servicios', [ServicioTecnicoController::class, 'index'])->name('servicios.index');
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
     Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
+    Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
+
 
     // COTIZACIONES PARA VENDEDOR
     Route::get('/cotizaciones', [CotizacionController::class, 'indexVendedor'])->name('cotizaciones.index');
@@ -166,6 +168,7 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])->name('cotizaciones.whatsapp');
     Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
     Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.whatsapp-lote');
+
 });
 
 // ========================

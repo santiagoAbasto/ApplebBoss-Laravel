@@ -98,7 +98,7 @@
     }
 
     .firma img {
-      width: 380px;
+      width: 180px;
       margin-bottom: 10px;
     }
 

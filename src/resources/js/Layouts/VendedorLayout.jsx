@@ -1,7 +1,12 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 
 export default function VendedorLayout({ children }) {
-  const { url } = usePage();
+  const url = window.location.pathname;
+  const { auth } = usePage().props;
+
+  const handleLogout = () => {
+    router.post(route('logout'));
+  };
 
   return (
     <>
@@ -53,18 +58,32 @@ export default function VendedorLayout({ children }) {
           </li>
 
           <li className="nav-item">
-            <Link className={`nav-link ${url.startsWith('/vendedor/cotizaciones') && !url.includes('/create') ? 'active' : ''}`} href="/vendedor/cotizaciones">
+            <Link className={`nav-link ${url.startsWith('/vendedor/cotizaciones') ? 'active' : ''}`} href="/vendedor/cotizaciones">
               <i className="fas fa-file-alt"></i>
               <span>Mis Cotizaciones</span>
             </Link>
           </li>
+
+          <li className="nav-item">
+            <Link className={`nav-link ${url.startsWith('/vendedor/servicios') ? 'active' : ''}`} href="/vendedor/servicios">
+              <i className="fas fa-tools"></i>
+              <span>Servicio Técnico</span>
+            </Link>
+          </li>
         </ul>
+
         {/* Content Wrapper */}
         <div id="content-wrapper" className="d-flex flex-column">
           <div id="content">
             {/* Topbar */}
-            <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-              <h6 className="font-weight-bold text-success ml-3 mt-2">Panel del Vendedor</h6>
+            <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow d-flex justify-content-between px-3">
+              <h6 className="font-weight-bold text-success mt-2">Panel del Vendedor</h6>
+              <div>
+                <span className="me-3 text-dark small fw-bold">{auth?.user?.name}</span>
+                <button className="btn btn-sm btn-danger shadow-sm" onClick={handleLogout}>
+                  <i className="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+                </button>
+              </div>
             </nav>
 
             {/* Main Content */}

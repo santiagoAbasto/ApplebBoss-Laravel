@@ -22,7 +22,11 @@ class ServicioTecnicoController extends Controller
     
         $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
     
-        if ($request->filled('vendedor_id')) {
+        // Si el usuario es vendedor, solo puede ver sus propios servicios
+        if (Auth::user()->rol === 'vendedor') {
+            $query->where('user_id', Auth::id());
+        } elseif ($request->filled('vendedor_id')) {
+            // Solo los administradores pueden usar el filtro de vendedor
             $query->where('user_id', $request->vendedor_id);
         }
     
@@ -30,18 +34,34 @@ class ServicioTecnicoController extends Controller
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
     
-        return Inertia::render('Admin/Servicios/Index', [
-            'servicios' => $query->get(),
-            'filtros' => $request->only(['fecha_inicio', 'fecha_fin', 'vendedor_id']),
-            'vendedores' => \App\Models\User::where('rol', 'vendedor')->select('id', 'name')->get(),
-        ]);
+        return Inertia::render(
+            Auth::user()->rol === 'admin'
+                ? 'Admin/Servicios/Index'
+                : 'Vendedor/Servicios/Index',
+            [
+                'servicios' => $query->get(),
+                'filtros' => $request->only(['fecha_inicio', 'fecha_fin', 'vendedor_id']),
+                'vendedores' => Auth::user()->rol === 'admin'
+                    ? \App\Models\User::where('rol', 'vendedor')->select('id', 'name')->get()
+                    : [],
+            ]
+        );
     }
     
     public function exportarFiltrado(Request $request)
     {
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'vendedor_id' => 'nullable|exists:users,id',
+        ]);
+    
         $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
     
-        if ($request->filled('vendedor_id')) {
+        // Si es vendedor, restringimos a sus servicios
+        if (Auth::user()->rol === 'vendedor') {
+            $query->where('user_id', Auth::id());
+        } elseif ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
         }
     
@@ -57,6 +77,7 @@ class ServicioTecnicoController extends Controller
     
         return $pdf->download('servicios_tecnicos_filtrado.pdf');
     }
+    
     
     public function create()
     {
