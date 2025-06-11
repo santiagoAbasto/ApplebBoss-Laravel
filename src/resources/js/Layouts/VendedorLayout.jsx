@@ -70,6 +70,14 @@ export default function VendedorLayout({ children }) {
               <span>Servicio Técnico</span>
             </Link>
           </li>
+
+          <li className="nav-item">
+  <Link className={`nav-link ${url.startsWith('/vendedor/clientes') ? 'active' : ''}`} href="/vendedor/clientes">
+    <i className="fas fa-users"></i>
+    <span>Mis Clientes</span>
+  </Link>
+</li>
+
         </ul>
 
         {/* Content Wrapper */}

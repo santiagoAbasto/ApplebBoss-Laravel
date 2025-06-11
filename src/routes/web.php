@@ -16,9 +16,13 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\CotizacionController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\ClienteAdminController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\ProductoAppleController; // 👈 Asegúrate que esté arriba
 use App\Http\Controllers\Vendedor\ProductoVendedorController;
+use App\Http\Controllers\Vendedor\DashboardVendedorController;
+use App\Http\Controllers\Vendedor\ClienteVendedorController;
+
 
 // 🏠 Ruta pública inicial
 Route::get('/', function () {
@@ -128,6 +132,13 @@ Route::resource('ventas', VentaController::class)
         ->names('productos-apple')
         ->parameters(['productos-apple' => 'productoApple']);
 
+    //Clientes
+    Route::post('/clientes/promociones/enviar', [\App\Http\Controllers\Admin\ClienteAdminController::class, 'enviarPromocionMasiva'])->name('admin.clientes.promociones.enviar');
+    Route::get('/clientes', [ClienteAdminController::class, 'index'])->name('clientes.index');
+    Route::get('/clientes/sugerencias', [ClienteAdminController::class, 'sugerencias'])->name('clientes.sugerencias');
+
+
+
 });
 
 // ========================
@@ -137,6 +148,8 @@ Route::resource('ventas', VentaController::class)
 Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
 
     Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
+    Route::get('/dashboard', [DashboardVendedorController::class, 'index'])->name('dashboard');
+
 
     Route::get('/productos', [ProductoVendedorController::class, 'index'])->name('productos.index');
     Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
@@ -168,6 +181,16 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])->name('cotizaciones.whatsapp');
     Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
     Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.whatsapp-lote');
+
+    //PROMOCIONES
+    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('clientes.index');
+    Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('promociones.enviar');
+
+    // CLIENTES (para vendedores)
+    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('clientes.index');
+    Route::get('/clientes/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('clientes.sugerencias');
+
+
 
 });
 

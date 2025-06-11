@@ -47,7 +47,7 @@
       text-align: center;
     }
     .firma img {
-      width: 380px;
+      width: 220px;
       margin-bottom: 10px;
     }
     .firma p {
@@ -89,8 +89,8 @@
     @php
       $total = 0; $gananciaTotal = 0;
     @endphp
-    @foreach($ventas as $v)
-      @php
+    @foreach($ventas->sortBy('fecha') as $v)
+    @php
         $precioCosto = $v->precio_invertido ?? 0;
         $descuento = $v->descuento ?? 0;
         $precioVenta = $v->precio_venta ?? 0;

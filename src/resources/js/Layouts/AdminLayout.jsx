@@ -2,6 +2,7 @@ import { Link, Head, useForm } from '@inertiajs/react';
 
 export default function AdminLayout({ children }) {
   const { post } = useForm();
+  const pathname = window.location.pathname;
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ export default function AdminLayout({ children }) {
           {/* Dashboard */}
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.dashboard')}>
-              <i className="fas fa-fw fa-tachometer-alt"></i>
+              <i className="fas fa-fw fa-tachometer-alt me-2"></i>
               <span>Dashboard</span>
             </Link>
           </li>
@@ -43,66 +44,54 @@ export default function AdminLayout({ children }) {
           <hr className="sidebar-divider" />
           <div className="sidebar-heading text-sm text-white px-3">Inventario</div>
 
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.celulares.index')}>
-              <i className="fas fa-mobile"></i>
-              <span>Celulares</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.computadoras.index')}>
-              <i className="fas fa-laptop"></i>
-              <span>Computadoras</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.productos-apple.index')}>
-              <i className="fas fa-apple-alt"></i>
-              <span>Productos Apple</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.productos-generales.index')}>
-              <i className="fas fa-box"></i>
-              <span>Productos Generales</span>
-            </Link>
-          </li>
+          {[
+            { route: 'admin.celulares.index', icon: 'fas fa-mobile', label: 'Celulares' },
+            { route: 'admin.computadoras.index', icon: 'fas fa-laptop', label: 'Computadoras' },
+            { route: 'admin.productos-apple.index', icon: 'fas fa-apple-alt', label: 'Productos Apple' },
+            { route: 'admin.productos-generales.index', icon: 'fas fa-box', label: 'Productos Generales' },
+          ].map(({ route: r, icon, label }) => (
+            <li className="nav-item" key={label}>
+              <Link className="nav-link" href={route(r)}>
+                <i className={`${icon} me-2`}></i>
+                <span>{label}</span>
+              </Link>
+            </li>
+          ))}
 
           <hr className="sidebar-divider" />
           <div className="sidebar-heading text-sm text-white px-3">Operaciones</div>
 
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.ventas.index')}>
-              <i className="fas fa-shopping-cart"></i>
-              <span>Ventas</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.servicios.index')}>
-              <i className="fas fa-tools"></i>
-              <span>Servicio Técnico</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.reportes.index')}>
-              <i className="fas fa-chart-line"></i>
-              <span>Reportes</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link className="nav-link" href={route('admin.cotizaciones.index')}>
-              <i className="fas fa-file-invoice-dollar"></i>
-              <span>Cotizaciones</span>
-            </Link>
-          </li>
+          {[
+            { route: 'admin.ventas.index', icon: 'fas fa-shopping-cart', label: 'Ventas' },
+            { route: 'admin.servicios.index', icon: 'fas fa-tools', label: 'Servicio Técnico' },
+            { route: 'admin.reportes.index', icon: 'fas fa-chart-line', label: 'Reportes' },
+            { route: 'admin.cotizaciones.index', icon: 'fas fa-file-invoice-dollar', label: 'Cotizaciones' },
+          ].map(({ route: r, icon, label }) => (
+            <li className="nav-item" key={label}>
+              <Link className="nav-link" href={route(r)}>
+                <i className={`${icon} me-2`}></i>
+                <span>{label}</span>
+              </Link>
+            </li>
+          ))}
 
           <hr className="sidebar-divider" />
           <div className="sidebar-heading text-sm text-white px-3">Exportaciones</div>
 
           <li className="nav-item">
             <Link className="nav-link" href={route('admin.exportaciones.index')}>
-              <i className="fas fa-file-export"></i>
+              <i className="fas fa-file-export me-2"></i>
               <span>Exportaciones</span>
+            </Link>
+          </li>
+
+          <li className="nav-item">
+            <Link
+              className={`nav-link ${pathname.startsWith('/admin/clientes') ? 'active bg-white text-dark fw-bold' : ''}`}
+              href="/admin/clientes"
+            >
+              <i className="fas fa-users me-2"></i>
+              <span>Mis Clientes</span>
             </Link>
           </li>
 
@@ -111,7 +100,7 @@ export default function AdminLayout({ children }) {
           {/* Cerrar sesión */}
           <li className="nav-item mt-3">
             <a href="#" className="nav-link text-white" onClick={handleLogout}>
-              <i className="fas fa-sign-out-alt"></i>
+              <i className="fas fa-sign-out-alt me-2"></i>
               <span>Cerrar sesión</span>
             </a>
           </li>

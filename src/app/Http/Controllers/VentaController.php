@@ -10,7 +10,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\VentaItem;
 use App\Models\ProductoApple;
-
+use App\Models\Cliente;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class VentaController extends Controller
@@ -221,7 +222,19 @@ class VentaController extends Controller
                 'subtotal' => $subtotal,
             ]);
         }
+        if ($venta->telefono_cliente) {
+            $clienteExistente = Cliente::where('telefono', $venta->telefono_cliente)->first();
         
+            if (!$clienteExistente) {
+                Cliente::create([
+                    'user_id' => $venta->user_id,
+                    'nombre' => Str::title(trim($venta->nombre_cliente)),
+                    'telefono' => $venta->telefono_cliente,
+                    'correo' => null,
+                    'documento' => null,
+                ]);
+            }
+        }
     
         return response()->json([
             'message' => 'Venta registrada con éxito',

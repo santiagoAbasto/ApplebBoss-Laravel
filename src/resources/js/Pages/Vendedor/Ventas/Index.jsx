@@ -16,20 +16,20 @@ export default function Index({ ventas }) {
   const exportarPDF = () => {
     window.open(route('vendedor.ventas.exportar'), '_blank');
   };
-  
 
   return (
     <VendedorLayout>
       <Head title="Mis Ventas" />
-      
+
+      {/* Título + botones */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
         <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-          📋 Mis Ventas
+          Mis Ventas
         </h1>
         <div className="flex gap-2">
           <Link
             href={route('vendedor.ventas.create')}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 transition"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow transition"
           >
             + Nueva Venta
           </Link>
@@ -42,6 +42,7 @@ export default function Index({ ventas }) {
         </div>
       </div>
 
+      {/* Tabla */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
@@ -69,17 +70,23 @@ export default function Index({ ventas }) {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-2 font-medium text-green-600">
-                      {parseFloat(v.subtotal || 0).toFixed(2)} Bs
+                    <td className="px-4 py-2 font-semibold text-green-700">
+                      {parseFloat(v.subtotal || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs
                     </td>
                     <td className="px-4 py-2 text-gray-500">
-                      {new Date(v.created_at).toLocaleString()}
+                      {new Date(v.created_at).toLocaleString('es-BO', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-4 py-4 text-center text-gray-400">
+                  <td colSpan="4" className="px-4 py-6 text-center text-gray-400 italic">
                     No hay ventas registradas.
                   </td>
                 </tr>

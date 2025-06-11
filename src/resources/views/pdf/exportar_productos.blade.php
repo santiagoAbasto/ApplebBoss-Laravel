@@ -103,14 +103,15 @@
     }
 
     footer {
-      margin-top: 18px;
-      font-size: 9.5px;
-      display: flex;
-      justify-content: space-between;
-      border-top: 1px solid #ccc;
-      padding-top: 5px;
-      color: #444;
-    }
+  margin-top: 10px;
+  font-size: 9.5px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+  color: #444;
+}
+
 
     .footer-left p {
       margin: 2px 0;
@@ -303,6 +304,9 @@
   <div class="firma">
     <div class="firma-box">
       <img src="{{ public_path('images/firma.png') }}" alt="Firma Apple Boss">
+
+      <div style="height: 20px;"></div>
+
       <p style="font-size: 12px; color: #003366;">-------------------------------</p>
       <p style="font-style: italic; font-size: 10.5px; font-weight: bold; color: #003366;">Firma autorizada - Apple Boss</p>
     </div>

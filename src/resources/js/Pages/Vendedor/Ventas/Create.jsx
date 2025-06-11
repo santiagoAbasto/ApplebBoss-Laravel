@@ -7,6 +7,9 @@ import ModalPermutaComponent from '@/Components/ModalPermutaComponent';
 
 export default function Create({ celulares, computadoras, productosGenerales, productosApple }) {
     const [items, setItems] = useState([]);
+    const [sugerencias, setSugerencias] = useState([]);
+    const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
     const [form, setForm] = useState({
         nombre_cliente: '',
         telefono_cliente: '',
@@ -153,26 +156,108 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
             <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
                 {/* Sección: Información del cliente */}
-                <div className="bg-white p-5 rounded shadow">
+                <div className="bg-white p-5 rounded shadow relative">
                     <h2 className="text-xl font-semibold text-gray-700 mb-4">🧍‍♂️ Información del cliente</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input className="input" placeholder="Nombre del Cliente" value={form.nombre_cliente} onChange={e => setForm({ ...form, nombre_cliente: e.target.value })} />
-                        <input className="input" placeholder="Teléfono" value={form.telefono_cliente} onChange={e => setForm({ ...form, telefono_cliente: e.target.value })} />
-                        <select className="input" value={form.metodo_pago} onChange={e => setForm({ ...form, metodo_pago: e.target.value })}>
+
+                        {/* Campo con autocompletado por nombre */}
+                        <div className="relative">
+                            <input
+                                className="input w-full"
+                                placeholder="Nombre del Cliente"
+                                value={form.nombre_cliente}
+                                onChange={async (e) => {
+                                    const nombre = e.target.value;
+                                    setForm({ ...form, nombre_cliente: nombre });
+
+                                    if (nombre.length >= 2) {
+                                        try {
+                                            const res = await axios.get(route('vendedor.clientes.sugerencias', { term: nombre }));
+                                            setSugerencias(res.data);
+                                            setMostrarSugerencias(true);
+                                        } catch (err) {
+                                            console.error('Error al obtener sugerencias:', err);
+                                        }
+                                    } else {
+                                        setMostrarSugerencias(false);
+                                    }
+                                }}
+                                onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
+                                onFocus={() => {
+                                    if (sugerencias.length > 0) setMostrarSugerencias(true);
+                                }}
+                            />
+                            {mostrarSugerencias && sugerencias.length > 0 && (
+                                <ul className="absolute bg-white border rounded w-full z-10 max-h-40 overflow-y-auto shadow text-sm mt-1">
+                                    {sugerencias.map((cliente) => (
+                                        <li
+                                            key={cliente.id}
+                                            className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
+                                            onClick={() => {
+                                                setForm({
+                                                    ...form,
+                                                    nombre_cliente: cliente.nombre,
+                                                    telefono_cliente: cliente.telefono
+                                                });
+                                                setMostrarSugerencias(false);
+                                            }}
+                                        >
+                                            {cliente.nombre} — {cliente.telefono}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        {/* Teléfono del cliente */}
+                        <input
+                            className="input"
+                            placeholder="Teléfono"
+                            value={form.telefono_cliente}
+                            onChange={e => setForm({ ...form, telefono_cliente: e.target.value })}
+                        />
+
+                        {/* Método de pago */}
+                        <select
+                            className="input"
+                            value={form.metodo_pago}
+                            onChange={e => setForm({ ...form, metodo_pago: e.target.value })}
+                        >
                             <option value="efectivo">Efectivo</option>
                             <option value="qr">QR</option>
                             <option value="tarjeta">Tarjeta</option>
                         </select>
+
+                        {/* Campos de tarjeta si corresponde */}
                         {form.metodo_pago === 'tarjeta' && (
                             <>
-                                <input className="input" placeholder="Inicio tarjeta (4 dígitos)" maxLength={4} value={form.inicio_tarjeta} onChange={e => setForm({ ...form, inicio_tarjeta: e.target.value })} />
-                                <input className="input" placeholder="Fin tarjeta (4 dígitos)" maxLength={4} value={form.fin_tarjeta} onChange={e => setForm({ ...form, fin_tarjeta: e.target.value })} />
+                                <input
+                                    className="input"
+                                    placeholder="Inicio tarjeta (4 dígitos)"
+                                    maxLength={4}
+                                    value={form.inicio_tarjeta}
+                                    onChange={e => setForm({ ...form, inicio_tarjeta: e.target.value })}
+                                />
+                                <input
+                                    className="input"
+                                    placeholder="Fin tarjeta (4 dígitos)"
+                                    maxLength={4}
+                                    value={form.fin_tarjeta}
+                                    onChange={e => setForm({ ...form, fin_tarjeta: e.target.value })}
+                                />
                             </>
                         )}
-                        <input type="number" className="input" placeholder="Descuento total Bs" value={form.descuento} onChange={e => setForm({ ...form, descuento: e.target.value })} />
+
+                        {/* Descuento total */}
+                        <input
+                            type="number"
+                            className="input"
+                            placeholder="Descuento total Bs"
+                            value={form.descuento}
+                            onChange={e => setForm({ ...form, descuento: e.target.value })}
+                        />
                     </div>
                 </div>
-
                 {/* Sección: Buscar y agregar productos */}
                 <div className="bg-white p-5 rounded shadow">
                     <h2 className="text-xl font-semibold text-gray-700 mb-4">🛒 Buscar producto por código</h2>
