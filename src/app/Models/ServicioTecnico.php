@@ -19,10 +19,16 @@ class ServicioTecnico extends Model
         'tecnico',
         'fecha',
         'user_id',
+        'cliente_id', // ✅ AGREGADO
     ];
 
     public function vendedor()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class);
     }
 }

@@ -132,11 +132,12 @@ Route::resource('ventas', VentaController::class)
         ->names('productos-apple')
         ->parameters(['productos-apple' => 'productoApple']);
 
-    //Clientes
-    Route::post('/clientes/promociones/enviar', [\App\Http\Controllers\Admin\ClienteAdminController::class, 'enviarPromocionMasiva'])->name('admin.clientes.promociones.enviar');
+    // 📇 CLIENTES - ADMIN
     Route::get('/clientes', [ClienteAdminController::class, 'index'])->name('clientes.index');
     Route::get('/clientes/sugerencias', [ClienteAdminController::class, 'sugerencias'])->name('clientes.sugerencias');
-
+    Route::get('/clientes/{cliente}/edit', [ClienteAdminController::class, 'edit'])->name('clientes.edit');
+    Route::put('/clientes/{cliente}', [ClienteAdminController::class, 'update'])->name('clientes.update');
+    Route::post('/clientes/promociones/enviar', [ClienteAdminController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
 
 
 });
@@ -189,9 +190,11 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     // CLIENTES (para vendedores)
     Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('clientes.index');
     Route::get('/clientes/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('clientes.sugerencias');
-
-
-
+    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('vendedor.clientes.index');
+    Route::get('/clientes/{id}/edit', [ClienteVendedorController::class, 'edit'])->name('vendedor.clientes.edit');
+    Route::put('/clientes/{id}', [ClienteVendedorController::class, 'update'])->name('vendedor.clientes.update');
+    Route::post('/clientes/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('vendedor.clientes.promociones.enviar');
+    Route::get('/clientes/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('vendedor.clientes.sugerencias');
 });
 
 // ========================

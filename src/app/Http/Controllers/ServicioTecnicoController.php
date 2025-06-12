@@ -98,15 +98,37 @@ class ServicioTecnicoController extends Controller
             'tecnico' => 'required|string',
             'fecha' => 'nullable|date',
         ]);
-
+    
         $data['fecha'] = $data['fecha'] ?? now('America/La_Paz');
         $data['user_id'] = Auth::id();
-
-        // 1. Registrar el servicio técnico
-        ServicioTecnico::create($data);
-
-        // 2. Registrar también una venta asociada (para reportes generales)
-        Venta::create([
+    
+        // ✅ Crear o buscar cliente automáticamente
+        $cliente = \App\Models\Cliente::firstOrCreate(
+            [
+                'nombre' => $data['cliente'],
+                'telefono' => $data['telefono'],
+            ],
+            [
+                'user_id' => Auth::id(), // Asigna al vendedor actual
+            ]
+        );
+    
+        // ✅ Registrar el servicio técnico asociado al cliente
+        $servicio = new ServicioTecnico();
+        $servicio->cliente = $data['cliente'];
+        $servicio->telefono = $data['telefono'];
+        $servicio->equipo = $data['equipo'];
+        $servicio->detalle_servicio = $data['detalle_servicio'];
+        $servicio->precio_costo = $data['precio_costo'];
+        $servicio->precio_venta = $data['precio_venta'];
+        $servicio->tecnico = $data['tecnico'];
+        $servicio->fecha = $data['fecha'];
+        $servicio->user_id = $data['user_id'];
+        $servicio->cliente_id = $cliente->id; // Aquí guardamos la relación
+        $servicio->save();
+    
+        // ✅ Registrar la venta asociada
+        \App\Models\Venta::create([
             'nombre_cliente' => $data['cliente'],
             'telefono_cliente' => $data['telefono'],
             'tipo_venta' => 'servicio_tecnico',
@@ -121,11 +143,11 @@ class ServicioTecnicoController extends Controller
             'metodo_pago' => 'efectivo',
             'fecha' => $data['fecha'],
         ]);
-
+    
         return redirect()->route(Auth::user()->rol === 'admin'
             ? 'admin.servicios.index'
             : 'vendedor.servicios.index')->with('success', 'Servicio técnico registrado.');
-    }
+    }    
 
     public function exportar(Request $request)
     {

@@ -1,112 +1,122 @@
+import { useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, usePage, router } from '@inertiajs/react';
+import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
+import { route } from 'ziggy-js';
 
-export default function Index({ productos }) {
-  const flash = usePage().props?.flash || {};
+export default function ProductosAppleIndex({ productos }) {
+  const [busqueda, setBusqueda] = useState('');
+  const flash = usePage().props.flash || {};
 
-  const handleDelete = (id) => {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-      router.delete(route('admin.productos-apple.destroy', id));
+  const eliminar = (id) => {
+    if (confirm('¿Deseas eliminar este producto Apple?')) {
+      router.delete(route('admin.productos-apple.destroy', id), {
+        onSuccess: () => showSuccess('Producto eliminado correctamente'),
+        onError: () => showError('Error al eliminar el producto'),
+      });
     }
   };
+
+  const getBadgeColor = (estado) => {
+    switch (estado) {
+      case 'disponible': return 'bg-green-200 text-green-700';
+      case 'vendido': return 'bg-red-200 text-red-700';
+      case 'permuta': return 'bg-blue-200 text-blue-700';
+      default: return 'bg-gray-200 text-gray-700';
+    }
+  };
+
+  const productosFiltrados = productos.filter((p) =>
+    p.modelo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    p.imei_1?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    p.numero_serie?.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <AdminLayout>
       <Head title="Productos Apple" />
 
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-semibold text-gray-800">🍏 Productos Apple</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-[#003366]">🍏 Productos Apple</h1>
         <Link
           href={route('admin.productos-apple.create')}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
         >
-          + Nuevo producto
+          + Registrar Producto
         </Link>
       </div>
 
-      {flash.success && (
-        <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 border border-green-300">
-          ✅ {flash.success}
-        </div>
-      )}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Buscar por modelo, IMEI o serie"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        />
+      </div>
 
-      <div className="overflow-x-auto shadow border rounded">
-        <table className="min-w-full text-sm text-gray-700">
-          <thead className="bg-gray-100 border-b text-xs uppercase font-semibold">
+      <div className="overflow-x-auto bg-white rounded shadow">
+        <table className="min-w-full text-sm text-left text-gray-700">
+          <thead className="bg-green-100 text-gray-900 uppercase">
             <tr>
-              <th className="px-3 py-2 text-left">#</th>
-              <th className="px-3 py-2 text-left">Modelo</th>
-              <th className="px-3 py-2 text-left">Capacidad</th>
-              <th className="px-3 py-2 text-left">Color</th>
-              <th className="px-3 py-2 text-right">Precio Venta</th>
-              <th className="px-3 py-2 text-left">N° Serie / IMEI</th>
-              <th className="px-3 py-2 text-left">IMEI 1</th>
-              <th className="px-3 py-2 text-left">IMEI 2</th>
-              <th className="px-3 py-2 text-left">Estado IMEI</th>
-              <th className="px-3 py-2 text-left">Estado</th>
-              <th className="px-3 py-2 text-center">Acciones</th>
+              <th className="px-4 py-3">Modelo</th>
+              <th className="px-4 py-3">Capacidad</th>
+              <th className="px-4 py-3">Color</th>
+              <th className="px-4 py-3">IMEI 1</th>
+              <th className="px-4 py-3">IMEI 2</th>
+              <th className="px-4 py-3">Serie</th>
+              <th className="px-4 py-3">Estado IMEI</th>
+              <th className="px-4 py-3">Precio Venta (Bs)</th>
+              <th className="px-4 py-3">Estado</th>
+              <th className="px-4 py-3 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {productos.length === 0 ? (
-              <tr>
-                <td colSpan="11" className="text-center py-4 text-gray-500">
-                  No hay productos registrados.
-                </td>
-              </tr>
-            ) : (
-              productos.map((p, index) => (
-                <tr key={p.id} className="border-b hover:bg-gray-50">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2">{p.modelo}</td>
-                  <td className="px-3 py-2">{p.capacidad}</td>
-                  <td className="px-3 py-2">{p.color}</td>
-                  <td className="px-3 py-2 text-right">Bs {p.precio_venta}</td>
-                  <td className="px-3 py-2">
-                    {p.tiene_imei ? '—' : p.numero_serie || '-'}
-                  </td>
-                  <td className="px-3 py-2">
-                    {p.tiene_imei ? p.imei_1 || '-' : '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    {p.tiene_imei ? p.imei_2 || '-' : '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    {p.tiene_imei ? p.estado_imei || '-' : '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        p.estado === 'disponible'
-                          ? 'bg-green-100 text-green-700'
-                          : p.estado === 'vendido'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
+            {productosFiltrados.length > 0 ? (
+              productosFiltrados.map((p) => (
+                <tr key={p.id} className="border-t hover:bg-gray-50">
+                  <td className="px-4 py-3">{p.modelo}</td>
+                  <td className="px-4 py-3">{p.capacidad}</td>
+                  <td className="px-4 py-3">{p.color}</td>
+                  <td className="px-4 py-3">{p.imei_1 || '—'}</td>
+                  <td className="px-4 py-3">{p.imei_2 || '—'}</td>
+                  <td className="px-4 py-3">{p.numero_serie || '—'}</td>
+                  <td className="px-4 py-3 capitalize">{p.estado_imei || '—'}</td>
+                  <td className="px-4 py-3">Bs {parseFloat(p.precio_venta).toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(p.estado)}`}>
                       {p.estado}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-center space-x-2">
+                  <td className="px-4 py-3 flex gap-2 justify-center">
                     <Link
                       href={route('admin.productos-apple.edit', p.id)}
-                      className="text-blue-600 hover:underline text-sm"
+                      className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
                     >
-                      ✏️ Editar
+                      Editar
                     </Link>
                     <button
-                      onClick={() => handleDelete(p.id)}
-                      className="text-red-600 hover:underline text-sm"
+                      onClick={() => eliminar(p.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
                     >
-                      🗑️ Eliminar
+                      Eliminar
                     </button>
                   </td>
                 </tr>
               ))
+            ) : (
+              <tr>
+                <td colSpan="10" className="text-center text-gray-500 py-6">
+                  No se encontraron productos Apple con ese dato.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      <ToastContainer />
     </AdminLayout>
   );
 }
