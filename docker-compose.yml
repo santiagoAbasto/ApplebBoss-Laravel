@@ -35,7 +35,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: APPLEBOSSjulian2023
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - appleboss-laravel_db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -55,4 +55,5 @@ services:
       - "8080:8080"
 
 volumes:
-  db_data:
+  appleboss-laravel_db_data:
+    external: true

@@ -7,7 +7,7 @@ use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
 use App\Models\ProductoApple;
-
+use App\Models\Egreso;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -52,7 +52,6 @@ class DashboardController extends Controller
             ?? optional($venta->entregadoProductoApple)->precio_costo
             ?? 0;
 
-
             $permutaAplicada = false;
 
             foreach ($venta->items as $item) {
@@ -67,7 +66,7 @@ class DashboardController extends Controller
                     'celular' => $ganancias['celulares'] += $ganancia,
                     'computadora' => $ganancias['computadoras'] += $ganancia,
                     'producto_general' => $ganancias['generales'] += $ganancia,
-                    'producto_apple' => $ganancias['producto_apple'] += $ganancia, // tratamos como celular
+                    'producto_apple' => $ganancias['producto_apple'] += $ganancia,
                     default => null,
                 };
 
@@ -78,7 +77,6 @@ class DashboardController extends Controller
                     'producto_apple' => $item->productoApple?->modelo ?? 'Producto Apple',
                     default => '—',
                 };
-
 
                 $items->push([
                     'fecha' => $venta->fecha,
@@ -106,12 +104,16 @@ class DashboardController extends Controller
                     'descuento' => $venta->descuento,
                     'permuta' => 0,
                     'capital' => $venta->precio_invertido,
-                    // ✅ Línea corregida:
                     'subtotal' => $venta->precio_venta - $venta->descuento,
                     'vendedor' => $venta->vendedor?->name ?? '—',
                 ]);
             }
         }
+
+        // 🔻 Calcular egresos y utilidad disponible
+        $totalEgresos = Egreso::whereBetween('created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])->sum('precio_invertido');
+        $gananciaNeta = $items->sum('ganancia');
+        $utilidadDisponible = $gananciaNeta - $totalEgresos;
 
         $ultimasVentas = $items->sortByDesc('fecha')->take(5)->values()->map(fn ($i) => [
             'cliente' => $i['vendedor'],
@@ -125,8 +127,7 @@ class DashboardController extends Controller
         $stockCel = Celular::where('estado', 'disponible')->count();
         $stockComp = Computadora::where('estado', 'disponible')->count();
         $stockGen = ProductoGeneral::where('estado', 'disponible')->count();
-        $stockApple = ProductoApple::where('estado', 'disponible')->count(); // ✅ variable separada        
-        
+        $stockApple = ProductoApple::where('estado', 'disponible')->count();
         $stockTotal = $stockCel + $stockComp + $stockGen;
 
         $resumenGrafico = $items->groupBy('fecha')->map(function ($itemsDelDia, $fecha) use ($ganancias) {
@@ -139,6 +140,7 @@ class DashboardController extends Controller
                 'descuento' => $itemsDelDia->sum('descuento'),
             ];
         })->values();
+
         return Inertia::render('Admin/Dashboard', [
             'user' => Auth::user(),
             'resumen' => [
@@ -153,7 +155,9 @@ class DashboardController extends Controller
                 ],
                 'permutas' => $ventas->where('es_permuta', true)->count(),
                 'servicios' => $ventas->where('tipo_venta', 'servicio_tecnico')->count(),
-                'ganancia_neta' => $items->sum('ganancia'),
+                'ganancia_neta' => $gananciaNeta,
+                'egresos' => $totalEgresos,
+                'utilidad_disponible' => $utilidadDisponible,
                 'ventas_con_descuento' => $items->where('descuento', '>', 0)->count(),
                 'ultimas_ventas' => $ultimasVentas,
                 'cotizaciones' => 0,
@@ -163,7 +167,9 @@ class DashboardController extends Controller
                 'total_descuento' => $items->sum('descuento'),
                 'total_costo' => $items->sum('capital'),
                 'total_permuta' => $items->sum('permuta'),
-                'ganancia_neta' => $items->sum('ganancia'),
+                'ganancia_neta' => $gananciaNeta,
+                'total_egresos' => $totalEgresos,
+                'utilidad_disponible' => $utilidadDisponible,
                 'ganancia_productos' => $ganancias['celulares'] + $ganancias['computadoras'] + $ganancias['producto_apple'],
                 'ganancia_productos_generales' => $ganancias['generales'],
                 'ganancia_servicios' => $ganancias['servicio_tecnico'],

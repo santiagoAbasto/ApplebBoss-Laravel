@@ -22,6 +22,9 @@ use App\Http\Controllers\ProductoAppleController; // 👈 Asegúrate que esté a
 use App\Http\Controllers\Vendedor\ProductoVendedorController;
 use App\Http\Controllers\Vendedor\DashboardVendedorController;
 use App\Http\Controllers\Vendedor\ClienteVendedorController;
+use App\Http\Controllers\EgresoController;
+
+
 
 
 // 🏠 Ruta pública inicial
@@ -138,6 +141,12 @@ Route::resource('ventas', VentaController::class)
     Route::get('/clientes/{cliente}/edit', [ClienteAdminController::class, 'edit'])->name('clientes.edit');
     Route::put('/clientes/{cliente}', [ClienteAdminController::class, 'update'])->name('clientes.update');
     Route::post('/clientes/promociones/enviar', [ClienteAdminController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
+
+// EGRESOS ADMIN
+Route::get('/egresos', [EgresoController::class, 'index'])->name('egresos.index');
+Route::get('/egresos/create', [EgresoController::class, 'create'])->name('egresos.create');
+Route::post('/egresos', [EgresoController::class, 'store'])->name('egresos.store');
+Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])->name('egresos.exportar-pdf');
 
 
 });

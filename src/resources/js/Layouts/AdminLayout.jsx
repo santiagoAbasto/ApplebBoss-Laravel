@@ -66,6 +66,7 @@ export default function AdminLayout({ children }) {
             { route: 'admin.servicios.index', icon: 'fas fa-tools', label: 'Servicio Técnico' },
             { route: 'admin.reportes.index', icon: 'fas fa-chart-line', label: 'Reportes' },
             { route: 'admin.cotizaciones.index', icon: 'fas fa-file-invoice-dollar', label: 'Cotizaciones' },
+            { route: 'admin.egresos.index', icon: 'fas fa-hand-holding-usd', label: 'Egresos' }, // 🟢 nuevo ítem
           ].map(({ route: r, icon, label }) => (
             <li className="nav-item" key={label}>
               <Link className="nav-link" href={route(r)}>
@@ -74,6 +75,7 @@ export default function AdminLayout({ children }) {
               </Link>
             </li>
           ))}
+
 
           <hr className="sidebar-divider" />
           <div className="sidebar-heading text-sm text-white px-3">Exportaciones</div>

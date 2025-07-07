@@ -37,7 +37,7 @@ export default function ProductosGeneralesIndex({ productos }) {
 
   const filtrados = productos
   .filter((p) =>
-    p.codigo.toLowerCase() === busqueda.toLowerCase()
+    p.codigo.toLowerCase().includes(busqueda.toLowerCase())
   )
   .sort((a, b) => {
     const getTipo = (codigo) => codigo.split(':')[0].toLowerCase();
@@ -58,9 +58,9 @@ export default function ProductosGeneralesIndex({ productos }) {
     }
 
     return tipoB.localeCompare(tipoA);
-  });
-
-
+  })
+  .slice(0, 10);
+  
   return (
     <AdminLayout>
       <Head title="Productos Generales" />

@@ -81,18 +81,19 @@ export default function Dashboard({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 mb-12">
-        <Card titulo="Total Ventas (Precio final pagado)"valor={typeof resumen_total.total_ventas === 'number'? `Bs ${resumen_total.total_ventas.toLocaleString('es-BO', { minimumFractionDigits: 2 })}`: 'Bs 0.00'}color="sky"/>
-        <Card titulo="Inversión Total (Costo + Permuta)"valor={`Bs ${((resumen_total.total_costo || 0) + (resumen_total.total_permuta || 0)).toLocaleString()}`}color="indigo"/>
+        <Card titulo="Total Ventas (Precio final pagado)" valor={typeof resumen_total.total_ventas === 'number' ? `Bs ${resumen_total.total_ventas.toLocaleString('es-BO', { minimumFractionDigits: 2 })}` : 'Bs 0.00'} color="sky" />
+        <Card titulo="Inversión Total (Costo + Permuta)" valor={`Bs ${((resumen_total.total_costo || 0) + (resumen_total.total_permuta || 0)).toLocaleString()}`} color="indigo" />
         <Card titulo="Total Descuento" valor={`Bs ${resumen_total.total_descuento?.toLocaleString() || 0}`} color="rose" />
         <Card
-          titulo="Ganancia Neta Real"
+          titulo="Utilidad Disponible (ganancia - egresos)"
           valor={
-            resumen_total.ganancia_neta < 0
-              ? `Se invirtió Bs ${Math.abs(resumen_total.ganancia_neta).toLocaleString()}`
-              : `Bs ${resumen_total.ganancia_neta?.toLocaleString() || 0}`
+            resumen_total.utilidad_disponible < 0
+              ? `Se invirtió Bs ${Math.abs(resumen_total.utilidad_disponible).toLocaleString()}`
+              : `Bs ${resumen_total.utilidad_disponible?.toLocaleString() || 0}`
           }
-          color={resumen_total.ganancia_neta < 0 ? 'rose' : 'green'}
+          color={resumen_total.utilidad_disponible < 0 ? 'rose' : 'green'}
         />
+
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 mb-10">
@@ -152,8 +153,8 @@ export default function Dashboard({
       <div className="bg-white p-6 rounded-xl shadow-md mb-12 px-4">
         <h2 className="text-lg font-bold text-sky-800 mb-4">📊 Distribución Económica</h2>
         <div className="text-right text-gray-700 font-semibold mb-4">Ganancia neta total: <span className="text-green-600">Bs {resumen_total.ganancia_neta?.toLocaleString('es-BO') || 0}
-      </span>
-</div>
+        </span>
+        </div>
 
         <SalesChart resumen_total={resumen_total} />
       </div>
@@ -162,28 +163,28 @@ export default function Dashboard({
         <h2 className="text-lg font-semibold text-gray-800 mb-3">🛒 Últimas 5 ventas</h2>
         <div className="overflow-auto rounded-lg shadow border">
           <table className="min-w-full text-sm text-gray-800 bg-white">
-          <thead className="bg-sky-100 text-sky-800 text-left font-semibold">
-        <tr>
-    <th className="px-4 py-3">Producto</th>
-    <th className="px-4 py-3">Tipo</th>
-    <th className="px-4 py-3">Total</th>
-    <th className="px-4 py-3">Fecha</th>
-  </tr>
-</thead>
-<tbody>
-  {ultimasVentas.map((venta, idx) => (
-    <tr key={idx} className="hover:bg-gray-50 border-t">
-      <td className="px-4 py-2">{venta.producto}</td>
-      <td className="px-4 py-2 capitalize">{venta.tipo}</td>
-      <td className="px-4 py-2 text-green-600 font-semibold">
-        Bs {parseFloat(venta.total).toLocaleString('es-BO', { minimumFractionDigits: 2 })}
-      </td>
-      <td className="px-4 py-2">
-        {dayjs(venta.fecha).format('DD/MM/YYYY')}
-      </td>
-    </tr>
-  ))}
-</tbody>
+            <thead className="bg-sky-100 text-sky-800 text-left font-semibold">
+              <tr>
+                <th className="px-4 py-3">Producto</th>
+                <th className="px-4 py-3">Tipo</th>
+                <th className="px-4 py-3">Total</th>
+                <th className="px-4 py-3">Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ultimasVentas.map((venta, idx) => (
+                <tr key={idx} className="hover:bg-gray-50 border-t">
+                  <td className="px-4 py-2">{venta.producto}</td>
+                  <td className="px-4 py-2 capitalize">{venta.tipo}</td>
+                  <td className="px-4 py-2 text-green-600 font-semibold">
+                    Bs {parseFloat(venta.total).toLocaleString('es-BO', { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-4 py-2">
+                    {dayjs(venta.fecha).format('DD/MM/YYYY')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
 
           </table>
         </div>
