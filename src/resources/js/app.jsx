@@ -6,8 +6,6 @@ import 'flag-icons/css/flag-icons.min.css';
 import { route } from 'ziggy-js';
 import { Ziggy } from './ziggy'; // si lo generaste, opcional
 
-
-
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';

@@ -18,29 +18,29 @@ class Venta extends Model
     protected $fillable = [
         'nombre_cliente',
         'telefono_cliente',
+        'fecha',
+        'codigo_nota', // <- AÑADIR AQUÍ
         'tipo_venta',
         'es_permuta',
         'tipo_permuta',
         'cantidad',
         'precio_invertido',
         'precio_venta',
-        'descuento',
-        'metodo_pago',
-        'inicio_tarjeta',
-        'fin_tarjeta',
-        'notas_adicionales',
-        'fecha',
-        'user_id',
         'ganancia_neta',
         'subtotal',
-        'valor_permuta', // Agregado recientemente
+        'descuento',
         'celular_id',
         'computadora_id',
         'producto_general_id',
         'entregado_celular_id',
         'entregado_computadora_id',
         'entregado_producto_general_id',
-    ];
+        'metodo_pago',
+        'inicio_tarjeta',
+        'fin_tarjeta',
+        'notas_adicionales',
+        'user_id',
+    ];    
 
     // Producto vendido
     public function celular()

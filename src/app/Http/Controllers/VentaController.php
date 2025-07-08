@@ -77,6 +77,7 @@ class VentaController extends Controller
         $request->validate([
             'nombre_cliente' => 'required|string',
             'telefono_cliente' => 'nullable|string',
+            'codigo_nota' => 'required|string|max:10', // ✅ validación añadida
             'tipo_venta' => 'required|in:producto,servicio_tecnico',
             'es_permuta' => 'boolean',
             'tipo_permuta' => 'nullable|in:celular,computadora,producto_general',
@@ -156,6 +157,7 @@ class VentaController extends Controller
         $venta = Venta::create([
             'nombre_cliente' => $request->nombre_cliente,
             'telefono_cliente' => $request->telefono_cliente,
+            'codigo_nota' => $request->codigo_nota, // ✅ GUARDADO
             'tipo_venta' => $request->tipo_venta,
             'es_permuta' => $request->es_permuta,
             'tipo_permuta' => $request->tipo_permuta,
@@ -210,7 +212,7 @@ class VentaController extends Controller
                 }
             }
         }
-
+    
         if ($request->tipo_venta === 'servicio_tecnico') {
             $venta->items()->create([
                 'tipo' => 'servicio',
@@ -222,9 +224,10 @@ class VentaController extends Controller
                 'subtotal' => $subtotal,
             ]);
         }
+    
         if ($venta->telefono_cliente) {
             $clienteExistente = Cliente::where('telefono', $venta->telefono_cliente)->first();
-        
+    
             if (!$clienteExistente) {
                 Cliente::create([
                     'user_id' => $venta->user_id,
@@ -240,8 +243,8 @@ class VentaController extends Controller
             'message' => 'Venta registrada con éxito',
             'venta_id' => $venta->id,
         ]);
-    }    
-
+    }
+    
     public function boleta(Venta $venta)
     {
         $venta->load([
@@ -286,6 +289,19 @@ class VentaController extends Controller
     ]);
 
     return $pdf->stream("ventas-vendedor.pdf");
+}
+
+public function buscarNota(Request $request)
+{
+    $query = $request->input('codigo_nota');
+
+    $ventas = Venta::with('items') // Si usás venta-item
+        ->where('codigo_nota', 'ILIKE', "%$query%")
+        ->orWhere('nombre_cliente', 'ILIKE', "%$query%")
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return response()->json($ventas);
 }
 
 }

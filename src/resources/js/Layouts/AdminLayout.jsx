@@ -1,5 +1,6 @@
 import { Link, Head, useForm } from '@inertiajs/react';
 
+
 export default function AdminLayout({ children }) {
   const { post } = useForm();
   const pathname = window.location.pathname;

@@ -73,8 +73,11 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
         ->names('productos-generales')
         ->parameters(['productos-generales' => 'producto']);
 
-// 🛒 CRUD Ventas
-Route::resource('ventas', VentaController::class)
+    // 🛒 CRUD Ventas (rutas especiales primero)
+    Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
+    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
+
+    Route::resource('ventas', VentaController::class)
     ->names('ventas')
     ->parameters(['ventas' => 'venta']);
 
@@ -99,6 +102,7 @@ Route::resource('ventas', VentaController::class)
     Route::get('/reportes/exportar-semana', [ReporteController::class, 'exportSemana'])->name('reportes.exportar-semana');
     Route::get('/reportes/exportar-mes', [ReporteController::class, 'exportMes'])->name('reportes.exportar-mes');
     Route::get('/reportes/exportar-anio', [ReporteController::class, 'exportAnio'])->name('reportes.exportar-anio');
+
 
     // ✔️ Habilitar productos entregados por permuta
     Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])->name('celulares.habilitar');
@@ -127,9 +131,6 @@ Route::resource('ventas', VentaController::class)
     Route::get('/exportar/productos-generales/{tipo}', [ExportController::class, 'productosGeneralesPorTipo'])->name('exportar.productos-generales.tipo');
     Route::get('/exportar/productos-apple', [ExportController::class, 'productosApple'])->name('exportar.productos-apple');
 
-
-    // 📄 Boleta PDF posterior al registro
-    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('admin.ventas.boleta');
     // 🍎 CRUD Productos Apple
     Route::resource('productos-apple', ProductoAppleController::class)
         ->names('productos-apple')

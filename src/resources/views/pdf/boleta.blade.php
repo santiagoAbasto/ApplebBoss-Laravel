@@ -127,6 +127,7 @@ th {
       @php $fechaFormateada = \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y H:i'); @endphp
       <p>Fecha: {{ $fechaFormateada }}</p>
       <p>ID Venta: #{{ $venta->id }}</p>
+      <p>Código Nota: {{ $venta->codigo_nota ?? '---' }}</p>
     </div>
   </div>
 

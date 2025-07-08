@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('telefono_cliente')->nullable();
             $table->date('fecha')->nullable();
 
+            // Código de nota de talonario
+            $table->string('codigo_nota')->nullable(); // <--- NUEVO CAMPO
 
             // Tipo de venta
             $table->enum('tipo_venta', ['producto', 'servicio_tecnico']);
@@ -66,4 +68,3 @@ return new class extends Migration
         Schema::dropIfExists('ventas');
     }
 };
-
