@@ -8,7 +8,6 @@ services:
     container_name: appleboss-app
     volumes:
       - ./src:/var/www/html:cached
-      - /var/www/html/vendor    # <-- Evita sincronizar vendor
       - ./src/docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
     ports:
       - "8000:80"
@@ -24,7 +23,6 @@ services:
       - db
     volumes:
       - ./src:/var/www/html:cached
-      - /var/www/html/vendor    # <-- Igual aquí
       - ./src/docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
     command: php artisan queue:work --tries=3 --timeout=90
 

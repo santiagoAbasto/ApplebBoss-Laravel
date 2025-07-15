@@ -11,6 +11,7 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
 
     const [form, setForm] = useState({
+        codigo_nota: '', // ✅ Campo agregado
         nombre_cliente: '',
         telefono_cliente: '',
         tipo_venta: 'producto',
@@ -20,6 +21,7 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
         inicio_tarjeta: '',
         fin_tarjeta: ''
     });
+
 
     const [esPermuta, setEsPermuta] = useState(false);
     const [tipoPermuta, setTipoPermuta] = useState('');
@@ -125,10 +127,10 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
     };
 
     const total = calcularTotal();
-
     const registrarVenta = async () => {
         if (items.length === 0) return alert('Agrega al menos un producto.');
         if (esPermuta && !productoEntregado) return alert('Debes registrar el producto entregado.');
+        if (!form.codigo_nota || form.codigo_nota.trim() === '') return alert('Debes ingresar el código de nota (talonario).');
 
         const payload = {
             ...form,
@@ -144,27 +146,31 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
             if (ventaId) window.open(route('vendedor.ventas.boleta', ventaId), '_blank');
             router.visit(route('vendedor.ventas.index'));
         } catch (error) {
-            if (error.response?.status === 422) setErrores(error.response.data.errors);
-            else console.error('Error al registrar venta:', error);
+            if (error.response?.status === 422) {
+                setErrores(error.response.data.errors);
+            } else {
+                console.error('Error al registrar venta:', error);
+            }
         }
     };
-
     return (
         <VendedorLayout>
             <Head title="Registrar Venta" />
 
-            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            {/* Sección: Información del cliente */}
+            <div className="max-w-7xl mx-auto px-4 py-6">
+                <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200 space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        🧍‍♂️ Información del cliente
+                    </h2>
 
-                {/* Sección: Información del cliente */}
-                <div className="bg-white p-5 rounded shadow relative">
-                    <h2 className="text-xl font-semibold text-gray-700 mb-4">🧍‍♂️ Información del cliente</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        {/* Campo con autocompletado por nombre */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Nombre del Cliente con autocompletado */}
                         <div className="relative">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
                             <input
                                 className="input w-full"
-                                placeholder="Nombre del Cliente"
+                                placeholder="Ingrese nombre"
                                 value={form.nombre_cliente}
                                 onChange={async (e) => {
                                     const nombre = e.target.value;
@@ -188,7 +194,7 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
                                 }}
                             />
                             {mostrarSugerencias && sugerencias.length > 0 && (
-                                <ul className="absolute bg-white border rounded w-full z-10 max-h-40 overflow-y-auto shadow text-sm mt-1">
+                                <ul className="absolute bg-white border border-gray-200 rounded-md w-full z-20 max-h-40 overflow-y-auto shadow-lg mt-1 text-sm">
                                     {sugerencias.map((cliente) => (
                                         <li
                                             key={cliente.id}
@@ -197,7 +203,7 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
                                                 setForm({
                                                     ...form,
                                                     nombre_cliente: cliente.nombre,
-                                                    telefono_cliente: cliente.telefono
+                                                    telefono_cliente: cliente.telefono,
                                                 });
                                                 setMostrarSugerencias(false);
                                             }}
@@ -209,178 +215,284 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
                             )}
                         </div>
 
+                        {/* Código de Nota */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Código de Nota (Talonario)</label>
+                            <input
+                                type="text"
+                                className={`input w-full ${errores.codigo_nota ? 'border-red-500' : ''}`}
+                                placeholder="Ej: 0064"
+                                value={form.codigo_nota}
+                                onChange={(e) => setForm({ ...form, codigo_nota: e.target.value })}
+                            />
+                            {errores.codigo_nota && (
+                                <p className="text-red-500 text-sm mt-1">{errores.codigo_nota}</p>
+                            )}
+                        </div>
+
                         {/* Teléfono del cliente */}
-                        <input
-                            className="input"
-                            placeholder="Teléfono"
-                            value={form.telefono_cliente}
-                            onChange={e => setForm({ ...form, telefono_cliente: e.target.value })}
-                        />
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                            <input
+                                className="input w-full"
+                                placeholder="Ej: 71234567"
+                                value={form.telefono_cliente}
+                                onChange={(e) => setForm({ ...form, telefono_cliente: e.target.value })}
+                            />
+                        </div>
 
                         {/* Método de pago */}
-                        <select
-                            className="input"
-                            value={form.metodo_pago}
-                            onChange={e => setForm({ ...form, metodo_pago: e.target.value })}
-                        >
-                            <option value="efectivo">Efectivo</option>
-                            <option value="qr">QR</option>
-                            <option value="tarjeta">Tarjeta</option>
-                        </select>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Método de Pago</label>
+                            <select
+                                className="input w-full"
+                                value={form.metodo_pago}
+                                onChange={(e) => setForm({ ...form, metodo_pago: e.target.value })}
+                            >
+                                <option value="efectivo">Efectivo</option>
+                                <option value="qr">QR</option>
+                                <option value="tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
 
                         {/* Campos de tarjeta si corresponde */}
                         {form.metodo_pago === 'tarjeta' && (
                             <>
-                                <input
-                                    className="input"
-                                    placeholder="Inicio tarjeta (4 dígitos)"
-                                    maxLength={4}
-                                    value={form.inicio_tarjeta}
-                                    onChange={e => setForm({ ...form, inicio_tarjeta: e.target.value })}
-                                />
-                                <input
-                                    className="input"
-                                    placeholder="Fin tarjeta (4 dígitos)"
-                                    maxLength={4}
-                                    value={form.fin_tarjeta}
-                                    onChange={e => setForm({ ...form, fin_tarjeta: e.target.value })}
-                                />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Inicio tarjeta (4 dígitos)</label>
+                                    <input
+                                        className="input w-full"
+                                        maxLength={4}
+                                        value={form.inicio_tarjeta}
+                                        onChange={(e) => setForm({ ...form, inicio_tarjeta: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Fin tarjeta (4 dígitos)</label>
+                                    <input
+                                        className="input w-full"
+                                        maxLength={4}
+                                        value={form.fin_tarjeta}
+                                        onChange={(e) => setForm({ ...form, fin_tarjeta: e.target.value })}
+                                    />
+                                </div>
                             </>
                         )}
 
                         {/* Descuento total */}
-                        <input
-                            type="number"
-                            className="input"
-                            placeholder="Descuento total Bs"
-                            value={form.descuento}
-                            onChange={e => setForm({ ...form, descuento: e.target.value })}
-                        />
-                    </div>
-                </div>
-                {/* Sección: Buscar y agregar productos */}
-                <div className="bg-white p-5 rounded shadow">
-                    <h2 className="text-xl font-semibold text-gray-700 mb-4">🛒 Buscar producto por código</h2>
-                    <div className="flex flex-wrap gap-3 items-end">
-                        <select className="input" value={productoSeleccionado.tipo} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, tipo: e.target.value, codigo: '', producto: null })}>
-                            <option value="">Tipo de producto</option>
-                            <option value="celular">Celular</option>
-                            <option value="computadora">Computadora</option>
-                            <option value="producto_general">Producto General</option>
-                            <option value="producto_apple">Producto Apple</option>
-                        </select>
-
-                        <input
-                            className="input w-72"
-                            placeholder="Código / IMEI / Serie"
-                            value={productoSeleccionado.codigo}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setProductoSeleccionado((prev) => {
-                                    const producto = buscarProductoPorCodigo(prev.tipo, val);
-                                    return { ...prev, codigo: val, producto };
-                                });
-                            }}
-                        />
-
-
-                        {productoSeleccionado.producto && (
-                            <>
-                                <input type="number" className="input w-20" placeholder="Cantidad" min={1} value={productoSeleccionado.cantidad} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, cantidad: Number(e.target.value) })} />
-                                <input type="number" className="input w-24" placeholder="Descuento" min={0} value={productoSeleccionado.descuento} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, descuento: Number(e.target.value) })} />
-                                {productoSeleccionado.tipo === 'celular' && (
-                                    <input type="text" className="input w-56" placeholder="IMEI único" value={productoSeleccionado.imei} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, imei: e.target.value })} />
-                                )}
-                                <button onClick={agregarItem} className="btn btn-primary">➕ Agregar</button>
-                            </>
-                        )}
-                    </div>
-
-                    {productoSeleccionado.producto && (
-                        <div className="mt-4 p-3 rounded border border-blue-300 bg-blue-50 text-blue-800 text-sm shadow-inner">
-                            <strong>Producto encontrado:</strong> {productoSeleccionado.producto.modelo || productoSeleccionado.producto.nombre} — <strong>Precio:</strong> Bs {productoSeleccionado.producto.precio_venta} — <strong>Stock:</strong> {productoSeleccionado.producto.stock ?? 1}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Descuento total (Bs)</label>
+                            <input
+                                type="number"
+                                className="input w-full"
+                                value={form.descuento}
+                                onChange={(e) => setForm({ ...form, descuento: e.target.value })}
+                            />
                         </div>
-                    )}
-                </div>
-
-                {/* Sección: Permuta */}
-                <div className="bg-white p-5 rounded shadow">
-                    <label className="inline-flex items-center gap-2 mb-2">
-                        <input type="checkbox" checked={esPermuta} onChange={e => setEsPermuta(e.target.checked)} />
-                        ¿Venta con permuta?
-                    </label>
-                    {esPermuta && (
-                        <div className="space-y-2">
-                            <select className="input" value={tipoPermuta} onChange={e => setTipoPermuta(e.target.value)}>
-                                <option value="">Selecciona tipo de producto entregado</option>
-                                <option value="celular">Celular entregado</option>
-                                <option value="computadora">Computadora entregada</option>
-                                <option value="producto_general">Producto General entregado</option>
-                            </select>
-                            {tipoPermuta && (
-                                <button className="btn btn-secondary" onClick={() => setModalAbierto(true)}>➕ Registrar producto entregado</button>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                <ModalPermutaComponent
-                    show={modalAbierto}
-                    tipo={tipoPermuta}
-                    onClose={() => setModalAbierto(false)}
-                    onGuardar={(producto) => {
-                        setProductoEntregado(producto);
-                        setModalAbierto(false);
-                    }}
-                />
-
-                {/* Tabla de productos añadidos */}
-                <div className="bg-white p-5 rounded shadow overflow-x-auto">
-                    <h2 className="text-xl font-semibold text-gray-700 mb-4">🧾 Productos añadidos</h2>
-                    <table className="table-auto w-full text-sm border">
-                        <thead>
-                            <tr className="bg-gray-100 text-left">
-                                <th className="px-2 py-1">#</th>
-                                <th className="px-2 py-1">Tipo</th>
-                                <th className="px-2 py-1">Producto</th>
-                                <th className="px-2 py-1">Cantidad</th>
-                                <th className="px-2 py-1">Precio</th>
-                                <th className="px-2 py-1">Descuento</th>
-                                <th className="px-2 py-1">Subtotal</th>
-                                <th className="px-2 py-1"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((item, i) => (
-                                <tr key={i}>
-                                    <td className="px-2 py-1">{i + 1}</td>
-                                    <td className="px-2 py-1 capitalize">{item.tipo}</td>
-                                    <td className="px-2 py-1">{item.nombre}</td>
-                                    <td className="px-2 py-1"><input type="number" className="input w-20" value={item.cantidad} onChange={e => actualizarCampo(i, 'cantidad', e.target.value)} /></td>
-                                    <td className="px-2 py-1"><input type="number" className="input w-24" value={item.precio_venta} onChange={e => actualizarCampo(i, 'precio_venta', e.target.value)} /></td>
-                                    <td className="px-2 py-1"><input type="number" className="input w-24" value={item.descuento} onChange={e => actualizarCampo(i, 'descuento', e.target.value)} /></td>
-                                    <td className="px-2 py-1 font-semibold">Bs {item.subtotal.toFixed(2)}</td>
-                                    <td className="px-2 py-1"><button className="text-red-600" onClick={() => quitarItem(i)}>✖</button></td>
-                                </tr>
-                            ))}
-                            {items.length === 0 && (
-                                <tr>
-                                    <td colSpan="8" className="text-center text-gray-500 py-4">No hay productos añadidos.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Total y notas */}
-                <div className="bg-white p-5 rounded shadow space-y-4">
-                    <div className="text-right text-lg font-bold text-green-700">Total a pagar: Bs {calcularTotal().toFixed(2)}</div>
-                    <textarea className="input w-full" rows="3" placeholder="Notas adicionales..." value={form.notas_adicionales} onChange={e => setForm({ ...form, notas_adicionales: e.target.value })} />
-                    <div className="text-center">
-                        <button className="btn btn-success px-8 py-2 text-lg" onClick={registrarVenta}>💾 Registrar Venta</button>
                     </div>
                 </div>
             </div>
-        </VendedorLayout>
+
+            {/* Sección: Buscar y agregar productos */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 space-y-4">
+                <h2 className="text-xl font-bold text-gray-800">🛒 Buscar producto por código</h2>
+
+                <div className="flex flex-wrap gap-4 items-end">
+                    <select
+                        className="input"
+                        value={productoSeleccionado.tipo}
+                        onChange={(e) =>
+                            setProductoSeleccionado({
+                                ...productoSeleccionado,
+                                tipo: e.target.value,
+                                codigo: '',
+                                producto: null,
+                            })
+                        }
+                    >
+                        <option value="">Tipo de producto</option>
+                        <option value="celular">Celular</option>
+                        <option value="computadora">Computadora</option>
+                        <option value="producto_general">Producto General</option>
+                        <option value="producto_apple">Producto Apple</option>
+                    </select>
+
+                    <input
+                        className="input w-72"
+                        placeholder="Código / IMEI / Serie"
+                        value={productoSeleccionado.codigo}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setProductoSeleccionado((prev) => {
+                                const producto = buscarProductoPorCodigo(prev.tipo, val);
+                                return { ...prev, codigo: val, producto };
+                            });
+                        }}
+                    />
+
+                    {productoSeleccionado.producto && (
+                        <>
+                            <input
+                                type="number"
+                                className="input w-20"
+                                placeholder="Cantidad"
+                                min={1}
+                                value={productoSeleccionado.cantidad}
+                                onChange={(e) =>
+                                    setProductoSeleccionado({ ...productoSeleccionado, cantidad: Number(e.target.value) })
+                                }
+                            />
+                            <input
+                                type="number"
+                                className="input w-24"
+                                placeholder="Descuento"
+                                min={0}
+                                value={productoSeleccionado.descuento}
+                                onChange={(e) =>
+                                    setProductoSeleccionado({ ...productoSeleccionado, descuento: Number(e.target.value) })
+                                }
+                            />
+                            {productoSeleccionado.tipo === 'celular' && (
+                                <input
+                                    type="text"
+                                    className="input w-56"
+                                    placeholder="IMEI único"
+                                    value={productoSeleccionado.imei}
+                                    onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, imei: e.target.value })}
+                                />
+                            )}
+                            <button onClick={agregarItem} className="btn btn-primary">➕ Agregar</button>
+                        </>
+                    )}
+                </div>
+
+                {productoSeleccionado.producto && (
+                    <div className="mt-4 p-4 rounded-lg border border-blue-300 bg-blue-50 text-blue-800 text-sm shadow-inner">
+                        <strong>Producto encontrado:</strong>{' '}
+                        {productoSeleccionado.producto.modelo || productoSeleccionado.producto.nombre}{' '}
+                        — <strong>Precio:</strong> Bs {productoSeleccionado.producto.precio_venta}{' '}
+                        — <strong>Stock:</strong> {productoSeleccionado.producto.stock ?? 1}
+                    </div>
+                )}
+            </div>
+
+            {/* Sección: Permuta */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 space-y-4">
+                <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                    <input type="checkbox" checked={esPermuta} onChange={(e) => setEsPermuta(e.target.checked)} />
+                    ¿Venta con permuta?
+                </label>
+
+                {esPermuta && (
+                    <div className="space-y-2">
+                        <select
+                            className="input"
+                            value={tipoPermuta}
+                            onChange={(e) => setTipoPermuta(e.target.value)}
+                        >
+                            <option value="">Selecciona tipo de producto entregado</option>
+                            <option value="celular">Celular entregado</option>
+                            <option value="computadora">Computadora entregada</option>
+                            <option value="producto_general">Producto General entregado</option>
+                        </select>
+
+                        {tipoPermuta && (
+                            <button className="btn btn-secondary" onClick={() => setModalAbierto(true)}>
+                                ➕ Registrar producto entregado
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <ModalPermutaComponent
+                show={modalAbierto}
+                tipo={tipoPermuta}
+                onClose={() => setModalAbierto(false)}
+                onGuardar={(producto) => {
+                    setProductoEntregado(producto);
+                    setModalAbierto(false);
+                }}
+            />
+
+            {/* Tabla de productos añadidos */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">🧾 Productos añadidos</h2>
+                <table className="table-auto w-full text-sm border border-gray-200">
+                    <thead>
+                        <tr className="bg-gray-100 text-left">
+                            <th className="px-2 py-1">#</th>
+                            <th className="px-2 py-1">Tipo</th>
+                            <th className="px-2 py-1">Producto</th>
+                            <th className="px-2 py-1">Cantidad</th>
+                            <th className="px-2 py-1">Precio</th>
+                            <th className="px-2 py-1">Descuento</th>
+                            <th className="px-2 py-1">Subtotal</th>
+                            <th className="px-2 py-1"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, i) => (
+                            <tr key={i} className="border-t">
+                                <td className="px-2 py-1">{i + 1}</td>
+                                <td className="px-2 py-1 capitalize">{item.tipo}</td>
+                                <td className="px-2 py-1">{item.nombre}</td>
+                                <td className="px-2 py-1">
+                                    <input
+                                        type="number"
+                                        className="input w-20"
+                                        value={item.cantidad}
+                                        onChange={(e) => actualizarCampo(i, 'cantidad', e.target.value)}
+                                    />
+                                </td>
+                                <td className="px-2 py-1">
+                                    <input
+                                        type="number"
+                                        className="input w-24"
+                                        value={item.precio_venta}
+                                        onChange={(e) => actualizarCampo(i, 'precio_venta', e.target.value)}
+                                    />
+                                </td>
+                                <td className="px-2 py-1">
+                                    <input
+                                        type="number"
+                                        className="input w-24"
+                                        value={item.descuento}
+                                        onChange={(e) => actualizarCampo(i, 'descuento', e.target.value)}
+                                    />
+                                </td>
+                                <td className="px-2 py-1 font-semibold">Bs {item.subtotal.toFixed(2)}</td>
+                                <td className="px-2 py-1">
+                                    <button className="text-red-600 hover:text-red-800" onClick={() => quitarItem(i)}>✖</button>
+                                </td>
+                            </tr>
+                        ))}
+                        {items.length === 0 && (
+                            <tr>
+                                <td colSpan="8" className="text-center text-gray-500 py-4">No hay productos añadidos.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Total y notas */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 space-y-4">
+                <div className="text-right text-lg font-bold text-green-700">
+                    Total a pagar: Bs {calcularTotal().toFixed(2)}
+                </div>
+                <textarea
+                    className="input w-full"
+                    rows="3"
+                    placeholder="Notas adicionales..."
+                    value={form.notas_adicionales}
+                    onChange={(e) => setForm({ ...form, notas_adicionales: e.target.value })}
+                />
+                <div className="text-center">
+                    <button className="btn btn-success px-8 py-2 text-lg">💾 Registrar Venta</button>
+                </div>
+            </div>
+
+        </VendedorLayout >
     );
 }

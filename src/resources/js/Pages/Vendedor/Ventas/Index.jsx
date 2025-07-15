@@ -1,8 +1,25 @@
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import { Head, Link } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import axios from 'axios';
 
 export default function Index({ ventas }) {
+  const [query, setQuery] = useState('');
+  const [resultados, setResultados] = useState([]);
+
+  const buscarNota = async () => {
+    if (!query.trim()) return;
+
+    try {
+      const response = await axios.post(route('ventas.buscarNota'), {
+        codigo_nota: query,
+      });
+      setResultados(response.data);
+    } catch (error) {
+      console.error('Error al buscar:', error);
+    }
+  };
+
   const obtenerNombreProducto = (item) => {
     return (
       item.celular?.modelo ||
@@ -42,7 +59,48 @@ export default function Index({ ventas }) {
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Búsqueda */}
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          className="input w-full"
+          placeholder="Buscar por código de nota o cliente"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && buscarNota()}
+        />
+        <button
+          onClick={buscarNota}
+          className="btn btn-primary"
+        >
+          Buscar
+        </button>
+      </div>
+
+      {/* Resultados */}
+      {resultados.length > 0 && (
+        <div className="bg-white rounded shadow p-4 mb-6">
+          <h2 className="text-lg font-bold mb-2">Resultados de búsqueda</h2>
+          <ul className="space-y-2">
+            {resultados.map((venta) => (
+              <li key={venta.id} className="flex justify-between items-center border-b pb-2">
+                <div>
+                  <strong>{venta.codigo_nota}</strong> — {venta.nombre_cliente}
+                </div>
+                <a
+                  href={route('ventas.boleta', venta.id)}
+                  target="_blank"
+                  className="text-blue-500 underline"
+                >
+                  Ver Boleta
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Tabla de ventas */}
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
