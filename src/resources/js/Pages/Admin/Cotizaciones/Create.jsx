@@ -191,15 +191,15 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((item, index) => (
-                    <tr key={index} className="border-t hover:bg-gray-50">
+                  {data.items?.map((item, i) => (
+                    <tr key={i} className="border-t hover:bg-gray-50">
                       <td className="px-4 py-2">{item.nombre}</td>
                       <td className="px-4 py-2">{item.cantidad}</td>
                       <td className="px-4 py-2">{item.precio_sin_factura}</td>
                       <td className="px-4 py-2">{item.precio_con_factura}</td>
                       <td className="px-4 py-2">{(item.cantidad * item.precio_con_factura).toFixed(2)}</td>
                       <td className="px-2 py-2 text-center">
-                        <button onClick={() => eliminarItem(index)} type="button" className="text-red-500 hover:text-red-700 transition" title="Eliminar">
+                        <button onClick={() => eliminarItem(i)} type="button" className="text-red-500 hover:text-red-700 transition" title="Eliminar">
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </td>

@@ -179,7 +179,7 @@ export default function Index({ cotizaciones = [] }) {
                           <i className="bi bi-cloud-arrow-down me-1"></i> Ver PDF
                         </a>
                       ) : (
-                        <a href={route('admin.cotizaciones.pdf', cot.id)} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
+                        <a href={route('vendedor.cotizaciones.pdf', cot.id)} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
                           <i className="bi bi-file-earmark-pdf me-1"></i> Generar PDF
                         </a>
                       )}

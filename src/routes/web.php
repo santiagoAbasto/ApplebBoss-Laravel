@@ -23,9 +23,7 @@ use App\Http\Controllers\Vendedor\ProductoVendedorController;
 use App\Http\Controllers\Vendedor\DashboardVendedorController;
 use App\Http\Controllers\Vendedor\ClienteVendedorController;
 use App\Http\Controllers\EgresoController;
-
-
-
+use App\Http\Controllers\GoogleDriveController;
 
 // 🏠 Ruta pública inicial
 Route::get('/', function () {
@@ -78,8 +76,8 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
 
     Route::resource('ventas', VentaController::class)
-    ->names('ventas')
-    ->parameters(['ventas' => 'venta']);
+        ->names('ventas')
+        ->parameters(['ventas' => 'venta']);
 
     // 🧰 CRUD Servicios Técnicos
     Route::resource('servicios', ServicioTecnicoController::class)
@@ -143,13 +141,11 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
     Route::put('/clientes/{cliente}', [ClienteAdminController::class, 'update'])->name('clientes.update');
     Route::post('/clientes/promociones/enviar', [ClienteAdminController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
 
-// EGRESOS ADMIN
-Route::get('/egresos', [EgresoController::class, 'index'])->name('egresos.index');
-Route::get('/egresos/create', [EgresoController::class, 'create'])->name('egresos.create');
-Route::post('/egresos', [EgresoController::class, 'store'])->name('egresos.store');
-Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])->name('egresos.exportar-pdf');
-
-
+    // EGRESOS ADMIN
+    Route::get('/egresos', [EgresoController::class, 'index'])->name('egresos.index');
+    Route::get('/egresos/create', [EgresoController::class, 'create'])->name('egresos.create');
+    Route::post('/egresos', [EgresoController::class, 'store'])->name('egresos.store');
+    Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])->name('egresos.exportar-pdf');
 });
 
 // ========================
@@ -158,7 +154,7 @@ Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])->n
 
 Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
 
-    Route::get('/dashboard', fn () => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
+    Route::get('/dashboard', fn() => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
     Route::get('/dashboard', [DashboardVendedorController::class, 'index'])->name('dashboard');
 
 
@@ -188,6 +184,8 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/cotizaciones/crear', [CotizacionController::class, 'createVendedor'])->name('cotizaciones.create');
     Route::post('/cotizaciones', [CotizacionController::class, 'storeVendedor'])->name('cotizaciones.store');
     Route::get('cotizaciones/pdf/{id}', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
+    Route::get('cotizaciones/ver/{id}', [CotizacionController::class, 'verPDFLocalVendedor'])->name('cotizaciones.ver-pdf');
+
 
 
     //WHATSAPP
@@ -234,14 +232,12 @@ Route::prefix('api/stock')->name('api.stock.')->group(function () {
     Route::post('buscar', [StockController::class, 'buscarPorCodigo'])->name('buscar_codigo');
 });
 
+Route::get('/google-auth', [GoogleDriveController::class, 'redirectToGoogle'])->name('google.auth');
+Route::get('/oauth2callback', [GoogleDriveController::class, 'handleGoogleCallback'])->name('google.callback');
 
-Route::get('/test-drive', function () {
-    Storage::disk('google')->put('archivo-prueba.txt', 'Hola desde Laravel 🧾');
-    return 'Archivo subido a Google Drive correctamente.';
-});
 
 Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
 Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
 Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

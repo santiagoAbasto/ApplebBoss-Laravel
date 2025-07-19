@@ -56,4 +56,3 @@ services:
 
 volumes:
   appleboss-laravel_db_data:
-    external: true
