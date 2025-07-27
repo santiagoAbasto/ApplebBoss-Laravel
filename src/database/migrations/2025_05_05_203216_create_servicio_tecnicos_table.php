@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('servicio_tecnicos', function (Blueprint $table) {
             $table->id();
+            $table->string('codigo_nota', 20)->unique(); // ✅ Código nota agregado y único
             $table->string('cliente');
             $table->string('telefono')->nullable();
             $table->string('equipo');
@@ -25,7 +26,8 @@ return new class extends Migration
             $table->timestamps();
         });
     }
-        /**
+
+    /**
      * Reverse the migrations.
      */
     public function down(): void

@@ -1,4 +1,4 @@
-// ModalPermutaComponent.jsx rediseñado 200% Tailwind - sin react-bootstrap
+// ModalPermutaComponent.jsx rediseñado con validación forzada
 import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -12,22 +12,32 @@ export default function ModalPermutaComponent({ show, onClose, tipo, onGuardar }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     if (name === 'imei_1' || name === 'imei_2') {
       const cleaned = value.replace(/\D/g, '');
       if (cleaned.length <= 15) {
         setFormData(prev => ({ ...prev, [name]: cleaned }));
       }
+    } else if (name === 'precio_costo' || name === 'precio_venta') {
+      const parsed = parseFloat(value);
+      setFormData(prev => ({ ...prev, [name]: isNaN(parsed) ? '' : parsed }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleGuardar = () => {
-    if (!formData.precio_costo || !formData.precio_venta || !formData.estado) {
-      alert('Completa los precios y el estado del producto entregado.');
+    if (!formData.precio_costo || !formData.precio_venta) {
+      alert('Completa los precios del producto entregado.');
       return;
     }
-    onGuardar(formData);
+
+    const datosFinales = {
+      ...formData,
+      estado: 'permuta', // 🔒 Forzamos a estado permuta
+    };
+
+    onGuardar(datosFinales);
     onClose();
   };
 

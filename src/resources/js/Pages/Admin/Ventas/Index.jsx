@@ -61,8 +61,8 @@ export default function Index({ ventas }) {
         item.tipo === 'celular'
           ? item.celular?.modelo || 'Celular'
           : item.tipo === 'computadora'
-          ? item.computadora?.nombre || 'Computadora'
-          : item.producto_general?.nombre || 'Producto';
+            ? item.computadora?.nombre || 'Computadora'
+            : item.producto_general?.nombre || 'Producto';
 
       return {
         cliente: venta.nombre_cliente,
@@ -139,13 +139,19 @@ export default function Index({ ventas }) {
                     Cliente: {venta.nombre_cliente} — {new Date(venta.created_at).toLocaleString('es-BO')}
                   </p>
                 </div>
-                <a
-                  href={route('admin.ventas.boleta', { venta: venta.id })}
-                  target="_blank"
-                  className="text-sm text-green-600 hover:underline"
-                >
-                  Ver Boleta
-                </a>
+                <div className="px-4 py-3 text-center">
+                  <a
+                    href={
+                      venta.tipo_venta === 'servicio_tecnico'
+                        ? route('admin.servicios.boleta', { servicio: venta.id })
+                        : route('admin.ventas.boleta', { venta: venta.id })
+                    }
+                    target="_blank"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Ver Nota de Venta
+                  </a>
+                </div>
               </li>
             ))}
           </ul>
@@ -187,9 +193,8 @@ export default function Index({ ventas }) {
                   <td className="px-4 py-3 text-right text-blue-600">- {item.capital.toFixed(2)} Bs</td>
                   <td className="px-4 py-3 text-right font-medium">{item.precioFinal.toFixed(2)} Bs</td>
                   <td
-                    className={`px-4 py-3 text-right font-semibold ${
-                      item.ganancia < 0 ? 'text-red-600' : 'text-green-600'
-                    }`}
+                    className={`px-4 py-3 text-right font-semibold ${item.ganancia < 0 ? 'text-red-600' : 'text-green-600'
+                      }`}
                   >
                     {item.ganancia < 0
                       ? `Se invirtió ${Math.abs(item.ganancia).toFixed(2)} Bs`
@@ -203,7 +208,11 @@ export default function Index({ ventas }) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <a
-                      href={route('admin.ventas.boleta', { venta: item.id_venta })}
+                      href={
+                        item.producto === 'Servicio Técnico'
+                          ? route('admin.servicios.boleta', { servicio: item.id_venta })
+                          : route('admin.ventas.boleta', { venta: item.id_venta })
+                      }
                       target="_blank"
                       className="text-sm text-blue-600 hover:underline"
                     >

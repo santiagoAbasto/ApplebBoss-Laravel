@@ -34,12 +34,12 @@ class VentaController extends Controller
             'items.productoGeneral',
             'items.productoApple',
         ])
-        ->when(auth()->user()->rol === 'vendedor', function ($q) {
-            $q->where('user_id', auth()->id());
-        })
-        ->orderBy('created_at', 'desc')
-        ->get();
-    
+            ->when(auth()->user()->rol === 'vendedor', function ($q) {
+                $q->where('user_id', auth()->id());
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Index', [
                 'ventas' => $ventas,
@@ -49,7 +49,7 @@ class VentaController extends Controller
                 'ventas' => $ventas,
             ]);
         }
-    }     
+    }
 
     public function create()
     {
@@ -57,21 +57,21 @@ class VentaController extends Controller
         $computadoras = Computadora::where('estado', 'disponible')->get();
         $productosGenerales = ProductoGeneral::where('estado', 'disponible')->get();
         $productosApple = ProductoApple::where('estado', 'disponible')->get();
-    
+
         $data = [
             'celulares' => $celulares,
             'computadoras' => $computadoras,
             'productosGenerales' => $productosGenerales,
             'productosApple' => $productosApple,
         ];
-    
+
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Create', $data);
         } else {
             return Inertia::render('Vendedor/Ventas/Create', $data);
         }
     }
-    
+
     public function store(Request $request)
     {
         $request->validate([
@@ -84,13 +84,13 @@ class VentaController extends Controller
             'metodo_pago' => 'required|in:efectivo,qr,tarjeta',
             'items' => 'required|array|min:1',
         ]);
-    
+
         $permutaCosto = 0;
         $entregado = null;
-    
+
         if ($request->es_permuta && $request->has('producto_entregado')) {
             $permutaData = $request->producto_entregado;
-    
+
             switch ($request->tipo_permuta) {
                 case 'celular':
                     $request->validate([
@@ -105,10 +105,12 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-                    $permutaCosto = $permutaData['precio_costo'];
+
                     $entregado = Celular::create(array_merge($permutaData, ['estado' => 'permuta']));
+                    $entregado->refresh(); // 🔁 Refresca desde la base de datos
+                    $permutaCosto = floatval($entregado->precio_costo);
                     break;
-    
+
                 case 'computadora':
                     $request->validate([
                         'producto_entregado.nombre' => 'required|string',
@@ -122,10 +124,12 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-                    $permutaCosto = $permutaData['precio_costo'];
+
                     $entregado = Computadora::create(array_merge($permutaData, ['estado' => 'permuta']));
+                    $entregado->refresh();
+                    $permutaCosto = floatval($entregado->precio_costo);
                     break;
-    
+
                 case 'producto_general':
                     $request->validate([
                         'producto_entregado.tipo' => 'required|string',
@@ -135,25 +139,28 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-                    $permutaCosto = $permutaData['precio_costo'];
+
                     $entregado = ProductoGeneral::create(array_merge($permutaData, ['estado' => 'permuta']));
+                    $entregado->refresh();
+                    $permutaCosto = floatval($entregado->precio_costo);
                     break;
             }
         }
-    
+
+        // Resto del cálculo
         $subtotal = 0;
         $ganancia = 0;
         $aplicaPermuta = false;
-    
+
         foreach ($request->items as $item) {
             $subtotal += $item['subtotal'];
             $ganancia += ($item['subtotal'] - $item['precio_invertido']);
-    
+
             if (in_array($item['tipo'], ['celular', 'computadora'])) {
                 $aplicaPermuta = true;
             }
         }
-    
+
         $venta = Venta::create([
             'nombre_cliente' => $request->nombre_cliente,
             'telefono_cliente' => $request->telefono_cliente,
@@ -183,7 +190,7 @@ class VentaController extends Controller
             'user_id' => auth()->id(),
             'fecha' => now('America/La_Paz'),
         ]);
-    
+
         foreach ($request->items as $item) {
             $venta->items()->create([
                 'tipo' => $item['tipo'],
@@ -195,7 +202,7 @@ class VentaController extends Controller
                 'subtotal' => $item['subtotal'],
             ]);
         }
-    
+
         foreach ($request->items as $item) {
             $modelo = match ($item['tipo']) {
                 'celular' => Celular::class,
@@ -203,7 +210,7 @@ class VentaController extends Controller
                 'producto_general' => ProductoGeneral::class,
                 default => null,
             };
-    
+
             if ($modelo) {
                 $producto = $modelo::find($item['producto_id']);
                 if ($producto) {
@@ -212,7 +219,7 @@ class VentaController extends Controller
                 }
             }
         }
-    
+
         if ($request->tipo_venta === 'servicio_tecnico') {
             $venta->items()->create([
                 'tipo' => 'servicio',
@@ -224,10 +231,10 @@ class VentaController extends Controller
                 'subtotal' => $subtotal,
             ]);
         }
-    
+
         if ($venta->telefono_cliente) {
             $clienteExistente = Cliente::where('telefono', $venta->telefono_cliente)->first();
-    
+
             if (!$clienteExistente) {
                 Cliente::create([
                     'user_id' => $venta->user_id,
@@ -238,13 +245,13 @@ class VentaController extends Controller
                 ]);
             }
         }
-    
+
         return response()->json([
             'message' => 'Venta registrada con éxito',
             'venta_id' => $venta->id,
         ]);
     }
-    
+
     public function boleta(Venta $venta)
     {
         $venta->load([
@@ -252,56 +259,60 @@ class VentaController extends Controller
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
-            'items.productoApple', // ✅ <--- AÑADIR            'vendedor',
+            'items.productoApple',
+            'vendedor',
             'entregadoCelular',
             'entregadoComputadora',
             'entregadoProductoGeneral',
             'entregadoProductoApple',
-
         ]);
 
-        $pdf = PDF::loadView('pdf.boleta', compact('venta'));
-        return $pdf->stream("boleta-venta-{$venta->id}.pdf");
+        $sumaSubtotalItems = $venta->items->sum('subtotal');
+        $valorPermuta = $venta->valor_permuta ?? 0;
+        $totalAPagar = $sumaSubtotalItems - $valorPermuta;
+
+        return PDF::loadView('pdf.boleta', compact('venta', 'sumaSubtotalItems', 'valorPermuta', 'totalAPagar'))
+            ->stream("boleta-venta-{$venta->id}.pdf");
     }
 
+
     public function exportarVentasVendedor(Request $request)
-{
-    $fechaInicio = $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString();
-    $fechaFin = $request->input('fecha_fin') ?? now()->endOfMonth()->toDateString();
+    {
+        $fechaInicio = $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString();
+        $fechaFin = $request->input('fecha_fin') ?? now()->endOfMonth()->toDateString();
 
-    $ventas = Venta::with([
-        'items.celular',
-        'items.computadora',
-        'items.productoGeneral',
-        'items.productoApple',
-        'vendedor'
-    ])
-    ->where('user_id', auth()->id())
-    ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-    ->orderBy('fecha', 'desc')
-    ->get();
+        $ventas = Venta::with([
+            'items.celular',
+            'items.computadora',
+            'items.productoGeneral',
+            'items.productoApple',
+            'vendedor'
+        ])
+            ->where('user_id', auth()->id())
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->orderBy('fecha', 'desc')
+            ->get();
 
-    $pdf = PDF::loadView('pdf.ventas_vendedor', [
-        'ventas' => $ventas,
-        'vendedor' => auth()->user(),
-        'fechaInicio' => $fechaInicio,
-        'fechaFin' => $fechaFin,
-    ]);
+        $pdf = PDF::loadView('pdf.ventas_vendedor', [
+            'ventas' => $ventas,
+            'vendedor' => auth()->user(),
+            'fechaInicio' => $fechaInicio,
+            'fechaFin' => $fechaFin,
+        ]);
 
-    return $pdf->stream("ventas-vendedor.pdf");
-}
+        return $pdf->stream("ventas-vendedor.pdf");
+    }
 
-public function buscarNota(Request $request)
-{
-    $query = $request->input('codigo_nota');
+    public function buscarNota(Request $request)
+    {
+        $query = $request->input('codigo_nota');
 
-    $ventas = Venta::with('items') // Si usás venta-item
-        ->where('codigo_nota', 'ILIKE', "%$query%")
-        ->orWhere('nombre_cliente', 'ILIKE', "%$query%")
-        ->orderBy('created_at', 'desc')
-        ->get();
+        $ventas = Venta::with('items') // Si usás venta-item
+            ->where('codigo_nota', 'ILIKE', "%$query%")
+            ->orWhere('nombre_cliente', 'ILIKE', "%$query%")
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    return response()->json($ventas);
-}
-
+        return response()->json($ventas);
+    }
 }

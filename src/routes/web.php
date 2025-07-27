@@ -85,6 +85,9 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
         ->names('servicios')
         ->parameters(['servicios' => 'servicio']);
 
+    Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])->name('servicios.boleta');
+
+
     // 📤 Exportaciones de servicios técnicos
     Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
     Route::get('/servicios/exportar-dia', [ServicioTecnicoController::class, 'exportarDia'])->name('servicios.exportar-dia');

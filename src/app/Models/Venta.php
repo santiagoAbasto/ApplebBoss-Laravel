@@ -19,7 +19,7 @@ class Venta extends Model
         'nombre_cliente',
         'telefono_cliente',
         'fecha',
-        'codigo_nota', // <- AÑADIR AQUÍ
+        'codigo_nota',
         'tipo_venta',
         'es_permuta',
         'tipo_permuta',
@@ -32,15 +32,19 @@ class Venta extends Model
         'celular_id',
         'computadora_id',
         'producto_general_id',
+        'producto_apple_id',
         'entregado_celular_id',
         'entregado_computadora_id',
         'entregado_producto_general_id',
+        'entregado_producto_apple_id',
+        'valor_permuta', // ✅ AGREGA ESTE CAMPO
         'metodo_pago',
         'inicio_tarjeta',
         'fin_tarjeta',
         'notas_adicionales',
         'user_id',
-    ];    
+    ];
+
 
     // Producto vendido
     public function celular()
@@ -74,13 +78,14 @@ class Venta extends Model
         return $this->belongsTo(ProductoGeneral::class, 'entregado_producto_general_id');
     }
     public function entregadoProductoApple()
-{
-    return $this->belongsTo(ProductoApple::class, 'entregado_producto_apple_id');
-}
+    {
+        return $this->belongsTo(ProductoApple::class, 'entregado_producto_apple_id');
+    }
 
-public function productoApple() {
-    return $this->belongsTo(ProductoApple::class, 'producto_apple_id');
-}
+    public function productoApple()
+    {
+        return $this->belongsTo(ProductoApple::class, 'producto_apple_id');
+    }
 
     // Usuario que hizo la venta
     public function vendedor()
@@ -98,7 +103,7 @@ public function productoApple() {
             'producto_apple' => $this->entregadoProductoApple,
             default => null,
         };
-    }    
+    }
 
     public function items()
     {

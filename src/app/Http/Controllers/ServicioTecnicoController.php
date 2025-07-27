@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
+
 class ServicioTecnicoController extends Controller
 {
     public function index(Request $request)
@@ -18,22 +19,34 @@ class ServicioTecnicoController extends Controller
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id' => 'nullable|exists:users,id',
+            'buscar' => 'nullable|string',
         ]);
-    
+
         $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
-    
+
         // Si el usuario es vendedor, solo puede ver sus propios servicios
         if (Auth::user()->rol === 'vendedor') {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('vendedor_id')) {
-            // Solo los administradores pueden usar el filtro de vendedor
             $query->where('user_id', $request->vendedor_id);
         }
-    
+
         if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
-    
+
+        // ✅ Búsqueda por nombre de cliente o código de nota
+        if ($request->filled('buscar')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('cliente', 'like', '%' . $request->buscar . '%')
+                    ->orWhere('codigo_nota', 'like', '%' . $request->buscar . '%');
+            });
+
+            return response()->json([
+                'servicios' => $query->get(),
+            ]);
+        }
+
         return Inertia::render(
             Auth::user()->rol === 'admin'
                 ? 'Admin/Servicios/Index'
@@ -47,7 +60,8 @@ class ServicioTecnicoController extends Controller
             ]
         );
     }
-    
+
+
     public function exportarFiltrado(Request $request)
     {
         $request->validate([
@@ -55,30 +69,30 @@ class ServicioTecnicoController extends Controller
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id' => 'nullable|exists:users,id',
         ]);
-    
+
         $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
-    
+
         // Si es vendedor, restringimos a sus servicios
         if (Auth::user()->rol === 'vendedor') {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
         }
-    
+
         if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
-    
+
         $servicios = $query->get();
-    
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.servicios_tecnicos', [
             'servicios' => $servicios
         ])->setPaper('A4', 'portrait');
-    
+
         return $pdf->download('servicios_tecnicos_filtrado.pdf');
     }
-    
-    
+
+
     public function create()
     {
         return Inertia::render(Auth::user()->rol === 'admin'
@@ -89,6 +103,7 @@ class ServicioTecnicoController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'codigo_nota' => 'nullable|string|max:255',
             'cliente' => 'required|string',
             'telefono' => 'nullable|string',
             'equipo' => 'required|string',
@@ -98,10 +113,10 @@ class ServicioTecnicoController extends Controller
             'tecnico' => 'required|string',
             'fecha' => 'nullable|date',
         ]);
-    
+
         $data['fecha'] = $data['fecha'] ?? now('America/La_Paz');
         $data['user_id'] = Auth::id();
-    
+
         // ✅ Crear o buscar cliente automáticamente
         $cliente = \App\Models\Cliente::firstOrCreate(
             [
@@ -112,7 +127,7 @@ class ServicioTecnicoController extends Controller
                 'user_id' => Auth::id(), // Asigna al vendedor actual
             ]
         );
-    
+
         // ✅ Registrar el servicio técnico asociado al cliente
         $servicio = new ServicioTecnico();
         $servicio->cliente = $data['cliente'];
@@ -124,48 +139,51 @@ class ServicioTecnicoController extends Controller
         $servicio->tecnico = $data['tecnico'];
         $servicio->fecha = $data['fecha'];
         $servicio->user_id = $data['user_id'];
-        $servicio->cliente_id = $cliente->id; // Aquí guardamos la relación
+        $servicio->cliente_id = $cliente->id;
+        $servicio->codigo_nota = $data['codigo_nota'] ?? null; // ✅ NUEVO
         $servicio->save();
-    
+
         // ✅ Registrar la venta asociada
         \App\Models\Venta::create([
-            'nombre_cliente' => $data['cliente'],
-            'telefono_cliente' => $data['telefono'],
-            'tipo_venta' => 'servicio_tecnico',
-            'es_permuta' => false,
-            'cantidad' => 1,
-            'precio_invertido' => $data['precio_costo'],
-            'precio_venta' => $data['precio_venta'],
-            'ganancia_neta' => $data['precio_venta'] - $data['precio_costo'],
-            'subtotal' => $data['precio_venta'],
-            'descuento' => 0,
-            'user_id' => Auth::id(),
-            'metodo_pago' => 'efectivo',
-            'fecha' => $data['fecha'],
+            'nombre_cliente'     => $data['cliente'],
+            'telefono_cliente'   => $data['telefono'],
+            'tipo_venta'         => 'servicio_tecnico',
+            'es_permuta'         => false,
+            'cantidad'           => 1,
+            'precio_invertido'   => $data['precio_costo'],
+            'precio_venta'       => $data['precio_venta'],
+            'ganancia_neta'      => $data['precio_venta'] - $data['precio_costo'],
+            'subtotal'           => $data['precio_venta'],
+            'descuento'          => 0,
+            'metodo_pago'        => 'efectivo',
+            'codigo_nota'        => $data['codigo_nota'] ?? null, // ✅ IMPORTANTE
+            'fecha'              => $data['fecha'],
+            'user_id'            => Auth::id(),
         ]);
-    
+
+
         return redirect()->route(Auth::user()->rol === 'admin'
             ? 'admin.servicios.index'
             : 'vendedor.servicios.index')->with('success', 'Servicio técnico registrado.');
-    }    
+    }
 
     public function exportar(Request $request)
     {
         $query = ServicioTecnico::query()->with('vendedor')->orderByDesc('fecha');
-    
+
         if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
-    
+
         if ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
         }
-    
+
         $servicios = $query->get();
-    
+
         return $this->generarPDF($servicios);
     }
-    
+
     public function exportarDia()
     {
         $hoy = Carbon::now('America/La_Paz')->toDateString();
@@ -211,5 +229,14 @@ class ServicioTecnicoController extends Controller
         ])->setPaper('A4', 'portrait');
 
         return $pdf->download('reporte_servicios.pdf');
+    }
+
+    public function boleta(ServicioTecnico $servicio)
+    {
+        $servicio->load('vendedor');
+
+        return Pdf::loadView('pdf.servicios_tecnicos', [
+            'servicio' => $servicio,
+        ])->stream("boleta-servicio-{$servicio->id}.pdf");
     }
 }

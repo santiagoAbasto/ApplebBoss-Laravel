@@ -6,6 +6,7 @@ import { route } from 'ziggy-js';
 
 export default function CreateServicio() {
   const { data, setData, post, errors } = useForm({
+    codigo_nota: '',
     cliente: '',
     telefono: '',
     equipo: '',
@@ -43,8 +44,8 @@ export default function CreateServicio() {
     setMostrarSugerencias(false);
     console.log('Cliente seleccionado:', cliente.nombre, cliente.telefono);
 
-  }; 
-   
+  };
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,9 +70,8 @@ export default function CreateServicio() {
                 onFocus={() => {
                   if (sugerencias.length > 0) setMostrarSugerencias(true);
                 }}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                  errors.cliente ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.cliente ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Buscar o escribir nombre"
               />
               {mostrarSugerencias && sugerencias.length > 0 && (
@@ -101,14 +101,26 @@ export default function CreateServicio() {
             </div>
 
             <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Código de Nota</label>
+              <input
+                type="text"
+                value={data.codigo_nota}
+                onChange={(e) => setData('codigo_nota', e.target.value)}
+                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.codigo_nota ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                placeholder="Ej: ST-0001"
+              />
+              {errors.codigo_nota && <p className="text-sm text-red-500 mt-1">{errors.codigo_nota}</p>}
+            </div>
+
+            <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Equipo</label>
               <input
                 type="text"
                 value={data.equipo}
                 onChange={(e) => setData('equipo', e.target.value)}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                  errors.equipo ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.equipo ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.equipo && <p className="text-sm text-red-500 mt-1">{errors.equipo}</p>}
             </div>
@@ -119,9 +131,8 @@ export default function CreateServicio() {
                 type="text"
                 value={data.tecnico}
                 onChange={(e) => setData('tecnico', e.target.value)}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                  errors.tecnico ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.tecnico ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.tecnico && <p className="text-sm text-red-500 mt-1">{errors.tecnico}</p>}
             </div>
@@ -133,9 +144,8 @@ export default function CreateServicio() {
               rows="4"
               value={data.detalle_servicio}
               onChange={(e) => setData('detalle_servicio', e.target.value)}
-              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                errors.detalle_servicio ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.detalle_servicio ? 'border-red-500' : 'border-gray-300'
+                }`}
             />
             {errors.detalle_servicio && <p className="text-sm text-red-500 mt-1">{errors.detalle_servicio}</p>}
           </div>

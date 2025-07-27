@@ -10,6 +10,7 @@ class ServicioTecnico extends Model
     use HasFactory;
 
     protected $fillable = [
+        'codigo_nota',           // ✅ NUEVO campo agregado
         'cliente',
         'telefono',
         'equipo',
@@ -19,7 +20,7 @@ class ServicioTecnico extends Model
         'tecnico',
         'fecha',
         'user_id',
-        'cliente_id', // ✅ AGREGADO
+        'cliente_id',            // ✅ Ya estaba agregado correctamente
     ];
 
     public function vendedor()
@@ -30,5 +31,9 @@ class ServicioTecnico extends Model
     public function cliente()
     {
         return $this->belongsTo(Cliente::class);
+    }
+    public function venta()
+    {
+        return $this->hasOne(Venta::class, 'codigo_nota', 'codigo_nota');
     }
 }
