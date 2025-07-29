@@ -33,6 +33,7 @@ class VentaController extends Controller
             'items.computadora',
             'items.productoGeneral',
             'items.productoApple',
+            'servicioTecnico', // ✅ Añade esta relación
         ])
             ->when(auth()->user()->rol === 'vendedor', function ($q) {
                 $q->where('user_id', auth()->id());
@@ -305,13 +306,87 @@ class VentaController extends Controller
 
     public function buscarNota(Request $request)
     {
-        $query = $request->input('codigo_nota');
+        $query = trim($request->input('codigo_nota'));
 
-        $ventas = Venta::with('items') // Si usás venta-item
-            ->where('codigo_nota', 'ILIKE', "%$query%")
-            ->orWhere('nombre_cliente', 'ILIKE', "%$query%")
+        if ($query === '') {
+            return response()->json([]);
+        }
+
+        // Buscar servicios técnicos válidos
+        $servicios = \App\Models\ServicioTecnico::select('id', 'codigo_nota', 'cliente', 'created_at')
+            ->whereNotNull('codigo_nota')
+            ->where(function ($q) use ($query) {
+                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
+                    ->orWhere('cliente', 'ILIKE', "%{$query}%");
+            })
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'codigo_nota' => $s->codigo_nota,
+                    'nombre_cliente' => $s->cliente,
+                    'tipo' => 'servicio',
+                    'created_at' => $s->created_at,
+                ];
+            });
+
+        // Obtener códigos ya usados en servicio técnico
+        $codigosST = $servicios->pluck('codigo_nota')->unique()->toArray();
+
+        // Buscar ventas válidas que no sean duplicadas de servicios técnicos
+        $ventas = \App\Models\Venta::select('id', 'codigo_nota', 'nombre_cliente', 'created_at')
+            ->whereNotNull('codigo_nota')
+            ->whereNotIn('codigo_nota', $codigosST) // 🔥 evitar duplicados exactos
+            ->where(function ($q) use ($query) {
+                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
+                    ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
+            })
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'codigo_nota' => $v->codigo_nota,
+                    'nombre_cliente' => $v->nombre_cliente,
+                    'tipo' => 'venta',
+                    'created_at' => $v->created_at,
+                ];
+            });
+
+        // Unir resultados y ordenar
+        $resultados = collect($servicios)
+            ->merge($ventas)
+            ->sortByDesc('created_at')
+            ->values();
+
+
+        return response()->json($resultados);
+    }
+
+    public function buscarSoloVentas(Request $request)
+    {
+        $query = trim($request->input('codigo_nota'));
+
+        if ($query === '') {
+            return response()->json([]);
+        }
+
+        $ventas = \App\Models\Venta::select('id', 'codigo_nota', 'nombre_cliente', 'created_at')
+            ->whereNotNull('codigo_nota')
+            ->where(function ($q) use ($query) {
+                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
+                    ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
+            })
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'codigo_nota' => $v->codigo_nota,
+                    'nombre_cliente' => $v->nombre_cliente,
+                    'tipo' => 'venta',
+                    'created_at' => $v->created_at,
+                ];
+            });
 
         return response()->json($ventas);
     }

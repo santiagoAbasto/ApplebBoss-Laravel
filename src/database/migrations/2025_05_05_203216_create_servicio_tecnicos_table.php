@@ -6,14 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up()
     {
         Schema::create('servicio_tecnicos', function (Blueprint $table) {
             $table->id();
-            $table->string('codigo_nota', 20)->unique(); // ✅ Código nota agregado y único
+            $table->string('codigo_nota', 20)->unique();
             $table->string('cliente');
             $table->string('telefono')->nullable();
             $table->string('equipo');
@@ -23,13 +20,15 @@ return new class extends Migration
             $table->string('tecnico');
             $table->date('fecha');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
+            // 🔧 Nueva relación con ventas
+            $table->unsignedBigInteger('venta_id')->nullable()->after('user_id');
+            $table->foreign('venta_id')->references('id')->on('ventas')->onDelete('cascade');
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('servicio_tecnicos');

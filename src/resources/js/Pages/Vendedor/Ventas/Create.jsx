@@ -278,17 +278,6 @@ export default function Create({ celulares, computadoras, productosGenerales, pr
                                 </div>
                             </>
                         )}
-
-                        {/* Descuento total */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Descuento total (Bs)</label>
-                            <input
-                                type="number"
-                                className="input w-full"
-                                value={form.descuento}
-                                onChange={(e) => setForm({ ...form, descuento: e.target.value })}
-                            />
-                        </div>
                     </div>
                 </div>
             </div>

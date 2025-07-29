@@ -34,9 +34,9 @@ class ReporteController extends Controller
             'items.celular',
             'items.computadora',
             'items.productoGeneral',
-            'items.productoApple', // NUEVO
+            'items.productoApple',
+            'servicioTecnico', // ✅ NECESARIO para que esté disponible en la vista
         ])->orderByDesc('fecha');
-        
 
         if ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
@@ -61,11 +61,11 @@ class ReporteController extends Controller
 
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
-            ?? optional($venta->entregadoComputadora)->precio_costo
-            ?? optional($venta->entregadoProductoGeneral)->precio_costo
-            ?? optional($venta->entregadoProductoApple)->precio_costo
-            ?? 0;
-        
+                ?? optional($venta->entregadoComputadora)->precio_costo
+                ?? optional($venta->entregadoProductoGeneral)->precio_costo
+                ?? optional($venta->entregadoProductoApple)->precio_costo
+                ?? 0;
+
 
             $permutaAplicada = false;
 
@@ -98,10 +98,12 @@ class ReporteController extends Controller
                     'Producto General' => $gananciasPorTipo['generales'] += $ganancia,
                     'Producto Apple' => $gananciasPorTipo['productos_apple'] += $ganancia,
                     default => null,
-                };                             
+                };
 
                 $items->push([
                     'id' => $item->id,
+                    'id_venta' => $venta->id,
+                    'id_servicio' => null,
                     'fecha' => $venta->fecha,
                     'producto' => $nombreProducto,
                     'tipo' => $tipoProducto,
@@ -117,7 +119,7 @@ class ReporteController extends Controller
                         $venta->entregadoCelular?->modelo
                         ?? $venta->entregadoComputadora?->nombre
                         ?? $venta->entregadoProductoGeneral?->nombre
-                        ?? $venta->entregadoProductoApple?->modelo                    
+                        ?? $venta->entregadoProductoApple?->modelo
                     ) : null,
                 ]);
             }
@@ -129,6 +131,8 @@ class ReporteController extends Controller
 
                 $items->push([
                     'id' => $venta->id,
+                    'id_venta' => null,
+                    'id_servicio' => $venta->id,
                     'fecha' => $venta->fecha,
                     'producto' => 'Servicio Técnico',
                     'tipo' => 'Servicio Técnico',
@@ -186,7 +190,7 @@ class ReporteController extends Controller
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id' => 'nullable|exists:users,id',
         ]);
-    
+
         $query = Venta::with([
             'vendedor',
             'items.celular',
@@ -198,32 +202,32 @@ class ReporteController extends Controller
             'entregadoProductoGeneral',
             'entregadoProductoApple',
         ])->orderByDesc('fecha');
-    
+
         if ($request->filled('vendedor_id')) {
             $query->where('user_id', $request->vendedor_id);
         }
-    
+
         if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
-    
+
         $ventas = $query->get();
-    
+
         $resultados = collect();
-    
+
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
                 ?? optional($venta->entregadoComputadora)->precio_costo
                 ?? optional($venta->entregadoProductoGeneral)->precio_costo
                 ?? 0;
-    
+
             $permutaAplicada = false;
-    
+
             foreach ($venta->items as $item) {
                 $aplicaPermuta = in_array($item->tipo, ['celular', 'computadora']) && !$permutaAplicada;
                 $permuta = $aplicaPermuta ? $permutaCosto : 0;
                 $permutaAplicada = $aplicaPermuta;
-    
+
                 $nombreProducto = match ($item->tipo) {
                     'celular' => $item->celular?->modelo ?? 'Celular',
                     'computadora' => $item->computadora?->nombre ?? 'Computadora',
@@ -231,8 +235,8 @@ class ReporteController extends Controller
                     'producto_apple' => $item->productoApple?->nombre ?? 'Producto Apple',
                     default => '—',
                 };
-                
-    
+
+
                 $tipoProducto = match ($item->tipo) {
                     'celular' => 'Celular',
                     'computadora' => 'Computadora',
@@ -240,9 +244,9 @@ class ReporteController extends Controller
                     'producto_apple' => 'Producto Apple',
                     default => '—'
                 };
-    
+
                 $ganancia = $item->precio_venta - $item->descuento - $permuta - $item->precio_invertido;
-    
+
                 $resultados->push((object)[
                     'fecha' => $venta->fecha,
                     'cliente' => $venta->nombre_cliente,
@@ -258,11 +262,11 @@ class ReporteController extends Controller
                     'vendedor' => $venta->vendedor?->name,
                 ]);
             }
-    
+
             // Agregar ventas sin ítems (servicio técnico)
             if ($venta->tipo_venta === 'servicio_tecnico' && $venta->items->isEmpty()) {
                 $ganancia = $venta->precio_venta - $venta->descuento - $venta->precio_invertido;
-    
+
                 $resultados->push((object)[
                     'fecha' => $venta->fecha,
                     'cliente' => $venta->nombre_cliente,
@@ -281,19 +285,19 @@ class ReporteController extends Controller
         }
 
         $resultados = $resultados->sortBy([
-            fn ($a, $b) =>
-                array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
+            fn($a, $b) =>
+            array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
                 <=> array_search($b->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico']),
-            fn ($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
+            fn($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
         ])->values();
-        
-    
+
+
         $pdf = Pdf::loadView('pdf.reporte_ventas', [
             'ventas' => $resultados,
             'fecha_inicio' => $request->fecha_inicio,
             'fecha_fin' => $request->fecha_fin,
         ])->setPaper('A4', 'portrait');
-    
+
         return $pdf->download('reporte_ventas.pdf');
     }
 
@@ -315,54 +319,12 @@ class ReporteController extends Controller
 
         return $this->generarPDFDesdeVentas($ventas);
     }
-    
+
     public function exportSemana()
     {
         $inicio = Carbon::now('America/La_Paz')->startOfWeek()->toDateString();
         $fin = Carbon::now('America/La_Paz')->endOfWeek()->toDateString();
-    
-        $ventas = Venta::whereBetween('fecha', [$inicio, $fin])
-            ->with([
-                'vendedor',
-                'items.celular',
-                'items.computadora',
-                'items.productoGeneral',
-                'items.productoApple',
-                'entregadoCelular',
-                'entregadoComputadora',
-                'entregadoProductoGeneral',
-                'entregadoProductoApple',
-            ])->get();
-    
-        return $this->generarPDFDesdeVentas($ventas);
-    }
-    
-    public function exportMes()
-    {
-        $inicio = Carbon::now('America/La_Paz')->startOfMonth()->toDateString();
-        $fin = Carbon::now('America/La_Paz')->endOfMonth()->toDateString();
-    
-        $ventas = Venta::whereBetween('fecha', [$inicio, $fin])
-            ->with([
-                'vendedor',
-                'items.celular',
-                'items.computadora',
-                'items.productoGeneral',
-                'items.productoApple',
-                'entregadoCelular',
-                'entregadoComputadora',
-                'entregadoProductoGeneral',
-                'entregadoProductoApple',
-            ])->get();
-    
-        return $this->generarPDFDesdeVentas($ventas);
-    }
-    
-    public function exportAnio()
-    {
-        $inicio = Carbon::now('America/La_Paz')->startOfYear()->toDateString();
-        $fin = Carbon::now('America/La_Paz')->endOfYear()->toDateString();
-    
+
         $ventas = Venta::whereBetween('fecha', [$inicio, $fin])
             ->with([
                 'vendedor',
@@ -376,14 +338,56 @@ class ReporteController extends Controller
                 'entregadoProductoApple',
             ])->get();
 
-    
         return $this->generarPDFDesdeVentas($ventas);
     }
-    
+
+    public function exportMes()
+    {
+        $inicio = Carbon::now('America/La_Paz')->startOfMonth()->toDateString();
+        $fin = Carbon::now('America/La_Paz')->endOfMonth()->toDateString();
+
+        $ventas = Venta::whereBetween('fecha', [$inicio, $fin])
+            ->with([
+                'vendedor',
+                'items.celular',
+                'items.computadora',
+                'items.productoGeneral',
+                'items.productoApple',
+                'entregadoCelular',
+                'entregadoComputadora',
+                'entregadoProductoGeneral',
+                'entregadoProductoApple',
+            ])->get();
+
+        return $this->generarPDFDesdeVentas($ventas);
+    }
+
+    public function exportAnio()
+    {
+        $inicio = Carbon::now('America/La_Paz')->startOfYear()->toDateString();
+        $fin = Carbon::now('America/La_Paz')->endOfYear()->toDateString();
+
+        $ventas = Venta::whereBetween('fecha', [$inicio, $fin])
+            ->with([
+                'vendedor',
+                'items.celular',
+                'items.computadora',
+                'items.productoGeneral',
+                'items.productoApple',
+                'entregadoCelular',
+                'entregadoComputadora',
+                'entregadoProductoGeneral',
+                'entregadoProductoApple',
+            ])->get();
+
+
+        return $this->generarPDFDesdeVentas($ventas);
+    }
+
     private function generarPDFDesdeVentas($ventas)
     {
         $resultados = collect();
-    
+
         // Cargar relaciones necesarias
         $ventas->loadMissing([
             'vendedor',
@@ -395,29 +399,31 @@ class ReporteController extends Controller
             'items.computadora',
             'items.productoGeneral',
             'items.productoApple',
+            'servicioTecnico', // ✅ AÑADIDO
         ]);
-    
+
+
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
                 ?? optional($venta->entregadoComputadora)->precio_costo
                 ?? optional($venta->entregadoProductoGeneral)->precio_costo
                 ?? 0;
-    
+
             $permutaAplicada = false;
-    
+
             foreach ($venta->items as $item) {
                 $aplicaPermuta = in_array($item->tipo, ['celular', 'computadora']) && !$permutaAplicada;
                 $permuta = $aplicaPermuta ? $permutaCosto : 0;
                 $permutaAplicada = $aplicaPermuta;
-    
+
                 $nombreProducto = match ($item->tipo) {
                     'celular' => $item->celular?->modelo ?? '—',
                     'computadora' => $item->computadora?->nombre ?? '—',
                     'producto_general' => $item->productoGeneral?->nombre ?? '—',
                     'producto_apple' => $item->productoApple?->nombre ?? '—',
                     default => '—'
-                };                
-    
+                };
+
                 $tipoProducto = match ($item->tipo) {
                     'celular' => 'Celular',
                     'computadora' => 'Computadora',
@@ -425,28 +431,28 @@ class ReporteController extends Controller
                     'producto_apple' => 'Producto Apple',
                     default => '—'
                 };
-    
+
                 $ganancia = $item->precio_venta - $item->descuento - $permuta - $item->precio_invertido;
-    
                 $resultados->push((object)[
                     'fecha' => $venta->fecha,
-                    'producto' => $nombreProducto,
-                    'tipo' => $tipoProducto,
-                    'cantidad' => $item->cantidad,
-                    'precio_invertido' => $item->precio_invertido,
-                    'precio_venta' => $item->precio_venta,
-                    'descuento' => $item->descuento,
-                    'permuta' => $permuta,
-                    'subtotal' => $item->subtotal,
+                    'producto' => 'Servicio Técnico',
+                    'tipo' => 'Servicio Técnico',
+                    'cantidad' => 1,
+                    'precio_invertido' => $venta->precio_invertido,
+                    'precio_venta' => $venta->precio_venta,
+                    'descuento' => $venta->descuento,
+                    'permuta' => 0,
+                    'subtotal' => $venta->subtotal,
                     'ganancia' => $ganancia,
                     'vendedor' => $venta->vendedor?->name ?? '—',
+                    'id_venta' => $venta->id, // ✅ ID de la venta
+                    'id_servicio' => optional($venta->servicioTecnico)->id, // ✅ ID real del servicio técnico
                 ]);
             }
-    
             // Casos sin ítems (servicio técnico sin ítems)
             if ($venta->tipo_venta === 'servicio_tecnico' && $venta->items->isEmpty()) {
                 $ganancia = $venta->precio_venta - $venta->descuento - $venta->precio_invertido;
-    
+
                 $resultados->push((object)[
                     'fecha' => $venta->fecha,
                     'producto' => 'Servicio Técnico',
@@ -464,19 +470,19 @@ class ReporteController extends Controller
         }
 
         $resultados = $resultados->sortBy([
-            fn ($a, $b) =>
-                array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
+            fn($a, $b) =>
+            array_search($a->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'])
                 <=> array_search($b->tipo, ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico']),
-            fn ($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
+            fn($a, $b) => strtotime($a->fecha) <=> strtotime($b->fecha),
         ])->values();
-        
-    
+
+
         $pdf = Pdf::loadView('pdf.reporte_ventas', [
             'ventas' => $resultados,
             'fecha_inicio' => null,
             'fecha_fin' => null,
         ])->setPaper('A4', 'portrait');
-    
+
         return $pdf->download('reporte_ventas.pdf');
     }
-}    
+}

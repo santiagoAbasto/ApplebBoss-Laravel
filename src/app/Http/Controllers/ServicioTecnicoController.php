@@ -61,7 +61,6 @@ class ServicioTecnicoController extends Controller
         );
     }
 
-
     public function exportarFiltrado(Request $request)
     {
         $request->validate([
@@ -72,7 +71,6 @@ class ServicioTecnicoController extends Controller
 
         $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
 
-        // Si es vendedor, restringimos a sus servicios
         if (Auth::user()->rol === 'vendedor') {
             $query->where('user_id', Auth::id());
         } elseif ($request->filled('vendedor_id')) {
@@ -85,9 +83,9 @@ class ServicioTecnicoController extends Controller
 
         $servicios = $query->get();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.servicios_tecnicos', [
-            'servicios' => $servicios
-        ])->setPaper('A4', 'portrait');
+        // ✅ Usa la vista adecuada para listado
+        $pdf = Pdf::loadView('pdf.servicios_tecnicos_resumen', compact('servicios'))
+            ->setPaper('A4', 'landscape');
 
         return $pdf->download('servicios_tecnicos_filtrado.pdf');
     }
@@ -235,8 +233,38 @@ class ServicioTecnicoController extends Controller
     {
         $servicio->load('vendedor');
 
-        return Pdf::loadView('pdf.servicios_tecnicos', [
+        return Pdf::loadView('pdf.boleta_servicio', [
             'servicio' => $servicio,
         ])->stream("boleta-servicio-{$servicio->id}.pdf");
+    }
+
+    public function buscar(Request $request)
+    {
+        $request->validate([
+            'buscar' => 'required|string',
+        ]);
+
+        $servicios = ServicioTecnico::where(function ($q) use ($request) {
+            $q->where('cliente', 'like', '%' . $request->buscar . '%')
+                ->orWhere('codigo_nota', 'like', '%' . $request->buscar . '%');
+        })
+            ->where('user_id', Auth::id()) // solo del vendedor autenticado
+            ->orderByDesc('fecha')
+            ->take(10)
+            ->get();
+
+        return response()->json(['servicios' => $servicios]);
+    }
+    public function exportarResumen(Request $request)
+    {
+        $servicios = ServicioTecnico::with('vendedor')
+            ->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin])
+            ->orderByDesc('fecha')
+            ->get();
+
+        $pdf = PDF::loadView('pdf.servicios_tecnicos_resumen', compact('servicios'))
+            ->setPaper('A4', 'landscape');
+
+        return $pdf->stream('servicios_tecnicos_resumen.pdf');
     }
 }

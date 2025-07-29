@@ -34,7 +34,9 @@ export default function Index({ ventas }) {
         cliente: venta.nombre_cliente,
         producto: 'Servicio Técnico',
         codigoNota: venta.codigo_nota,
-        id_venta: venta.id,
+        id_venta: null,
+        id_servicio: venta.id, // ✅ Agregado
+        tipo: 'Servicio Técnico', // ✅ Agregado
         precioVenta,
         descuento,
         permuta,
@@ -142,14 +144,15 @@ export default function Index({ ventas }) {
                 <div className="px-4 py-3 text-center">
                   <a
                     href={
-                      venta.tipo_venta === 'servicio_tecnico'
+                      venta.tipo === 'servicio'
                         ? route('admin.servicios.boleta', { servicio: venta.id })
                         : route('admin.ventas.boleta', { venta: venta.id })
                     }
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    Ver Nota de Venta
+                    {venta.tipo === 'servicio' ? 'Ver Nota de Servicio' : 'Ver Nota de Venta'}
                   </a>
                 </div>
               </li>
@@ -207,17 +210,27 @@ export default function Index({ ventas }) {
                     <span className="text-xs text-gray-500">{new Date(item.fecha).toLocaleTimeString('es-BO')}</span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <a
-                      href={
-                        item.producto === 'Servicio Técnico'
-                          ? route('admin.servicios.boleta', { servicio: item.id_venta })
-                          : route('admin.ventas.boleta', { venta: item.id_venta })
-                      }
-                      target="_blank"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Ver Nota de Venta
-                    </a>
+                    {item.tipo === 'Servicio Técnico' && item.id_servicio ? (
+                      <a
+                        href={route('admin.servicios.boleta', { servicio: item.id_servicio })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Ver Nota de Servicio
+                      </a>
+                    ) : item.id_venta ? (
+                      <a
+                        href={route('admin.ventas.boleta', { venta: item.id_venta })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Ver Nota de Venta
+                      </a>
+                    ) : (
+                      <span className="text-sm text-gray-500">—</span>
+                    )}
                   </td>
                 </tr>
               ))

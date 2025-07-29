@@ -109,4 +109,9 @@ class Venta extends Model
     {
         return $this->hasMany(VentaItem::class);
     }
+
+    public function servicioTecnico()
+    {
+        return $this->hasOne(ServicioTecnico::class, 'venta_id');
+    }
 }

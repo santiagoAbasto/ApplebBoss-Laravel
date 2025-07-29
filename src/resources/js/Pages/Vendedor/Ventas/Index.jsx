@@ -2,6 +2,7 @@ import VendedorLayout from '@/Layouts/VendedorLayout';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
+import { route } from 'ziggy-js';
 
 export default function Index({ ventas }) {
   const [query, setQuery] = useState('');
@@ -11,12 +12,13 @@ export default function Index({ ventas }) {
     if (!query.trim()) return;
 
     try {
-      const response = await axios.post(route('ventas.buscarNota'), {
-        codigo_nota: query,
+      const response = await axios.post(route('vendedor.ventas.buscarNota'), {
+        codigo_nota: query.trim(),
       });
       setResultados(response.data);
     } catch (error) {
       console.error('Error al buscar:', error);
+      setResultados([]);
     }
   };
 
@@ -30,6 +32,17 @@ export default function Index({ ventas }) {
     );
   };
 
+  const esServicioTecnico = (venta) =>
+    venta.tipo_venta === 'servicio_tecnico' || venta.tipo === 'servicio';
+
+  const abrirBoleta = (venta) => {
+    const ruta = esServicioTecnico(venta)
+      ? route('vendedor.servicios.boleta', { servicio: venta.id })
+      : route('vendedor.ventas.boleta', { venta: venta.id });
+
+    window.open(ruta, '_blank');
+  };
+
   const exportarPDF = () => {
     window.open(route('vendedor.ventas.exportar'), '_blank');
   };
@@ -40,9 +53,7 @@ export default function Index({ ventas }) {
 
       {/* Título + botones */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-          Mis Ventas
-        </h1>
+        <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">Mis Ventas</h1>
         <div className="flex gap-2">
           <Link
             href={route('vendedor.ventas.create')}
@@ -69,31 +80,32 @@ export default function Index({ ventas }) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && buscarNota()}
         />
-        <button
-          onClick={buscarNota}
-          className="btn btn-primary"
-        >
-          Buscar
-        </button>
+        <button onClick={buscarNota} className="btn btn-primary">Buscar</button>
       </div>
 
-      {/* Resultados */}
+      {/* Resultados de búsqueda */}
       {resultados.length > 0 && (
-        <div className="bg-white rounded shadow p-4 mb-6">
-          <h2 className="text-lg font-bold mb-2">Resultados de búsqueda</h2>
-          <ul className="space-y-2">
-            {resultados.map((venta) => (
-              <li key={venta.id} className="flex justify-between items-center border-b pb-2">
+        <div className="bg-white border border-blue-100 rounded shadow p-4 mb-6">
+          <h2 className="text-lg font-semibold text-blue-700 mb-2">Resultados de búsqueda</h2>
+          <ul className="space-y-2 text-sm">
+            {resultados.map((venta, index) => (
+              <li key={`${venta.id}-${index}`} className="flex justify-between items-center border-b pb-2">
                 <div>
-                  <strong>{venta.codigo_nota}</strong> — {venta.nombre_cliente}
+                  <span className="font-bold text-blue-900">{venta.codigo_nota || '—'}</span> — {venta.nombre_cliente}
+                  <div className="text-xs text-gray-500">
+                    {esServicioTecnico(venta) ? 'Servicio Técnico' : 'Venta de producto'}
+                  </div>
                 </div>
-                <a
-                  href={route('ventas.boleta', venta.id)}
-                  target="_blank"
-                  className="text-blue-500 underline"
+                <button
+                  onClick={() => {
+                    abrirBoleta(venta);
+                    setQuery('');
+                    setResultados([]);
+                  }}
+                  className="btn btn-sm btn-outline-primary"
                 >
                   Ver Boleta
-                </a>
+                </button>
               </li>
             ))}
           </ul>
@@ -107,9 +119,11 @@ export default function Index({ ventas }) {
             <thead className="bg-blue-50 text-blue-800 font-semibold text-xs uppercase">
               <tr>
                 <th className="px-4 py-2 text-left">Cliente</th>
+                <th className="px-4 py-2 text-left">Código Nota</th>
                 <th className="px-4 py-2 text-left">Producto(s)</th>
                 <th className="px-4 py-2 text-left">Total Venta</th>
                 <th className="px-4 py-2 text-left">Fecha</th>
+                <th className="px-4 py-2 text-left">Boleta</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -117,13 +131,16 @@ export default function Index({ ventas }) {
                 ventas.map((v) => (
                   <tr key={v.id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-2">{v.nombre_cliente}</td>
+                    <td className="px-4 py-2 text-blue-700 font-mono">{v.codigo_nota || '—'}</td>
                     <td className="px-4 py-2">
-                      {v.items.length > 0 ? (
+                      {v.items && v.items.length > 0 ? (
                         <ul className="list-disc list-inside space-y-1">
                           {v.items.map((item, i) => (
-                            <li key={i}>{obtenerNombreProducto(item)}</li>
+                            <li key={`${v.id}-${i}`}>{obtenerNombreProducto(item)}</li>
                           ))}
                         </ul>
+                      ) : v.tipo_venta === 'servicio_tecnico' ? (
+                        <span className="text-indigo-600 font-semibold">Servicio Técnico</span>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
@@ -140,11 +157,19 @@ export default function Index({ ventas }) {
                         minute: '2-digit',
                       })}
                     </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => abrirBoleta(v)}
+                        className="btn btn-xs btn-outline-primary"
+                      >
+                        Ver Boleta
+                      </button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-4 py-6 text-center text-gray-400 italic">
+                  <td colSpan="6" className="px-4 py-6 text-center text-gray-400 italic">
                     No hay ventas registradas.
                   </td>
                 </tr>

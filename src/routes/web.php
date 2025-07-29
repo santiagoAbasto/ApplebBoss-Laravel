@@ -173,6 +173,9 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
     Route::get('/ventas/exportar/pdf', [VentaController::class, 'exportarVentasVendedor'])->name('ventas.exportar');
     Route::post('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
+    // Buscar ventas
+    Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])->name('ventas.buscarSoloVentas');
+
 
 
     // SERVICIO TÉCNICO
@@ -180,7 +183,9 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
     Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
     Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
-
+    Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])->name('servicios.boleta');
+    Route::get('/servicios/buscar', [ServicioTecnicoController::class, 'buscar'])->name('servicios.buscar');
+    Route::get('/servicios/exportar-resumen', [ServicioTecnicoController::class, 'exportarResumen'])->name('servicios.exportarResumen');
 
     // COTIZACIONES PARA VENDEDOR
     Route::get('/cotizaciones', [CotizacionController::class, 'indexVendedor'])->name('cotizaciones.index');
@@ -189,25 +194,19 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::get('cotizaciones/pdf/{id}', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
     Route::get('cotizaciones/ver/{id}', [CotizacionController::class, 'verPDFLocalVendedor'])->name('cotizaciones.ver-pdf');
 
-
-
     //WHATSAPP
     Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])->name('cotizaciones.whatsapp');
     Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
     Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.whatsapp-lote');
 
-    //PROMOCIONES
-    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('clientes.index');
-    Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('promociones.enviar');
-
-    // CLIENTES (para vendedores)
-    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('clientes.index');
-    Route::get('/clientes/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('clientes.sugerencias');
-    Route::get('/clientes', [ClienteVendedorController::class, 'index'])->name('vendedor.clientes.index');
-    Route::get('/clientes/{id}/edit', [ClienteVendedorController::class, 'edit'])->name('vendedor.clientes.edit');
-    Route::put('/clientes/{id}', [ClienteVendedorController::class, 'update'])->name('vendedor.clientes.update');
-    Route::post('/clientes/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('vendedor.clientes.promociones.enviar');
-    Route::get('/clientes/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('vendedor.clientes.sugerencias');
+    // CLIENTES Y PROMOCIONES PARA VENDEDOR
+    Route::prefix('clientes')->group(function () {
+        Route::get('/', [ClienteVendedorController::class, 'index'])->name('clientes.index');
+        Route::get('/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('clientes.sugerencias');
+        Route::get('/{id}/edit', [ClienteVendedorController::class, 'edit'])->name('clientes.edit');
+        Route::put('/{id}', [ClienteVendedorController::class, 'update'])->name('clientes.update');
+        Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
+    });
 });
 
 // ========================

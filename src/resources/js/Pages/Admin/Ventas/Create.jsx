@@ -292,20 +292,6 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
                 </div>
               </>
             )}
-
-            {/* Descuento */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descuento total Bs
-              </label>
-              <input
-                type="number"
-                className="input h-11 w-full"
-                placeholder="Descuento total Bs"
-                value={data.descuento}
-                onChange={(e) => setData('descuento', e.target.value)}
-              />
-            </div>
           </div>
         </div>
       </div>
