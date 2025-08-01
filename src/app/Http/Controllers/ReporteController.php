@@ -103,7 +103,7 @@ class ReporteController extends Controller
                 $items->push([
                     'id' => $item->id,
                     'id_venta' => $venta->id,
-                    'id_servicio' => null,
+                    'codigo_nota' => $venta->codigo_nota,
                     'fecha' => $venta->fecha,
                     'producto' => $nombreProducto,
                     'tipo' => $tipoProducto,
@@ -131,11 +131,12 @@ class ReporteController extends Controller
 
                 $items->push([
                     'id' => $venta->id,
-                    'id_venta' => null,
-                    'id_servicio' => $venta->id,
-                    'fecha' => $venta->fecha,
-                    'producto' => 'Servicio Técnico',
+                    'id_venta' => $venta->id,
+                    'servicio_tecnico_id' => optional($venta->servicioTecnico)->id,
+                    'codigo_nota' => $venta->codigo_nota,
                     'tipo' => 'Servicio Técnico',
+                    'producto' => 'Servicio Técnico',
+                    'fecha' => $venta->fecha,
                     'cantidad' => 1,
                     'precio_venta' => $venta->precio_venta,
                     'descuento' => $venta->descuento,
@@ -148,7 +149,6 @@ class ReporteController extends Controller
                 ]);
             }
         }
-
         $ventasProductos = $ventas->whereIn('tipo_venta', ['producto', 'celular', 'computadora', 'producto_general']);
         $ventasServicios = $ventas->where('tipo_venta', 'servicio_tecnico');
 

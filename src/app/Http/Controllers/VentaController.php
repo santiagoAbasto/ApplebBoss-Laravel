@@ -306,61 +306,74 @@ class VentaController extends Controller
 
     public function buscarNota(Request $request)
     {
-        $query = trim($request->input('codigo_nota'));
+        try {
+            $query = trim($request->input('codigo_nota'));
 
-        if ($query === '') {
-            return response()->json([]);
-        }
+            if ($query === '') {
+                return response()->json([]);
+            }
 
-        // Buscar servicios técnicos válidos
-        $servicios = \App\Models\ServicioTecnico::select('id', 'codigo_nota', 'cliente', 'created_at')
-            ->whereNotNull('codigo_nota')
-            ->where(function ($q) use ($query) {
-                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
-                    ->orWhere('cliente', 'ILIKE', "%{$query}%");
-            })
-            ->get()
-            ->map(function ($s) {
+            // Buscar servicios técnicos válidos
+            $serviciosRaw = \App\Models\ServicioTecnico::with('vendedor')
+                ->whereNotNull('codigo_nota')
+                ->where(function ($q) use ($query) {
+                    $q->where('codigo_nota', 'ILIKE', "%{$query}%")
+                        ->orWhere('cliente', 'ILIKE', "%{$query}%");
+                })
+                ->get();
+
+            // Obtener códigos ya usados en servicio técnico
+            $codigosST = $serviciosRaw->pluck('codigo_nota')->unique()->toArray();
+
+            // Buscar ventas válidas que no estén repetidas
+            $ventasRaw = \App\Models\Venta::with('vendedor')
+                ->whereNotNull('codigo_nota')
+                ->whereNotIn('codigo_nota', $codigosST)
+                ->where(function ($q) use ($query) {
+                    $q->where('codigo_nota', 'ILIKE', "%{$query}%")
+                        ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
+                })
+                ->get();
+
+            // Mapear ambas colecciones
+            $servicios = $serviciosRaw->map(function ($s) {
                 return [
-                    'id' => $s->id,
+                    'id' => 'st-' . $s->id,
                     'codigo_nota' => $s->codigo_nota,
                     'nombre_cliente' => $s->cliente,
-                    'tipo' => 'servicio',
+                    'tipo' => 'servicio_tecnico',
                     'created_at' => $s->created_at,
+                    'vendedor' => $s->vendedor?->name ?? null,
                 ];
             });
 
-        // Obtener códigos ya usados en servicio técnico
-        $codigosST = $servicios->pluck('codigo_nota')->unique()->toArray();
-
-        // Buscar ventas válidas que no sean duplicadas de servicios técnicos
-        $ventas = \App\Models\Venta::select('id', 'codigo_nota', 'nombre_cliente', 'created_at')
-            ->whereNotNull('codigo_nota')
-            ->whereNotIn('codigo_nota', $codigosST) // 🔥 evitar duplicados exactos
-            ->where(function ($q) use ($query) {
-                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
-                    ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
-            })
-            ->get()
-            ->map(function ($v) {
+            $ventas = $ventasRaw->map(function ($v) {
                 return [
-                    'id' => $v->id,
+                    'id' => 'v-' . $v->id,
                     'codigo_nota' => $v->codigo_nota,
                     'nombre_cliente' => $v->nombre_cliente,
                     'tipo' => 'venta',
                     'created_at' => $v->created_at,
+                    'vendedor' => $v->vendedor?->name ?? null,
                 ];
             });
 
-        // Unir resultados y ordenar
-        $resultados = collect($servicios)
-            ->merge($ventas)
-            ->sortByDesc('created_at')
-            ->values();
+            // Unir y retornar correctamente
+            return response()->json(
+                $servicios->concat($ventas)->sortByDesc('created_at')->values()
+            );
+        } catch (\Throwable $e) {
+            \Log::error('❌ Error en buscarNota: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
 
-
-        return response()->json($resultados);
+            return response()->json([
+                'message' => 'Error interno al buscar nota.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 
     public function buscarSoloVentas(Request $request)
     {

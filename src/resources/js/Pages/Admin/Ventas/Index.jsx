@@ -16,11 +16,13 @@ export default function Index({ ventas }) {
       const response = await axios.get(route('admin.ventas.buscarNota'), {
         params: { codigo_nota: codigoNota.trim() },
       });
+
       setResultadosBusqueda(response.data);
     } catch (error) {
-      console.error('Error al buscar nota:', error);
+      console.error('❌ Error al buscar nota:', error);
     }
   };
+
 
   const itemsDesglosados = ventas.flatMap((venta) => {
     if (venta.tipo_venta === 'servicio_tecnico') {
@@ -34,9 +36,9 @@ export default function Index({ ventas }) {
         cliente: venta.nombre_cliente,
         producto: 'Servicio Técnico',
         codigoNota: venta.codigo_nota,
-        id_venta: null,
-        id_servicio: venta.id, // ✅ Agregado
-        tipo: 'Servicio Técnico', // ✅ Agregado
+        id_venta: venta.id,
+        servicio_tecnico_id: venta.servicio_tecnico?.id ?? null,
+        tipo: 'Servicio Técnico',
         precioVenta,
         descuento,
         permuta,
@@ -55,7 +57,8 @@ export default function Index({ ventas }) {
       const permuta =
         parseFloat(venta.entregado_celular?.precio_costo || 0) ||
         parseFloat(venta.entregado_computadora?.precio_costo || 0) ||
-        parseFloat(venta.entregado_producto_general?.precio_costo || 0) || 0;
+        parseFloat(venta.entregado_producto_general?.precio_costo || 0) ||
+        0;
 
       const ganancia = precioVenta - descuento - permuta - capital;
 
@@ -82,7 +85,6 @@ export default function Index({ ventas }) {
       };
     });
   });
-
   const gananciaTotal = itemsDesglosados.reduce(
     (total, item) => (item.ganancia > 0 ? total + item.ganancia : total),
     0
@@ -130,7 +132,7 @@ export default function Index({ ventas }) {
           <ul className="space-y-2">
             {resultadosBusqueda.map((venta) => (
               <li
-                key={venta.id}
+                key={`${venta.tipo}-${venta.id}`}
                 className="flex items-center justify-between border-b border-gray-200 pb-2"
               >
                 <div>
@@ -142,18 +144,29 @@ export default function Index({ ventas }) {
                   </p>
                 </div>
                 <div className="px-4 py-3 text-center">
-                  <a
-                    href={
-                      venta.tipo === 'servicio'
-                        ? route('admin.servicios.boleta', { servicio: venta.id })
-                        : route('admin.ventas.boleta', { venta: venta.id })
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {venta.tipo === 'servicio' ? 'Ver Nota de Servicio' : 'Ver Nota de Venta'}
-                  </a>
+                  {['servicio', 'servicio_tecnico'].includes(venta.tipo) ? (
+                    <a
+                      href={route('admin.servicios.boleta', {
+                        servicio: venta.id?.toString().replace('st-', ''),
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      🧾 Ver Nota de Servicio
+                    </a>
+                  ) : (
+                    <a
+                      href={route('admin.ventas.boleta', {
+                        venta: venta.id?.toString().replace('v-', ''),
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      🧾 Ver Nota de Venta
+                    </a>
+                  )}
                 </div>
               </li>
             ))}
@@ -210,26 +223,26 @@ export default function Index({ ventas }) {
                     <span className="text-xs text-gray-500">{new Date(item.fecha).toLocaleTimeString('es-BO')}</span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {item.tipo === 'Servicio Técnico' && item.id_servicio ? (
+                    {item.tipo?.toLowerCase() === 'servicio técnico' && item.servicio_tecnico_id ? (
                       <a
-                        href={route('admin.servicios.boleta', { servicio: item.id_servicio })}
+                        href={route('admin.servicios.boleta', { servicio: item.servicio_tecnico_id })}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
                       >
-                        Ver Nota de Servicio
+                        🧾 Nota Servicio
                       </a>
                     ) : item.id_venta ? (
                       <a
                         href={route('admin.ventas.boleta', { venta: item.id_venta })}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
                       >
-                        Ver Nota de Venta
+                        🧾 Nota Venta
                       </a>
                     ) : (
-                      <span className="text-sm text-gray-500">—</span>
+                      <span className="text-sm text-gray-400">—</span>
                     )}
                   </td>
                 </tr>

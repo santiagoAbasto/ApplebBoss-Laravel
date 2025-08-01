@@ -22,8 +22,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
             // 🔧 Nueva relación con ventas
-            $table->unsignedBigInteger('venta_id')->nullable()->after('user_id');
-            $table->foreign('venta_id')->references('id')->on('ventas')->onDelete('cascade');
+            $table->foreignId('venta_id')
+                ->nullable()
+                ->constrained('ventas')
+                ->nullOnDelete()
+                ->after('user_id');
+
 
             $table->timestamps();
         });

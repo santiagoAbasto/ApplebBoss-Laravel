@@ -11,6 +11,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
   const [vendedorId, setVendedorId] = useState(filtros.vendedor_id || '');
   const [buscar, setBuscar] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState(null);
+  
 
   const handleFiltrar = (e) => {
     e.preventDefault();
@@ -44,6 +45,8 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
       setResultadosBusqueda([]);
     }
   };
+
+  
 
   const listaFinal = resultadosBusqueda !== null ? resultadosBusqueda : servicios;
 
@@ -175,7 +178,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                         target="_blank"
                         className="text-sm text-blue-600 hover:underline"
                       >
-                        Ver Nota de Venta
+                        Ver Nota de Servicio
                       </a>
                     </td>
                   </tr>
