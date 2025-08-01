@@ -38,7 +38,7 @@ export default function Index({ ventas }) {
         codigoNota: venta.codigo_nota,
         id_venta: venta.id,
         servicio_tecnico_id: venta.servicio_tecnico?.id ?? null,
-        tipo: 'Servicio Técnico',
+        tipo: 'servicio_tecnico', // ✅ corregido aquí
         precioVenta,
         descuento,
         permuta,
@@ -144,10 +144,10 @@ export default function Index({ ventas }) {
                   </p>
                 </div>
                 <div className="px-4 py-3 text-center">
-                  {['servicio', 'servicio_tecnico'].includes(venta.tipo) ? (
+                  {venta.id?.toString().startsWith('st-') ? (
                     <a
                       href={route('admin.servicios.boleta', {
-                        servicio: venta.id?.toString().replace('st-', ''),
+                        servicio: venta.id.replace('st-', ''),
                       })}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -158,7 +158,7 @@ export default function Index({ ventas }) {
                   ) : (
                     <a
                       href={route('admin.ventas.boleta', {
-                        venta: venta.id?.toString().replace('v-', ''),
+                        venta: venta.id.replace('v-', ''),
                       })}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -168,6 +168,7 @@ export default function Index({ ventas }) {
                     </a>
                   )}
                 </div>
+
               </li>
             ))}
           </ul>
@@ -223,27 +224,51 @@ export default function Index({ ventas }) {
                     <span className="text-xs text-gray-500">{new Date(item.fecha).toLocaleTimeString('es-BO')}</span>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {item.tipo?.toLowerCase() === 'servicio técnico' && item.servicio_tecnico_id ? (
-                      <a
-                        href={route('admin.servicios.boleta', { servicio: item.servicio_tecnico_id })}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
-                      >
-                        🧾 Nota Servicio
-                      </a>
-                    ) : item.id_venta ? (
-                      <a
-                        href={route('admin.ventas.boleta', { venta: item.id_venta })}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
-                      >
-                        🧾 Nota Venta
-                      </a>
-                    ) : (
-                      <span className="text-sm text-gray-400">—</span>
-                    )}
+                    {(() => {
+                      const tipoNormalizado = item.tipo
+                        ? item.tipo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                        : '';
+
+                      const esServicio = tipoNormalizado.includes('servicio');
+                      const servicioId = item.servicio_tecnico_id ?? null;
+                      const ventaId = item.id_venta ?? null;
+
+                      if (esServicio && servicioId) {
+                        return (
+                          <a
+                            href={route('admin.servicios.boleta', {
+                              servicio: servicioId.toString().startsWith('st-')
+                                ? servicioId.replace('st-', '')
+                                : servicioId,
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            🧾 Nota Servicio
+                          </a>
+                        );
+                      }
+
+                      if (ventaId) {
+                        return (
+                          <a
+                            href={route('admin.ventas.boleta', {
+                              venta: ventaId.toString().startsWith('v-')
+                                ? ventaId.replace('v-', '')
+                                : ventaId,
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
+                          >
+                            🧾 Nota Venta
+                          </a>
+                        );
+                      }
+
+                      return <span className="text-sm text-gray-400">—</span>;
+                    })()}
                   </td>
                 </tr>
               ))

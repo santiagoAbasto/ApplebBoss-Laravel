@@ -31,16 +31,21 @@ export default function Index({ ventas }) {
       (item.tipo === 'servicio' ? 'Servicio Técnico' : 'Producto')
     );
   };
-
   const esServicioTecnico = (venta) =>
-    venta.tipo_venta === 'servicio_tecnico' || venta.tipo === 'servicio';
+    venta.tipo === 'servicio_tecnico' ||
+    venta.tipo_venta === 'servicio_tecnico' ||
+    venta.tipo === 'servicio';
 
-  const abrirBoleta = (venta) => {
-    const ruta = esServicioTecnico(venta)
-      ? route('vendedor.servicios.boleta', { servicio: venta.id })
-      : route('vendedor.ventas.boleta', { venta: venta.id });
+  const abrirBoleta = (registro) => {
+    if (!registro || !registro.id_real || !registro.tipo_venta) return;
 
-    window.open(ruta, '_blank');
+    const isServicio = registro.tipo_venta === 'servicio_tecnico';
+
+    const url = isServicio
+      ? route('vendedor.servicios.boleta', { servicio: registro.id_real })
+      : route('vendedor.ventas.boleta', { venta: registro.id_real });
+
+    window.open(url, '_blank');
   };
 
   const exportarPDF = () => {
@@ -139,7 +144,7 @@ export default function Index({ ventas }) {
                             <li key={`${v.id}-${i}`}>{obtenerNombreProducto(item)}</li>
                           ))}
                         </ul>
-                      ) : v.tipo_venta === 'servicio_tecnico' ? (
+                      ) : esServicioTecnico(v) ? (
                         <span className="text-indigo-600 font-semibold">Servicio Técnico</span>
                       ) : (
                         <span className="text-gray-400">—</span>
@@ -159,7 +164,10 @@ export default function Index({ ventas }) {
                     </td>
                     <td className="px-4 py-2">
                       <button
-                        onClick={() => abrirBoleta(v)}
+                        onClick={() => {
+                          console.log(v); // ✅ Asegura que tiene tipo: 'servicio_tecnico'
+                          abrirBoleta(v);
+                        }}
                         className="btn btn-xs btn-outline-primary"
                       >
                         Ver Boleta

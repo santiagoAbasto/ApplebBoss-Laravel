@@ -101,68 +101,70 @@ class ServicioTecnicoController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'codigo_nota' => 'nullable|string|max:255',
-            'cliente' => 'required|string',
-            'telefono' => 'nullable|string',
-            'equipo' => 'required|string',
+            'codigo_nota'      => 'nullable|string|max:255',
+            'cliente'          => 'required|string',
+            'telefono'         => 'nullable|string',
+            'equipo'           => 'required|string',
             'detalle_servicio' => 'required|string',
-            'precio_costo' => 'required|numeric|min:0',
-            'precio_venta' => 'required|numeric|min:0',
-            'tecnico' => 'required|string',
-            'fecha' => 'nullable|date',
+            'precio_costo'     => 'required|numeric|min:0',
+            'precio_venta'     => 'required|numeric|min:0',
+            'tecnico'          => 'required|string',
+            'fecha'            => 'nullable|date',
         ]);
 
         $data['fecha'] = $data['fecha'] ?? now('America/La_Paz');
-        $data['user_id'] = Auth::id();
 
-        // ✅ Crear o buscar cliente automáticamente
+        // Buscar o crear cliente
         $cliente = \App\Models\Cliente::firstOrCreate(
             [
-                'nombre' => $data['cliente'],
+                'nombre'   => $data['cliente'],
                 'telefono' => $data['telefono'],
             ],
             [
-                'user_id' => Auth::id(), // Asigna al vendedor actual
+                'user_id' => auth()->id(),
             ]
         );
 
-        // ✅ Registrar el servicio técnico asociado al cliente
-        $servicio = new ServicioTecnico();
-        $servicio->cliente = $data['cliente'];
-        $servicio->telefono = $data['telefono'];
-        $servicio->equipo = $data['equipo'];
-        $servicio->detalle_servicio = $data['detalle_servicio'];
-        $servicio->precio_costo = $data['precio_costo'];
-        $servicio->precio_venta = $data['precio_venta'];
-        $servicio->tecnico = $data['tecnico'];
-        $servicio->fecha = $data['fecha'];
-        $servicio->user_id = $data['user_id'];
-        $servicio->cliente_id = $cliente->id;
-        $servicio->codigo_nota = $data['codigo_nota'] ?? null; // ✅ NUEVO
-        $servicio->save();
-
-        // ✅ Registrar la venta asociada
-        \App\Models\Venta::create([
-            'nombre_cliente'     => $data['cliente'],
-            'telefono_cliente'   => $data['telefono'],
-            'tipo_venta'         => 'servicio_tecnico',
-            'es_permuta'         => false,
-            'cantidad'           => 1,
-            'precio_invertido'   => $data['precio_costo'],
-            'precio_venta'       => $data['precio_venta'],
-            'ganancia_neta'      => $data['precio_venta'] - $data['precio_costo'],
-            'subtotal'           => $data['precio_venta'],
-            'descuento'          => 0,
-            'metodo_pago'        => 'efectivo',
-            'codigo_nota'        => $data['codigo_nota'] ?? null, // ✅ IMPORTANTE
-            'fecha'              => $data['fecha'],
-            'user_id'            => Auth::id(),
+        // Crear servicio técnico
+        $servicio = \App\Models\ServicioTecnico::create([
+            'codigo_nota'      => $data['codigo_nota'],
+            'cliente'          => $data['cliente'],
+            'telefono'         => $data['telefono'],
+            'equipo'           => $data['equipo'],
+            'detalle_servicio' => $data['detalle_servicio'],
+            'precio_costo'     => $data['precio_costo'],
+            'precio_venta'     => $data['precio_venta'],
+            'tecnico'          => $data['tecnico'],
+            'fecha'            => $data['fecha'],
+            'user_id'          => auth()->id(),
+            'cliente_id'       => $cliente->id,
         ]);
 
+        // Crear venta asociada
+        $venta = \App\Models\Venta::create([
+            'codigo_nota'      => $data['codigo_nota'],
+            'nombre_cliente'   => $data['cliente'],
+            'telefono_cliente' => $data['telefono'],
+            'fecha'            => $data['fecha'],
+            'tipo_venta'       => 'servicio_tecnico',
+            'metodo_pago'      => 'efectivo',
+            'descuento'        => 0,
+            'precio_invertido' => $data['precio_costo'],
+            'precio_venta'     => $data['precio_venta'],
+            'ganancia_neta'    => $data['precio_venta'] - $data['precio_costo'],
+            'subtotal'         => $data['precio_venta'],
+            'notas_adicionales' => 'Servicio Técnico',
+            'user_id'          => auth()->id(),
+        ]);
 
-        return redirect()->route(Auth::user()->rol === 'admin'
-            ? 'admin.servicios.index'
-            : 'vendedor.servicios.index')->with('success', 'Servicio técnico registrado.');
+        // Vincular venta al servicio
+        $servicio->update(['venta_id' => $venta->id]);
+
+        // Redireccionar según el rol
+        $rol = auth()->user()->rol;
+        $ruta = $rol === 'admin' ? 'admin.servicios.index' : 'vendedor.servicios.index';
+
+        return redirect()->route($ruta)->with('success', 'Servicio técnico registrado correctamente.');
     }
 
     public function exportar(Request $request)

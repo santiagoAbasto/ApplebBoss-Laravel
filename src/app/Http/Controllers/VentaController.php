@@ -78,12 +78,15 @@ class VentaController extends Controller
         $request->validate([
             'nombre_cliente' => 'required|string',
             'telefono_cliente' => 'nullable|string',
-            'codigo_nota' => 'required|string|max:10', // ✅ validación añadida
+            'codigo_nota' => 'required|string|max:10',
             'tipo_venta' => 'required|in:producto,servicio_tecnico',
             'es_permuta' => 'boolean',
             'tipo_permuta' => 'nullable|in:celular,computadora,producto_general',
             'metodo_pago' => 'required|in:efectivo,qr,tarjeta',
             'items' => 'required|array|min:1',
+            'equipo' => 'required_if:tipo_venta,servicio_tecnico|string',
+            'detalle_servicio' => 'required_if:tipo_venta,servicio_tecnico|string',
+            'tecnico' => 'required_if:tipo_venta,servicio_tecnico|string',
         ]);
 
         $permutaCosto = 0;
@@ -106,9 +109,8 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-
                     $entregado = Celular::create(array_merge($permutaData, ['estado' => 'permuta']));
-                    $entregado->refresh(); // 🔁 Refresca desde la base de datos
+                    $entregado->refresh();
                     $permutaCosto = floatval($entregado->precio_costo);
                     break;
 
@@ -125,7 +127,6 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-
                     $entregado = Computadora::create(array_merge($permutaData, ['estado' => 'permuta']));
                     $entregado->refresh();
                     $permutaCosto = floatval($entregado->precio_costo);
@@ -140,7 +141,6 @@ class VentaController extends Controller
                         'producto_entregado.precio_costo' => 'required|numeric',
                         'producto_entregado.precio_venta' => 'required|numeric',
                     ]);
-
                     $entregado = ProductoGeneral::create(array_merge($permutaData, ['estado' => 'permuta']));
                     $entregado->refresh();
                     $permutaCosto = floatval($entregado->precio_costo);
@@ -148,7 +148,7 @@ class VentaController extends Controller
             }
         }
 
-        // Resto del cálculo
+        // Cálculos de totales
         $subtotal = 0;
         $ganancia = 0;
         $aplicaPermuta = false;
@@ -156,7 +156,6 @@ class VentaController extends Controller
         foreach ($request->items as $item) {
             $subtotal += $item['subtotal'];
             $ganancia += ($item['subtotal'] - $item['precio_invertido']);
-
             if (in_array($item['tipo'], ['celular', 'computadora'])) {
                 $aplicaPermuta = true;
             }
@@ -165,7 +164,7 @@ class VentaController extends Controller
         $venta = Venta::create([
             'nombre_cliente' => $request->nombre_cliente,
             'telefono_cliente' => $request->telefono_cliente,
-            'codigo_nota' => $request->codigo_nota, // ✅ GUARDADO
+            'codigo_nota' => $request->codigo_nota,
             'tipo_venta' => $request->tipo_venta,
             'es_permuta' => $request->es_permuta,
             'tipo_permuta' => $request->tipo_permuta,
@@ -173,10 +172,7 @@ class VentaController extends Controller
             'precio_venta' => $request->precio_venta ?? 0,
             'descuento' => $request->descuento ?? 0,
             'subtotal' => $subtotal,
-            'ganancia_neta' => $subtotal
-                - ($request->descuento ?? 0)
-                - ($aplicaPermuta ? $permutaCosto : 0)
-                - ($request->precio_invertido ?? 0),
+            'ganancia_neta' => $subtotal - ($request->descuento ?? 0) - ($aplicaPermuta ? $permutaCosto : 0) - ($request->precio_invertido ?? 0),
             'valor_permuta' => $permutaCosto,
             'metodo_pago' => $request->metodo_pago,
             'tarjeta_inicio' => $request->tarjeta_inicio,
@@ -192,6 +188,7 @@ class VentaController extends Controller
             'fecha' => now('America/La_Paz'),
         ]);
 
+        // Crear los ítems vendidos
         foreach ($request->items as $item) {
             $venta->items()->create([
                 'tipo' => $item['tipo'],
@@ -204,6 +201,7 @@ class VentaController extends Controller
             ]);
         }
 
+        // Cambiar estado de productos a "vendido"
         foreach ($request->items as $item) {
             $modelo = match ($item['tipo']) {
                 'celular' => Celular::class,
@@ -211,7 +209,6 @@ class VentaController extends Controller
                 'producto_general' => ProductoGeneral::class,
                 default => null,
             };
-
             if ($modelo) {
                 $producto = $modelo::find($item['producto_id']);
                 if ($producto) {
@@ -221,21 +218,26 @@ class VentaController extends Controller
             }
         }
 
+        // Registrar también el servicio técnico si corresponde
         if ($request->tipo_venta === 'servicio_tecnico') {
-            $venta->items()->create([
-                'tipo' => 'servicio',
-                'producto_id' => null,
-                'cantidad' => 1,
+            ServicioTecnico::create([
+                'venta_id' => $venta->id,
+                'cliente' => $request->nombre_cliente,
+                'telefono' => $request->telefono_cliente,
+                'equipo' => $request->equipo,
+                'detalle_servicio' => $request->detalle_servicio,
+                'precio_costo' => $request->precio_invertido ?? 0,
                 'precio_venta' => $request->precio_venta ?? 0,
-                'precio_invertido' => $request->precio_invertido ?? 0,
-                'descuento' => $request->descuento ?? 0,
-                'subtotal' => $subtotal,
+                'tecnico' => $request->tecnico,
+                'codigo_nota' => $request->codigo_nota,
+                'fecha' => now('America/La_Paz'),
+                'user_id' => auth()->id(),
             ]);
         }
 
+        // Crear cliente si no existe
         if ($venta->telefono_cliente) {
             $clienteExistente = Cliente::where('telefono', $venta->telefono_cliente)->first();
-
             if (!$clienteExistente) {
                 Cliente::create([
                     'user_id' => $venta->user_id,
@@ -335,29 +337,33 @@ class VentaController extends Controller
                 })
                 ->get();
 
-            // Mapear ambas colecciones
+            // Mapear servicios técnicos
             $servicios = $serviciosRaw->map(function ($s) {
                 return [
                     'id' => 'st-' . $s->id,
+                    'id_real' => $s->id, // 👈 nuevo
                     'codigo_nota' => $s->codigo_nota,
                     'nombre_cliente' => $s->cliente,
                     'tipo' => 'servicio_tecnico',
+                    'tipo_venta' => 'servicio_tecnico',
                     'created_at' => $s->created_at,
                     'vendedor' => $s->vendedor?->name ?? null,
                 ];
             });
 
+            // Mapear ventas
             $ventas = $ventasRaw->map(function ($v) {
                 return [
                     'id' => 'v-' . $v->id,
+                    'id_real' => $v->id, // 👈 nuevo
                     'codigo_nota' => $v->codigo_nota,
                     'nombre_cliente' => $v->nombre_cliente,
                     'tipo' => 'venta',
+                    'tipo_venta' => 'producto',
                     'created_at' => $v->created_at,
                     'vendedor' => $v->vendedor?->name ?? null,
                 ];
             });
-
             // Unir y retornar correctamente
             return response()->json(
                 $servicios->concat($ventas)->sortByDesc('created_at')->values()
@@ -373,7 +379,6 @@ class VentaController extends Controller
             ], 500);
         }
     }
-
 
     public function buscarSoloVentas(Request $request)
     {
