@@ -172,7 +172,7 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
     Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
     Route::get('/ventas/exportar/pdf', [VentaController::class, 'exportarVentasVendedor'])->name('ventas.exportar');
-    Route::post('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
+    Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
     // Buscar ventas
     Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])->name('ventas.buscarSoloVentas');
 
