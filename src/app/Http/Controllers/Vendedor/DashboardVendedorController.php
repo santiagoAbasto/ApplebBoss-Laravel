@@ -47,18 +47,24 @@ class DashboardVendedorController extends Controller
             }
         }
 
-        // Últimas ventas (máx 5)
-        $ultimasVentas = Venta::with('items')
+        // Últimas ventas (máx 5) -> incluye relación servicioTecnico para enlazar boleta de ST
+        $ultimasVentas = Venta::with(['items', 'servicioTecnico'])
             ->where('user_id', $user->id)
-            ->latest()->take(5)->get();
+            ->latest()
+            ->take(5)
+            ->get();
 
         // Últimas cotizaciones (máx 5)
         $ultimasCotizaciones = Cotizacion::where('user_id', $user->id)
-            ->latest()->take(5)->get();
+            ->latest()
+            ->take(5)
+            ->get();
 
         // Últimos servicios técnicos (máx 5)
         $ultimosServicios = ServicioTecnico::where('user_id', $user->id)
-            ->latest()->take(5)->get();
+            ->latest()
+            ->take(5)
+            ->get();
 
         // Métricas del día
         $cotizacionesDia = $ultimasCotizaciones->where('created_at', '>=', $hoy)->count();
@@ -71,7 +77,7 @@ class DashboardVendedorController extends Controller
                     if ($v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()) {
                         return $v->precio_venta - $v->descuento;
                     }
-                    return $v->items->sum(fn($i) => $i->precio_venta - $i->descuento);
+                    return $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
                 }),
                 'ganancia_dia' => $gananciaHoy,
                 'cotizaciones_dia' => $cotizacionesDia,
@@ -84,33 +90,35 @@ class DashboardVendedorController extends Controller
                         if ($v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()) {
                             return $v->precio_venta - $v->descuento;
                         }
-                        return $v->items->sum(fn($i) => $i->precio_venta - $i->descuento);
+                        return $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
                     }),
                 'meta_mensual' => 10000,
             ],
             'ultimasVentas' => $ultimasVentas->map(function ($v) {
                 $monto = $v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()
                     ? $v->precio_venta - $v->descuento
-                    : $v->items->sum(fn($i) => $i->precio_venta - $i->descuento);
+                    : $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
 
                 return [
-                    'id' => $v->id,
-                    'nombre_cliente' => $v->nombre_cliente,
-                    'total' => $monto,
-                    'fecha' => $v->fecha,
+                    'id'            => $v->id,
+                    'tipo_venta'    => $v->tipo_venta,                              // 👈 para decidir la ruta
+                    'servicio_id'   => optional($v->servicioTecnico)->id,           // 👈 id real del ST
+                    'nombre_cliente'=> $v->nombre_cliente,
+                    'total'         => $monto,
+                    'fecha'         => $v->fecha,
                 ];
             }),
-            'ultimasCotizaciones' => $ultimasCotizaciones->map(fn($c) => [
-                'id' => $c->id,
-                'nombre_cliente' => $c->nombre_cliente,
-                'total' => $c->total,
-                'fecha' => $c->created_at->toDateString(),
+            'ultimasCotizaciones' => $ultimasCotizaciones->map(fn ($c) => [
+                'id'              => $c->id,
+                'nombre_cliente'  => $c->nombre_cliente,
+                'total'           => $c->total,
+                'fecha'           => $c->created_at->toDateString(),
             ]),
-            'ultimosServicios' => $ultimosServicios->map(fn($s) => [
-                'id' => $s->id,
-                'equipo' => $s->equipo,
+            'ultimosServicios' => $ultimosServicios->map(fn ($s) => [
+                'id'           => $s->id,
+                'equipo'       => $s->equipo,
                 'precio_venta' => $s->precio_venta,
-                'fecha' => $s->fecha,
+                'fecha'        => $s->fecha,
             ]),
         ]);
     }

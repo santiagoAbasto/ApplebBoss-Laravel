@@ -1,12 +1,59 @@
+// resources/js/Pages/Vendedor/Dashboard.jsx
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 
-export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizaciones, ultimosServicios }) {
+export default function Dashboard({
+  auth,
+  resumen = {},
+  ultimasVentas = [],
+  ultimasCotizaciones = [],
+  ultimosServicios = [],
+}) {
   const handleLogout = () => {
     router.post(route('logout'));
   };
 
-  const porcentajeMeta = Math.min((resumen?.total_mes || 0) / (resumen?.meta_mensual || 1) * 100, 100).toFixed(1);
+  const porcentajeMeta = Math.min(
+    (Number(resumen?.total_mes) || 0) / (Number(resumen?.meta_mensual) || 1) * 100,
+    100
+  ).toFixed(1);
+
+  // --- Helpers ---
+  const fmt = (n) => Number(n || 0).toLocaleString('es-BO');
+
+  const safeRoute = (name, params, fallback) => {
+    try {
+      return route(name, params, true); // URL absoluta
+    } catch {
+      return fallback;
+    }
+  };
+
+  // Construye el href correcto según sea venta normal o servicio técnico
+  const boletaHrefDeVenta = (v) => {
+    if (v?.tipo_venta === 'servicio_tecnico') {
+      const stId = v?.servicio_id ?? v?.id; // fallback por si acaso
+      return safeRoute(
+        'vendedor.servicios.boleta',
+        { servicio: stId },
+        `/vendedor/servicios/${stId}/boleta`
+      );
+    }
+    // Venta normal
+    return safeRoute(
+      'vendedor.ventas.boleta',
+      { venta: v?.id },
+      `/vendedor/ventas/${v?.id}/boleta`
+    );
+  };
+
+  const boletaHrefDeServicio = (s) =>
+    safeRoute(
+      'vendedor.servicios.boleta',
+      { servicio: s?.id },
+      `/vendedor/servicios/${s?.id}/boleta`
+    );
 
   return (
     <VendedorLayout>
@@ -15,7 +62,9 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
       {/* Encabezado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-blue-700 mb-1">👨‍💼 Bienvenido, {auth?.user?.name}</h1>
+          <h1 className="text-3xl font-bold text-blue-700 mb-1">
+            👨‍💼 Bienvenido, {auth?.user?.name}
+          </h1>
           <p className="text-gray-600">Este es tu panel de trabajo como vendedor</p>
         </div>
         <button
@@ -37,6 +86,7 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
             <i className="fas fa-box-open fa-2x text-green-500"></i>
           </div>
         </Link>
+
         <Link href={route('vendedor.ventas.create')} className="transform hover:scale-105 transition">
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 h-full flex justify-between items-center">
             <div>
@@ -46,6 +96,7 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
             <i className="fas fa-receipt fa-2x text-blue-500"></i>
           </div>
         </Link>
+
         <Link href={route('vendedor.servicios.create')} className="transform hover:scale-105 transition">
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500 h-full flex justify-between items-center">
             <div>
@@ -55,6 +106,7 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
             <i className="fas fa-tools fa-2x text-yellow-500"></i>
           </div>
         </Link>
+
         <Link href={route('vendedor.cotizaciones.create')} className="transform hover:scale-105 transition">
           <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 h-full flex justify-between items-center">
             <div>
@@ -71,22 +123,37 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
         <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-gray-700">
           <h3 className="text-xl font-bold text-gray-800 mb-4">Resumen del día</h3>
           <ul className="divide-y divide-gray-200">
-            <li className="flex justify-between py-2"><span>Ventas del día:</span><strong>Bs {resumen?.ventas_dia?.toLocaleString()}</strong></li>
-            <li className="flex justify-between py-2"><span>Ganancia estimada:</span><strong>Bs {resumen?.ganancia_dia?.toLocaleString()}</strong></li>
-            <li className="flex justify-between py-2"><span>Cotizaciones generadas:</span><strong>{resumen?.cotizaciones_dia}</strong></li>
-            <li className="flex justify-between py-2"><span>Servicios técnicos:</span><strong>{resumen?.servicios_dia}</strong></li>
+            <li className="flex justify-between py-2">
+              <span>Ventas del día:</span>
+              <strong>Bs {fmt(resumen?.ventas_dia)}</strong>
+            </li>
+            <li className="flex justify-between py-2">
+              <span>Ganancia estimada:</span>
+              <strong>Bs {fmt(resumen?.ganancia_dia)}</strong>
+            </li>
+            <li className="flex justify-between py-2">
+              <span>Cotizaciones generadas:</span>
+              <strong>{resumen?.cotizaciones_dia || 0}</strong>
+            </li>
+            <li className="flex justify-between py-2">
+              <span>Servicios técnicos:</span>
+              <strong>{resumen?.servicios_dia || 0}</strong>
+            </li>
           </ul>
         </div>
+
         <div className="bg-white shadow-md rounded-lg p-6 border-l-4 border-green-600">
           <h3 className="text-xl font-bold text-green-700 mb-4">🎯 Meta Mensual</h3>
           <div className="w-full bg-gray-200 h-5 rounded-full overflow-hidden">
-            <div className="bg-green-600 h-full text-white text-sm font-bold flex items-center justify-end pr-2 rounded-full"
-              style={{ width: `${porcentajeMeta}%` }}>
+            <div
+              className="bg-green-600 h-full text-white text-sm font-bold flex items-center justify-end pr-2 rounded-full"
+              style={{ width: `${porcentajeMeta}%` }}
+            >
               {porcentajeMeta}%
             </div>
           </div>
           <p className="text-right text-sm text-gray-600 mt-2">
-            Bs {resumen?.total_mes?.toLocaleString()} / Bs {resumen?.meta_mensual?.toLocaleString()}
+            Bs {fmt(resumen?.total_mes)} / Bs {fmt(resumen?.meta_mensual)}
           </p>
         </div>
       </div>
@@ -104,17 +171,21 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
                 <li key={i} className="flex justify-between items-center py-2 text-sm text-gray-700">
                   <span>{v.nombre_cliente}</span>
                   <div className="flex items-center gap-2">
-                    <span>Bs {v.total}</span>
-                    <button
-                      onClick={() => window.open(route('vendedor.ventas.boleta', { venta: v.id }), '_blank')}
+                    <span>Bs {fmt(v.total)}</span>
+                    <a
+                      href={boletaHrefDeVenta(v)}
+                      target="_blank"
+                      rel="noopener"
                       className="btn btn-xs btn-outline-primary"
                     >
                       Ver Boleta
-                    </button>
+                    </a>
                   </div>
                 </li>
               ))
-            ) : <li className="py-2 text-sm text-gray-500">Sin registros</li>}
+            ) : (
+              <li className="py-2 text-sm text-gray-500">Sin registros</li>
+            )}
           </ul>
         </div>
 
@@ -128,10 +199,12 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
               ultimasCotizaciones.map((c, i) => (
                 <li key={i} className="flex justify-between py-2 text-sm text-gray-700">
                   <span>{c.cliente}</span>
-                  <span>Bs {c.total}</span>
+                  <span>Bs {fmt(c.total)}</span>
                 </li>
               ))
-            ) : <li className="py-2 text-sm text-gray-500">Sin registros</li>}
+            ) : (
+              <li className="py-2 text-sm text-gray-500">Sin registros</li>
+            )}
           </ul>
         </div>
 
@@ -146,17 +219,21 @@ export default function Dashboard({ auth, resumen, ultimasVentas, ultimasCotizac
                 <li key={i} className="flex justify-between items-center py-2 text-sm text-gray-700">
                   <span>{s.equipo}</span>
                   <div className="flex items-center gap-2">
-                    <span>Bs {s.precio_venta}</span>
-                    <button
-                      onClick={() => window.open(route('vendedor.servicios.boleta', { servicio: s.id }), '_blank')}
+                    <span>Bs {fmt(s.precio_venta)}</span>
+                    <a
+                      href={boletaHrefDeServicio(s)}
+                      target="_blank"
+                      rel="noopener"
                       className="btn btn-xs btn-outline-primary"
                     >
                       Ver Boleta
-                    </button>
+                    </a>
                   </div>
                 </li>
               ))
-            ) : <li className="py-2 text-sm text-gray-500">Sin registros</li>}
+            ) : (
+              <li className="py-2 text-sm text-gray-500">Sin registros</li>
+            )}
           </ul>
         </div>
       </div>

@@ -1,3 +1,4 @@
+// resources/js/Pages/Admin/Dashboard.jsx
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
@@ -6,7 +7,6 @@ import dayjs from 'dayjs';
 import { route } from 'ziggy-js';
 import QuickDateFilter from '@/Components/QuickDateFilter';
 
-
 export default function Dashboard({
   user,
   resumen = {},
@@ -14,6 +14,7 @@ export default function Dashboard({
   resumen_total = {},
   vendedores = [],
   filtros = {},
+  distribucion_economica = [],
 }) {
   const hoyStr = dayjs().format('YYYY-MM-DD');
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || hoyStr);
@@ -41,7 +42,56 @@ export default function Dashboard({
     });
   };
 
+  useEffect(() => {
+    const safeNum = (x) => Number(String(x || '0').replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(/,/g, '.')) || 0;
+    const util = (() => {
+      // prioriza distribucion_economica si trae "utilidad"
+      const u = Array.isArray(distribucion_economica)
+        ? distribucion_economica.find(x => String(x?.label || '').toLowerCase().includes('utilidad'))
+        : null;
+      if (u) return safeNum(u.valor);
+      // fallback a resumen_total
+      const gn = safeNum(resumen_total.ganancia_neta);
+      const eg = safeNum(resumen_total.egresos_total);
+      return gn - eg;
+    })();
+
+    const nodes = Array.from(document.querySelectorAll('span,div,h1,h2,h3,p,strong,em'))
+      .filter(n => /Ganancia\s*neta\s*total/i.test(n.textContent || ''));
+    nodes.forEach(n => {
+      n.innerHTML = `Utilidad total (post egresos): <span class="${util < 0 ? 'text-rose-600' : 'text-green-600'}">Bs ${Number(util).toLocaleString('es-BO', { minimumFractionDigits: 2 })}</span>`;
+    });
+  }, [distribucion_economica, resumen_total]);
+
+
   const ultimasVentas = Array.isArray(resumen.ultimas_ventas) ? resumen.ultimas_ventas : [];
+
+  // --- Helpers robustos ---
+  const safeNum = (x) => {
+    if (typeof x === 'number') return x;
+    if (typeof x === 'string') {
+      // limpia "Bs", espacios, separadores de miles y usa '.' como decimal
+      const s = x.replace(/Bs/gi, '').replace(/\s+/g, '').replace(/\./g, '').replace(/,/g, '.');
+      const n = Number(s);
+      return isNaN(n) ? 0 : n;
+    }
+    const n = Number(x || 0);
+    return isNaN(n) ? 0 : n;
+  };
+  const fmtBs = (n) => `Bs ${safeNum(n).toLocaleString('es-BO', { minimumFractionDigits: 2 })}`;
+
+  // Utilidad post egresos usando prioridad: distribucion_economica -> resumen_total.utilidad_disponible -> cálculo
+  const utilidadPostEgresosChart = (() => {
+    let fromDistrib = 0;
+    if (Array.isArray(distribucion_economica) && distribucion_economica.length > 0) {
+      const u = distribucion_economica.find(x => String(x?.label || '').toLowerCase().includes('utilidad'));
+      fromDistrib = safeNum(u?.valor);
+    }
+    if (fromDistrib) return fromDistrib;
+    const utilDisp = safeNum(resumen_total.utilidad_disponible);
+    if (utilDisp) return utilDisp;
+    return safeNum(resumen_total.ganancia_neta) - safeNum(resumen_total.egresos_total);
+  })();
 
   return (
     <AdminLayout>
@@ -66,34 +116,44 @@ export default function Dashboard({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 mb-10">
-        <Card titulo="Ventas Hoy" valor={`Bs ${resumen.ventas_hoy?.toLocaleString() || 0}`} color="sky" />
+        <Card titulo="Ventas Hoy" valor={fmtBs(resumen.ventas_hoy)} color="sky" />
+
+        {/* Aclaración para evitar confusión con la utilidad */}
         <Card
-          titulo="Ganancia Neta"
+          titulo="Ganancia Neta (pre egresos)"
           valor={
-            resumen_total.ganancia_neta < 0
-              ? `Se invirtió Bs ${Math.abs(resumen_total.ganancia_neta).toLocaleString()}`
-              : `Bs ${resumen_total.ganancia_neta?.toLocaleString() || 0}`
+            safeNum(resumen_total.ganancia_neta) < 0
+              ? `Se invirtió ${fmtBs(Math.abs(safeNum(resumen_total.ganancia_neta)))}`
+              : fmtBs(resumen_total.ganancia_neta)
           }
-          color={resumen_total.ganancia_neta < 0 ? 'rose' : 'green'}
+          color={safeNum(resumen_total.ganancia_neta) < 0 ? 'rose' : 'green'}
         />
+
         <Card titulo="Servicios Técnicos" valor={resumen.servicios || 0} color="indigo" />
         <Card titulo="Cotizaciones Enviadas" valor={resumen.cotizaciones || 0} color="rose" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 mb-12">
-        <Card titulo="Total Ventas (Precio final pagado)" valor={typeof resumen_total.total_ventas === 'number' ? `Bs ${resumen_total.total_ventas.toLocaleString('es-BO', { minimumFractionDigits: 2 })}` : 'Bs 0.00'} color="sky" />
-        <Card titulo="Inversión Total (Costo + Permuta)" valor={`Bs ${((resumen_total.total_costo || 0) + (resumen_total.total_permuta || 0)).toLocaleString()}`} color="indigo" />
-        <Card titulo="Total Descuento" valor={`Bs ${resumen_total.total_descuento?.toLocaleString() || 0}`} color="rose" />
+        <Card
+          titulo="Total Ventas (Precio final pagado)"
+          valor={fmtBs(resumen_total.total_ventas)}
+          color="sky"
+        />
+        <Card
+          titulo="Inversión Total (Costo + Permuta)"
+          valor={fmtBs(safeNum(resumen_total.total_costo) + safeNum(resumen_total.total_permuta))}
+          color="indigo"
+        />
+        <Card titulo="Total Descuento" valor={fmtBs(resumen_total.total_descuento)} color="rose" />
         <Card
           titulo="Utilidad Disponible (ganancia - egresos)"
           valor={
-            resumen_total.utilidad_disponible < 0
-              ? `Se invirtió Bs ${Math.abs(resumen_total.utilidad_disponible).toLocaleString()}`
-              : `Bs ${resumen_total.utilidad_disponible?.toLocaleString() || 0}`
+            safeNum(resumen_total.utilidad_disponible) < 0
+              ? `Se invirtió ${fmtBs(Math.abs(safeNum(resumen_total.utilidad_disponible)))}`
+              : fmtBs(resumen_total.utilidad_disponible)
           }
-          color={resumen_total.utilidad_disponible < 0 ? 'rose' : 'green'}
+          color={safeNum(resumen_total.utilidad_disponible) < 0 ? 'rose' : 'green'}
         />
-
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 mb-10">
@@ -152,11 +212,20 @@ export default function Dashboard({
 
       <div className="bg-white p-6 rounded-xl shadow-md mb-12 px-4">
         <h2 className="text-lg font-bold text-sky-800 mb-4">📊 Distribución Económica</h2>
-        <div className="text-right text-gray-700 font-semibold mb-4">Ganancia neta total: <span className="text-green-600">Bs {resumen_total.ganancia_neta?.toLocaleString('es-BO') || 0}
-        </span>
+
+        {/* Mostrar SOLO la utilidad post egresos usando el valor consolidado/robusto */}
+        <div className="flex flex-wrap gap-4 justify-end text-gray-700 font-semibold mb-4">
+          <span>Utilidad total (post egresos):{' '}
+            <span className={utilidadPostEgresosChart < 0 ? 'text-rose-600' : 'text-green-600'}>
+              {fmtBs(utilidadPostEgresosChart)}
+            </span>
+          </span>
         </div>
 
-        <SalesChart resumen_total={resumen_total} />
+        <SalesChart
+          distribucion_economica={distribucion_economica}
+          resumen_total={resumen_total}
+        />
       </div>
 
       <div className="px-4 mb-12">
@@ -177,7 +246,7 @@ export default function Dashboard({
                   <td className="px-4 py-2">{venta.producto}</td>
                   <td className="px-4 py-2 capitalize">{venta.tipo}</td>
                   <td className="px-4 py-2 text-green-600 font-semibold">
-                    Bs {parseFloat(venta.total).toLocaleString('es-BO', { minimumFractionDigits: 2 })}
+                    {fmtBs(parseFloat(venta.total))}
                   </td>
                   <td className="px-4 py-2">
                     {dayjs(venta.fecha).format('DD/MM/YYYY')}
@@ -185,7 +254,6 @@ export default function Dashboard({
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       </div>
