@@ -3,6 +3,25 @@ import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 import axios from 'axios';
+import { Receipt, Search, PlusCircle } from 'lucide-react';
+
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+} from '@/Components/CrudUI';
 
 export default function Index({ ventas }) {
   const [codigoNota, setCodigoNota] = useState('');
@@ -16,34 +35,33 @@ export default function Index({ ventas }) {
       const response = await axios.get(route('admin.ventas.buscarNota'), {
         params: { codigo_nota: codigoNota.trim() },
       });
-
       setResultadosBusqueda(response.data);
     } catch (error) {
       console.error('❌ Error al buscar nota:', error);
     }
   };
 
-
+  /* ===============================
+     DESGLOSE DE ITEMS (INTACTO)
+  =============================== */
   const itemsDesglosados = ventas.flatMap((venta) => {
     if (venta.tipo_venta === 'servicio_tecnico') {
       const precioVenta = parseFloat(venta.precio_venta || 0);
       const descuento = parseFloat(venta.descuento || 0);
       const capital = parseFloat(venta.precio_invertido || 0);
-      const permuta = 0;
-      const ganancia = precioVenta - descuento - permuta - capital;
+      const ganancia = precioVenta - descuento - capital;
 
       return [{
         cliente: venta.nombre_cliente,
         producto: 'Servicio Técnico',
-        codigoNota: venta.codigo_nota,
+        codigoNota: venta.servicio_tecnico?.codigo_nota ?? venta.codigo_nota,
         id_venta: venta.id,
-        servicio_tecnico_id: venta.servicio_tecnico?.id ?? null,
-        tipo: 'servicio_tecnico', // ✅ corregido aquí
+        tipo: 'servicio_tecnico',
         precioVenta,
         descuento,
-        permuta,
+        permuta: 0,
         capital,
-        precioFinal: precioVenta - descuento - permuta,
+        precioFinal: precioVenta - descuento,
         ganancia,
         vendedor: venta.vendedor?.name || '—',
         fecha: venta.created_at,
@@ -54,26 +72,24 @@ export default function Index({ ventas }) {
       const precioVenta = parseFloat(item.precio_venta || 0);
       const descuento = parseFloat(item.descuento || 0);
       const capital = parseFloat(item.precio_invertido || 0);
-      const permuta =
-        parseFloat(venta.entregado_celular?.precio_costo || 0) ||
-        parseFloat(venta.entregado_computadora?.precio_costo || 0) ||
-        parseFloat(venta.entregado_producto_general?.precio_costo || 0) ||
-        0;
-
+      const permuta = parseFloat(venta.valor_permuta || 0);
       const ganancia = precioVenta - descuento - permuta - capital;
 
       const nombre =
         item.tipo === 'celular'
-          ? item.celular?.modelo || 'Celular'
+          ? item.celular?.modelo
           : item.tipo === 'computadora'
-            ? item.computadora?.nombre || 'Computadora'
-            : item.producto_general?.nombre || 'Producto';
+          ? item.computadora?.nombre
+          : item.tipo === 'producto_apple'
+          ? item.producto_apple?.modelo
+          : item.producto_general?.nombre;
 
       return {
         cliente: venta.nombre_cliente,
         producto: nombre,
         codigoNota: venta.codigo_nota,
         id_venta: venta.id,
+        tipo: item.tipo,
         precioVenta,
         descuento,
         permuta,
@@ -85,211 +101,258 @@ export default function Index({ ventas }) {
       };
     });
   });
+
   const gananciaTotal = itemsDesglosados.reduce(
-    (total, item) => (item.ganancia > 0 ? total + item.ganancia : total),
+    (acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc),
     0
   );
 
   return (
     <AdminLayout>
-      <Head title="Listado de Ventas Detalladas" />
+      <Head title="Ventas Desglosadas" />
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">
-          📋 Ventas Desglosadas por Producto
-        </h1>
-        <Link
-          href={route('admin.ventas.create')}
-          className="inline-block px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow transition"
-        >
-          ➕ Nueva Venta
-        </Link>
-      </div>
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
+          <div>
+            <CrudTitle>
+              <Receipt size={22} />
+              Ventas Desglosadas
+            </CrudTitle>
+            <CrudSubtitle>
+              Detalle completo de ventas, servicios y ganancias
+            </CrudSubtitle>
+          </div>
 
-      {/* Buscar código o nombre */}
-      <form onSubmit={buscarNota} className="flex items-center gap-2 mb-6">
-        <input
-          type="text"
-          value={codigoNota}
-          onChange={(e) => setCodigoNota(e.target.value)}
-          placeholder="Buscar por código o nombre del cliente"
-          className="border px-3 py-2 rounded w-80"
-        />
-        <button
-          type="submit"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-        >
-          Buscar
-        </button>
-      </form>
+          <CrudButtonPrimary
+            as={Link}
+            href={route('admin.ventas.create')}
+          >
+            <PlusCircle size={18} />
+            Nueva Venta
+          </CrudButtonPrimary>
+        </CrudHeader>
 
-      {/* Resultados de la búsqueda */}
-      {resultadosBusqueda.length > 0 && (
-        <div className="mb-8 bg-white dark:bg-gray-800 p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
-            Resultados encontrados:
-          </h2>
-          <ul className="space-y-2">
-            {resultadosBusqueda.map((venta) => (
-              <li
-                key={`${venta.tipo}-${venta.id}`}
-                className="flex items-center justify-between border-b border-gray-200 pb-2"
+        {/* ================= BUSCADOR ================= */}
+        <CrudCard style={{ marginBottom: 22 }}>
+          <form onSubmit={buscarNota}>
+            <CrudSectionTitle>
+              <Search size={14} style={{ marginRight: 6 }} />
+              Buscar nota
+            </CrudSectionTitle>
+
+            <CrudGrid>
+              <div>
+                <CrudLabel>Código o cliente</CrudLabel>
+                <CrudInput
+                  placeholder="Ej: V-2024-001"
+                  value={codigoNota}
+                  onChange={(e) => setCodigoNota(e.target.value)}
+                />
+              </div>
+            </CrudGrid>
+
+            <CrudActions>
+              <CrudButtonPrimary type="submit">
+                Buscar
+              </CrudButtonPrimary>
+            </CrudActions>
+          </form>
+        </CrudCard>
+
+        {/* ================= RESULTADOS ================= */}
+        {resultadosBusqueda.length > 0 && (
+          <CrudCard style={{ marginBottom: 22 }}>
+            <CrudSectionTitle>
+              Resultados encontrados
+            </CrudSectionTitle>
+
+            {resultadosBusqueda.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 0',
+                  borderBottom: '1px solid #e5e7eb',
+                }}
               >
                 <div>
-                  <p className="font-medium text-blue-700">
-                    {venta.codigo_nota || 'Sin código'}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Cliente: {venta.nombre_cliente} — {new Date(venta.created_at).toLocaleString('es-BO')}
-                  </p>
-                </div>
-                <div className="px-4 py-3 text-center">
-                  {venta.id?.toString().startsWith('st-') ? (
-                    <a
-                      href={route('admin.servicios.boleta', {
-                        servicio: venta.id.replace('st-', ''),
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      🧾 Ver Nota de Servicio
-                    </a>
-                  ) : (
-                    <a
-                      href={route('admin.ventas.boleta', {
-                        venta: venta.id.replace('v-', ''),
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      🧾 Ver Nota de Venta
-                    </a>
-                  )}
+                  <div style={{ fontWeight: 700, color: '#1d4ed8' }}>
+                    {r.codigo_nota}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#64748b' }}>
+                    {r.nombre_cliente}
+                  </div>
                 </div>
 
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Tabla de ventas desglosadas */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl overflow-x-auto">
-        <table className="w-full table-auto text-sm text-left text-gray-700 dark:text-gray-200">
-          <thead className="bg-blue-100 dark:bg-gray-800 uppercase text-xs text-blue-900 dark:text-blue-300">
-            <tr>
-              <th className="px-4 py-3">Cliente</th>
-              <th className="px-4 py-3">Código Nota</th>
-              <th className="px-4 py-3">Producto</th>
-              <th className="px-4 py-3 text-right">Precio Venta</th>
-              <th className="px-4 py-3 text-right">Descuento</th>
-              <th className="px-4 py-3 text-right">Permuta</th>
-              <th className="px-4 py-3 text-right">Capital</th>
-              <th className="px-4 py-3 text-right">Precio Final</th>
-              <th className="px-4 py-3 text-right">Ganancia</th>
-              <th className="px-4 py-3">Vendedor</th>
-              <th className="px-4 py-3">Fecha</th>
-              <th className="px-4 py-3 text-center">Nota</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itemsDesglosados.length > 0 ? (
-              itemsDesglosados.map((item, index) => (
-                <tr
-                  key={index}
-                  className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                >
-                  <td className="px-4 py-3">{item.cliente}</td>
-                  <td className="px-4 py-3 text-blue-700 font-mono">{item.codigoNota || '—'}</td>
-                  <td className="px-4 py-3">{item.producto}</td>
-                  <td className="px-4 py-3 text-right">{item.precioVenta.toFixed(2)} Bs</td>
-                  <td className="px-4 py-3 text-right text-red-600">- {item.descuento.toFixed(2)} Bs</td>
-                  <td className="px-4 py-3 text-right text-yellow-600">- {item.permuta.toFixed(2)} Bs</td>
-                  <td className="px-4 py-3 text-right text-blue-600">- {item.capital.toFixed(2)} Bs</td>
-                  <td className="px-4 py-3 text-right font-medium">{item.precioFinal.toFixed(2)} Bs</td>
-                  <td
-                    className={`px-4 py-3 text-right font-semibold ${item.ganancia < 0 ? 'text-red-600' : 'text-green-600'
-                      }`}
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <a
+                    href={
+                      r.tipo === 'servicio_tecnico'
+                        ? route('admin.servicios.boleta', r.id_real)
+                        : route('admin.ventas.boleta', r.id_real)
+                    }
+                    target="_blank"
+                    className="text-sm text-blue-600 hover:underline"
                   >
-                    {item.ganancia < 0
-                      ? `Se invirtió ${Math.abs(item.ganancia).toFixed(2)} Bs`
-                      : `${item.ganancia.toFixed(2)} Bs`}
-                  </td>
-                  <td className="px-4 py-3">{item.vendedor}</td>
-                  <td className="px-4 py-3">
-                    {new Date(item.fecha).toLocaleDateString('es-BO')}
-                    <br />
-                    <span className="text-xs text-gray-500">{new Date(item.fecha).toLocaleTimeString('es-BO')}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {(() => {
-                      const tipoNormalizado = item.tipo
-                        ? item.tipo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                        : '';
+                    🧾 Normal
+                  </a>
 
-                      const esServicio = tipoNormalizado.includes('servicio');
-                      const servicioId = item.servicio_tecnico_id ?? null;
-                      const ventaId = item.id_venta ?? null;
+                  <a
+                    href={
+                      r.tipo === 'servicio_tecnico'
+                        ? route('admin.servicios.recibo80mm', r.id_real)
+                        : route('admin.ventas.boleta80', r.id_real)
+                    }
+                    target="_blank"
+                    className="text-sm text-green-600 hover:underline"
+                  >
+                    🖨 Térmica
+                  </a>
+                </div>
+              </div>
+            ))}
+          </CrudCard>
+        )}
 
-                      if (esServicio && servicioId) {
-                        return (
-                          <a
-                            href={route('admin.servicios.boleta', {
-                              servicio: servicioId.toString().startsWith('st-')
-                                ? servicioId.replace('st-', '')
-                                : servicioId,
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
-                          >
-                            🧾 Nota Servicio
-                          </a>
-                        );
-                      }
+        {/* ================= TABLA ================= */}
+        <CrudCard>
+          <CrudSectionTitle>Detalle de movimientos</CrudSectionTitle>
 
-                      if (ventaId) {
-                        return (
-                          <a
-                            href={route('admin.ventas.boleta', {
-                              venta: ventaId.toString().startsWith('v-')
-                                ? ventaId.replace('v-', '')
-                                : ventaId,
-                            })}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
-                          >
-                            🧾 Nota Venta
-                          </a>
-                        );
-                      }
-
-                      return <span className="text-sm text-gray-400">—</span>;
-                    })()}
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#2563eb', color: '#fff' }}>
+                  {[
+                    'Cliente',
+                    'Código',
+                    'Producto',
+                    'Venta',
+                    'Desc.',
+                    'Permuta',
+                    'Capital',
+                    'Final',
+                    'Ganancia',
+                    'Vendedor',
+                    'Fecha',
+                    'Boleta',
+                  ].map((h) => (
+                    <th key={h} style={thWhite}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="12" className="px-4 py-6 text-center text-gray-500">
-                  No hay ventas registradas.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
 
-        {/* Resumen final */}
-        <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end items-center">
-          <div className="text-right">
-            <div className="text-sm text-gray-600 dark:text-gray-300">Ganancia Total Positiva</div>
-            <div className="text-xl font-bold text-green-600">{gananciaTotal.toFixed(2)} Bs</div>
+              <tbody>
+                {itemsDesglosados.map((i, idx) => (
+                  <tr
+                    key={idx}
+                    style={{ borderTop: '1px solid #e5e7eb' }}
+                  >
+                    <td style={td}>{i.cliente}</td>
+                    <td style={{ ...td, fontFamily: 'monospace', color: '#1d4ed8' }}>
+                      {i.codigoNota}
+                    </td>
+                    <td style={td}>{i.producto}</td>
+                    <td style={{ ...td, textAlign: 'right' }}>
+                      {i.precioVenta.toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#dc2626' }}>
+                      -{i.descuento.toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#ca8a04' }}>
+                      -{i.permuta.toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#2563eb' }}>
+                      -{i.capital.toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 600 }}>
+                      {i.precioFinal.toFixed(2)}
+                    </td>
+                    <td
+                      style={{
+                        ...td,
+                        textAlign: 'right',
+                        fontWeight: 700,
+                        color: i.ganancia < 0 ? '#dc2626' : '#16a34a',
+                      }}
+                    >
+                      {i.ganancia < 0
+                        ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}`
+                        : i.ganancia.toFixed(2)}
+                    </td>
+                    <td style={td}>{i.vendedor}</td>
+                    <td style={{ ...td, fontSize: 12 }}>
+                      {new Date(i.fecha).toLocaleDateString('es-BO')}
+                      <br />
+                      <span style={{ color: '#64748b' }}>
+                        {new Date(i.fecha).toLocaleTimeString('es-BO')}
+                      </span>
+                    </td>
+                    <td style={{ ...td, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <a
+                          href={route('admin.ventas.boleta', i.id_venta)}
+                          target="_blank"
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          🧾 Normal
+                        </a>
+                        <a
+                          href={route('admin.ventas.boleta80', i.id_venta)}
+                          target="_blank"
+                          className="text-xs text-green-600 hover:underline"
+                        >
+                          🖨 Térmica
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
+
+          {/* ================= RESUMEN ================= */}
+          <div
+            style={{
+              borderTop: '1px solid #e5e7eb',
+              padding: '18px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              background: '#f8fafc',
+            }}
+          >
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Ganancia Total Positiva
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a' }}>
+                {gananciaTotal.toFixed(2)} Bs
+              </div>
+            </div>
+          </div>
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }
+
+/* ===============================
+   TABLE STYLES
+=============================== */
+const thWhite = {
+  padding: '12px 14px',
+  fontSize: 12,
+  fontWeight: 800,
+  textAlign: 'left',
+};
+
+const td = {
+  padding: '12px 14px',
+  fontSize: 14,
+  color: '#334155',
+};

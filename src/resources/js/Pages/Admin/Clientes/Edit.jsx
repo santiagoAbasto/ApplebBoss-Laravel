@@ -1,5 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
+import FancyButton from '@/Components/FancyButton';
+import { route } from 'ziggy-js';
 
 export default function Edit({ cliente }) {
   const { data, setData, put, processing, errors } = useForm({
@@ -17,58 +19,101 @@ export default function Edit({ cliente }) {
     <AdminLayout>
       <Head title="Editar Cliente" />
 
-      <div className="max-w-3xl mx-auto mt-6">
-        <h1 className="text-3xl font-bold text-[#003366] mb-6">✏️ Editar Cliente</h1>
+      <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
+        {/* ===============================
+           HEADER
+        =============================== */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-emerald-700">
+            Editar Cliente
+          </h1>
+          <p className="text-sm text-gray-500">
+            Actualiza la información del cliente
+          </p>
+        </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-6 rounded-lg shadow grid grid-cols-1 md:grid-cols-2 gap-6"
-        >
-          {/* Nombre */}
+        {/* ===============================
+           FORMULARIO
+        =============================== */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* NOMBRE */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre completo
+            </label>
             <input
               type="text"
+              className="input w-full"
               value={data.nombre}
               onChange={(e) => setData('nombre', e.target.value)}
-              className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
+              required
             />
-            {errors.nombre && <p className="text-sm text-red-600 mt-1">{errors.nombre}</p>}
+            {errors.nombre && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.nombre}
+              </p>
+            )}
           </div>
 
-          {/* Teléfono */}
+          {/* TELÉFONO */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono
+            </label>
             <input
-              type="text"
+              type="tel"
+              className="input w-full"
               value={data.telefono}
               onChange={(e) => setData('telefono', e.target.value)}
-              className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
+              required
             />
-            {errors.telefono && <p className="text-sm text-red-600 mt-1">{errors.telefono}</p>}
+            {errors.telefono && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.telefono}
+              </p>
+            )}
           </div>
 
-          {/* Correo */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+          {/* CORREO */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo (opcional)
+            </label>
             <input
               type="email"
+              className="input w-full"
               value={data.correo}
               onChange={(e) => setData('correo', e.target.value)}
-              className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
             />
-            {errors.correo && <p className="text-sm text-red-600 mt-1">{errors.correo}</p>}
+            {errors.correo && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.correo}
+              </p>
+            )}
           </div>
 
-          {/* Botón */}
-          <div className="md:col-span-2">
-            <button
+          {/* ===============================
+             ACCIONES
+          =============================== */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <FancyButton
               type="submit"
+              variant="success"
+              size="sm"
               disabled={processing}
-              className="w-full bg-[#003366] text-white py-3 px-6 rounded-lg font-semibold shadow hover:bg-blue-900 transition disabled:opacity-50"
             >
-              Guardar Cambios
-            </button>
+              {processing ? 'Guardando…' : 'Guardar cambios'}
+            </FancyButton>
+
+            <Link href={route('admin.clientes.index')}>
+              <FancyButton
+                type="button"
+                variant="dark"
+                size="sm"
+              >
+                Cancelar
+              </FancyButton>
+            </Link>
           </div>
         </form>
       </div>

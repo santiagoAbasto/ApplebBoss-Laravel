@@ -1,213 +1,244 @@
-import VendedorLayout from '@/Layouts/VendedorLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { route } from 'ziggy-js';
 import axios from 'axios';
+import VendedorLayout from '@/Layouts/VendedorLayout';
+import FancyButton from '@/Components/FancyButton';
 
-export default function Index({ servicios = [], filtros = {} }) {
+export default function ServiciosIndex({ servicios = [], filtros = {}, vendedores = [] }) {
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || '');
   const [fechaFin, setFechaFin] = useState(filtros.fecha_fin || '');
+  const [vendedorId, setVendedorId] = useState(filtros.vendedor_id || '');
   const [buscar, setBuscar] = useState('');
-  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+  const [resultadosBusqueda, setResultadosBusqueda] = useState(null);
 
+  /* ===============================
+     FILTROS
+  =============================== */
   const handleFiltrar = (e) => {
     e.preventDefault();
     router.get(route('vendedor.servicios.index'), {
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
+      vendedor_id: vendedorId,
     });
   };
 
-  const handleExportar = () => {
-    const params = new URLSearchParams({
+  const handleExportarFiltrado = () => {
+    const queryParams = new URLSearchParams({
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
-    });
-    window.open(route('vendedor.servicios.exportarFiltrado') + `?${params.toString()}`, '_blank');
+      vendedor_id: vendedorId,
+    }).toString();
+
+    window.open(
+      route('vendedor.servicios.exportarFiltrado') + '?' + queryParams,
+      '_blank'
+    );
   };
 
-  const handleExportarResumen = () => {
-    const params = new URLSearchParams({
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
-    });
-    window.open(route('vendedor.servicios.exportarResumen') + `?${params.toString()}`, '_blank');
-  };
-
+  /* ===============================
+     BUSCADOR
+  =============================== */
   const buscarServicio = async (e) => {
     e.preventDefault();
     if (!buscar.trim()) return;
 
     try {
-      const response = await axios.get(route('vendedor.servicios.buscar'), {
+      const res = await axios.get(route('vendedor.servicios.index'), {
         params: { buscar: buscar.trim() },
       });
-      setResultadosBusqueda(response.data.servicios);
-    } catch (error) {
-      console.error('Error al buscar servicio técnico:', error);
+      setResultadosBusqueda(res.data.servicios || []);
+    } catch {
       setResultadosBusqueda([]);
     }
   };
 
-  const serviciosMostrados = resultadosBusqueda.length > 0 ? resultadosBusqueda : servicios;
+  const listaFinal = resultadosBusqueda !== null ? resultadosBusqueda : servicios;
 
   return (
     <VendedorLayout>
-      <Head title="Mis Servicios Técnicos" />
+      <Head title="Servicios Técnicos" />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-green-600">Servicios Técnicos Registrados</h1>
-        <p className="text-sm text-gray-500">Consulta, filtra y exporta tus servicios realizados.</p>
+      {/* ===============================
+         HEADER
+      =============================== */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Servicios Técnicos</h1>
+          <p className="text-sm text-gray-500">
+            Gestión y control de servicios registrados
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
+          <Link href={route('vendedor.servicios.create')} className="no-underline">
+            <FancyButton variant="success">
+              Registrar servicio
+            </FancyButton>
+          </Link>
+
+          <FancyButton
+            variant="danger"
+            type="button"
+            onClick={handleExportarFiltrado}
+          >
+            Exportar PDF
+          </FancyButton>
+        </div>
       </div>
 
-      {/* 🔍 Buscador */}
-      <div className="relative mb-6">
-        <form onSubmit={buscarServicio} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={buscar}
-            onChange={(e) => setBuscar(e.target.value)}
-            placeholder="Buscar por código o nombre del cliente"
-            className="border px-3 py-2 rounded w-80"
-          />
-          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-            Buscar
-          </button>
-        </form>
+      {/* ===============================
+         BUSCADOR
+      =============================== */}
+      <form
+        onSubmit={buscarServicio}
+        className="flex flex-col md:flex-row items-start md:items-center gap-3 mb-6"
+      >
+        <input
+          type="text"
+          value={buscar}
+          onChange={(e) => setBuscar(e.target.value)}
+          placeholder="Buscar por código de nota o cliente"
+          className="w-full md:w-96 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500"
+        />
 
-        {resultadosBusqueda.length > 0 && (
-          <div className="absolute z-50 mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-200 p-4 animate-fade-in">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              🔍 Resultados encontrados:
-            </h3>
-            <ul className="space-y-3">
-              {resultadosBusqueda.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex justify-between items-center px-4 py-2 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 capitalize">{s.cliente}</p>
-                    <p className="text-xs text-gray-500 font-mono">
-                      Código: <span className="text-blue-600">{s.codigo_nota || '—'}</span>
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      window.open(route('vendedor.servicios.boleta', { servicio: s.id }), '_blank');
-                      setBuscar('');
-                      setResultadosBusqueda([]);
-                    }}
-                    className="px-3 py-1 text-sm rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-50 transition"
-                  >
-                    Ver Boleta
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+        <FancyButton size="sm" variant="success" type="submit">
+          Buscar
+        </FancyButton>
+      </form>
 
-      {/* 📅 Filtros por fecha */}
+      {/* ===============================
+         FILTROS AVANZADOS
+      =============================== */}
       <form
         onSubmit={handleFiltrar}
-        className="grid md:grid-cols-3 gap-4 items-end bg-white p-4 rounded-xl shadow mb-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-2xl shadow mb-6"
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">📅 Desde</label>
+          <label className="text-xs font-semibold text-gray-600">Fecha inicio</label>
           <input
             type="date"
-            className="form-control w-full"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
+            className="w-full mt-1 rounded-lg border-gray-300"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">📅 Hasta</label>
+          <label className="text-xs font-semibold text-gray-600">Fecha fin</label>
           <input
             type="date"
-            className="form-control w-full"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
+            className="w-full mt-1 rounded-lg border-gray-300"
           />
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="btn btn-success w-full flex items-center justify-center gap-2 shadow-sm"
+        <div>
+          <label className="text-xs font-semibold text-gray-600">Vendedor</label>
+          <select
+            value={vendedorId}
+            onChange={(e) => setVendedorId(e.target.value)}
+            className="w-full mt-1 rounded-lg border-gray-300"
           >
-            🔍 <span>Filtrar</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleExportar}
-            className="btn btn-outline-primary w-full flex items-center justify-center gap-2 shadow-sm"
-          >
-            📤 <span>Boletas</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleExportarResumen}
-            className="btn btn-outline-success w-full flex items-center justify-center gap-2 shadow-sm"
-          >
-            📄 <span>Resumen</span>
-          </button>
+            <option value="">Todos</option>
+            {vendedores.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-end">
+          <FancyButton variant="primary" size="sm" type="submit" className="w-full">
+            Filtrar
+          </FancyButton>
         </div>
       </form>
 
-      {/* 📋 Tabla de servicios */}
-      <div className="overflow-x-auto rounded-xl shadow border bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-green-600 text-white text-sm uppercase tracking-wide">
+      {/* ===============================
+         TABLA
+      =============================== */}
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3 text-center">#</th>
-              <th className="px-4 py-3 text-left">Cliente</th>
-              <th className="px-4 py-3 text-left">Teléfono</th>
-              <th className="px-4 py-3 text-left">Código Nota</th>
-              <th className="px-4 py-3 text-left">Equipo</th>
-              <th className="px-4 py-3 text-left">Detalle</th>
-              <th className="px-4 py-3 text-left">Técnico</th>
-              <th className="px-4 py-3 text-center">Fecha</th>
-              <th className="px-4 py-3 text-right">Precio Venta</th>
-              <th className="px-4 py-3 text-center">Boleta</th>
+              <th className="px-4 py-3">Cliente</th>
+              <th className="px-4 py-3">Código</th>
+              <th className="px-4 py-3">Equipo</th>
+              <th className="px-4 py-3">Técnico</th>
+              <th className="px-4 py-3 text-right">Costo</th>
+              <th className="px-4 py-3 text-right">Venta</th>
+              <th className="px-4 py-3 text-right">Ganancia</th>
+              <th className="px-4 py-3">Fecha</th>
+              <th className="px-4 py-3">Vendedor</th>
+              <th className="px-4 py-3 text-center">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-            {serviciosMostrados.length === 0 ? (
+
+          <tbody>
+            {listaFinal.length > 0 ? (
+              listaFinal.map((s) => {
+                const costo = Number(s.precio_costo || 0);
+                const venta = Number(s.precio_venta || 0);
+                const ganancia = venta - costo;
+
+                return (
+                  <tr key={s.id} className="border-t hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">{s.cliente}</td>
+                    <td className="px-4 py-3 font-mono text-blue-600">{s.codigo_nota || '—'}</td>
+                    <td className="px-4 py-3">{s.equipo}</td>
+                    <td className="px-4 py-3">{s.tecnico}</td>
+                    <td className="px-4 py-3 text-right">{costo.toFixed(2)} Bs</td>
+                    <td className="px-4 py-3 text-right">{venta.toFixed(2)} Bs</td>
+                    <td
+                      className={`px-4 py-3 text-right font-semibold ${
+                        ganancia > 0 ? 'text-emerald-600' : 'text-red-600'
+                      }`}
+                    >
+                      {ganancia.toFixed(2)} Bs
+                    </td>
+                    <td className="px-4 py-3">{dayjs(s.fecha).format('DD/MM/YYYY')}</td>
+                    <td className="px-4 py-3">{s.vendedor?.name || '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex justify-center gap-2">
+                        <a
+                          href={route('vendedor.servicios.boleta', s.id)}
+                          target="_blank"
+                          className="no-underline"
+                        >
+                          <FancyButton size="sm" variant="primary">
+                            Ver
+                          </FancyButton>
+                        </a>
+
+                        <FancyButton
+                          size="sm"
+                          variant="dark"
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              route('vendedor.servicios.recibo80mm', s.id),
+                              '_blank'
+                            )
+                          }
+                        >
+                          Imprimir
+                        </FancyButton>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
               <tr>
-                <td colSpan="10" className="text-center py-6 text-gray-400 italic">
-                  No se encontraron servicios.
+                <td colSpan="10" className="text-center py-8 text-gray-500">
+                  No hay servicios técnicos registrados
                 </td>
               </tr>
-            ) : (
-              serviciosMostrados.map((s, index) => (
-                <tr key={s.id} className="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
-                  <td className="px-4 py-2 text-center font-medium text-gray-600">{index + 1}</td>
-                  <td className="px-4 py-2">{s.cliente}</td>
-                  <td className="px-4 py-2">{s.telefono || '-'}</td>
-                  <td className="px-4 py-2 text-blue-700 font-mono">{s.codigo_nota || '—'}</td>
-                  <td className="px-4 py-2">{s.equipo}</td>
-                  <td className="px-4 py-2">{s.detalle_servicio}</td>
-                  <td className="px-4 py-2">{s.tecnico}</td>
-                  <td className="px-4 py-2 text-center">{dayjs(s.fecha).format('DD MMM YYYY')}</td>
-                  <td className="px-4 py-2 text-right font-semibold text-green-700">
-                    Bs {parseFloat(s.precio_venta).toLocaleString('es-BO', { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <a
-                      href={route('vendedor.servicios.boleta', { servicio: s.id })}
-                      target="_blank"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Ver Boleta
-                    </a>
-                  </td>
-                </tr>
-              ))
             )}
           </tbody>
         </table>

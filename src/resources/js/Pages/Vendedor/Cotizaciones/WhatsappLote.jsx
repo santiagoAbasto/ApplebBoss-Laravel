@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import { Head } from '@inertiajs/react';
-import { route } from 'ziggy-js'; // ✅ CORRECTO
-
-
+import FancyButton from '@/Components/FancyButton';
 
 export default function WhatsappLote({ links }) {
   const [copiado, setCopiado] = useState(null);
 
+  /* ===============================
+     COPIAR MENSAJE
+  =============================== */
   const copiarMensaje = (item, index) => {
-    const mensaje = `Hola ${item.nombre}, gracias por confiar en *AppleBoss* 😊\n\n` +
-      `📝 *Cotización AppleBoss*\n` +
+    const mensaje =
+      `Hola ${item.nombre}, gracias por confiar en *Apple Boss* 😊\n\n` +
+      `📝 *Cotización Apple Boss *\n` +
       `👤 Cliente: ${item.nombre}\n` +
       `📄 Cotización N.º: ${item.cotizacion_id}\n` +
       `💰 Total: Bs ${item.total}\n` +
@@ -22,78 +24,92 @@ export default function WhatsappLote({ links }) {
     });
   };
 
+  /* ===============================
+     ENVIAR WHATSAPP
+  =============================== */
   const enviarWhatsApp = (item) => {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // Móvil: redirige directamente al link generado
       window.location.href = item.link;
     } else {
-      // Escritorio: intenta abrir WhatsApp Desktop primero
       const numero = item.telefono.replace(/[^0-9]/g, '');
       const mensajeEncoded = item.link.split('text=')[1];
       const linkDesktop = `whatsapp://send?phone=${numero}&text=${mensajeEncoded}`;
 
       window.location.href = linkDesktop;
 
-      const fallback = setTimeout(() => {
+      setTimeout(() => {
         window.open(item.link, '_blank');
       }, 2000);
-
-      window.addEventListener('blur', () => clearTimeout(fallback));
     }
   };
 
   return (
     <VendedorLayout>
       <Head title="Envío por WhatsApp" />
+
       <div className="container py-4">
-        <h2 className="h4 text-success fw-bold mb-3">📤 Enlaces generados para envío por WhatsApp</h2>
-        <p className="text-muted mb-4">
-          Cada cliente recibirá su cotización. Puedes copiar el mensaje o enviarlo directamente por WhatsApp:
-        </p>
+        <h2 className="h4 fw-bold mb-4 text-success">
+          Envío de Cotizaciones por WhatsApp
+        </h2>
 
         <div className="row">
           {links.map((item, index) => (
             <div key={index} className="col-md-6 col-lg-4 mb-4">
-              <div className="card shadow-sm border-0 h-100">
+              {/* CARD 3D */}
+              <div className="card card-3d h-100">
                 <div className="card-body d-flex flex-column justify-content-between">
-                  <div>
-                    <h5 className="card-title text-primary fw-semibold mb-3">👤 {item.nombre}</h5>
 
-                    <div className="mb-3">
-                      <label className="form-label small text-muted mb-1">
-                        Mensaje de WhatsApp:
-                      </label>
-                      <textarea
-                        className="form-control form-control-sm"
-                        rows="6"
-                        value={`Hola ${item.nombre}, gracias por confiar en *AppleBoss* 😊\n\n📝 *Cotización AppleBoss*\n👤 Cliente: ${item.nombre}\n📄 Cotización N.º: ${item.cotizacion_id}\n💰 Total: Bs ${item.total}\n🔗 Ver PDF: ${item.pdf}`}
-                        readOnly
-                      ></textarea>
-                      <button
-                        className="btn btn-outline-secondary btn-sm mt-2"
-                        onClick={() => copiarMensaje(item, index)}
-                      >
-                        <i className="bi bi-clipboard me-1"></i>
-                        Copiar mensaje
-                      </button>
-                      {copiado === index && (
-                        <div className="text-success small mt-1">
-                          <i className="bi bi-check-circle-fill me-1"></i>
-                          Mensaje copiado
-                        </div>
-                      )}
-                    </div>
+                  {/* INFO */}
+                  <div>
+                    <h5 className="fw-semibold text-success mb-2">
+                      👤 {item.nombre}
+                    </h5>
+
+                    <textarea
+                      className="form-control form-control-sm mb-2 mensaje-preview"
+                      rows="6"
+                      readOnly
+                      value={`Hola ${item.nombre}, gracias por confiar en *Apple Boss* 😊
+
+                        📝 Cotización Apple Boss
+                        👤 Cliente: ${item.nombre}
+                        📄 Cotización N.º: ${item.cotizacion_id}
+                        💰 Total: Bs ${item.total}
+                        🔗 Ver PDF: ${item.pdf}`}
+                    />
+
+                    {copiado === index && (
+                      <div className="text-success small text-center mt-1">
+                        ✔ Mensaje copiado
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    onClick={() => enviarWhatsApp(item)}
-                    className="btn btn-success w-100 mt-auto"
-                  >
-                    <i className="bi bi-whatsapp me-2"></i>
-                    Enviar por WhatsApp
-                  </button>
+                  {/* BOTONES */}
+                  <div className="d-flex gap-2 mt-3 justify-content-between">
+                    <FancyButton
+                      variant="success"
+                      size="sm"
+                      icon="arrow"
+                      onClick={() => copiarMensaje(item, index)}
+                      className="btn-soft"
+                    >
+                      Copiar
+                    </FancyButton>
+
+                    <FancyButton
+                      variant="success"
+                      size="sm"
+                      icon="arrow"
+                      onClick={() => enviarWhatsApp(item)}
+                      className="btn-soft"
+                    >
+                      WhatsApp
+                    </FancyButton>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -101,11 +117,48 @@ export default function WhatsappLote({ links }) {
         </div>
 
         {links.length === 0 && (
-          <div className="alert alert-warning mt-4">
-            No se generaron enlaces. Verifica los datos de los clientes seleccionados.
+          <div className="alert alert-warning text-center mt-4">
+            No se generaron enlaces de WhatsApp.
           </div>
         )}
       </div>
+
+      {/* ===============================
+         ESTILOS FINALES (PRODUCCIÓN)
+      =============================== */}
+      <style>{`
+        /* CARD 3D SUAVE */
+        .card-3d {
+          background: #ffffff;
+          border-radius: 16px;
+          border: 1.5px solid #a7f3d0; /* verde agua claro */
+          box-shadow:
+            0 6px 14px rgba(0, 0, 0, 0.06),
+            0 2px 4px rgba(0, 0, 0, 0.04);
+          transition: all 0.3s ease;
+        }
+
+        .card-3d:hover {
+          transform: translateY(-4px);
+          box-shadow:
+            0 14px 28px rgba(0, 0, 0, 0.10),
+            0 6px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        /* TEXTAREA PREVIEW */
+        .mensaje-preview {
+          background: #f8fafc;
+          border-radius: 10px;
+          font-size: 0.8rem;
+          line-height: 1.35;
+        }
+
+        /* BOTONES MÁS AMIGABLES */
+        .btn-soft {
+          border-width: 2px !important;
+          padding: 6px 14px !important;
+        }
+      `}</style>
     </VendedorLayout>
   );
 }

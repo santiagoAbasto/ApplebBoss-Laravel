@@ -1,14 +1,35 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
-import { route } from 'ziggy-js'; // ✅ CORRECTO
+import { Laptop, Plus } from 'lucide-react';
 
-
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+  CrudButtonDanger,
+} from '@/Components/CrudUI';
 
 export default function ComputadorasIndex({ computadoras }) {
   const [busqueda, setBusqueda] = useState('');
 
+  /* ===============================
+     ACTIONS
+  =============================== */
   const eliminar = (id) => {
     if (confirm('¿Seguro que deseas eliminar esta computadora?')) {
       router.delete(route('admin.computadoras.destroy', id), {
@@ -27,12 +48,19 @@ export default function ComputadorasIndex({ computadoras }) {
     }
   };
 
-  const getBadgeColor = (estado) => {
+  /* ===============================
+     HELPERS
+  =============================== */
+  const getBadgeStyle = (estado) => {
     switch (estado) {
-      case 'disponible': return 'bg-green-200 text-green-700';
-      case 'vendido': return 'bg-red-200 text-red-700';
-      case 'permuta': return 'bg-blue-200 text-blue-700';
-      default: return 'bg-gray-200 text-gray-700';
+      case 'disponible':
+        return { background: '#dcfce7', color: '#166534' };
+      case 'vendido':
+        return { background: '#fee2e2', color: '#991b1b' };
+      case 'permuta':
+        return { background: '#dbeafe', color: '#1e40af' };
+      default:
+        return { background: '#e5e7eb', color: '#374151' };
     }
   };
 
@@ -44,94 +72,163 @@ export default function ComputadorasIndex({ computadoras }) {
     <AdminLayout>
       <Head title="Computadoras" />
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">💻 Computadoras</h1>
-        <Link
-          href={route('admin.computadoras.create')}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          + Registrar Computadora
-        </Link>
-      </div>
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
+          <div>
+            <CrudTitle>
+              <Laptop size={22} />
+              Computadoras
+            </CrudTitle>
+            <CrudSubtitle>
+              Gestión de inventario de computadoras
+            </CrudSubtitle>
+          </div>
 
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Buscar por número de serie"
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="w-full md:w-1/3 px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-        />
-      </div>
+          <CrudButtonPrimary as={Link} href={route('admin.computadoras.create')}>
+            <Plus size={18} />
+            Registrar computadora
+          </CrudButtonPrimary>
+        </CrudHeader>
 
-      <div className="overflow-x-auto bg-white rounded shadow">
-        <table className="min-w-full text-sm text-left text-gray-700">
-          <thead className="bg-blue-100 text-gray-900 uppercase">
-            <tr>
-              <th className="px-4 py-3">Nombre</th>
-              <th className="px-4 py-3">Procesador</th>
-              <th className="px-4 py-3">Serie</th>
-              <th className="px-4 py-3">RAM</th>
-              <th className="px-4 py-3">Batería</th>
-              <th className="px-4 py-3">Almacenamiento</th>
-              <th className="px-4 py-3">Precio Venta (Bs)</th>
-              <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pcsFiltradas.length > 0 ? (
-              pcsFiltradas.map((pc) => (
-                <tr key={pc.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3">{pc.nombre}</td>
-                  <td className="px-4 py-3">{pc.procesador || '—'}</td>
-                  <td className="px-4 py-3">{pc.numero_serie}</td>
-                  <td className="px-4 py-3">{pc.ram}</td>
-                  <td className="px-4 py-3">{pc.bateria || '—'}</td>
-                  <td className="px-4 py-3">{pc.almacenamiento || '—'}</td>
-                  <td className="px-4 py-3">Bs {parseFloat(pc.precio_venta).toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${getBadgeColor(pc.estado)}`}>
-                      {pc.estado}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 flex gap-2 justify-center">
-                    {pc.estado === 'permuta' ? (
-                      <button
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                        onClick={() => habilitar(pc.id)}
-                      >
-                        Habilitar
-                      </button>
-                    ) : (
-                      <Link
-                        href={route('admin.computadoras.edit', pc.id)}
-                        className="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-                      >
-                        Editar
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => eliminar(pc.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
+        {/* ================= FILTRO ================= */}
+        <CrudCard style={{ marginBottom: 22 }}>
+          <CrudSectionTitle>Búsqueda</CrudSectionTitle>
+
+          <CrudGrid>
+            <div>
+              <CrudLabel>Buscar por número de serie</CrudLabel>
+              <CrudInput
+                placeholder="Ej: C02Q123ABC"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+          </CrudGrid>
+        </CrudCard>
+
+        {/* ================= TABLA ================= */}
+        <CrudCard>
+          <CrudSectionTitle>Listado de computadoras</CrudSectionTitle>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9', textAlign: 'left' }}>
+                  <th style={th}>Nombre</th>
+                  <th style={th}>Procesador</th>
+                  <th style={th}>Serie</th>
+                  <th style={th}>RAM</th>
+                  <th style={th}>Batería</th>
+                  <th style={th}>Almacenamiento</th>
+                  <th style={th}>Precio Venta (Bs)</th>
+                  <th style={th}>Estado</th>
+                  <th style={{ ...th, textAlign: 'center' }}>Acciones</th>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="9" className="text-center text-gray-500 py-6">
-                  No se encontraron computadoras con esa serie.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+
+              <tbody>
+                {pcsFiltradas.length > 0 ? (
+                  pcsFiltradas.map((pc) => (
+                    <tr key={pc.id} style={{ borderTop: '1px solid #e5e7eb' }}>
+                      <td style={td}>{pc.nombre}</td>
+                      <td style={td}>{pc.procesador || '—'}</td>
+                      <td style={td}>{pc.numero_serie}</td>
+                      <td style={td}>{pc.ram}</td>
+                      <td style={td}>{pc.bateria || '—'}</td>
+                      <td style={td}>{pc.almacenamiento || '—'}</td>
+                      <td style={td}>
+                        Bs {parseFloat(pc.precio_venta).toFixed(2)}
+                      </td>
+                      <td style={td}>
+                        <span
+                          style={{
+                            ...badge,
+                            ...getBadgeStyle(pc.estado),
+                          }}
+                        >
+                          {pc.estado}
+                        </span>
+                      </td>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 8,
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {pc.estado === 'permuta' ? (
+                            <CrudButtonPrimary
+                              type="button"
+                              onClick={() => habilitar(pc.id)}
+                            >
+                              Habilitar
+                            </CrudButtonPrimary>
+                          ) : (
+                            <CrudButtonSecondary
+                              as={Link}
+                              href={route('admin.computadoras.edit', pc.id)}
+                            >
+                              Editar
+                            </CrudButtonSecondary>
+                          )}
+
+                          <CrudButtonDanger
+                            type="button"
+                            onClick={() => eliminar(pc.id)}
+                          >
+                            Eliminar
+                          </CrudButtonDanger>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      style={{
+                        textAlign: 'center',
+                        padding: 30,
+                        color: '#64748b',
+                      }}
+                    >
+                      No se encontraron computadoras con esa serie.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CrudCard>
+      </CrudWrapper>
 
       <ToastContainer />
     </AdminLayout>
   );
 }
+
+/* ===============================
+   TABLE STYLES
+=============================== */
+const th = {
+  padding: '12px 14px',
+  fontSize: 13,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const td = {
+  padding: '12px 14px',
+  fontSize: 14,
+  color: '#334155',
+};
+
+const badge = {
+  padding: '4px 10px',
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 700,
+  textTransform: 'capitalize',
+};

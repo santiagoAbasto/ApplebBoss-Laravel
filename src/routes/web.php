@@ -85,7 +85,22 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
         ->names('servicios')
         ->parameters(['servicios' => 'servicio']);
 
-    Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])->name('servicios.boleta');
+    // 🧾 Boleta A4
+    Route::get(
+        '/servicios/{servicio}/boleta',
+        [ServicioTecnicoController::class, 'boleta']
+    )->name('servicios.boleta');
+
+    // 🖨️ Recibo térmico 80mm
+    Route::get(
+        '/servicios/{servicio}/recibo-80mm',
+        [ServicioTecnicoController::class, 'recibo80mm']
+    )->name('servicios.recibo80mm');
+
+    Route::get(
+        '/ventas/{venta}/boleta-80',
+        [VentaController::class, 'boleta80']
+    )->name('ventas.boleta80');
 
 
     // 📤 Exportaciones de servicios técnicos
@@ -176,8 +191,6 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
     // Buscar ventas
     Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])->name('ventas.buscarSoloVentas');
 
-
-
     // SERVICIO TÉCNICO
     Route::get('/servicios', [ServicioTecnicoController::class, 'index'])->name('servicios.index');
     Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
@@ -206,7 +219,24 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->nam
         Route::get('/{id}/edit', [ClienteVendedorController::class, 'edit'])->name('clientes.edit');
         Route::put('/{id}', [ClienteVendedorController::class, 'update'])->name('clientes.update');
         Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
+
+        // 🧾 Boleta A4
+        Route::get(
+            '/servicios/{servicio}/boleta',
+            [ServicioTecnicoController::class, 'boleta']
+        )->name('servicios.boleta');
+
+        // 🖨️ Recibo térmico 80mm
+        Route::get(
+            '/servicios/{servicio}/recibo-80mm',
+            [ServicioTecnicoController::class, 'recibo80mm']
+        )->name('servicios.recibo80mm');
     });
+    // 🟢 WhatsApp boleta 8 cm
+    Route::get(
+        '/ventas/{venta}/boleta-80',
+        [VentaController::class, 'boleta80']
+    )->name('ventas.boleta80');
 });
 
 // ========================

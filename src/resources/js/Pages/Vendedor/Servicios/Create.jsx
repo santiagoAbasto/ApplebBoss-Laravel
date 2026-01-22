@@ -4,195 +4,302 @@ import axios from 'axios';
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import { route } from 'ziggy-js';
 
+import {
+  FormContainer,
+  FormTitle,
+  FormSectionTitle,
+  Input,
+  Textarea,
+  PrimaryButton,
+  SecondaryButton,
+
+  // 👇 NUEVOS COMPONENTES UX
+  ServiceCard,
+  ServiceGrid,
+  FieldLabel,
+  PriceHighlight,
+  ServiceFooter,
+} from '@/Components/FormUI2';
+
+
 export default function CreateServicio() {
-  const { data, setData, post, errors } = useForm({
-    codigo_nota: '',
+  const { data, setData, post, processing } = useForm({
     cliente: '',
     telefono: '',
     equipo: '',
-    detalle_servicio: '',
-    precio_costo: '',
-    precio_venta: '',
     tecnico: '',
     fecha: new Date().toISOString().split('T')[0],
+    detalle_servicio: '',
+    notas_adicionales: '',
+    precio_costo: 0,
+    precio_venta: 0,
   });
 
+  /* ======================
+     SERVICIOS (ESTRUCTURA REAL)
+  ====================== */
+  const [servicios, setServicios] = useState([
+    { descripcion: '', costo: '', precio: '' },
+  ]);
+
+  /* ======================
+     CLIENTES (AUTOCOMPLETE)
+  ====================== */
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
 
   const buscarCliente = async (valor) => {
     setData('cliente', valor);
-    if (valor.length >= 2) {
-      try {
-        const res = await axios.get(route('vendedor.clientes.sugerencias', { term: valor }));
-        setSugerencias(res.data);
-        setMostrarSugerencias(true);
-      } catch (err) {
-        console.error('Error al obtener sugerencias:', err);
-      }
-    } else {
+    if (valor.length < 2) {
       setMostrarSugerencias(false);
+      return;
     }
+
+    const res = await axios.get(
+      route('vendedor.clientes.sugerencias', { term: valor }) // ✅ CORRECTO
+    );
+
+    setSugerencias(res.data);
+    setMostrarSugerencias(true);
   };
 
-  const seleccionarCliente = (cliente) => {
+
+  const seleccionarCliente = (c) => {
     setData((prev) => ({
       ...prev,
-      cliente: cliente.nombre,
-      telefono: cliente.telefono,
+      cliente: c.nombre,
+      telefono: c.telefono,
     }));
     setMostrarSugerencias(false);
   };
 
+  /* ======================
+     SERVICIOS CRUD
+  ====================== */
+  const agregarServicio = () =>
+    setServicios((prev) => [
+      ...prev,
+      { descripcion: '', costo: '', precio: '' },
+    ]);
+
+  const actualizarServicio = (i, campo, valor) =>
+    setServicios((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, [campo]: valor } : s))
+    );
+
+  const eliminarServicio = (i) =>
+    setServicios((prev) => prev.filter((_, idx) => idx !== i));
+
+  /* ======================
+     TOTALES REALES
+  ====================== */
+  const totalCosto = servicios.reduce(
+    (sum, s) => sum + Number(s.costo || 0),
+    0
+  );
+
+  const totalVenta = servicios.reduce(
+    (sum, s) => sum + Number(s.precio || 0),
+    0
+  );
+
+  /* ======================
+     SUBMIT (JSON LIMPIO)
+  ====================== */
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const serviciosValidos = servicios.filter(
+      (s) =>
+        s.descripcion &&
+        Number(s.costo) >= 0 &&
+        Number(s.precio) >= 0
+    );
+
+    if (serviciosValidos.length === 0) {
+      alert('Debe registrar al menos un servicio válido');
+      return;
+    }
+
+    const detalleJSON = serviciosValidos.map((s) => ({
+      descripcion: s.descripcion,
+      costo: Number(s.costo),   // 🔴 ESTE ERA EL DATO QUE SE PERDÍA
+      precio: Number(s.precio),
+    }));
+
+    // ✅ PRIMERO setData
+    setData((prev) => ({
+      ...prev,
+      detalle_servicio: JSON.stringify(detalleJSON),
+      precio_costo: totalCosto,
+      precio_venta: totalVenta,
+    }));
+
+    // ✅ LUEGO post SIN payload
     post(route('vendedor.servicios.store'));
   };
 
   return (
     <VendedorLayout>
       <Head title="Registrar Servicio Técnico" />
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">🧰 Registrar Servicio Técnico</h1>
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 shadow rounded-xl p-6 space-y-6">
-          {/* Código Nota */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Código de Nota</label>
-            <input
-              type="text"
-              value={data.codigo_nota}
-              onChange={(e) => setData('codigo_nota', e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              placeholder="Ej: ST-001"
-            />
-          </div>
+      <FormContainer>
+        {/* TÍTULO */}
+        <FormTitle>Servicio Técnico</FormTitle>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Cliente con autocompletado */}
-            <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Nombre del Cliente</label>
-              <input
-                type="text"
-                value={data.cliente}
-                onChange={(e) => buscarCliente(e.target.value)}
-                onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
-                onFocus={() => sugerencias.length > 0 && setMostrarSugerencias(true)}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.cliente ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                placeholder="Buscar o escribir nombre"
-              />
-              {mostrarSugerencias && (
-                <ul className="absolute z-10 bg-white dark:bg-gray-800 border rounded shadow max-h-40 overflow-y-auto mt-1 w-full">
-                  {sugerencias.map((cliente, idx) => (
-                    <li
-                      key={idx}
-                      className="px-4 py-2 hover:bg-blue-100 dark:hover:bg-gray-700 cursor-pointer"
-                      onClick={() => seleccionarCliente(cliente)}
-                    >
-                      {cliente.nombre} — {cliente.telefono}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {errors.cliente && <p className="text-sm text-red-500 mt-1">{errors.cliente}</p>}
-            </div>
+        <form onSubmit={handleSubmit}>
+          {/* ======================
+            CLIENTE
+        ====================== */}
+          <FormSectionTitle>Información del Cliente</FormSectionTitle>
 
-            {/* Teléfono */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Teléfono</label>
-              <input
-                type="text"
-                value={data.telefono}
-                onChange={(e) => setData('telefono', e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
+          <Input
+            placeholder="Cliente"
+            value={data.cliente}
+            onChange={(e) => buscarCliente(e.target.value)}
+            onBlur={() => setTimeout(() => setMostrarSugerencias(false), 150)}
+          />
 
-            {/* Equipo */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Equipo</label>
-              <input
-                type="text"
-                value={data.equipo}
-                onChange={(e) => setData('equipo', e.target.value)}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.equipo ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-              {errors.equipo && <p className="text-sm text-red-500 mt-1">{errors.equipo}</p>}
-            </div>
-
-            {/* Técnico */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Técnico Encargado</label>
-              <input
-                type="text"
-                value={data.tecnico}
-                onChange={(e) => setData('tecnico', e.target.value)}
-                className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.tecnico ? 'border-red-500' : 'border-gray-300'
-                  }`}
-              />
-              {errors.tecnico && <p className="text-sm text-red-500 mt-1">{errors.tecnico}</p>}
-            </div>
-          </div>
-
-          {/* Detalle del Servicio */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Detalle del Servicio</label>
-            <textarea
-              rows="4"
-              value={data.detalle_servicio}
-              onChange={(e) => setData('detalle_servicio', e.target.value)}
-              className={`w-full rounded-xl border px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.detalle_servicio ? 'border-red-500' : 'border-gray-300'
-                }`}
-            />
-            {errors.detalle_servicio && <p className="text-sm text-red-500 mt-1">{errors.detalle_servicio}</p>}
-          </div>
-
-          {/* Costo, venta y fecha */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Precio Costo (Bs)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={data.precio_costo}
-                onChange={(e) => setData('precio_costo', e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Precio Venta (Bs)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={data.precio_venta}
-                onChange={(e) => setData('precio_venta', e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Fecha</label>
-              <input
-                type="date"
-                value={data.fecha}
-                onChange={(e) => setData('fecha', e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-              />
-            </div>
-          </div>
-
-          {/* Botón guardar */}
-          <div className="text-right">
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl shadow-md transition"
+          {mostrarSugerencias && sugerencias.length > 0 && (
+            <div
+              style={{
+                marginTop: 8,
+                background: '#fff',
+                borderRadius: 12,
+                boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
+                padding: 6,
+              }}
             >
-              💾 Guardar Servicio
-            </button>
+              {sugerencias.map((c, i) => (
+                <SecondaryButton
+                  key={i}
+                  type="button"
+                  onMouseDown={() => seleccionarCliente(c)} // ✅ CLAVE
+                  style={{ display: 'block', width: '100%', textAlign: 'left' }}
+                >
+                  {c.nombre} — {c.telefono}
+                </SecondaryButton>
+              ))}
+            </div>
+          )}
+
+          <Input
+            placeholder="Teléfono"
+            value={data.telefono}
+            onChange={(e) => setData('telefono', e.target.value)}
+          />
+
+          <Input
+            placeholder="Equipo"
+            value={data.equipo}
+            onChange={(e) => setData('equipo', e.target.value)}
+          />
+
+          <Input
+            placeholder="Técnico"
+            value={data.tecnico}
+            onChange={(e) => setData('tecnico', e.target.value)}
+          />
+
+          {/* ======================
+            SERVICIOS
+        ====================== */}
+          <FormSectionTitle>Detalle del Servicio</FormSectionTitle>
+
+          {servicios.map((s, i) => (
+            <ServiceCard key={i}>
+              <ServiceGrid>
+                {/* DESCRIPCIÓN */}
+                <div>
+                  <FieldLabel>Servicio</FieldLabel>
+                  <Input
+                    placeholder="Descripción del servicio"
+                    value={s.descripcion}
+                    onChange={(e) =>
+                      actualizarServicio(i, 'descripcion', e.target.value)
+                    }
+                  />
+                </div>
+
+                {/* COSTO */}
+                <div>
+                  <FieldLabel>Costo</FieldLabel>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Costo"
+                    value={s.costo}
+                    onChange={(e) =>
+                      actualizarServicio(i, 'costo', e.target.value)
+                    }
+                  />
+                </div>
+
+                {/* PRECIO CLIENTE */}
+                <div>
+                  <FieldLabel>Precio Cliente</FieldLabel>
+                  <PriceHighlight
+                    type="number"
+                    min="0"
+                    placeholder="Precio"
+                    value={s.precio}
+                    onChange={(e) =>
+                      actualizarServicio(i, 'precio', e.target.value)
+                    }
+                  />
+                </div>
+              </ServiceGrid>
+
+              <ServiceFooter>
+                <SecondaryButton
+                  type="button"
+                  onMouseDown={() => eliminarServicio(i)}
+                >
+                  Eliminar servicio
+                </SecondaryButton>
+              </ServiceFooter>
+            </ServiceCard>
+          ))}
+
+          <PrimaryButton type="button" onClick={agregarServicio}>
+            + Agregar servicio
+          </PrimaryButton>
+
+
+          {/* ======================
+            NOTAS
+        ====================== */}
+          <FormSectionTitle>Notas adicionales</FormSectionTitle>
+
+          <Textarea
+            placeholder="Observaciones, condiciones, recomendaciones..."
+            value={data.notas_adicionales}
+            onChange={(e) =>
+              setData('notas_adicionales', e.target.value)
+            }
+          />
+
+          {/* ======================
+            TOTALES
+        ====================== */}
+          <div style={{ marginTop: 20, fontSize: 14 }}>
+            <p>
+              <strong>Costo total:</strong> Bs {totalCosto.toFixed(2)}
+            </p>
+            <p>
+              <strong>Cliente paga:</strong> Bs {totalVenta.toFixed(2)}
+            </p>
           </div>
+
+          {/* ======================
+            SUBMIT
+        ====================== */}
+          <PrimaryButton type="submit" disabled={processing}>
+            {processing ? 'Guardando…' : 'Guardar Servicio'}
+          </PrimaryButton>
         </form>
-      </div>
+      </FormContainer>
     </VendedorLayout>
   );
+
 }

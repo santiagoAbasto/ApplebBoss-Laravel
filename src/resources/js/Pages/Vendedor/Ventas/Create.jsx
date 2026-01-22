@@ -5,6 +5,11 @@ import axios from 'axios';
 import { route } from 'ziggy-js';
 import ModalPermutaComponent from '@/Components/ModalPermutaComponent';
 import { useForm } from '@inertiajs/react';
+import NeonInput from '@/Components/NeonInput';
+import { NeonBox } from '@/Components/NeonBox';
+import { NeonField } from '@/Components/NeonField';
+
+
 
 
 export default function Create({ celulares, computadoras, productosGenerales }) {
@@ -17,7 +22,6 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
     notas_adicionales: '',
     inicio_tarjeta: '',
     fin_tarjeta: '',
-    codigo_nota: '',
   });
 
   const form = data;
@@ -33,8 +37,6 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const [stocks, setStocks] = useState({ celulares: [], computadoras: [], productosGenerales: [], productosApple: [] });
   const [errores, setErrores] = useState({});
   const [items, setItems] = useState([]); // necesario para el manejo de los productos
-  const [sugerencias, setSugerencias] = useState([]); // si usás autocompletado
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false); // esta línea soluciona tu último error
 
   const fetchStock = async () => {
     const [c, comp, pg, apple] = await Promise.all([
@@ -49,6 +51,19 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
       productosGenerales: pg.data,
       productosApple: apple.data,
     });
+  };
+
+  const seleccionarProducto = (producto) => {
+    setProductoSeleccionado({
+      tipo: productoSeleccionado.tipo, // ✅ EL TIPO VIENE DEL SELECT
+      codigo: producto.codigo || producto.imei_1 || producto.numero_serie,
+      cantidad: 1,
+      descuento: 0,
+      imei: producto.imei_1 || '',
+      producto,
+    });
+
+    setMostrarProductos(false);
   };
 
   useEffect(() => { fetchStock(); }, []);
@@ -120,7 +135,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
     let total = 0;
     items.forEach((item) => {
       let subtotal = (item.precio_venta - item.descuento) * item.cantidad;
-      if (esPermuta && productoEntregado && (item.tipo === 'celular' || item.tipo === 'computadora')) {
+      if (esPermuta && productoEntregado) {
         subtotal -= productoEntregado.precio_costo;
       }
       total += subtotal;
@@ -129,6 +144,64 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   };
 
   const total = calcularTotal();
+
+  // =======================
+  // CLIENTES
+  // =======================
+  const [sugerenciasClientes, setSugerenciasClientes] = useState([]);
+  const [mostrarClientes, setMostrarClientes] = useState(false);
+
+  // =======================
+  // PRODUCTOS
+  // =======================
+  const [sugerenciasProductos, setSugerenciasProductos] = useState([]);
+  const [mostrarProductos, setMostrarProductos] = useState(false);
+
+  const buscarSugerencias = (texto) => {
+    if (!productoSeleccionado.tipo || texto.length < 2) {
+      setMostrarProductos(false);
+      return;
+    }
+
+    const term = texto.toLowerCase();
+    let fuente = [];
+
+    // 🔹 Elegimos la fuente según tipo
+    if (productoSeleccionado.tipo === 'celular') {
+      fuente = stocks.celulares;
+    }
+
+    if (productoSeleccionado.tipo === 'computadora') {
+      fuente = stocks.computadoras;
+    }
+
+    if (productoSeleccionado.tipo === 'producto_general') {
+      fuente = stocks.productosGenerales;
+    }
+
+    if (productoSeleccionado.tipo === 'producto_apple') {
+      fuente = stocks.productosApple;
+    }
+
+    // 🔹 Búsqueda FLEXIBLE por nombre, modelo, código, imei, serie
+    const resultados = fuente.filter((p) => {
+      return (
+        p.nombre?.toLowerCase().includes(term) ||
+        p.modelo?.toLowerCase().includes(term) ||
+        p.codigo?.toLowerCase().includes(term) ||
+        p.numero_serie?.toLowerCase().includes(term) ||
+        p.imei_1?.includes(term) ||
+        p.imei_2?.includes(term)
+      );
+    }).map(p => ({
+      ...p,
+      tipo: productoSeleccionado.tipo, // 🔥 CLAVE
+    }));
+
+    setSugerenciasProductos(resultados.slice(0, 10));
+    setMostrarProductos(resultados.length > 0);
+  };
+
 
   const registrarVenta = async () => {
     if (items.length === 0) return alert('Agrega al menos un producto.');
@@ -156,103 +229,83 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   return (
     <VendedorLayout>
       <Head title="Registrar Venta" />
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Sección: Información del cliente */}
-        <div className="bg-white p-5 rounded shadow">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            🧍‍♂️ Información del cliente
-          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Nombre del cliente con autocompletado */}
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre del Cliente
-              </label>
-              <input
-                className="input h-11 w-full"
-                placeholder="Nombre del Cliente"
-                value={data.nombre_cliente}
-                onChange={async (e) => {
-                  const nombre = e.target.value;
-                  setData('nombre_cliente', nombre);
+      {/* ===============================
+    INFORMACIÓN DEL CLIENTE
+=============================== */}
+      <NeonBox className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">
+          Información del cliente
+        </h2>
 
-                  if (nombre.length >= 2) {
-                    try {
-                      const res = await axios.get(
-                        route('admin.clientes.sugerencias', { term: nombre })
-                      );
-                      setSugerencias(res.data);
-                      setMostrarSugerencias(true);
-                    } catch (err) {
-                      console.error('Error al obtener sugerencias:', err);
-                    }
-                  } else {
-                    setMostrarSugerencias(false);
-                  }
-                }}
-                onBlur={() => setTimeout(() => setMostrarSugerencias(false), 100)}
-                onFocus={() => {
-                  if (sugerencias.length > 0) setMostrarSugerencias(true);
-                }}
-              />
-              {mostrarSugerencias && sugerencias.length > 0 && (
-                <ul className="absolute bg-white border rounded w-full z-10 max-h-40 overflow-y-auto shadow text-sm mt-1">
-                  {sugerencias.map((cliente) => (
-                    <li
-                      key={cliente.id}
-                      className="px-3 py-2 hover:bg-blue-100 cursor-pointer"
-                      onClick={() => {
-                        setData('nombre_cliente', cliente.nombre);
-                        setData('telefono_cliente', cliente.telefono);
-                        setMostrarSugerencias(false);
-                      }}
-                    >
-                      {cliente.nombre} — {cliente.telefono}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* ================= NOMBRE ================= */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre del Cliente
+            </label>
 
-            {/* Código de nota (talonario) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Código de Nota (Talonario)
-              </label>
-              <input
-                type="text"
-                name="codigo_nota"
-                value={data.codigo_nota}
-                onChange={(e) => setData('codigo_nota', e.target.value)}
-                className={`input h-11 w-full ${errors.codigo_nota ? 'border-red-500' : ''}`}
-                placeholder="Ej: 0064"
-              />
-              {errors.codigo_nota && (
-                <p className="text-red-500 text-sm mt-1">{errors.codigo_nota}</p>
-              )}
-            </div>
+            <NeonInput
+              value={data.nombre_cliente}
+              placeholder="Nombre del Cliente"
+              onChange={async (e) => {
+                const nombre = e.target.value;
+                setData('nombre_cliente', nombre);
 
-            {/* Teléfono */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono
-              </label>
-              <input
-                className="input h-11 w-full"
-                placeholder="Teléfono"
-                value={data.telefono_cliente}
-                onChange={(e) => setData('telefono_cliente', e.target.value)}
-              />
-            </div>
+                if (nombre.length >= 2) {
+                  const res = await axios.get(
+                    route('vendedor.clientes.sugerencias', { term: nombre })
+                  );
+                  setSugerenciasClientes(res.data);
+                  setMostrarClientes(true);
+                } else {
+                  setMostrarClientes(false);
+                }
+              }}
+              onBlur={() => setTimeout(() => setMostrarClientes(false), 150)}
+            />
 
-            {/* Método de pago */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Método de Pago
-              </label>
+            {mostrarClientes && (
+              <ul className="absolute z-30 mt-1 w-full bg-white rounded-xl shadow text-sm border border-emerald-100">
+                {sugerenciasClientes.map((c) => (
+                  <li
+                    key={c.id}
+                    className="px-4 py-2 hover:bg-emerald-50 cursor-pointer"
+                    onClick={() => {
+                      setData('nombre_cliente', c.nombre);
+                      setData('telefono_cliente', c.telefono);
+                      setMostrarClientes(false);
+                    }}
+                  >
+                    <strong>{c.nombre}</strong>
+                    <div className="text-xs text-gray-500">{c.telefono}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* ================= TELÉFONO ================= */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono
+            </label>
+
+            <NeonInput
+              value={data.telefono_cliente}
+              placeholder="Teléfono"
+              onChange={(e) => setData('telefono_cliente', e.target.value)}
+            />
+          </div>
+
+          {/* ================= MÉTODO DE PAGO ================= */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Método de pago
+            </label>
+
+            <NeonField>
               <select
-                className="input h-11 w-full"
                 value={data.metodo_pago}
                 onChange={(e) => setData('metodo_pago', e.target.value)}
               >
@@ -260,105 +313,305 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
                 <option value="qr">QR</option>
                 <option value="tarjeta">Tarjeta</option>
               </select>
-            </div>
-
-            {/* Tarjeta: inicio y fin */}
-            {data.metodo_pago === 'tarjeta' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Inicio tarjeta (4 dígitos)
-                  </label>
-                  <input
-                    className="input h-11 w-full"
-                    placeholder="Inicio tarjeta"
-                    maxLength={4}
-                    value={data.inicio_tarjeta}
-                    onChange={(e) => setData('inicio_tarjeta', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fin tarjeta (4 dígitos)
-                  </label>
-                  <input
-                    className="input h-11 w-full"
-                    placeholder="Fin tarjeta"
-                    maxLength={4}
-                    value={data.fin_tarjeta}
-                    onChange={(e) => setData('fin_tarjeta', e.target.value)}
-                  />
-                </div>
-              </>
-            )}
+            </NeonField>
           </div>
-        </div>
-      </div>
 
-      {/* Sección: Buscar y agregar productos */}
-      <div className="bg-white p-5 rounded shadow">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">🛒 Buscar producto por código</h2>
-        <div className="flex flex-wrap gap-3 items-end">
-          <select className="input" value={productoSeleccionado.tipo} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, tipo: e.target.value, codigo: '', producto: null })}>
-            <option value="">Tipo de producto</option>
-            <option value="celular">Celular</option>
-            <option value="computadora">Computadora</option>
-            <option value="producto_general">Producto General</option>
-            <option value="producto_apple">Producto Apple</option>
-          </select>
-
-          <input
-            className="input w-72"
-            placeholder="Código / IMEI / Serie"
-            value={productoSeleccionado.codigo}
-            onChange={(e) => {
-              const val = e.target.value;
-              setProductoSeleccionado((prev) => {
-                const producto = buscarProductoPorCodigo(prev.tipo, val);
-                return { ...prev, codigo: val, producto };
-              });
-            }}
-          />
-          {productoSeleccionado.producto && (
+          {/* ================= TARJETA (CONDICIONAL) ================= */}
+          {data.metodo_pago === 'tarjeta' && (
             <>
-              <input type="number" className="input w-20" placeholder="Cantidad" min={1} value={productoSeleccionado.cantidad} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, cantidad: Number(e.target.value) })} />
-              <input type="number" className="input w-24" placeholder="Descuento" min={0} value={productoSeleccionado.descuento} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, descuento: Number(e.target.value) })} />
-              {productoSeleccionado.tipo === 'celular' && (
-                <input type="text" className="input w-56" placeholder="IMEI único" value={productoSeleccionado.imei} onChange={(e) => setProductoSeleccionado({ ...productoSeleccionado, imei: e.target.value })} />
-              )}
-              <button onClick={agregarItem} className="btn btn-primary">➕ Agregar</button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Inicio de tarjeta
+                </label>
+
+                <NeonInput
+                  maxLength={4}
+                  placeholder="Ej: 1234"
+                  value={data.inicio_tarjeta}
+                  onChange={(e) =>
+                    setData('inicio_tarjeta', e.target.value)
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fin de tarjeta
+                </label>
+
+                <NeonInput
+                  maxLength={4}
+                  placeholder="Ej: 5678"
+                  value={data.fin_tarjeta}
+                  onChange={(e) =>
+                    setData('fin_tarjeta', e.target.value)
+                  }
+                />
+              </div>
             </>
           )}
         </div>
+      </NeonBox>
 
-        {productoSeleccionado.producto && (
-          <div className="mt-4 p-3 rounded border border-blue-300 bg-blue-50 text-blue-800 text-sm shadow-inner">
-            <strong>Producto encontrado:</strong> {productoSeleccionado.producto.modelo || productoSeleccionado.producto.nombre} — <strong>Precio:</strong> Bs {productoSeleccionado.producto.precio_venta} — <strong>Stock:</strong> {productoSeleccionado.producto.stock ?? 1}
+      {/* ===============================
+  BUSCAR PRODUCTO
+=============================== */}
+      <NeonBox
+        className={`mb-6 relative overflow-visible ${mostrarProductos ? 'z-[9999]' : 'z-0'
+          }`}
+      >
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          🛒 Buscar producto
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* TIPO */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Tipo de producto
+            </label>
+
+            <NeonField>
+              <select
+                value={productoSeleccionado.tipo}
+                onChange={(e) =>
+                  setProductoSeleccionado({
+                    ...productoSeleccionado,
+                    tipo: e.target.value,
+                    codigo: '',
+                    producto: null,
+                  })
+                }
+              >
+                <option value="">Seleccionar tipo</option>
+                <option value="celular">Celular</option>
+                <option value="computadora">Computadora</option>
+                <option value="producto_general">Producto General</option>
+                <option value="producto_apple">Producto Apple</option>
+              </select>
+            </NeonField>
           </div>
-        )}
-      </div>
 
-      {/* Sección: Permuta */}
-      <div className="bg-white p-5 rounded shadow">
-        <label className="inline-flex items-center gap-2 mb-2">
-          <input type="checkbox" checked={esPermuta} onChange={e => setEsPermuta(e.target.checked)} />
-          ¿Venta con permuta?
-        </label>
-        {esPermuta && (
-          <div className="space-y-2">
-            <select className="input" value={tipoPermuta} onChange={e => setTipoPermuta(e.target.value)}>
-              <option value="">Selecciona tipo de producto entregado</option>
-              <option value="celular">Celular entregado</option>
-              <option value="computadora">Computadora entregada</option>
-              <option value="producto_general">Producto General entregado</option>
-            </select>
-            {tipoPermuta && (
-              <button className="btn btn-secondary" onClick={() => setModalAbierto(true)}>➕ Registrar producto entregado</button>
+          {/* BUSCADOR */}
+          <div className="md:col-span-2 relative">
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Código / IMEI / Nombre
+            </label>
+
+            <NeonInput
+              placeholder="Buscar por código, IMEI o nombre"
+              value={productoSeleccionado.codigo}
+              onChange={(e) => {
+                const v = e.target.value;
+                setProductoSeleccionado((p) => ({ ...p, codigo: v }));
+                buscarSugerencias(v);
+              }}
+            />
+
+            {mostrarProductos && (
+              <ul
+                className="
+            absolute left-0 right-0 top-full mt-2
+            bg-white rounded-xl shadow-xl
+            border border-emerald-100
+            z-[99999]
+            max-h-64 overflow-auto
+          "
+              >
+                {sugerenciasProductos.map((p, i) => (
+                  <li
+                    key={i}
+                    className="px-4 py-2 hover:bg-emerald-50 cursor-pointer transition"
+                    onClick={() => seleccionarProducto(p)}
+                  >
+                    <div className="font-semibold">{p.nombre || p.modelo}</div>
+                    <div className="text-xs text-gray-500">
+                      {p.tipo?.toUpperCase()} — {p.codigo || p.imei_1 || p.numero_serie}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
+        </div>
+
+        {/* PRODUCTO ENCONTRADO */}
+        {productoSeleccionado.producto && (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <div className="font-semibold mb-2">Producto encontrado</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="font-medium">Producto:</span>{' '}
+                {productoSeleccionado.producto.modelo || productoSeleccionado.producto.nombre}
+              </div>
+              <div>
+                <span className="font-medium">Precio:</span> Bs {productoSeleccionado.producto.precio_venta}
+              </div>
+              <div>
+                <span className="font-medium">Stock:</span> {productoSeleccionado.producto.stock ?? 1}
+              </div>
+            </div>
+          </div>
         )}
-      </div>
+
+        {/* CONFIGURACIÓN */}
+        {productoSeleccionado.producto && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Cantidad
+              </label>
+              <NeonInput
+                type="number"
+                min={1}
+                value={productoSeleccionado.cantidad}
+                onChange={(e) =>
+                  setProductoSeleccionado({
+                    ...productoSeleccionado,
+                    cantidad: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Descuento (Bs)
+              </label>
+              <NeonInput
+                type="number"
+                min={0}
+                value={productoSeleccionado.descuento}
+                onChange={(e) =>
+                  setProductoSeleccionado({
+                    ...productoSeleccionado,
+                    descuento: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            {productoSeleccionado.tipo === 'celular' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  IMEI único
+                </label>
+                <NeonInput
+                  placeholder="IMEI"
+                  value={productoSeleccionado.imei}
+                  onChange={(e) =>
+                    setProductoSeleccionado({
+                      ...productoSeleccionado,
+                      imei: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={agregarItem}
+              className="h-[46px] rounded-xl bg-emerald-600 text-white font-semibold px-6 hover:bg-emerald-700 active:scale-95 transition"
+            >
+              ➕ Agregar
+            </button>
+          </div>
+        )}
+      </NeonBox>
+
+      {/* ===============================
+      PRODUCTOS AÑADIDOS
+  =============================== */}
+      <NeonBox className="mb-6 overflow-x-auto">
+        <h2 className="text-lg font-semibold mb-3">Productos añadidos</h2>
+
+        <table className="w-full text-sm">
+          <thead className="bg-emerald-50 text-emerald-800">
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Descuento</th>
+              <th>Subtotal</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center py-4 text-gray-400">
+                  No hay productos añadidos
+                </td>
+              </tr>
+            )}
+
+            {items.map((item, i) => (
+              <tr key={i} className="border-t hover:bg-emerald-50">
+                <td>{i + 1}</td>
+                <td>{item.nombre}</td>
+                <td>{item.cantidad}</td>
+                <td>Bs {item.precio_venta}</td>
+                <td>Bs {item.descuento}</td>
+                <td className="font-semibold text-emerald-700">
+                  Bs {item.subtotal.toFixed(2)}
+                </td>
+                <td>
+                  <button
+                    className="text-red-600 hover:scale-110 transition"
+                    onClick={() => quitarItem(i)}
+                  >
+                    ✖
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </NeonBox>
+
+      {/* ===============================
+      PERMUTA
+  =============================== */}
+      <NeonBox className="mb-6 space-y-4">
+        <label className="inline-flex items-center gap-3 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={esPermuta}
+            onChange={(e) => setEsPermuta(e.target.checked)}
+            className="w-4 h-4 accent-emerald-500"
+          />
+          ¿Venta con permuta?
+        </label>
+
+        {esPermuta && (
+          <>
+            <NeonField>
+              <select
+                value={tipoPermuta}
+                onChange={(e) => setTipoPermuta(e.target.value)}
+              >
+                <option value="">Tipo de permuta</option>
+                <option value="celular">Celular</option>
+                <option value="computadora">Computadora</option>
+                <option value="producto_general">Producto General</option>
+                <option value="producto_apple">Producto Apple</option>
+              </select>
+            </NeonField>
+
+            {tipoPermuta && (
+              <button
+                className="btn btn-secondary flex items-center gap-2"
+                onClick={() => setModalAbierto(true)}
+              >
+                ➕ Registrar producto entregado
+              </button>
+            )}
+          </>
+        )}
+      </NeonBox>
 
       <ModalPermutaComponent
         show={modalAbierto}
@@ -370,59 +623,34 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
         }}
       />
 
-      {/* Tabla de productos añadidos */}
-      <div className="bg-white p-5 rounded shadow overflow-x-auto">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">🧾 Productos añadidos</h2>
-        <table className="table-auto w-full text-sm border">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="px-2 py-1">#</th>
-              <th className="px-2 py-1">Tipo</th>
-              <th className="px-2 py-1">Producto</th>
-              <th className="px-2 py-1">Cantidad</th>
-              <th className="px-2 py-1">Precio</th>
-              <th className="px-2 py-1">Descuento</th>
-              <th className="px-2 py-1">Subtotal</th>
-              <th className="px-2 py-1"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, i) => (
-              <tr key={i}>
-                <td className="px-2 py-1">{i + 1}</td>
-                <td className="px-2 py-1 capitalize">{item.tipo}</td>
-                <td className="px-2 py-1">{item.nombre}</td>
-                <td className="px-2 py-1"><input type="number" className="input w-20" value={item.cantidad} onChange={e => actualizarCampo(i, 'cantidad', e.target.value)} /></td>
-                <td className="px-2 py-1"><input type="number" className="input w-24" value={item.precio_venta} onChange={e => actualizarCampo(i, 'precio_venta', e.target.value)} /></td>
-                <td className="px-2 py-1"><input type="number" className="input w-24" value={item.descuento} onChange={e => actualizarCampo(i, 'descuento', e.target.value)} /></td>
-                <td className="px-2 py-1 font-semibold">Bs {item.subtotal.toFixed(2)}</td>
-                <td className="px-2 py-1"><button className="text-red-600" onClick={() => quitarItem(i)}>✖</button></td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan="8" className="text-center text-gray-500 py-4">No hay productos añadidos.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* ===============================
+      TOTAL + REGISTRAR
+  =============================== */}
+      <NeonBox className="space-y-4">
+        <div className="text-right text-lg font-bold text-emerald-700">
+          Total a pagar: Bs {calcularTotal().toFixed(2)}
+        </div>
 
-      {/* Total y notas */}
-      <div className="bg-white p-5 rounded shadow space-y-4">
-        <div className="text-right text-lg font-bold text-green-700">Total a pagar: Bs {calcularTotal().toFixed(2)}</div>
-        <textarea
-          className="input w-full"
-          rows="3"
-          placeholder="Notas adicionales..."
-          value={data.notas_adicionales}
-          onChange={e => setData('notas_adicionales', e.target.value)}
-        />
+        <NeonField>
+          <textarea
+            placeholder="Notas adicionales"
+            value={data.notas_adicionales}
+            onChange={(e) =>
+              setData('notas_adicionales', e.target.value)
+            }
+          />
+        </NeonField>
 
         <div className="text-center">
-          <button className="btn btn-success px-8 py-2 text-lg" onClick={registrarVenta}>💾 Registrar Venta</button>
+          <button
+            className="btn btn-success px-8 py-2 text-lg"
+            onClick={registrarVenta}
+          >
+            💾 Registrar Venta
+          </button>
         </div>
-      </div>
+      </NeonBox>
     </VendedorLayout>
+
   );
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Venta;
+use App\Models\ServicioTecnico;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
@@ -11,15 +12,25 @@ use App\Models\Egreso;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $fechaInicio = request('fecha_inicio') ?? now()->toDateString();
-        $fechaFin    = request('fecha_fin') ?? now()->toDateString();
+        $fechaInicio = request('fecha_inicio');
+        $fechaFin    = request('fecha_fin');
+
+        if (!$fechaInicio || !$fechaFin) {
+            $fechaInicio = Venta::min('fecha') ?? now()->toDateString();
+            $fechaFin    = now()->toDateString();
+        }
+
         $vendedorId  = request('vendedor_id');
 
+        /* =========================
+         * VENTAS (SIN TOCAR)
+         * ========================= */
         $ventas = Venta::with([
             'vendedor',
             'items.celular',
@@ -31,12 +42,21 @@ class DashboardController extends Controller
             'entregadoProductoGeneral',
             'entregadoProductoApple',
         ])
-        ->when($vendedorId, fn ($q) => $q->where('user_id', $vendedorId))
-        ->whereBetween('fecha', [$fechaInicio, $fechaFin])
-        ->get();
+            ->when($vendedorId, fn($q) => $q->where('user_id', $vendedorId))
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->get();
+
+        /* =========================
+         * SERVICIOS TÉCNICOS REALES
+         * ========================= */
+        $serviciosTecnicos = ServicioTecnico::with('vendedor')
+            ->when($vendedorId, fn($q) => $q->where('user_id', $vendedorId))
+            ->whereBetween('fecha', [$fechaInicio, $fechaFin])
+            ->get();
 
         $items = collect();
         $inversionTotal = 0;
+
         $ganancias = [
             'celulares' => 0,
             'computadoras' => 0,
@@ -45,6 +65,9 @@ class DashboardController extends Controller
             'producto_apple' => 0,
         ];
 
+        /* =========================
+         * PROCESAR VENTAS (IGUAL QUE ANTES)
+         * ========================= */
         foreach ($ventas as $venta) {
             $permutaCosto = optional($venta->entregadoCelular)->precio_costo
                 ?? optional($venta->entregadoComputadora)->precio_costo
@@ -79,69 +102,188 @@ class DashboardController extends Controller
                 };
 
                 $items->push([
-                    'fecha'     => $venta->fecha,
-                    'producto'  => $productoNombre,
-                    'tipo'      => $item->tipo,
-                    'ganancia'  => $ganancia,
-                    'descuento' => $item->descuento,
-                    'permuta'   => $permuta,
-                    'capital'   => $item->precio_invertido,
-                    'subtotal'  => $item->precio_venta - $item->descuento - $permuta,
-                    'vendedor'  => $venta->vendedor?->name ?? '—',
+                    'fecha'        => $venta->fecha,
+                    'producto'     => $productoNombre,
+                    'tipo'         => $item->tipo,
+
+                    'precio_bruto' => $item->precio_venta, // ✅ FALTABA
+                    'descuento'    => $item->descuento,
+                    'permuta'      => $permuta,
+
+                    'ganancia'     => $ganancia,
+                    'capital'      => $item->precio_invertido,
+                    'subtotal'     => $item->precio_venta - $item->descuento - $permuta,
+
+                    'vendedor'     => $venta->vendedor?->name ?? '—',
                 ]);
             }
 
-            // Servicios técnicos sin items
+            // ⛔ LÓGICA ANTIGUA SE MANTIENE (DATOS HISTÓRICOS)
             if ($venta->tipo_venta === 'servicio_tecnico' && $venta->items->isEmpty()) {
                 $ganancia = $venta->precio_venta - $venta->descuento - $venta->precio_invertido;
                 $ganancias['servicio_tecnico'] += $ganancia;
                 $inversionTotal += $venta->precio_invertido;
 
                 $items->push([
-                    'fecha'     => $venta->fecha,
-                    'producto'  => 'Servicio Técnico',
-                    'tipo'      => 'servicio_tecnico',
-                    'ganancia'  => $ganancia,
-                    'descuento' => $venta->descuento,
-                    'permuta'   => 0,
-                    'capital'   => $venta->precio_invertido,
-                    'subtotal'  => $venta->precio_venta - $venta->descuento,
-                    'vendedor'  => $venta->vendedor?->name ?? '—',
+                    'fecha'        => $venta->fecha,
+                    'producto'     => $productoNombre,
+                    'tipo'         => $item->tipo,
+
+                    'precio_bruto' => $item->precio_venta, // ✅ NUEVO
+                    'descuento'    => $item->descuento,
+                    'permuta'      => $permuta,
+
+                    'ganancia'     => $ganancia,
+                    'capital'      => $item->precio_invertido,
+
+                    // neto (lo que entra a caja)
+                    'subtotal'     => $item->precio_venta - $item->descuento - $permuta,
+
+                    'vendedor'     => $venta->vendedor?->name ?? '—',
                 ]);
             }
         }
 
+        /* =========================
+         * 🔧 NUEVO: SERVICIOS TÉCNICOS REALES
+         * ========================= */
+        foreach ($serviciosTecnicos as $servicio) {
+            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancias['servicio_tecnico'] += $ganancia;
+            $inversionTotal += $servicio->precio_costo;
+
+            $items->push([
+                'fecha'        => $servicio->fecha,
+                'producto'     => 'Servicio Técnico',
+                'tipo'         => 'servicio_tecnico',
+
+                'precio_bruto' => $servicio->precio_venta, // ✅ NUEVO
+                'descuento'    => 0,
+                'permuta'      => 0,
+
+                'ganancia'     => $ganancia,
+                'capital'      => $servicio->precio_costo,
+                'subtotal'     => $servicio->precio_venta,
+
+                'vendedor'     => $servicio->vendedor?->name ?? '—',
+            ]);
+        }
+
         // =========================
-        // 🔻 Egresos (día/mes/año)
+        // 🔻 EGRESOS (día/mes/año)  ✅ ANTES DEL HISTÓRICO
         // =========================
         $egresosCollection = Egreso::whereBetween('created_at', [
-                $fechaInicio . ' 00:00:00',
-                $fechaFin    . ' 23:59:59',
-            ])
-            ->get(['created_at', 'precio_invertido']); // Asegúrate que el campo sea precio_invertido
+            $fechaInicio . ' 00:00:00',
+            $fechaFin    . ' 23:59:59',
+        ])->get(['created_at', 'precio_invertido']);
 
         // Por día (YYYY-MM-DD)
         $egresosPorDia = $egresosCollection
-            ->groupBy(fn ($e) => $e->created_at->toDateString())
-            ->map(fn ($grp) => $grp->sum('precio_invertido'));
+            ->groupBy(fn($e) => $e->created_at->toDateString())
+            ->map(fn($grp) => $grp->sum('precio_invertido'));
 
         // Por mes (YYYY-MM)
         $egresosPorMes = $egresosCollection
-            ->groupBy(fn ($e) => $e->created_at->format('Y-m'))
-            ->map(fn ($grp) => $grp->sum('precio_invertido'));
+            ->groupBy(fn($e) => $e->created_at->format('Y-m'))
+            ->map(fn($grp) => $grp->sum('precio_invertido'));
 
         // Por año (YYYY)
         $egresosPorAnio = $egresosCollection
-            ->groupBy(fn ($e) => $e->created_at->format('Y'))
-            ->map(fn ($grp) => $grp->sum('precio_invertido'));
+            ->groupBy(fn($e) => $e->created_at->format('Y'))
+            ->map(fn($grp) => $grp->sum('precio_invertido'));
 
         $totalEgresos = $egresosCollection->sum('precio_invertido');
+
+        /* =====================================================
+ * 📈 HISTÓRICO PARA SVG (DÍA / MES / AÑO) ✅ POST-EGRESOS
+ * - Inversión = costo + permuta (SOLO productos)
+ * - Permuta entra UNA SOLA VEZ (ya viene controlada en $items)
+ * - Servicio técnico NO entra en inversión
+ * ===================================================== */
+
+        $tiposConInversion = ['celular', 'computadora', 'producto_apple', 'producto_general'];
+
+        /* ======================
+ * 📅 DÍA (por movimiento)
+ * ====================== */
+        $historicoDia = $items
+            ->sortBy('fecha')
+            ->values()
+            ->map(function ($i) use ($egresosPorDia, $tiposConInversion) {
+
+                $fecha = Carbon::parse($i['fecha'])->toDateString();
+                $egresoDia = $egresosPorDia[$fecha] ?? 0;
+
+                // ✅ INVERSIÓN REAL: costo + permuta (si aplica)
+                $capitalReal = in_array($i['tipo'], $tiposConInversion)
+                    ? ($i['capital'] + $i['permuta'])
+                    : 0;
+
+                return [
+                    'fecha'    => Carbon::parse($i['fecha'])->toDateTimeString(),
+                    'total'    => $i['subtotal'],
+                    'capital'  => $capitalReal,                 // ← AQUÍ entra la permuta
+                    'utilidad' => $i['ganancia'] - $egresoDia,
+                ];
+            });
+
+        /* ======================
+ * 📆 MES (agrupado por día)
+ * ====================== */
+        $historicoMes = $items
+            ->groupBy(fn($i) => Carbon::parse($i['fecha'])->toDateString())
+            ->map(function ($grp, $fecha) use ($egresosPorDia, $tiposConInversion) {
+
+                $gananciaDia = $grp->sum('ganancia');
+                $egresoDia   = $egresosPorDia[$fecha] ?? 0;
+
+                // ✅ SUMA costo + permuta (permuta ya viene 1 sola vez)
+                $capitalDia = $grp
+                    ->whereIn('tipo', $tiposConInversion)
+                    ->sum(fn($i) => $i['capital'] + $i['permuta']);
+
+                return [
+                    'fecha'    => $fecha,
+                    'total'    => $grp->sum('subtotal'),
+                    'capital'  => $capitalDia,                   // ← incluye los Bs 200
+                    'utilidad' => $gananciaDia - $egresoDia,
+                ];
+            })
+            ->values();
+
+        /* ======================
+ * 📈 AÑO (agrupado por mes)
+ * ====================== */
+        $historicoAnio = $items
+            ->groupBy(fn($i) => Carbon::parse($i['fecha'])->format('Y-m'))
+            ->map(function ($grp, $ym) use ($egresosPorMes, $tiposConInversion) {
+
+                $gananciaMes = $grp->sum('ganancia');
+                $egresoMes   = $egresosPorMes[$ym] ?? 0;
+
+                // ✅ costo + permuta (una sola vez)
+                $capitalMes = $grp
+                    ->whereIn('tipo', $tiposConInversion)
+                    ->sum(fn($i) => $i['capital'] + $i['permuta']);
+
+                return [
+                    'fecha'    => $ym . '-01',
+                    'total'    => $grp->sum('subtotal'),
+                    'capital'  => $capitalMes,                   // ← ya cuadra
+                    'utilidad' => $gananciaMes - $egresoMes,
+                ];
+            })
+            ->values();
 
         $gananciaNeta       = $items->sum('ganancia');
         $utilidadDisponible = $gananciaNeta - $totalEgresos;
 
+
         // ✅ Ventas hoy: calcula desde $items, no desde $ventas
-        $ventasHoy = $items->where('fecha', today()->toDateString())->sum('subtotal');
+        $ventasHoy = $items
+            ->filter(fn($i) => Carbon::parse($i['fecha'])->isToday())
+            ->sum('precio_bruto'); // ✅
+
 
         // Stocks
         $stockCel   = Celular::where('estado', 'disponible')->count();
@@ -151,9 +293,9 @@ class DashboardController extends Controller
         $stockTotal = $stockCel + $stockComp + $stockGen + $stockApple;
 
         // Últimas 5 ventas (desde items)
-        $ultimasVentas = $items->sortByDesc('fecha')->take(5)->values()->map(fn ($i) => [
+        $ultimasVentas = $items->sortByDesc('fecha')->take(5)->values()->map(fn($i) => [
             'cliente' => $i['vendedor'],
-            'producto'=> $i['producto'],
+            'producto' => $i['producto'],
             'tipo'    => $i['tipo'],
             'total'   => $i['subtotal'],
             'fecha'   => $i['fecha'],
@@ -166,7 +308,7 @@ class DashboardController extends Controller
 
             return [
                 'fecha'                        => $fecha,
-                'total'                        => $itemsDelDia->sum(fn ($i) => $i['ganancia'] + $i['capital'] + $i['descuento'] + $i['permuta']),
+                'total'                        => $itemsDelDia->sum(fn($i) => $i['ganancia'] + $i['capital'] + $i['descuento'] + $i['permuta']),
                 'ganancia_productos'           => $itemsDelDia->whereIn('tipo', ['celular', 'computadora', 'producto_apple'])->sum('ganancia'),
                 'ganancia_productos_generales' => $itemsDelDia->where('tipo', 'producto_general')->sum('ganancia'),
                 'ganancia_servicios'           => $itemsDelDia->where('tipo', 'servicio_tecnico')->sum('ganancia'),
@@ -179,12 +321,11 @@ class DashboardController extends Controller
 
         // =========================
         // 🔸 Distribución económica
-        //    (ganancia ya post egresos)
         // =========================
         $distribucionEconomica = [
             [
                 'label' => 'Inversión',
-                'valor' => $items->sum('capital'),
+                'valor' => $items->sum('capital'), // ✅ SOLO COSTO → 1330
             ],
             [
                 'label' => 'Descuento',
@@ -192,17 +333,12 @@ class DashboardController extends Controller
             ],
             [
                 'label' => 'Permuta',
-                'valor' => $items->sum('permuta'),
+                'valor' => $items->sum('permuta'), // ✅ 200
             ],
             [
                 'label' => 'Utilidad (post egresos)',
                 'valor' => max($utilidadDisponible, 0),
             ],
-            // Si prefieres visualizar egresos como porción separada, descomenta:
-            // [
-            //     'label' => 'Egresos',
-            //     'valor' => $totalEgresos,
-            // ],
         ];
 
         return Inertia::render('Admin/Dashboard', [
@@ -219,7 +355,9 @@ class DashboardController extends Controller
                     'porcentaje_productos_generales' => $stockTotal > 0 ? round(($stockGen / $stockTotal) * 100, 1) : 0,
                 ],
                 'permutas' => $ventas->where('es_permuta', true)->count(),
-                'servicios' => $ventas->where('tipo_venta', 'servicio_tecnico')->count(),
+                'servicios' =>
+                $ventas->where('tipo_venta', 'servicio_tecnico')->count()
+                    + $serviciosTecnicos->count(),
                 'ganancia_neta' => $gananciaNeta,
                 'egresos' => $totalEgresos,
                 'utilidad_disponible' => $utilidadDisponible,
@@ -233,6 +371,7 @@ class DashboardController extends Controller
                 'total_descuento' => $items->sum('descuento'),
                 'total_costo' => $items->sum('capital'),
                 'total_permuta' => $items->sum('permuta'),
+                'total_inversion' => $items->sum('capital') + $items->sum('permuta'),
                 'ganancia_neta' => $gananciaNeta,
                 'egresos_total' => $totalEgresos,
                 'utilidad_disponible' => $utilidadDisponible,
@@ -244,12 +383,17 @@ class DashboardController extends Controller
             'distribucion_economica' => $distribucionEconomica,
 
             'resumen_grafico' => $resumenGrafico,
+            'historico' => [
+                'dia'  => $historicoDia,
+                'mes'  => $historicoMes,
+                'anio' => $historicoAnio,
+            ],
 
             // 🔹 Egresos agrupados para usar en tabs/filtros del front (día/mes/año)
             'egresos_agrupados' => [
-                'por_dia'  => $egresosPorDia,   // ['2025-09-01' => 150, ...]
-                'por_mes'  => $egresosPorMes,   // ['2025-09' => 900, ...]
-                'por_anio' => $egresosPorAnio,  // ['2025' => 12345, ...]
+                'por_dia'  => $egresosPorDia,
+                'por_mes'  => $egresosPorMes,
+                'por_anio' => $egresosPorAnio,
             ],
 
             'vendedores' => User::where('rol', 'vendedor')->select('id', 'name')->get(),

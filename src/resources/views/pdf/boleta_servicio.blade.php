@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
+
   <style>
     @page {
       margin: 30px 28px;
@@ -14,175 +15,242 @@
       color: #1e1e1e;
     }
 
+    /* ================= HEADER ================= */
+    .header-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #003366;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
     .brand img {
       width: 130px;
     }
 
-    .title-top {
+    .empresa-legal {
+      font-size: 9.3px;
+      color: #334155;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .company-name {
+      position: absolute;
+      top: 32px;
+      left: 0;
+      right: 0;
       text-align: center;
       font-size: 20px;
       font-weight: bold;
+      letter-spacing: 1px;
       color: #003366;
-      margin-top: -75px;
     }
 
-    .header-wrap {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 2px solid #003366;
-      margin-bottom: 10px;
-    }
-
-    .venta-info p {
+    .venta-info {
+      text-align: right;
       font-size: 10px;
-      margin: 1px 0;
-      color: #333;
+      color: #334155;
+      line-height: 1.5;
     }
 
+    /* ================= SECTIONS ================= */
     .section-title {
       font-size: 12px;
       font-weight: bold;
-      margin-top: 14px;
-      margin-bottom: 6px;
       color: #003366;
+      margin-top: 18px;
+      margin-bottom: 6px;
       border-bottom: 1px solid #003366;
-      padding-bottom: 3px;
+      padding-bottom: 4px;
+    }
+
+    .info {
+      padding: 6px 0;
     }
 
     .info p {
-      margin: 1px 0;
+      margin: 3px 0;
+      font-size: 10.5px;
     }
 
+    /* ================= TABLES ================= */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 6px;
+      margin-top: 8px;
       font-size: 10px;
-      text-align: center;
     }
 
-    th,
-    td {
-      border: 1px solid #d0dce7;
-      padding: 6px;
-      vertical-align: middle;
-    }
-
-    th {
-      background-color: #e9f0fa;
+    thead th {
+      background: #e9f0fa;
       color: #003366;
+      padding: 7px 6px;
+      border: 1px solid #cbd5e1;
+      text-align: left;
+      font-weight: bold;
     }
 
-    .resumen-final {
-      margin-top: 20px;
+    tbody td {
+      padding: 7px 6px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    .precio-servicio {
+      font-size: 9.5px;
+      color: #475569;
+      margin-top: 3px;
+      display: inline-block;
+    }
+
+    /* ================= TOTAL ================= */
+    .total-final {
+      margin-top: 14px;
+      padding-top: 6px;
+      border-top: 1px dashed #94a3b8;
+      text-align: right;
       font-size: 12px;
       font-weight: bold;
-      text-align: right;
       color: #003366;
     }
 
+    /* ================= FIRMAS ================= */
     .firmas {
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      align-items: flex-start;
-    }
-
-    .firma-box {
-      width: 48%;
+      margin-top: 48px;
+      width: 100%;
       text-align: center;
     }
 
-    .firma-box img {
-      width: 120px;
-      margin-bottom: 8px;
+    .firmas td {
+      width: 50%;
+      height: 95px;
+      vertical-align: bottom;
     }
 
-    .firma-line {
-      border-top: 1px solid #999;
-      margin-top: 40px;
-      margin-bottom: 4px;
+    .firmas img {
+      width: 150px;
+      opacity: 0.95;
     }
 
-    .firma-text {
-      font-size: 10px;
-      color: #555;
+    .firma-label {
+      font-size: 9.5px;
+      color: #334155;
+      margin-top: 4px;
+    }
+
+    /* ================= FOOTER ================= */
+    .footer {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 9.5px;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    .whatsapp {
+      margin-top: 4px;
+      font-size: 10.5px;
+      font-weight: bold;
+      color: #065f46;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="brand">
-    <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+  <!-- HEADER -->
+  <div class="header-wrap">
+
+    <!-- IZQUIERDA -->
+    <div>
+      <div class="brand">
+        <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+      </div>
+      <div class="empresa-legal">
+        <strong>NIT:</strong> 12555473014<br>
+        <strong>Contribuyente:</strong> Empresa Unipersonal
+      </div>
+    </div>
+
+    <!-- CENTRO -->
+    <div class="company-name">APPLE BOSS</div>
+
+    <!-- DERECHA -->
+    <div class="venta-info">
+      <p><strong>BOLETA DE SERVICIO TÉCNICO</strong></p>
+      <p>Fecha: {{ optional($servicio->created_at)->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
+      <p>Código Nota: {{ $servicio->codigo_nota }}</p>
+    </div>
+
   </div>
 
-  <h1 class="title-top">APPLE BOSS</h1>
+  <!-- CLIENTE -->
+  <div class="section-title">Datos del Cliente</div>
+  <div class="info">
+    <p><strong>Cliente:</strong> {{ $servicio->cliente }}</p>
+    <p><strong>Teléfono:</strong> {{ $servicio->telefono ?? '—' }}</p>
+  </div>
 
-  <div class="header-wrap">
-    <div class="empresa-legal" style="font-size: 9.8px; color: #333;">
-      <p><strong>NIT:</strong> 12555473014</p>
-      <p><strong>Contribuyente:</strong> Empresa Unipersonal</p>
-    </div>
-    <div class="venta-info" style="text-align: right; padding-top: 5px;">
-      <div style="font-size: 11px; font-weight: bold; color: #003366; margin-bottom: 3px;">
-        BOLETA DE SERVICIO TÉCNICO
-      </div>
-      <div style="font-size: 10px; color: #333;">
-        <p style="margin: 0;">Fecha: {{ \Carbon\Carbon::parse($servicio->fecha)->format('d/m/Y') }}</p>
-        <p style="margin: 0;">Código Nota: {{ $servicio->codigo_nota ?? '—' }}</p>
-      </div>
-    </div>
-
-
-    <div class="section-title">Datos del Cliente</div>
-    <div class="info">
-      <p><strong>Cliente:</strong> {{ strtoupper($servicio->cliente) }}</p>
-      <p><strong>Teléfono:</strong> {{ $servicio->telefono ?? '—' }}</p>
-    </div>
-
-    <div class="section-title">Detalle del Servicio</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Equipo</th>
-          <th>Servicio</th>
-          <th>Técnico</th>
-          <th>Registrado por</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>{{ $servicio->equipo }}</td>
-          <td>{{ $servicio->detalle_servicio }}</td>
-          <td>{{ $servicio->tecnico }}</td>
-          <td>{{ $servicio->vendedor->name ?? '—' }}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="resumen-final">
-      Total a pagar por el cliente: Bs {{ number_format($servicio->precio_venta, 2) }}
-    </div>
-
-    <table style="width: 100%; margin-top: 90px; font-size: 10.5px; text-align: center; border-collapse: collapse;">
+  <!-- DETALLE DEL SERVICIO -->
+  <div class="section-title">Detalle del Servicio</div>
+  <table>
+    <thead>
       <tr>
-        <td style="width: 50%; position: relative; height: 80px; padding: 0;">
-          <img src="{{ public_path('images/firma.png') }}" alt="Firma AppleBoss"
-            style="width: 150px; height: auto; position: absolute; top: 0px; left: 50%; transform: translateX(-50%); opacity: 0.95;">
+        <th style="width:25%">Equipo</th>
+        <th style="width:45%">Servicio realizado</th>
+        <th style="width:30%">Registrado por</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach ($servicios_cliente as $item)
+      <tr>
+        <td>{{ $servicio->equipo }}</td>
+        <td>
+          {{ $item['descripcion'] }}<br>
+          <span class="precio-servicio">
+            Precio del servicio: Bs {{ number_format($item['precio'], 2) }}
+          </span>
         </td>
-        <td style="width: 50%; height: 80px;"></td>
+        <td>{{ $servicio->vendedor->name ?? '—' }}</td>
       </tr>
-      <tr>
-        <td style="font-weight: bold; color: #003366; padding-top: 5px;">Firma autorizada - Apple Boss</td>
-        <td style="font-weight: bold; color: #003366; padding-top: 5px;">Firma del Cliente</td>
-      </tr>
-      <tr>
-        <td></td>
-        <td style="font-size: 9px; color: #555; padding-top: 4px;">Conforme con la recepción del producto</td>
-      </tr>
-    </table>
+      @endforeach
+    </tbody>
+  </table>
+
+  <!-- TOTAL -->
+  <div class="total-final">
+    Total a pagar por el cliente: Bs {{ number_format($servicio->precio_venta, 2) }}
+  </div>
+
+  <!-- FIRMAS -->
+  <table class="firmas">
+    <tr>
+      <td>
+        <img src="{{ public_path('images/firma.png') }}"><br>
+        <div class="firma-label">Firma autorizada – Apple Boss</div>
+      </td>
+      <td>
+        <div class="firma-label">
+          Firma del Cliente<br>
+          Conforme con la recepción del equipo
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    Av. Melchor Urquidi entre Calle Fidel Anze y Av. Julio Rodríguez<br>
+    Cochabamba – Bolivia
+    <div class="whatsapp">WhatsApp: +591 75 90 4313</div>
+  </div>
 
 </body>
-
 </html>

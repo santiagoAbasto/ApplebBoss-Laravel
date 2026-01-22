@@ -2,7 +2,25 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FaFilter, FaFilePdf, FaPlus } from 'react-icons/fa';
 
-export default function Index({ egresos, filtros }) {
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+} from '@/Components/CrudUI';
+
+export default function Index({ egresos = [], filtros }) {
   const { data, setData, get } = useForm({
     fecha_inicio: filtros?.fecha_inicio || '',
     fecha_fin: filtros?.fecha_fin || '',
@@ -20,107 +38,146 @@ export default function Index({ egresos, filtros }) {
       fecha_inicio: data.fecha_inicio,
       fecha_fin: data.fecha_fin,
     }).toString();
-    window.open(route('admin.egresos.exportar-pdf') + '?' + query, '_blank');
+
+    window.open(
+      route('admin.egresos.exportar-pdf') + '?' + query,
+      '_blank'
+    );
   };
 
   return (
     <AdminLayout>
       <Head title="Egresos" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Encabezado */}
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-2xl font-bold text-blue-900 flex items-center gap-2">
-            💸 Listado de Egresos
-          </h1>
-          <Link
-            href={route('admin.egresos.create')}
-            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow-sm transition"
-          >
-            <FaPlus /> Nuevo Egreso
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
+          <div>
+            <CrudTitle>💸 Listado de Egresos</CrudTitle>
+            <CrudSubtitle>
+              Control de gastos y egresos del negocio
+            </CrudSubtitle>
+          </div>
+
+          <Link href={route('admin.egresos.create')}>
+            <CrudButtonPrimary>
+              <FaPlus /> Nuevo Egreso
+            </CrudButtonPrimary>
           </Link>
-        </div>
+        </CrudHeader>
 
-        {/* Filtro */}
-        <div className="bg-white p-4 rounded shadow flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600 font-medium">Desde</label>
-            <input
-              type="date"
-              value={data.fecha_inicio}
-              onChange={e => setData('fecha_inicio', e.target.value)}
-              className="input border-gray-300 rounded-md"
-            />
-          </div>
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600 font-medium">Hasta</label>
-            <input
-              type="date"
-              value={data.fecha_fin}
-              onChange={e => setData('fecha_fin', e.target.value)}
-              className="input border-gray-300 rounded-md"
-            />
-          </div>
-          <button
-            onClick={handleFiltrar}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow-sm transition"
-          >
-            <FaFilter /> Filtrar
-          </button>
-          <button
-            onClick={handleExportarPDF}
-            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow-sm transition"
-          >
-            <FaFilePdf /> Exportar PDF
-          </button>
-        </div>
+        {/* ================= FILTROS ================= */}
+        <CrudCard>
+          <CrudSectionTitle>Filtros</CrudSectionTitle>
 
-        {/* Tabla */}
-        <div className="overflow-x-auto bg-white rounded shadow">
-          <table className="min-w-full text-sm text-gray-700">
-            <thead className="bg-blue-50 text-blue-900 font-semibold text-left">
-              <tr>
-                <th className="px-4 py-3 border">#</th>
-                <th className="px-4 py-3 border">Concepto</th>
-                <th className="px-4 py-3 border">Precio (Bs)</th>
-                <th className="px-4 py-3 border">Tipo de Gasto</th>
-                <th className="px-4 py-3 border">Frecuencia</th>
-                <th className="px-4 py-3 border">Cuotas</th>
-                <th className="px-4 py-3 border">Comentario</th>
-                <th className="px-4 py-3 border">Registrado por</th>
-                <th className="px-4 py-3 border">Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {egresos.length === 0 ? (
+          <CrudGrid>
+            <div>
+              <CrudLabel>Desde</CrudLabel>
+              <CrudInput
+                type="date"
+                value={data.fecha_inicio}
+                onChange={(e) =>
+                  setData('fecha_inicio', e.target.value)
+                }
+              />
+            </div>
+
+            <div>
+              <CrudLabel>Hasta</CrudLabel>
+              <CrudInput
+                type="date"
+                value={data.fecha_fin}
+                onChange={(e) =>
+                  setData('fecha_fin', e.target.value)
+                }
+              />
+            </div>
+          </CrudGrid>
+
+          <CrudActions>
+            <CrudButtonSecondary type="button" onClick={handleFiltrar}>
+              <FaFilter /> Filtrar
+            </CrudButtonSecondary>
+
+            <CrudButtonPrimary type="button" onClick={handleExportarPDF}>
+              <FaFilePdf /> Exportar PDF
+            </CrudButtonPrimary>
+          </CrudActions>
+        </CrudCard>
+
+        {/* ================= TABLA ================= */}
+        <CrudCard>
+          <CrudSectionTitle>Detalle de egresos</CrudSectionTitle>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
                 <tr>
-                  <td colSpan="9" className="text-center py-6 text-gray-500">
-                    No hay egresos registrados.
-                  </td>
+                  <th className="px-4 py-3">#</th>
+                  <th className="px-4 py-3">Concepto</th>
+                  <th className="px-4 py-3">Precio (Bs)</th>
+                  <th className="px-4 py-3">Tipo de gasto</th>
+                  <th className="px-4 py-3">Frecuencia</th>
+                  <th className="px-4 py-3">Cuotas</th>
+                  <th className="px-4 py-3">Comentario</th>
+                  <th className="px-4 py-3">Registrado por</th>
+                  <th className="px-4 py-3">Fecha</th>
                 </tr>
-              ) : (
-                egresos.map((e, i) => (
-                  <tr key={e.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-4 py-2 border text-center">{i + 1}</td>
-                    <td className="px-4 py-2 border">{e.concepto}</td>
-                    <td className="px-4 py-2 border">Bs {parseFloat(e.precio_invertido).toFixed(2)}</td>
-                    <td className="px-4 py-2 border capitalize">{e.tipo_gasto.replace('_', ' ')}</td>
-                    <td className="px-4 py-2 border">{e.frecuencia || '—'}</td>
-                    <td className="px-4 py-2 border">
-                      {e.tipo_gasto === 'cuota_bancaria'
-                        ? `${e.cuotas_pendientes ?? 0} cuotas`
-                        : 'No aplica'}
+              </thead>
+
+              <tbody className="divide-y">
+                {egresos.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      className="text-center py-6 text-gray-500"
+                    >
+                      No hay egresos registrados.
                     </td>
-                    <td className="px-4 py-2 border">{e.comentario || '—'}</td>
-                    <td className="px-4 py-2 border">{e.user?.name || '—'}</td>
-                    <td className="px-4 py-2 border">{new Date(e.created_at).toLocaleDateString()}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                ) : (
+                  egresos.map((e, i) => (
+                    <tr
+                      key={e.id}
+                      className="hover:bg-gray-50 transition"
+                    >
+                      <td className="px-4 py-2 text-center">
+                        {i + 1}
+                      </td>
+                      <td className="px-4 py-2 font-medium">
+                        {e.concepto}
+                      </td>
+                      <td className="px-4 py-2 text-red-600 font-semibold">
+                        Bs {Number(e.precio_invertido).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 capitalize">
+                        {e.tipo_gasto.replace('_', ' ')}
+                      </td>
+                      <td className="px-4 py-2">
+                        {e.frecuencia || '—'}
+                      </td>
+                      <td className="px-4 py-2">
+                        {e.tipo_gasto === 'cuota_bancaria'
+                          ? `${e.cuotas_pendientes ?? 0} cuotas`
+                          : 'No aplica'}
+                      </td>
+                      <td className="px-4 py-2">
+                        {e.comentario || '—'}
+                      </td>
+                      <td className="px-4 py-2">
+                        {e.user?.name || '—'}
+                      </td>
+                      <td className="px-4 py-2">
+                        {new Date(e.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }

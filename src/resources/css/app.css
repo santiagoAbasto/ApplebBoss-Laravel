@@ -2,9 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===============================
+   COMPONENTES REUTILIZABLES
+=============================== */
 @layer components {
   .input {
     @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white;
   }
 }
 
+/* ===============================
+   APEXCHARTS (DONA)
+=============================== */
+.apexcharts-pie-series path {
+  fill-opacity: 0.08;
+  transition: fill-opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
+  cursor: pointer;
+}
+
+.apexcharts-pie-series path:hover {
+  fill-opacity: 1;
+  transform: scale(1.015);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
+}
+
+/* ===============================
+   LAYOUT SCROLL (CLAVE)
+=============================== */
+/* ===============================
+   LAYOUT SCROLL FIX SB ADMIN
+=============================== */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+/* wrapper general */
+#wrapper {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ✅ SIDEBAR DEBE SCROLLEAR */
+.sidebar {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* wrapper de contenido */
+#content-wrapper {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ✅ SOLO el contenido principal scrollea */
+#content {
+  height: calc(100vh - 70px);
+  /* topbar */
+  overflow-y: auto;
+}

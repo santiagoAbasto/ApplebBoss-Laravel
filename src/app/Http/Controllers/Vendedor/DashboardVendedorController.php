@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Venta;
 use App\Models\Cotizacion;
 use App\Models\ServicioTecnico;
+use App\Models\Egreso;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -14,112 +15,130 @@ class DashboardVendedorController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $hoy = now()->toDateString();
+        $hoy  = now()->toDateString();
+        $mes  = now()->month;
 
-        $ventasHoy = Venta::with([
-                'items',
-                'entregadoCelular',
-                'entregadoComputadora',
-                'entregadoProductoGeneral',
-                'entregadoProductoApple'
-            ])
+        /* ===============================
+           TOTALES DEL DÍA
+        =============================== */
+        $totalBruto   = 0;
+        $totalPagado  = 0;
+        $gananciaNeta = 0;
+
+        /* ===============================
+           VENTAS DEL DÍA
+        =============================== */
+        $ventasHoy = Venta::with('items')
             ->where('user_id', $user->id)
             ->whereDate('fecha', $hoy)
             ->get();
 
-        $gananciaHoy = 0;
-
         foreach ($ventasHoy as $venta) {
-            $permuta = optional($venta->entregadoCelular)->precio_costo
-                ?? optional($venta->entregadoComputadora)->precio_costo
-                ?? optional($venta->entregadoProductoGeneral)->precio_costo
-                ?? optional($venta->entregadoProductoApple)->precio_costo
-                ?? 0;
+
+            $brutoVenta = $venta->items->sum(fn ($i) =>
+                (float)$i->precio_venta - (float)$i->descuento
+            );
+
+            $valorPermuta = (float) ($venta->valor_permuta ?? 0);
+
+            $totalBruto  += $brutoVenta;
+            $totalPagado += max(0, $brutoVenta - $valorPermuta);
 
             foreach ($venta->items as $item) {
-                $permutaAplicada = in_array($item->tipo, ['celular', 'computadora', 'producto_apple']);
-                $permutaReal = $permutaAplicada ? $permuta : 0;
-                $gananciaHoy += $item->precio_venta - $item->descuento - $permutaReal - $item->precio_invertido;
-            }
-
-            if ($venta->tipo_venta === 'servicio_tecnico' && $venta->items->isEmpty()) {
-                $gananciaHoy += $venta->precio_venta - $venta->descuento - $venta->precio_invertido;
+                $gananciaNeta +=
+                    (float)$item->precio_venta
+                    - (float)$item->descuento
+                    - (float)$item->precio_invertido
+                    - $valorPermuta;
             }
         }
 
-        // Últimas ventas (máx 5) -> incluye relación servicioTecnico para enlazar boleta de ST
-        $ultimasVentas = Venta::with(['items', 'servicioTecnico'])
-            ->where('user_id', $user->id)
-            ->latest()
-            ->take(5)
+        /* ===============================
+           SERVICIOS TÉCNICOS
+        =============================== */
+        $serviciosHoy = ServicioTecnico::where('user_id', $user->id)
+            ->whereDate('fecha', $hoy)
             ->get();
 
-        // Últimas cotizaciones (máx 5)
+        foreach ($serviciosHoy as $s) {
+            $totalBruto  += (float)$s->precio_venta;
+            $totalPagado += (float)$s->precio_venta;
+            $gananciaNeta += (float)$s->precio_venta - (float)$s->precio_costo;
+        }
+
+        /* ===============================
+           EGRESOS (SOLO RESTAN GANANCIA)
+        =============================== */
+        $egresosHoy = Egreso::whereDate('created_at', $hoy)
+            ->sum('precio_invertido');
+
+        $disponibleHoy = max(0, $gananciaNeta - $egresosHoy);
+
+        /* ===============================
+           ÚLTIMOS REGISTROS
+        =============================== */
+        $ultimasVentas = $ventasHoy->take(5)->map(function ($v) {
+            return [
+                'id' => $v->id,
+                'nombre_cliente' => $v->nombre_cliente,
+                'total' => $v->items->sum(fn ($i) =>
+                    (float)$i->precio_venta - (float)$i->descuento
+                ),
+            ];
+        });
+
         $ultimasCotizaciones = Cotizacion::where('user_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get();
+            ->latest()->take(5)->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'nombre_cliente' => $c->nombre_cliente,
+                'total' => $c->total,
+            ]);
 
-        // Últimos servicios técnicos (máx 5)
-        $ultimosServicios = ServicioTecnico::where('user_id', $user->id)
-            ->latest()
-            ->take(5)
-            ->get();
+        $ultimosServicios = $serviciosHoy->take(5)->map(fn ($s) => [
+            'id' => $s->id,
+            'equipo' => $s->equipo,
+            'precio_venta' => $s->precio_venta,
+        ]);
 
-        // Métricas del día
-        $cotizacionesDia = $ultimasCotizaciones->where('created_at', '>=', $hoy)->count();
-        $serviciosDia = $ultimosServicios->where('fecha', $hoy)->count();
+        /* ===============================
+           TOTAL DEL MES
+        =============================== */
+        $totalMes = Venta::with('items')
+            ->where('user_id', $user->id)
+            ->whereMonth('fecha', $mes)
+            ->get()
+            ->sum(fn ($v) =>
+                $v->items->sum(fn ($i) =>
+                    (float)$i->precio_venta - (float)$i->descuento
+                )
+            )
+            + ServicioTecnico::where('user_id', $user->id)
+                ->whereMonth('fecha', $mes)
+                ->sum('precio_venta');
 
+        /* ===============================
+           RENDER
+        =============================== */
         return Inertia::render('Vendedor/Dashboard', [
             'auth' => ['user' => $user],
-            'resumen' => [
-                'ventas_dia' => $ventasHoy->sum(function ($v) {
-                    if ($v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()) {
-                        return $v->precio_venta - $v->descuento;
-                    }
-                    return $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
-                }),
-                'ganancia_dia' => $gananciaHoy,
-                'cotizaciones_dia' => $cotizacionesDia,
-                'servicios_dia' => $serviciosDia,
-                'total_mes' => Venta::with('items')
-                    ->where('user_id', $user->id)
-                    ->whereMonth('fecha', now()->month)
-                    ->get()
-                    ->sum(function ($v) {
-                        if ($v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()) {
-                            return $v->precio_venta - $v->descuento;
-                        }
-                        return $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
-                    }),
-                'meta_mensual' => 10000,
-            ],
-            'ultimasVentas' => $ultimasVentas->map(function ($v) {
-                $monto = $v->tipo_venta === 'servicio_tecnico' && $v->items->isEmpty()
-                    ? $v->precio_venta - $v->descuento
-                    : $v->items->sum(fn ($i) => $i->precio_venta - $i->descuento);
 
-                return [
-                    'id'            => $v->id,
-                    'tipo_venta'    => $v->tipo_venta,                              // 👈 para decidir la ruta
-                    'servicio_id'   => optional($v->servicioTecnico)->id,           // 👈 id real del ST
-                    'nombre_cliente'=> $v->nombre_cliente,
-                    'total'         => $monto,
-                    'fecha'         => $v->fecha,
-                ];
-            }),
-            'ultimasCotizaciones' => $ultimasCotizaciones->map(fn ($c) => [
-                'id'              => $c->id,
-                'nombre_cliente'  => $c->nombre_cliente,
-                'total'           => $c->total,
-                'fecha'           => $c->created_at->toDateString(),
-            ]),
-            'ultimosServicios' => $ultimosServicios->map(fn ($s) => [
-                'id'           => $s->id,
-                'equipo'       => $s->equipo,
-                'precio_venta' => $s->precio_venta,
-                'fecha'        => $s->fecha,
-            ]),
+            'resumen' => [
+                'total_bruto_dia'   => $totalBruto,     // 8500
+                'total_pagado_dia'  => $totalPagado,    // 6500
+                'ganancia_neta_dia' => $gananciaNeta,   // 2800
+                'egresos_dia'       => $egresosHoy,     // 100
+                'disponible_dia'    => $disponibleHoy,  // 2700
+                'cotizaciones_dia'  => Cotizacion::where('user_id', $user->id)
+                    ->whereDate('created_at', $hoy)->count(),
+                'servicios_dia'     => $serviciosHoy->count(),
+                'total_mes'         => $totalMes,
+                'meta_mensual'      => 10000,
+            ],
+
+            'ultimasVentas'       => $ultimasVentas,
+            'ultimasCotizaciones' => $ultimasCotizaciones,
+            'ultimosServicios'    => $ultimosServicios,
         ]);
     }
 }

@@ -49,16 +49,21 @@ class ClienteAdminController extends Controller
      */
     public function sugerencias(Request $request)
     {
-        $term = $request->input('q', $request->input('term')); // acepta ambos formatos
-    
+        $term = $request->input('term');
+
+        if (!$term || strlen($term) < 2) {
+            return [];
+        }
+
         return Cliente::where(function ($q) use ($term) {
-                $q->where('nombre', 'ilike', "%{$term}%")
-                  ->orWhere('telefono', 'ilike', "%{$term}%");
-            })
-            ->select('id', 'nombre', 'telefono')
+            $q->where('nombre', 'ilike', "%{$term}%")
+                ->orWhere('telefono', 'ilike', "%{$term}%");
+        })
+            ->select('id', 'nombre', 'telefono', 'correo')
             ->limit(8)
             ->get();
     }
+
     /**
      * Muestra el formulario de edición de un cliente.
      */
@@ -84,5 +89,4 @@ class ClienteAdminController extends Controller
 
         return redirect()->route('admin.clientes.index')->with('success', 'Cliente actualizado correctamente.');
     }
-
 }

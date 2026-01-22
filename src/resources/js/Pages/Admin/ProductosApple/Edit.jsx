@@ -1,5 +1,28 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+import { Apple } from 'lucide-react';
+
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudBackLink,
+  CrudInfoBox,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudSelect,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+} from '@/Components/CrudUI';
 
 export default function Edit({ productoApple }) {
   const { data, setData, put, processing, errors } = useForm({
@@ -26,98 +49,153 @@ export default function Edit({ productoApple }) {
     <AdminLayout>
       <Head title="Editar Producto Apple" />
 
-      <div className="max-w-5xl mx-auto mt-6">
-        <h1 className="text-3xl font-bold text-[#003366] mb-6">✏️ Editar Producto Apple</h1>
-
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-lg shadow">
-          {[
-            { name: 'modelo', label: 'Modelo' },
-            { name: 'capacidad', label: 'Capacidad' },
-            { name: 'bateria', label: 'Batería' },
-            { name: 'color', label: 'Color' },
-            { name: 'numero_serie', label: 'Número de serie / IMEI general' },
-            { name: 'procedencia', label: 'Procedencia' },
-            { name: 'precio_costo', label: 'Precio costo', type: 'number' },
-            { name: 'precio_venta', label: 'Precio venta', type: 'number' },
-          ].map(({ name, label, type = 'text' }) => (
-            <div key={name}>
-              <label className="block text-sm font-medium text-gray-700">{label}</label>
-              <input
-                type={type}
-                value={data[name]}
-                onChange={e => setData(name, e.target.value)}
-                className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-              />
-              {errors[name] && <p className="text-sm text-red-600 mt-1">{errors[name]}</p>}
-            </div>
-          ))}
-
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
           <div>
-            <label className="block text-sm font-medium text-gray-700">¿Tiene IMEI?</label>
-            <select
-              value={data.tiene_imei ? 'true' : 'false'}
-              onChange={e => setData('tiene_imei', e.target.value === 'true')}
-              className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="false">No</option>
-              <option value="true">Sí</option>
-            </select>
-            {errors.tiene_imei && <p className="text-sm text-red-600 mt-1">{errors.tiene_imei}</p>}
+            <CrudTitle>
+              <Apple size={22} />
+              Editar Producto Apple
+            </CrudTitle>
+            <CrudSubtitle>
+              Modificando: <strong>{productoApple.modelo}</strong>
+            </CrudSubtitle>
           </div>
 
-          {data.tiene_imei && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">IMEI 1</label>
-                <input
-                  type="text"
-                  value={data.imei_1}
-                  onChange={e => setData('imei_1', e.target.value)}
-                  className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                />
-                {errors.imei_1 && <p className="text-sm text-red-600 mt-1">{errors.imei_1}</p>}
-              </div>
+          <CrudBackLink as="button" onClick={() => window.history.back()}>
+            ← Volver
+          </CrudBackLink>
+        </CrudHeader>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">IMEI 2</label>
-                <input
-                  type="text"
-                  value={data.imei_2}
-                  onChange={e => setData('imei_2', e.target.value)}
-                  className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
-                />
-                {errors.imei_2 && <p className="text-sm text-red-600 mt-1">{errors.imei_2}</p>}
-              </div>
+        {/* ================= INFO ================= */}
+        <CrudInfoBox>
+          Estás editando un producto Apple existente. Los cambios se reflejarán
+          inmediatamente en inventario, ventas y reportes.
+        </CrudInfoBox>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700">Estado del IMEI</label>
-                <select
-                  value={data.estado_imei}
-                  onChange={e => setData('estado_imei', e.target.value)}
-                  className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
+        {/* ================= FORM ================= */}
+        <CrudCard>
+          <form onSubmit={handleSubmit}>
+            <CrudSectionTitle>Información del producto</CrudSectionTitle>
+
+            <CrudGrid>
+              {[
+                { name: 'modelo', label: 'Modelo' },
+                { name: 'capacidad', label: 'Capacidad' },
+                { name: 'bateria', label: 'Batería' },
+                { name: 'color', label: 'Color' },
+                { name: 'numero_serie', label: 'Número de serie / IMEI general' },
+                { name: 'procedencia', label: 'Procedencia' },
+                { name: 'precio_costo', label: 'Precio costo (Bs)', type: 'number' },
+                { name: 'precio_venta', label: 'Precio venta (Bs)', type: 'number' },
+              ].map(({ name, label, type = 'text' }) => (
+                <div key={name}>
+                  <CrudLabel>{label}</CrudLabel>
+                  <CrudInput
+                    type={type}
+                    value={data[name]}
+                    onChange={(e) => setData(name, e.target.value)}
+                  />
+                  {errors[name] && (
+                    <small style={{ color: '#dc2626' }}>
+                      {errors[name]}
+                    </small>
+                  )}
+                </div>
+              ))}
+
+              {/* TIENE IMEI */}
+              <div>
+                <CrudLabel>¿Tiene IMEI?</CrudLabel>
+                <CrudSelect
+                  value={data.tiene_imei ? 'true' : 'false'}
+                  onChange={(e) =>
+                    setData('tiene_imei', e.target.value === 'true')
+                  }
                 >
-                  <option value="">Seleccionar</option>
-                  <option>Libre</option>
-                  <option>Registro seguro</option>
-                  <option>IMEI 1 libre y IMEI 2 registrado</option>
-                  <option>IMEI 2 libre y IMEI 1 registrado</option>
-                </select>
-                {errors.estado_imei && <p className="text-sm text-red-600 mt-1">{errors.estado_imei}</p>}
+                  <option value="false">No</option>
+                  <option value="true">Sí</option>
+                </CrudSelect>
+                {errors.tiene_imei && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.tiene_imei}
+                  </small>
+                )}
               </div>
-            </>
-          )}
+            </CrudGrid>
 
-          <div className="md:col-span-2">
-            <button
-              type="submit"
-              disabled={processing}
-              className="w-full bg-[#003366] text-white py-3 px-6 rounded-lg font-semibold shadow hover:bg-blue-900 transition disabled:opacity-50"
-            >
-              Guardar Cambios
-            </button>
-          </div>
-        </form>
-      </div>
+            {/* ================= IMEI ================= */}
+            {data.tiene_imei && (
+              <>
+                <CrudSectionTitle>Información IMEI</CrudSectionTitle>
+
+                <CrudGrid>
+                  <div>
+                    <CrudLabel>IMEI 1</CrudLabel>
+                    <CrudInput
+                      value={data.imei_1}
+                      onChange={(e) => setData('imei_1', e.target.value)}
+                    />
+                    {errors.imei_1 && (
+                      <small style={{ color: '#dc2626' }}>
+                        {errors.imei_1}
+                      </small>
+                    )}
+                  </div>
+
+                  <div>
+                    <CrudLabel>IMEI 2</CrudLabel>
+                    <CrudInput
+                      value={data.imei_2}
+                      onChange={(e) => setData('imei_2', e.target.value)}
+                    />
+                    {errors.imei_2 && (
+                      <small style={{ color: '#dc2626' }}>
+                        {errors.imei_2}
+                      </small>
+                    )}
+                  </div>
+
+                  <div>
+                    <CrudLabel>Estado del IMEI</CrudLabel>
+                    <CrudSelect
+                      value={data.estado_imei}
+                      onChange={(e) =>
+                        setData('estado_imei', e.target.value)
+                      }
+                    >
+                      <option value="">Seleccionar</option>
+                      <option>Libre</option>
+                      <option>Registro seguro</option>
+                      <option>IMEI 1 libre y IMEI 2 registrado</option>
+                      <option>IMEI 2 libre y IMEI 1 registrado</option>
+                    </CrudSelect>
+                    {errors.estado_imei && (
+                      <small style={{ color: '#dc2626' }}>
+                        {errors.estado_imei}
+                      </small>
+                    )}
+                  </div>
+                </CrudGrid>
+              </>
+            )}
+
+            {/* ================= ACTIONS ================= */}
+            <CrudActions>
+              <CrudButtonSecondary
+                type="button"
+                onClick={() => window.history.back()}
+              >
+                Cancelar
+              </CrudButtonSecondary>
+
+              <CrudButtonPrimary type="submit" disabled={processing}>
+                Guardar cambios
+              </CrudButtonPrimary>
+            </CrudActions>
+          </form>
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }

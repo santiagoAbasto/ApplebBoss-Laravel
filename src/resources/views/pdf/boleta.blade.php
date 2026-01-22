@@ -186,8 +186,7 @@
     </div>
     <div class="venta-info">
       <p><strong>BOLETA DE VENTA</strong></p>
-      @php $fechaFormateada = \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y H:i'); @endphp
-      <p>Fecha: {{ $fechaFormateada }}</p>
+      <p>Fecha: {{ optional($venta->created_at)->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
       <p>ID Venta: #{{ $venta->id }}</p>
       <p>Código Nota: {{ $venta->codigo_nota ?? '---' }}</p>
     </div>
@@ -538,4 +537,5 @@
   </table>
 
 </body>
+
 </html>

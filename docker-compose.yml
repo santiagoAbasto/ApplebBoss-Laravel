@@ -45,8 +45,10 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
-    command: sh -c "npm install && npm run build"
-
+      - appleboss_node_modules:/var/www/html/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
   adminer:
     image: adminer
     container_name: appleboss-adminer
@@ -56,3 +58,5 @@ services:
 
 volumes:
   appleboss-laravel_db_data:
+  appleboss_node_modules:
+

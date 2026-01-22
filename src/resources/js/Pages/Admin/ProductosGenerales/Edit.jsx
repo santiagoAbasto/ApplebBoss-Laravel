@@ -1,8 +1,27 @@
 import { Head, useForm, Link } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { route } from 'ziggy-js'; // ✅ CORRECTO
+import { Package } from 'lucide-react';
 
-
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudBackLink,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudSelect,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+} from '@/Components/CrudUI';
 
 export default function Edit({ producto }) {
   const { data, setData, put, processing, errors } = useForm({
@@ -24,129 +43,162 @@ export default function Edit({ producto }) {
     <AdminLayout>
       <Head title="Editar Producto General" />
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">✏️ Editar Producto</h1>
-        <Link
-          href={route('admin.productos-generales.index')}
-          className="text-sm text-gray-600 hover:text-blue-600 underline"
-        >
-          ← Volver al listado
-        </Link>
-      </div>
-
-      <form onSubmit={handleSubmit} className="bg-white rounded shadow-md p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Código */}
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Código</label>
-            <input
-              type="text"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.codigo}
-              onChange={(e) => setData('codigo', e.target.value)}
-              disabled={processing}
-            />
-            {errors.codigo && <p className="text-sm text-red-600 mt-1">{errors.codigo}</p>}
+            <CrudTitle>
+              <Package size={22} />
+              Editar Producto General
+            </CrudTitle>
+            <CrudSubtitle>
+              Modificación de información del producto
+            </CrudSubtitle>
           </div>
 
-          {/* Tipo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tipo</label>
-            <input
-              type="text"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.tipo}
-              onChange={(e) => setData('tipo', e.target.value)}
-              disabled={processing}
-            />
-            {errors.tipo && <p className="text-sm text-red-600 mt-1">{errors.tipo}</p>}
-          </div>
-
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre</label>
-            <input
-              type="text"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.nombre}
-              onChange={(e) => setData('nombre', e.target.value)}
-              disabled={processing}
-            />
-            {errors.nombre && <p className="text-sm text-red-600 mt-1">{errors.nombre}</p>}
-          </div>
-
-          {/* Procedencia */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Procedencia</label>
-            <input
-              type="text"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.procedencia}
-              onChange={(e) => setData('procedencia', e.target.value)}
-              disabled={processing}
-            />
-            {errors.procedencia && <p className="text-sm text-red-600 mt-1">{errors.procedencia}</p>}
-          </div>
-
-          {/* Precio Costo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Precio de Costo (Bs)</label>
-            <input
-              type="number"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.precio_costo}
-              onChange={(e) => setData('precio_costo', e.target.value)}
-              disabled={processing}
-            />
-            {errors.precio_costo && <p className="text-sm text-red-600 mt-1">{errors.precio_costo}</p>}
-          </div>
-
-          {/* Precio Venta */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Precio de Venta (Bs)</label>
-            <input
-              type="number"
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.precio_venta}
-              onChange={(e) => setData('precio_venta', e.target.value)}
-              disabled={processing}
-            />
-            {errors.precio_venta && <p className="text-sm text-red-600 mt-1">{errors.precio_venta}</p>}
-          </div>
-
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Estado</label>
-            <select
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              value={data.estado}
-              onChange={(e) => setData('estado', e.target.value)}
-              disabled={processing}
-            >
-              <option value="disponible">Disponible</option>
-              <option value="vendido">Vendido</option>
-              <option value="permuta">Permuta</option>
-            </select>
-            {errors.estado && <p className="text-sm text-red-600 mt-1">{errors.estado}</p>}
-          </div>
-        </div>
-
-        <div className="flex justify-between mt-6">
-          <Link
+          <CrudBackLink
+            as={Link}
             href={route('admin.productos-generales.index')}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 text-sm font-medium"
           >
-            Cancelar
-          </Link>
-          <button
-            type="submit"
-            disabled={processing}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
-          >
-            Actualizar
-          </button>
-        </div>
-      </form>
+            ← Volver al listado
+          </CrudBackLink>
+        </CrudHeader>
+
+        {/* ================= FORM ================= */}
+        <CrudCard>
+          <form onSubmit={handleSubmit}>
+            <CrudSectionTitle>Datos del producto</CrudSectionTitle>
+
+            <CrudGrid>
+              {/* CÓDIGO */}
+              <div>
+                <CrudLabel>Código</CrudLabel>
+                <CrudInput
+                  value={data.codigo}
+                  onChange={(e) => setData('codigo', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.codigo && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.codigo}
+                  </small>
+                )}
+              </div>
+
+              {/* TIPO */}
+              <div>
+                <CrudLabel>Tipo</CrudLabel>
+                <CrudInput
+                  value={data.tipo}
+                  onChange={(e) => setData('tipo', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.tipo && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.tipo}
+                  </small>
+                )}
+              </div>
+
+              {/* NOMBRE */}
+              <div>
+                <CrudLabel>Nombre</CrudLabel>
+                <CrudInput
+                  value={data.nombre}
+                  onChange={(e) => setData('nombre', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.nombre && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.nombre}
+                  </small>
+                )}
+              </div>
+
+              {/* PROCEDENCIA */}
+              <div>
+                <CrudLabel>Procedencia</CrudLabel>
+                <CrudInput
+                  value={data.procedencia}
+                  onChange={(e) => setData('procedencia', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.procedencia && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.procedencia}
+                  </small>
+                )}
+              </div>
+
+              {/* PRECIO COSTO */}
+              <div>
+                <CrudLabel>Precio de costo (Bs)</CrudLabel>
+                <CrudInput
+                  type="number"
+                  value={data.precio_costo}
+                  onChange={(e) => setData('precio_costo', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.precio_costo && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.precio_costo}
+                  </small>
+                )}
+              </div>
+
+              {/* PRECIO VENTA */}
+              <div>
+                <CrudLabel>Precio de venta (Bs)</CrudLabel>
+                <CrudInput
+                  type="number"
+                  value={data.precio_venta}
+                  onChange={(e) => setData('precio_venta', e.target.value)}
+                  disabled={processing}
+                />
+                {errors.precio_venta && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.precio_venta}
+                  </small>
+                )}
+              </div>
+
+              {/* ESTADO */}
+              <div>
+                <CrudLabel>Estado</CrudLabel>
+                <CrudSelect
+                  value={data.estado}
+                  onChange={(e) => setData('estado', e.target.value)}
+                  disabled={processing}
+                >
+                  <option value="disponible">Disponible</option>
+                  <option value="vendido">Vendido</option>
+                  <option value="permuta">Permuta</option>
+                </CrudSelect>
+                {errors.estado && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.estado}
+                  </small>
+                )}
+              </div>
+            </CrudGrid>
+
+            {/* ================= ACTIONS ================= */}
+            <CrudActions>
+              <CrudButtonSecondary
+                as={Link}
+                href={route('admin.productos-generales.index')}
+                type="button"
+              >
+                Cancelar
+              </CrudButtonSecondary>
+
+              <CrudButtonPrimary type="submit" disabled={processing}>
+                Actualizar producto
+              </CrudButtonPrimary>
+            </CrudActions>
+          </form>
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }

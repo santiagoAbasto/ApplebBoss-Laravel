@@ -2,85 +2,148 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+} from '@/Components/CrudUI';
+
 export default function ExportacionesIndex({ subtipos }) {
   return (
     <AdminLayout>
       <Head title="Exportaciones" />
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <h1 className="text-4xl font-extrabold text-gray-800 mb-10">
-          📤 Exportación de Inventario
-        </h1>
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
+          <div>
+            <CrudTitle>📤 Exportaciones</CrudTitle>
+            <CrudSubtitle>
+              Exportación de inventario y subcategorías
+            </CrudSubtitle>
+          </div>
+        </CrudHeader>
 
-        {/* Categorías principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <CardExport
-            href={route('admin.exportar.celulares')}
-            color="blue"
-            icon="📱"
-            title="Celulares"
-            description="Exportar todos los celulares disponibles."
-          />
-          <CardExport
-            href={route('admin.exportar.computadoras')}
-            color="green"
-            icon="💻"
-            title="Computadoras"
-            description="Exportar todas las computadoras disponibles."
-          />
-          <CardExport
-            href={route('admin.exportar.productos-generales')}
-            color="purple"
-            icon="📦"
-            title="Productos Generales"
-            description="Exportar todo el inventario general disponible."
-          />
-          <CardExport
-            href={route('admin.exportar.productos-apple')}
-            color="red"
-            icon="🍏"
-            title="Productos Apple"
-            description="Exportar todos los productos Apple disponibles."
-          />
-        </div>
+        {/* ================= INVENTARIO PRINCIPAL ================= */}
+        <CrudCard style={{ marginBottom: 24 }}>
+          <CrudSectionTitle>Inventario principal</CrudSectionTitle>
 
-        {/* Subcategorías de productos generales */}
-        <h2 className="text-2xl font-bold text-gray-700 mb-4">
-          🔍 Subcategorías de Productos Generales
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-          {subtipos.map((subtipo) => (
-            <CardExport
-              key={subtipo}
-              href={route('admin.exportar.productos-generales.tipo', subtipo)}
-              color="yellow"
-              icon="🗂"
-              title={subtipo}
-              description="Exportar productos de esta subcategoría."
+          <CrudGrid>
+            <ExportCard
+              href={route('admin.exportar.celulares')}
+              icon="📱"
+              title="Celulares"
+              description="Exportar todos los celulares disponibles."
             />
-          ))}
-        </div>
-      </div>
+            <ExportCard
+              href={route('admin.exportar.computadoras')}
+              icon="💻"
+              title="Computadoras"
+              description="Exportar todas las computadoras disponibles."
+            />
+            <ExportCard
+              href={route('admin.exportar.productos-generales')}
+              icon="📦"
+              title="Productos Generales"
+              description="Exportar todo el inventario general."
+            />
+            <ExportCard
+              href={route('admin.exportar.productos-apple')}
+              icon="🍏"
+              title="Productos Apple"
+              description="Exportar todos los productos Apple."
+            />
+          </CrudGrid>
+        </CrudCard>
+
+        {/* ================= SUBCATEGORÍAS ================= */}
+        <CrudCard>
+          <CrudSectionTitle>
+            Subcategorías de productos generales
+          </CrudSectionTitle>
+
+          {subtipos?.length > 0 ? (
+            <CrudGrid>
+              {subtipos.map((subtipo) => (
+                <ExportCard
+                  key={subtipo}
+                  href={route(
+                    'admin.exportar.productos-generales.tipo',
+                    subtipo
+                  )}
+                  icon="🗂"
+                  title={subtipo}
+                  description="Exportar productos de esta subcategoría."
+                />
+              ))}
+            </CrudGrid>
+          ) : (
+            <p style={{ color: '#64748b', fontSize: 14 }}>
+              No existen subcategorías registradas.
+            </p>
+          )}
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }
 
-// ✅ Componente reutilizable para cada tarjeta
-function CardExport({ href, color, icon, title, description }) {
+/* ===============================
+   EXPORT CARD (ESTILO CRUD)
+=============================== */
+function ExportCard({ href, icon, title, description }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`
-        block border border-${color}-300 bg-white rounded-2xl p-5 shadow hover:bg-${color}-50
-        transition duration-200 ease-in-out hover:shadow-lg
-      `}
+      style={{
+        display: 'block',
+        border: '1px solid #e5e7eb',
+        borderRadius: 12,
+        padding: 16,
+        background: '#ffffff',
+        textDecoration: 'none',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow =
+          '0 8px 24px rgba(0,0,0,0.08)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.transform = 'none';
+      }}
     >
-      <div className={`text-${color}-700 text-xl font-semibold mb-1`}>
+      <div
+        style={{
+          fontSize: 16,
+          fontWeight: 800,
+          color: '#0f172a',
+          marginBottom: 6,
+        }}
+      >
         {icon} {title}
       </div>
-      <p className="text-sm text-gray-600 leading-tight">{description}</p>
+
+      <p
+        style={{
+          fontSize: 14,
+          color: '#475569',
+          margin: 0,
+          lineHeight: 1.4,
+        }}
+      >
+        {description}
+      </p>
     </a>
   );
 }

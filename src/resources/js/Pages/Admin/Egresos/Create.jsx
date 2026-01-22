@@ -1,7 +1,23 @@
-import { useForm } from '@inertiajs/react';
+import { useForm, Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head } from '@inertiajs/react';
 import { FaSave } from 'react-icons/fa';
+
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudActions,
+  CrudButtonPrimary,
+} from '@/Components/CrudUI';
 
 export default function Create() {
   const { data, setData, post, processing, errors } = useForm({
@@ -22,111 +38,138 @@ export default function Create() {
     <AdminLayout>
       <Head title="Registrar Egreso" />
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-blue-900">📤 Registrar nuevo egreso</h1>
+      <CrudWrapper>
+        {/* HEADER */}
+        <CrudHeader>
+          <CrudTitle>📤 Registrar nuevo egreso</CrudTitle>
+          <CrudSubtitle>
+            Registra gastos operativos y financieros del negocio
+          </CrudSubtitle>
+        </CrudHeader>
 
-        <form onSubmit={submit} className="space-y-6 bg-white p-6 rounded shadow">
+        <form onSubmit={submit}>
+          <CrudCard>
+            <CrudSectionTitle>Información del egreso</CrudSectionTitle>
 
-          {/* Concepto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Concepto *</label>
-            <input
-              type="text"
-              value={data.concepto}
-              onChange={(e) => setData('concepto', e.target.value)}
-              className="input w-full"
-              placeholder="Ej. Luz Tienda, Alquiler, etc."
-            />
-            {errors.concepto && <p className="text-red-600 text-sm mt-1">{errors.concepto}</p>}
-          </div>
+            <CrudGrid>
+              {/* CONCEPTO */}
+              <div className="md:col-span-2">
+                <CrudLabel>Concepto *</CrudLabel>
+                <CrudInput
+                  value={data.concepto}
+                  onChange={(e) => setData('concepto', e.target.value)}
+                  placeholder="Ej. Luz Tienda, Alquiler, etc."
+                />
+                {errors.concepto && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.concepto}
+                  </p>
+                )}
+              </div>
 
-          {/* Precio Invertido */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Precio invertido (Bs) *</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={data.precio_invertido}
-              onChange={(e) => setData('precio_invertido', e.target.value)}
-              className="input w-full"
-              placeholder="Ej. 250.00"
-            />
-            {errors.precio_invertido && <p className="text-red-600 text-sm mt-1">{errors.precio_invertido}</p>}
-          </div>
+              {/* PRECIO INVERTIDO */}
+              <div>
+                <CrudLabel>Precio invertido (Bs) *</CrudLabel>
+                <CrudInput
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={data.precio_invertido}
+                  onChange={(e) =>
+                    setData('precio_invertido', e.target.value)
+                  }
+                  placeholder="Ej. 250.00"
+                />
+                {errors.precio_invertido && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.precio_invertido}
+                  </p>
+                )}
+              </div>
 
-          {/* Tipo de Gasto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de gasto *</label>
-            <select
-              value={data.tipo_gasto}
-              onChange={(e) => setData('tipo_gasto', e.target.value)}
-              className="input w-full"
-            >
-              <option value="servicio_basico">Servicio básico</option>
-              <option value="cuota_bancaria">Cuota bancaria</option>
-              <option value="gasto_personal">Gasto personal</option>
-              <option value="sueldos">Sueldos</option>
-            </select>
-            {errors.tipo_gasto && <p className="text-red-600 text-sm mt-1">{errors.tipo_gasto}</p>}
-          </div>
+              {/* TIPO DE GASTO */}
+              <div>
+                <CrudLabel>Tipo de gasto *</CrudLabel>
+                <CrudInput
+                  as="select"
+                  value={data.tipo_gasto}
+                  onChange={(e) => setData('tipo_gasto', e.target.value)}
+                >
+                  <option value="servicio_basico">Servicio básico</option>
+                  <option value="cuota_bancaria">Cuota bancaria</option>
+                  <option value="gasto_personal">Gasto personal</option>
+                  <option value="sueldos">Sueldos</option>
+                </CrudInput>
+                {errors.tipo_gasto && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.tipo_gasto}
+                  </p>
+                )}
+              </div>
 
-          {/* Frecuencia */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Frecuencia</label>
-            <input
-              type="text"
-              value={data.frecuencia}
-              onChange={(e) => setData('frecuencia', e.target.value)}
-              className="input w-full"
-              placeholder="Ej. Mensual, único, trimestral..."
-            />
-            {errors.frecuencia && <p className="text-red-600 text-sm mt-1">{errors.frecuencia}</p>}
-          </div>
+              {/* FRECUENCIA */}
+              <div>
+                <CrudLabel>Frecuencia</CrudLabel>
+                <CrudInput
+                  value={data.frecuencia}
+                  onChange={(e) => setData('frecuencia', e.target.value)}
+                  placeholder="Ej. Mensual, único, trimestral..."
+                />
+                {errors.frecuencia && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.frecuencia}
+                  </p>
+                )}
+              </div>
 
-          {/* Cuotas pendientes (solo si cuota_bancaria) */}
-          {data.tipo_gasto === 'cuota_bancaria' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cuotas pendientes</label>
-              <input
-                type="number"
-                min="0"
-                value={data.cuotas_pendientes}
-                onChange={(e) => setData('cuotas_pendientes', e.target.value)}
-                className="input w-full"
-                placeholder="Ej. 3"
-              />
-              {errors.cuotas_pendientes && (
-                <p className="text-red-600 text-sm mt-1">{errors.cuotas_pendientes}</p>
+              {/* CUOTAS PENDIENTES */}
+              {data.tipo_gasto === 'cuota_bancaria' && (
+                <div>
+                  <CrudLabel>Cuotas pendientes</CrudLabel>
+                  <CrudInput
+                    type="number"
+                    min="0"
+                    value={data.cuotas_pendientes}
+                    onChange={(e) =>
+                      setData('cuotas_pendientes', e.target.value)
+                    }
+                    placeholder="Ej. 3"
+                  />
+                  {errors.cuotas_pendientes && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {errors.cuotas_pendientes}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Comentario */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Comentario adicional</label>
-            <textarea
-              rows="3"
-              value={data.comentario}
-              onChange={(e) => setData('comentario', e.target.value)}
-              className="input w-full"
-              placeholder="Ej. Vencimiento el 15 de cada mes..."
-            />
-            {errors.comentario && <p className="text-red-600 text-sm mt-1">{errors.comentario}</p>}
-          </div>
+              {/* COMENTARIO */}
+              <div className="md:col-span-2">
+                <CrudLabel>Comentario adicional</CrudLabel>
+                <CrudInput
+                  as="textarea"
+                  rows={3}
+                  value={data.comentario}
+                  onChange={(e) => setData('comentario', e.target.value)}
+                  placeholder="Ej. Vencimiento el 15 de cada mes..."
+                />
+                {errors.comentario && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.comentario}
+                  </p>
+                )}
+              </div>
+            </CrudGrid>
 
-          {/* Botón */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={processing}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded shadow transition"
-            >
-              <FaSave /> Guardar egreso
-            </button>
-          </div>
+            {/* ACCIONES */}
+            <CrudActions>
+              <CrudButtonPrimary type="submit" disabled={processing}>
+                <FaSave /> Guardar egreso
+              </CrudButtonPrimary>
+            </CrudActions>
+          </CrudCard>
         </form>
-      </div>
+      </CrudWrapper>
     </AdminLayout>
   );
 }

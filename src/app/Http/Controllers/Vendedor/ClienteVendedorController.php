@@ -9,7 +9,6 @@ use App\Models\Cliente;
 use App\Models\PromocionEnviada;
 use Inertia\Inertia;
 
-
 class ClienteVendedorController extends Controller
 {
     /**
@@ -27,7 +26,32 @@ class ClienteVendedorController extends Controller
     }
 
     /**
-     * Enviar promociones por WhatsApp a todos los clientes del vendedor.
+     * Sugerencias para autocompletar clientes (solo del vendedor).
+     * Usado en ventas y servicio técnico.
+     */
+    public function sugerencias(Request $request)
+    {
+        $term = $request->input('term');
+
+        if (!$term || strlen($term) < 2) {
+            return [];
+        }
+
+        return Cliente::where('user_id', Auth::id())
+            ->where(function ($q) use ($term) {
+                $q->where('nombre', 'ilike', "%{$term}%")
+                    ->orWhere('telefono', 'ilike', "%{$term}%");
+            })
+            ->select('id', 'nombre', 'telefono', 'correo')
+            ->limit(8)
+            ->get();
+    }
+
+
+
+
+    /**
+     * Enviar promociones por WhatsApp a los clientes del vendedor.
      */
     public function enviarPromocionMasiva()
     {
@@ -36,13 +60,10 @@ class ClienteVendedorController extends Controller
         foreach ($clientes as $cliente) {
             PromocionEnviada::create([
                 'cliente_id' => $cliente->id,
-                'mensaje' => '🎉 ¡Aprovecha nuestras nuevas promociones en AppleBoss!',
-                'canal' => 'whatsapp',
+                'mensaje'    => '🎉 ¡Aprovecha nuestras nuevas promociones en AppleBoss!',
+                'canal'      => 'whatsapp',
                 'enviado_en' => now(),
             ]);
-
-            // 🔄 Puedes agregar aquí integración con API externa o una cola
-            // Ejemplo: dispatch(new EnviarPromoWhatsAppJob($cliente));
         }
 
         return response()->json([
@@ -51,27 +72,12 @@ class ClienteVendedorController extends Controller
     }
 
     /**
-     * Sugerencias para autocompletar clientes (nombre o teléfono).
-     */
-    public function sugerencias(Request $request)
-    {
-        $term = $request->input('term');
-    
-        return Cliente::where(function ($q) use ($term) {
-                $q->where('nombre', 'ilike', "%{$term}%")
-                  ->orWhere('telefono', 'ilike', "%{$term}%");
-            })
-            ->select('id', 'nombre', 'telefono')
-            ->limit(8)
-            ->get();
-    }    
-
-    /**
-     * Mostrar formulario para editar un cliente específico.
+     * Formulario para editar cliente.
      */
     public function edit($id)
     {
-        $cliente = Cliente::where('user_id', Auth::id())->findOrFail($id);
+        $cliente = Cliente::where('user_id', Auth::id())
+            ->findOrFail($id);
 
         return Inertia::render('Vendedor/Clientes/Edit', [
             'cliente' => $cliente,
@@ -79,24 +85,27 @@ class ClienteVendedorController extends Controller
     }
 
     /**
-     * Actualizar datos del cliente.
+     * Actualizar cliente.
      */
     public function update(Request $request, $id)
     {
-        $cliente = Cliente::where('user_id', Auth::id())->findOrFail($id);
+        $cliente = Cliente::where('user_id', Auth::id())
+            ->findOrFail($id);
 
         $request->validate([
-            'nombre' => 'required|string|max:255',
+            'nombre'   => 'required|string|max:255',
             'telefono' => 'required|string|max:20',
-            'correo' => 'nullable|email|max:255',
+            'correo'   => 'nullable|email|max:255',
         ]);
 
         $cliente->update([
-            'nombre' => $request->nombre,
+            'nombre'   => $request->nombre,
             'telefono' => $request->telefono,
-            'correo' => $request->correo,
+            'correo'   => $request->correo,
         ]);
 
-        return redirect()->route('vendedor.clientes.index')->with('success', 'Cliente actualizado correctamente.');
+        return redirect()
+            ->route('vendedor.clientes.index')
+            ->with('success', 'Cliente actualizado correctamente.');
     }
 }

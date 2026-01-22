@@ -20,8 +20,10 @@ return new class extends Migration
             $table->date('fecha')->nullable();
 
             // Código de nota de talonario
-            $table->string('codigo_nota')->nullable(); // <--- NUEVO CAMPO
-
+            $table->string('codigo_nota', 10)
+                ->unique()
+                ->nullable()
+                ->comment('Código corto de venta ej: AT-V101');
             // Tipo de venta
             $table->enum('tipo_venta', ['producto', 'servicio_tecnico']);
 

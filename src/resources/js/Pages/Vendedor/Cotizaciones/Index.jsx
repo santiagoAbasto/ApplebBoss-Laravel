@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { Link, Head, router } from '@inertiajs/react';
 import VendedorLayout from '@/Layouts/VendedorLayout';
+import FancyButton from '@/Components/FancyButton';
 import { route } from 'ziggy-js';
 
 export default function Index({ cotizaciones = [] }) {
   const [seleccionados, setSeleccionados] = useState([]);
 
+  /* ===============================
+     SELECCIÓN
+  =============================== */
   const toggleSeleccion = (id) => {
     setSeleccionados((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((i) => i !== id)
+        : [...prev, id]
     );
   };
 
@@ -16,14 +22,17 @@ export default function Index({ cotizaciones = [] }) {
     if (seleccionados.length === cotizaciones.length) {
       setSeleccionados([]);
     } else {
-      setSeleccionados(cotizaciones.map(c => c.id));
+      setSeleccionados(cotizaciones.map((c) => c.id));
     }
   };
 
+  /* ===============================
+     ACCIONES
+  =============================== */
   const reenviarCorreo = (id) => {
     if (confirm('¿Deseas reenviar la cotización por correo?')) {
       router.post(route('vendedor.cotizaciones.reenviar', id), {}, {
-        onSuccess: () => alert('Correo reenviado exitosamente.')
+        onSuccess: () => alert('Correo reenviado exitosamente.'),
       });
     }
   };
@@ -34,7 +43,7 @@ export default function Index({ cotizaciones = [] }) {
       return;
     }
 
-    router.post(route('vendedor.cotizaciones.whatsapp-lote'), {
+    router.post(route('vendedor.cotizaciones.enviar-lote'), {
       ids: seleccionados,
     });
   };
@@ -47,12 +56,12 @@ export default function Index({ cotizaciones = [] }) {
     }
 
     const nombre = cot.nombre_cliente;
-    const total = parseFloat(cot.total || 0).toFixed(2);
+    const total = calcularTotalCotizacion(cot, 'con_factura').toFixed(2);
     const pdf = cot.drive_url || 'https://appleboss.bo/pdf-no-disponible';
 
     const mensaje =
-      `Hola ${nombre}, gracias por confiar en *AppleBoss* 😊\n\n` +
-      `📝 *Cotización AppleBoss*\n` +
+      `Hola ${nombre}, gracias por confiar en *Apple Boss* 😊\n\n` +
+      `📝 *Cotización Apple Boss*\n` +
       `👤 Cliente: ${nombre}\n` +
       `📄 Cotización N.º: ${cot.id}\n` +
       `💰 Total: Bs ${total}\n` +
@@ -70,156 +79,205 @@ export default function Index({ cotizaciones = [] }) {
     window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
   };
 
-  const calcularTotal = (campo, soloSeleccionados = false) => {
-    return cotizaciones.reduce((acc, cot) => {
-      const descuento = parseFloat(cot.descuento || 0);
-      if (soloSeleccionados && !seleccionados.includes(cot.id)) return acc;
-      if (!Array.isArray(cot.items)) return acc;
+  /* ===============================
+     TOTAL POR COTIZACIÓN (FILAS)
+     — EXACTO AL PDF
+  =============================== */
+  const calcularTotalCotizacion = (cot, tipo) => {
+    if (!Array.isArray(cot.items)) return 0;
 
-      const subtotal = cot.items.reduce((sum, item) => {
-        const valor = parseFloat(item[campo]) || 0;
-        return sum + valor * (item.cantidad || 1);
-      }, 0);
+    return cot.items.reduce((sum, item) => {
+      const cantidad = Number(item.cantidad) || 1;
 
-      return acc + Math.max(0, subtotal - descuento);
+      // SIN FACTURA → base - descuento
+      if (tipo === 'sin_factura') {
+        const base =
+          (Number(item.precio_sin_factura) || 0) * cantidad;
+        const desc = Number(item.descuento) || 0;
+        return sum + Math.max(0, base - desc);
+      }
+
+      // CON FACTURA → total ya calculado
+      if (tipo === 'con_factura') {
+        return sum + (Number(item.total) || 0);
+      }
+
+      return sum;
     }, 0);
   };
+
+  /* ===============================
+     TOTALES GLOBALES / SELECCIÓN
+  =============================== */
+  const calcularTotal = (tipo, soloSeleccionados = false) => {
+    return cotizaciones.reduce((acc, cot) => {
+      if (soloSeleccionados && !seleccionados.includes(cot.id)) return acc;
+      return acc + calcularTotalCotizacion(cot, tipo);
+    }, 0);
+  };
+
   return (
     <VendedorLayout>
       <Head title="Cotizaciones" />
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
-          <i className="bi bi-file-earmark-text-fill"></i> Cotizaciones Registradas
+
+      {/* ===============================
+         HEADER
+      =============================== */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-blue-700">
+          Cotizaciones Registradas
         </h1>
-        <div className="flex gap-2">
-          <Link
-            href={route('vendedor.cotizaciones.create')}
-            className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition"
-          >
-            <i className="bi bi-plus-circle mr-1"></i> Nueva Cotización
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link href={route('vendedor.cotizaciones.create')}>
+            <FancyButton size="sm" variant="success">
+              Nueva Cotización
+            </FancyButton>
           </Link>
-          <button
+
+          <FancyButton
+            size="sm"
+            variant="primary"
             onClick={enviarLoteWhatsapp}
-            className="border border-green-600 text-green-700 px-4 py-2 rounded hover:bg-green-50 transition"
           >
-            <i className="bi bi-whatsapp mr-1"></i> Enviar seleccionados
-          </button>
+            Enviar seleccionados
+          </FancyButton>
         </div>
       </div>
 
-      <div className="bg-white rounded shadow overflow-x-auto">
+      {/* ===============================
+         TABLA
+      =============================== */}
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="min-w-full text-sm text-left">
-          <thead className="bg-gray-100 text-gray-700 sticky top-0 z-10">
+          <thead className="bg-gray-100 sticky top-0 z-10">
             <tr>
               <th className="px-4 py-3">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={seleccionados.length === cotizaciones.length && cotizaciones.length > 0}
-                    onChange={toggleSeleccionTodos}
-                    className="form-checkbox rounded text-blue-600"
-                  />
-                  <span className="text-xs">Todos</span>
-                </label>
+                <input
+                  type="checkbox"
+                  checked={
+                    seleccionados.length === cotizaciones.length &&
+                    cotizaciones.length > 0
+                  }
+                  onChange={toggleSeleccionTodos}
+                />
               </th>
               <th className="px-2 py-3">#</th>
               <th className="px-2 py-3">Cliente</th>
               <th className="px-2 py-3">Teléfono</th>
-              <th className="px-2 py-3">Correo</th>
-              <th className="px-2 py-3 text-green-700 font-bold">TOTAL C/FACTURA</th>
-              <th className="px-2 py-3 text-blue-700 font-bold">TOTAL S/FACTURA</th>
+              <th className="px-2 py-3 text-green-700 font-bold">
+                IMP. NETO C/F
+              </th>
+              <th className="px-2 py-3 text-blue-700 font-bold">
+                IMP. NETO S/F
+              </th>
               <th className="px-2 py-3">Fecha</th>
               <th className="px-2 py-3 text-center">Acciones</th>
             </tr>
           </thead>
+
           <tbody>
             {cotizaciones.length === 0 ? (
               <tr>
-                <td colSpan="9" className="text-center py-6 text-gray-500">
-                  <i className="bi bi-emoji-frown mr-2"></i> No hay cotizaciones registradas.
+                <td colSpan="8" className="text-center py-6 text-gray-500">
+                  No hay cotizaciones registradas.
                 </td>
               </tr>
             ) : (
-              cotizaciones.map((cot, index) => {
-                let totalSinFactura = 0;
-                let totalConFactura = 0;
-                const descuento = parseFloat(cot.descuento || 0);
+              cotizaciones.map((cot, index) => (
+                <tr
+                  key={cot.id}
+                  className={`border-b hover:bg-blue-50 ${
+                    seleccionados.includes(cot.id)
+                      ? 'bg-blue-50 ring-1 ring-blue-100'
+                      : ''
+                  }`}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={seleccionados.includes(cot.id)}
+                      onChange={() => toggleSeleccion(cot.id)}
+                    />
+                  </td>
+                  <td className="px-2 py-3">{index + 1}</td>
+                  <td className="px-2 py-3">{cot.nombre_cliente}</td>
+                  <td className="px-2 py-3">{cot.telefono || '-'}</td>
 
-                if (Array.isArray(cot.items)) {
-                  cot.items.forEach(item => {
-                    totalSinFactura += (item.precio_sin_factura || 0) * (item.cantidad || 1);
-                    totalConFactura += (item.precio_con_factura || 0) * (item.cantidad || 1);
-                  });
-                }
+                  {/* ✅ TOTAL POR FILA */}
+                  <td className="px-2 py-3 text-green-700 font-semibold">
+                    Bs {calcularTotalCotizacion(cot, 'con_factura').toFixed(2)}
+                  </td>
+                  <td className="px-2 py-3 text-blue-700 font-semibold">
+                    Bs {calcularTotalCotizacion(cot, 'sin_factura').toFixed(2)}
+                  </td>
 
-                return (
-                  <tr key={cot.id} className={`border-b hover:bg-blue-50 ${seleccionados.includes(cot.id) ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox text-blue-600"
-                        checked={seleccionados.includes(cot.id)}
-                        onChange={() => toggleSeleccion(cot.id)}
-                      />
-                    </td>
-                    <td className="px-2 py-3 text-gray-500">{index + 1}</td>
-                    <td className="px-2 py-3">{cot.nombre_cliente}</td>
-                    <td className="px-2 py-3">{cot.telefono || '-'}</td>
-                    <td className="px-2 py-3">{cot.correo_cliente || '-'}</td>
-                    <td className="px-2 py-3 text-green-700 font-semibold">
-                      Bs {(Math.max(0, totalConFactura - descuento)).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-3 text-blue-700 font-semibold">
-                      Bs {(Math.max(0, totalSinFactura - descuento)).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-3">{new Date(cot.fecha_cotizacion).toLocaleDateString()}</td>
-                    <td className="px-2 py-3 text-center space-x-1 flex flex-wrap justify-center">
-                      {cot.drive_url ? (
-                        <a href={cot.drive_url} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
-                          <i className="bi bi-cloud-arrow-down me-1"></i> Ver PDF
-                        </a>
-                      ) : (
-                        <a href={route('vendedor.cotizaciones.pdf', cot.id)} target="_blank" className="border text-blue-600 border-blue-600 px-2 py-1 rounded hover:bg-blue-50">
-                          <i className="bi bi-file-earmark-pdf me-1"></i> Generar PDF
+                  <td className="px-2 py-3">
+                    {new Date(cot.fecha_cotizacion).toLocaleDateString()}
+                  </td>
+
+                  <td className="px-2 py-3">
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {cot.drive_url && (
+                        <a href={cot.drive_url} target="_blank" rel="noreferrer">
+                          <FancyButton size="sm" variant="primary">
+                            Ver PDF
+                          </FancyButton>
                         </a>
                       )}
 
-                      <button onClick={() => enviarWhatsApp(cot)} className="border border-green-600 text-green-700 px-2 py-1 rounded hover:bg-green-50">
-                        <i className="bi bi-whatsapp me-1"></i> WhatsApp
-                      </button>
+                      <FancyButton
+                        size="sm"
+                        variant="success"
+                        onClick={() => enviarWhatsApp(cot)}
+                      >
+                        WhatsApp
+                      </FancyButton>
 
                       {cot.correo_cliente && (
-                        <button onClick={() => reenviarCorreo(cot.id)} className="border border-gray-400 text-gray-700 px-2 py-1 rounded hover:bg-gray-100">
-                          <i className="bi bi-envelope-fill me-1"></i> Reenviar
-                        </button>
+                        <FancyButton
+                          size="sm"
+                          variant="dark"
+                          onClick={() => reenviarCorreo(cot.id)}
+                        >
+                          Reenviar
+                        </FancyButton>
                       )}
-                    </td>
-                  </tr>
-                );
-              })
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
 
-        <div className="bg-gray-50 px-6 py-4 border-t text-right text-sm font-medium flex flex-col sm:flex-row sm:justify-end gap-2 sm:gap-6">
+        {/* ===============================
+           FOOTER TOTALES
+        =============================== */}
+        <div className="bg-gray-50 px-6 py-4 border-t text-sm font-medium flex flex-col sm:flex-row sm:justify-end gap-3">
           <div className="text-green-700">
-            Total Global C/Factura:{' '}
-            <span className="font-bold">Bs {calcularTotal('precio_con_factura').toFixed(2)}</span>
+            Total Global C/F:{' '}
+            <strong>Bs {calcularTotal('con_factura').toFixed(2)}</strong>
           </div>
+
           <div className="text-blue-700">
-            Total Global S/Factura:{' '}
-            <span className="font-bold">Bs {calcularTotal('precio_sin_factura').toFixed(2)}</span>
+            Total Global S/F:{' '}
+            <strong>Bs {calcularTotal('sin_factura').toFixed(2)}</strong>
           </div>
 
           {seleccionados.length > 0 && (
             <>
               <div className="text-green-700">
-                Total Seleccionados C/Factura:{' '}
-                <span className="font-bold">Bs {calcularTotal('precio_con_factura', true).toFixed(2)}</span>
+                Sel. C/F:{' '}
+                <strong>
+                  Bs {calcularTotal('con_factura', true).toFixed(2)}
+                </strong>
               </div>
               <div className="text-blue-700">
-                Total Seleccionados S/Factura:{' '}
-                <span className="font-bold">Bs {calcularTotal('precio_sin_factura', true).toFixed(2)}</span>
+                Sel. S/F:{' '}
+                <strong>
+                  Bs {calcularTotal('sin_factura', true).toFixed(2)}
+                </strong>
               </div>
             </>
           )}

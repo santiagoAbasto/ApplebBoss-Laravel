@@ -138,7 +138,7 @@
     </div>
     <div class="venta-info">
       <p><strong>BOLETA DE SERVICIO TÉCNICO</strong></p>
-      <p>Fecha: {{ \Carbon\Carbon::parse($servicio->fecha)->format('d/m/Y') }}</p>
+      <p>Fecha: {{ optional($servicio->created_at)->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
       <p>Código Nota: {{ $servicio->codigo_nota ?? '---' }}</p>
     </div>
   </div>

@@ -1,8 +1,28 @@
 import { Head, useForm } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { route } from 'ziggy-js'; // ✅ CORRECTO
+import { Laptop } from 'lucide-react';
 
-
+/* =======================
+   CRUD UI (OFICIAL)
+======================= */
+import {
+  CrudWrapper,
+  CrudHeader,
+  CrudTitle,
+  CrudSubtitle,
+  CrudBackLink,
+  CrudInfoBox,
+  CrudCard,
+  CrudSectionTitle,
+  CrudGrid,
+  CrudLabel,
+  CrudInput,
+  CrudSelect,
+  CrudActions,
+  CrudButtonPrimary,
+  CrudButtonSecondary,
+} from '@/Components/CrudUI';
 
 export default function EditComputadora({ computadora }) {
   const { data, setData, put, processing, errors } = useForm({
@@ -28,89 +48,119 @@ export default function EditComputadora({ computadora }) {
     <AdminLayout>
       <Head title="Editar Computadora" />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          ✏️ Editar computadora: <span className="text-blue-600">{computadora.nombre}</span>
-        </h1>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md space-y-6"
-      >
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Nombre */}
+      <CrudWrapper>
+        {/* ================= HEADER ================= */}
+        <CrudHeader>
           <div>
-            <label className="block font-semibold mb-1">Nombre</label>
-            <input
-              type="text"
-              value={data.nombre}
-              onChange={(e) => setData('nombre', e.target.value)}
-              className="w-full border-gray-300 rounded px-4 py-2 focus:ring focus:ring-blue-200"
-            />
-            {errors.nombre && <p className="text-red-600 text-sm mt-1">{errors.nombre}</p>}
+            <CrudTitle>
+              <Laptop size={22} />
+              Editar computadora
+            </CrudTitle>
+            <CrudSubtitle>
+              Modificando: <strong>{computadora.nombre}</strong>
+            </CrudSubtitle>
           </div>
 
-          {/* Procesador */}
-          <div>
-            <label className="block font-semibold mb-1">Procesador</label>
-            <input
-              type="text"
-              value={data.procesador}
-              onChange={(e) => setData('procesador', e.target.value)}
-              className="w-full border-gray-300 rounded px-4 py-2 focus:ring focus:ring-blue-200"
-            />
-            {errors.procesador && <p className="text-red-600 text-sm mt-1">{errors.procesador}</p>}
-          </div>
+          <CrudBackLink as="button" onClick={() => window.history.back()}>
+            ← Volver
+          </CrudBackLink>
+        </CrudHeader>
 
-          {/* Campos reutilizables */}
-          {[
-            { label: 'Número de Serie', key: 'numero_serie' },
-            { label: 'Color', key: 'color' },
-            { label: 'Batería (opcional)', key: 'bateria' },
-            { label: 'RAM', key: 'ram' },
-            { label: 'Almacenamiento', key: 'almacenamiento' },
-            { label: 'Procedencia', key: 'procedencia' },
-            { label: 'Precio Costo (Bs)', key: 'precio_costo', type: 'number' },
-            { label: 'Precio Venta (Bs)', key: 'precio_venta', type: 'number' },
-          ].map(({ label, key, type = 'text' }) => (
-            <div key={key}>
-              <label className="block font-semibold mb-1">{label}</label>
-              <input
-                type={type}
-                value={data[key]}
-                onChange={(e) => setData(key, e.target.value)}
-                className="w-full border-gray-300 rounded px-4 py-2 focus:ring focus:ring-blue-200"
-              />
-              {errors[key] && <p className="text-red-600 text-sm mt-1">{errors[key]}</p>}
-            </div>
-          ))}
+        {/* ================= INFO ================= */}
+        <CrudInfoBox>
+          Estás editando una computadora existente. Los cambios se reflejarán
+          inmediatamente en el inventario, reportes y ventas.
+        </CrudInfoBox>
 
-          {/* Estado */}
-          <div>
-            <label className="block font-semibold mb-1">Estado</label>
-            <select
-              value={data.estado}
-              onChange={(e) => setData('estado', e.target.value)}
-              className="w-full border-gray-300 rounded px-4 py-2 focus:ring focus:ring-blue-200"
-            >
-              <option value="disponible">Disponible</option>
-              <option value="vendido">Vendido</option>
-              <option value="permuta">Permuta</option>
-            </select>
-          </div>
-        </div>
+        {/* ================= FORM ================= */}
+        <CrudCard>
+          <form onSubmit={handleSubmit}>
+            <CrudSectionTitle>Información del equipo</CrudSectionTitle>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={processing}
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded shadow disabled:opacity-50"
-          >
-            💾 Actualizar
-          </button>
-        </div>
-      </form>
+            <CrudGrid>
+              {/* NOMBRE */}
+              <div>
+                <CrudLabel>Nombre</CrudLabel>
+                <CrudInput
+                  value={data.nombre}
+                  onChange={(e) => setData('nombre', e.target.value)}
+                />
+                {errors.nombre && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.nombre}
+                  </small>
+                )}
+              </div>
+
+              {/* PROCESADOR */}
+              <div>
+                <CrudLabel>Procesador</CrudLabel>
+                <CrudInput
+                  value={data.procesador}
+                  onChange={(e) => setData('procesador', e.target.value)}
+                />
+                {errors.procesador && (
+                  <small style={{ color: '#dc2626' }}>
+                    {errors.procesador}
+                  </small>
+                )}
+              </div>
+
+              {[
+                { label: 'Número de serie', key: 'numero_serie' },
+                { label: 'Color', key: 'color' },
+                { label: 'Batería (opcional)', key: 'bateria' },
+                { label: 'RAM', key: 'ram' },
+                { label: 'Almacenamiento', key: 'almacenamiento' },
+                { label: 'Procedencia', key: 'procedencia' },
+                { label: 'Precio costo (Bs)', key: 'precio_costo', type: 'number' },
+                { label: 'Precio venta (Bs)', key: 'precio_venta', type: 'number' },
+              ].map(({ label, key, type = 'text' }) => (
+                <div key={key}>
+                  <CrudLabel>{label}</CrudLabel>
+                  <CrudInput
+                    type={type}
+                    value={data[key]}
+                    onChange={(e) => setData(key, e.target.value)}
+                  />
+                  {errors[key] && (
+                    <small style={{ color: '#dc2626' }}>
+                      {errors[key]}
+                    </small>
+                  )}
+                </div>
+              ))}
+
+              {/* ESTADO */}
+              <div>
+                <CrudLabel>Estado</CrudLabel>
+                <CrudSelect
+                  value={data.estado}
+                  onChange={(e) => setData('estado', e.target.value)}
+                >
+                  <option value="disponible">Disponible</option>
+                  <option value="vendido">Vendido</option>
+                  <option value="permuta">Permuta</option>
+                </CrudSelect>
+              </div>
+            </CrudGrid>
+
+            {/* ================= ACTIONS ================= */}
+            <CrudActions>
+              <CrudButtonSecondary
+                type="button"
+                onClick={() => window.history.back()}
+              >
+                Cancelar
+              </CrudButtonSecondary>
+
+              <CrudButtonPrimary type="submit" disabled={processing}>
+                Actualizar computadora
+              </CrudButtonPrimary>
+            </CrudActions>
+          </form>
+        </CrudCard>
+      </CrudWrapper>
     </AdminLayout>
   );
 }

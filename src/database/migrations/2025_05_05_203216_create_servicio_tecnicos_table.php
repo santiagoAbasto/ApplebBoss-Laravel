@@ -6,28 +6,47 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('servicio_tecnicos', function (Blueprint $table) {
             $table->id();
-            $table->string('codigo_nota', 20)->unique();
+
+            // Código automático de Servicio Técnico (AT-ST###)
+            $table->string('codigo_nota', 20)
+                ->unique()
+                ->comment('Código interno de servicio técnico');
+
+            // Datos del cliente
             $table->string('cliente');
             $table->string('telefono')->nullable();
+
+            // Detalle del servicio
             $table->string('equipo');
             $table->text('detalle_servicio');
+
+            // 📝 Notas adicionales (visible en boleta)
+            $table->text('notas_adicionales')->nullable();
+
+            // Costos
             $table->decimal('precio_costo', 10, 2)->default(0);
             $table->decimal('precio_venta', 10, 2)->default(0);
-            $table->string('tecnico');
-            $table->date('fecha');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
-            // 🔧 Nueva relación con ventas
+            // Técnico responsable
+            $table->string('tecnico');
+
+            // Fecha del servicio
+            $table->date('fecha');
+
+            // Usuario que registró
+            $table->foreignId('user_id')
+                ->constrained()
+                ->onDelete('cascade');
+
+            // Relación opcional con venta
             $table->foreignId('venta_id')
                 ->nullable()
                 ->constrained('ventas')
-                ->nullOnDelete()
-                ->after('user_id');
-
+                ->nullOnDelete();
 
             $table->timestamps();
         });
