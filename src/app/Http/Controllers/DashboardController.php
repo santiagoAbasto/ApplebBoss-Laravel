@@ -21,9 +21,28 @@ class DashboardController extends Controller
         $fechaInicio = request('fecha_inicio');
         $fechaFin    = request('fecha_fin');
 
+        $periodo = request('periodo', 'mes');
+
         if (!$fechaInicio || !$fechaFin) {
-            $fechaInicio = Venta::min('fecha') ?? now()->toDateString();
-            $fechaFin    = now()->toDateString();
+
+            switch ($periodo) {
+
+                case 'dia':
+                    $fechaInicio = now()->startOfDay()->toDateString();
+                    $fechaFin    = now()->endOfDay()->toDateString();
+                    break;
+
+                case 'anio':
+                    $fechaInicio = now()->startOfYear()->toDateString();
+                    $fechaFin    = now()->endOfYear()->toDateString();
+                    break;
+
+                case 'mes':
+                default:
+                    $fechaInicio = now()->startOfMonth()->toDateString();
+                    $fechaFin    = now()->endOfMonth()->toDateString();
+                    break;
+            }
         }
 
         $vendedorId  = request('vendedor_id');
@@ -318,26 +337,30 @@ class DashboardController extends Controller
                 'utilidad_disponible'          => $gananciaDia - $egresosDia,
             ];
         })->values();
+        // =========================
+        // 💰 Utilidad REAL por Categoría
+        // =========================
 
-        // =========================
-        // 🔸 Distribución económica
-        // =========================
         $distribucionEconomica = [
             [
-                'label' => 'Inversión',
-                'valor' => $items->sum('capital'), // ✅ SOLO COSTO → 1330
+                'label' => 'Celulares',
+                'valor' => round($ganancias['celulares'], 2),
             ],
             [
-                'label' => 'Descuento',
-                'valor' => $items->sum('descuento'),
+                'label' => 'Computadoras',
+                'valor' => round($ganancias['computadoras'], 2),
             ],
             [
-                'label' => 'Permuta',
-                'valor' => $items->sum('permuta'), // ✅ 200
+                'label' => 'Productos Generales',
+                'valor' => round($ganancias['generales'], 2),
             ],
             [
-                'label' => 'Utilidad (post egresos)',
-                'valor' => max($utilidadDisponible, 0),
+                'label' => 'Productos Apple',
+                'valor' => round($ganancias['producto_apple'], 2),
+            ],
+            [
+                'label' => 'Servicios Técnicos',
+                'valor' => round($ganancias['servicio_tecnico'], 2),
             ],
         ];
 
@@ -388,6 +411,9 @@ class DashboardController extends Controller
                 'mes'  => $historicoMes,
                 'anio' => $historicoAnio,
             ],
+
+            'periodo_actual' => $periodo,
+
 
             // 🔹 Egresos agrupados para usar en tabs/filtros del front (día/mes/año)
             'egresos_agrupados' => [

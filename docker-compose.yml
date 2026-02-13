@@ -49,6 +49,7 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
   adminer:
     image: adminer
     container_name: appleboss-adminer
@@ -56,7 +57,29 @@ services:
     ports:
       - "8080:8080"
 
+  # ✅ NUEVO: n8n local
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: appleboss-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=superseguro
+
+      - TZ=America/La_Paz
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+
+    # 🔴 FIX PARA SAFARI / DEV
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - appleboss_n8n_data:/home/node/.n8n
+
 volumes:
   appleboss-laravel_db_data:
   appleboss_node_modules:
-
+  appleboss_n8n_data:

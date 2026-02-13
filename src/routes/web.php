@@ -24,6 +24,8 @@ use App\Http\Controllers\Vendedor\DashboardVendedorController;
 use App\Http\Controllers\Vendedor\ClienteVendedorController;
 use App\Http\Controllers\EgresoController;
 use App\Http\Controllers\GoogleDriveController;
+use App\Http\Controllers\Automation\AutomationReportController;
+
 
 // 🏠 Ruta pública inicial
 Route::get('/', function () {
@@ -56,6 +58,24 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('adm
 
     // 📊 Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // ========================
+    // 🤖 AUTOMATION ALERTS (Dashboard IA)
+    // ========================
+    Route::prefix('automation')->group(function () {
+
+        // Obtener último reporte no leído (Dashboard)
+        Route::get('/reports/latest', [
+            AutomationReportController::class,
+            'latest'
+        ])->name('automation.reports.latest');
+
+        // Marcar reporte como leído
+        Route::post('/reports/{report}/read', [
+            AutomationReportController::class,
+            'markAsRead'
+        ])->name('automation.reports.read');
+    });
+
 
     // 📱 CRUD Celulares
     Route::resource('celulares', CelularController::class)

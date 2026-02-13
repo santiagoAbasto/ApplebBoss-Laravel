@@ -18,13 +18,12 @@ import {
   CrudGrid,
   CrudLabel,
   CrudInput,
-  CrudActions,
   CrudButtonPrimary,
   CrudButtonSecondary,
   CrudButtonDanger,
 } from '@/Components/CrudUI';
 
-export default function ProductosGeneralesIndex({ productos }) {
+export default function ProductosGeneralesIndex({ productos = [] }) {
   const [busqueda, setBusqueda] = useState('');
 
   /* ===============================
@@ -65,32 +64,25 @@ export default function ProductosGeneralesIndex({ productos }) {
   };
 
   /* ===============================
-     FILTRADO + ORDEN (INTACTO)
+     FILTRADO ESTRICTO + RECIENTES
   =============================== */
-  const filtrados = productos
-    .filter((p) =>
-      p.codigo.toLowerCase().includes(busqueda.toLowerCase())
-    )
-    .sort((a, b) => {
-      const getTipo = (codigo) => codigo.split(':')[0].toLowerCase();
-      const getNumero = (codigo) => parseInt(codigo.split(':')[1]) || 0;
+  const norm = (v) => String(v ?? '').trim().toLowerCase();
+  const q = norm(busqueda);
 
-      const tipoA = getTipo(a.codigo);
-      const tipoB = getTipo(b.codigo);
+  const filtrados = [...productos]
+    // 1️⃣ ordenar por más recientes
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-      if (tipoA === tipoB) {
-        const numA = getNumero(a.codigo);
-        const numB = getNumero(b.codigo);
+    // 2️⃣ filtrado ESTRICTO
+    .filter((p) => {
+      // sin búsqueda → últimos 10
+      if (!q) return true;
 
-        if (numA === numB) {
-          return new Date(b.created_at) - new Date(a.created_at);
-        }
-
-        return numB - numA;
-      }
-
-      return tipoB.localeCompare(tipoA);
+      // comparación EXACTA contra codigo
+      return norm(p.codigo) === q;
     })
+
+    // 3️⃣ máximo 10
     .slice(0, 10);
 
   return (
@@ -125,12 +117,16 @@ export default function ProductosGeneralesIndex({ productos }) {
 
           <CrudGrid>
             <div>
-              <CrudLabel>Buscar por código</CrudLabel>
+              <CrudLabel>Buscar por código (exacto)</CrudLabel>
               <CrudInput
-                placeholder="Ej: vidrio_templado:15"
+                placeholder="Ej: vidrio_camara:119"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
+              <p style={{ marginTop: 8, fontSize: 12, color: '#64748b' }}>
+                • Sin escribir nada se muestran los últimos 10 productos<br />
+                • Formato obligatorio <strong>tipo:número</strong>
+              </p>
             </div>
           </CrudGrid>
         </CrudCard>
@@ -158,37 +154,21 @@ export default function ProductosGeneralesIndex({ productos }) {
                   filtrados.map((p) => (
                     <tr key={p.id} style={{ borderTop: '1px solid #e5e7eb' }}>
                       <td style={td}>{p.codigo}</td>
-                      <td style={td}>
-                        {p.tipo.replace(/_/g, ' ')}
-                      </td>
+                      <td style={td}>{(p.tipo || '').replace(/_/g, ' ')}</td>
                       <td style={td}>{p.nombre || '—'}</td>
                       <td style={td}>{p.procedencia || '—'}</td>
                       <td style={td}>
-                        Bs {parseFloat(p.precio_venta).toFixed(2)}
+                        Bs {parseFloat(p.precio_venta || 0).toFixed(2)}
                       </td>
                       <td style={td}>
-                        <span
-                          style={{
-                            ...badge,
-                            ...getBadgeStyle(p.estado),
-                          }}
-                        >
+                        <span style={{ ...badge, ...getBadgeStyle(p.estado) }}>
                           {p.estado}
                         </span>
                       </td>
                       <td style={{ ...td, textAlign: 'center' }}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 8,
-                            justifyContent: 'center',
-                          }}
-                        >
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                           {p.estado === 'permuta' ? (
-                            <CrudButtonSecondary
-                              type="button"
-                              onClick={() => habilitar(p.id)}
-                            >
+                            <CrudButtonSecondary onClick={() => habilitar(p.id)}>
                               Habilitar
                             </CrudButtonSecondary>
                           ) : (
@@ -200,10 +180,7 @@ export default function ProductosGeneralesIndex({ productos }) {
                             </CrudButtonSecondary>
                           )}
 
-                          <CrudButtonDanger
-                            type="button"
-                            onClick={() => eliminar(p.id)}
-                          >
+                          <CrudButtonDanger onClick={() => eliminar(p.id)}>
                             Eliminar
                           </CrudButtonDanger>
                         </div>
@@ -212,15 +189,8 @@ export default function ProductosGeneralesIndex({ productos }) {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="7"
-                      style={{
-                        textAlign: 'center',
-                        padding: 30,
-                        color: '#64748b',
-                      }}
-                    >
-                      No se encontraron productos con ese código.
+                    <td colSpan="7" style={{ textAlign: 'center', padding: 30, color: '#64748b' }}>
+                      No se encontraron productos con ese código exacto.
                     </td>
                   </tr>
                 )}

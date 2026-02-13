@@ -1,11 +1,24 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { router } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
+
 
 export default function EconomicChart({
   historico = { dia: [], mes: [], anio: [] },
   resumen_total = {},
 }) {
-  const [periodo, setPeriodo] = useState('mes');
+  const { periodo_actual } = usePage().props;
+
+  const [periodo, setPeriodo] = useState(periodo_actual || 'mes');
+
+  useEffect(() => {
+    if (periodo_actual) {
+      setPeriodo(periodo_actual);
+    }
+  }, [periodo_actual]);
+
+
   const [modo, setModo] = useState('ingresos'); // ingresos | inversion | utilidad
 
   // Hover / Scrubber
@@ -182,8 +195,6 @@ export default function EconomicChart({
       };
     });
 
-
-
     // Área
     let area = `M 0 50 `;
     points.forEach((p) => (area += `L ${p.x} ${p.y} `));
@@ -211,13 +222,14 @@ export default function EconomicChart({
    * 4) MONTO SUPERIOR + DELTA
    * ============================ */
   const monto = useMemo(() => {
-    return modo === 'ingresos'
-      ? Number(resumen_total?.total_ventas ?? 0)
-      : modo === 'inversion'
-        ? Number(resumen_total?.total_inversion ?? 0) // ✅
-        : Number(resumen_total?.utilidad_disponible ?? 0);
-  }, [modo, resumen_total]);
+    if (!raw.length) return 0;
 
+    return raw.reduce((acc, d) => {
+      if (modo === 'ingresos') return acc + (d.total ?? 0);
+      if (modo === 'inversion') return acc + (d.capital ?? 0);
+      return acc + (d.utilidad ?? 0);
+    }, 0);
+  }, [raw, modo]);
 
   const lastBase = buildSeries.base.at(-1) ?? 0;
   const prevBase = buildSeries.base.at(-2) ?? buildSeries.base.at(-1) ?? 0;
@@ -286,8 +298,10 @@ export default function EconomicChart({
             <button
               key={p}
               className={periodo === p ? 'active' : ''}
-              onClick={() => setPeriodo(p)}
-              type="button"
+              onClick={() => {
+                setPeriodo(p);
+                router.get('/admin/dashboard', { periodo: p }, { preserveState: true });
+              }} type="button"
             >
               {p.toUpperCase()}
             </button>
