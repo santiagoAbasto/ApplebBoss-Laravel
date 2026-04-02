@@ -6,6 +6,7 @@ use App\Models\ProductoGeneral;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+
 class ProductoGeneralController extends Controller
 {
     public function index()
@@ -16,14 +17,17 @@ class ProductoGeneralController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return Inertia::render('Admin/ProductosGenerales/Create');
+        return Inertia::render('Admin/ProductosGenerales/Create', [
+            'duplicar_producto' => session('duplicar_producto'),
+        ]);
     }
+
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'codigo' => 'required|string|unique:productos_generales,codigo',
             'tipo' => 'required|string|max:100',
             'nombre' => 'required|string|max:255',
@@ -32,14 +36,28 @@ class ProductoGeneralController extends Controller
             'precio_venta' => 'required|numeric',
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
-    
-        ProductoGeneral::create($request->all());
-    
-        return redirect(
-            $request->get('return_to', route('admin.productos-generales.index'))
-        )->with('success', 'Producto registrado correctamente.');
+
+        ProductoGeneral::create($validated);
+
+        return back()->with('success', 'Producto registrado correctamente.');
     }
-    
+    public function verificarCodigo(Request $request)
+    {
+        $codigo = trim($request->query('codigo'));
+
+        if (!$codigo) {
+            return response()->json([
+                'existe' => false
+            ]);
+        }
+
+        $existe = ProductoGeneral::where('codigo', $codigo)->exists();
+
+        return response()->json([
+            'existe' => $existe
+        ]);
+    }
+
 
     public function show(ProductoGeneral $producto)
     {
@@ -70,7 +88,7 @@ class ProductoGeneralController extends Controller
         $producto->update($request->all());
 
         return redirect()->route('admin.productos-generales.index')
-                         ->with('success', 'Producto actualizado correctamente.');
+            ->with('success', 'Producto actualizado correctamente.');
     }
 
     public function destroy(ProductoGeneral $producto)
@@ -78,37 +96,35 @@ class ProductoGeneralController extends Controller
         $producto->delete();
 
         return redirect()->route('admin.productos-generales.index')
-                         ->with('success', 'Producto eliminado correctamente.');
+            ->with('success', 'Producto eliminado correctamente.');
     }
     public function apiStore(Request $request)
-{
-    $data = $request->validate([
-        'codigo' => 'required|string|unique:productos_generales,codigo',
-        'nombre' => 'required|string|max:255',
-        'precio_costo' => 'required|numeric',
-        'precio_venta' => 'required|numeric',
-    ]);
+    {
+        $data = $request->validate([
+            'codigo' => 'required|string|unique:productos_generales,codigo',
+            'nombre' => 'required|string|max:255',
+            'precio_costo' => 'required|numeric',
+            'precio_venta' => 'required|numeric',
+        ]);
 
-    $producto = new ProductoGeneral();
-    $producto->codigo = $data['codigo'];
-    $producto->nombre = $data['nombre'];
-    $producto->precio_costo = $data['precio_costo'];
-    $producto->precio_venta = $data['precio_venta'];
-    $producto->estado = 'disponible';
+        $producto = new ProductoGeneral();
+        $producto->codigo = $data['codigo'];
+        $producto->nombre = $data['nombre'];
+        $producto->precio_costo = $data['precio_costo'];
+        $producto->precio_venta = $data['precio_venta'];
+        $producto->estado = 'disponible';
 
-    // Campos por defecto para permutas
-    $producto->tipo = 'permuta';
-    $producto->procedencia = 'permuta';
+        // Campos por defecto para permutas
+        $producto->tipo = 'permuta';
+        $producto->procedencia = 'permuta';
 
-    $producto->save();
+        $producto->save();
 
-    return response()->json($producto);
-}
-public function habilitar(ProductoGeneral $producto)
-{
-    $producto->update(['estado' => 'disponible']);
-    return back()->with('success', 'Producto habilitado para la venta.');
-}
-
-
+        return response()->json($producto);
+    }
+    public function habilitar(ProductoGeneral $producto)
+    {
+        $producto->update(['estado' => 'disponible']);
+        return back()->with('success', 'Producto habilitado para la venta.');
+    }
 }

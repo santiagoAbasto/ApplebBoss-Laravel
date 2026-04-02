@@ -16,6 +16,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\ServicioTecnico;
 use App\Services\GeneradorCodigos;
 use Illuminate\Support\Facades\DB;
+use App\Models\SystemNotification;
 
 
 
@@ -214,12 +215,79 @@ class VentaController extends Controller
                 'user_id' => auth()->id(),
                 'fecha' => now('America/La_Paz'),
             ]);
-
             /* ======================================================
-         * 5) CREAR ITEMS (IGUAL)
-         * ====================================================== */
+ * 5) CREAR ITEMS (CON SNAPSHOT BI PROFESIONAL)
+ * ====================================================== */
             foreach ($request->items as $item) {
-                $venta->items()->create([
+
+                $snapshot = [
+                    'categoria' => null,
+                    'nombre_producto' => null,
+                    'modelo' => null,
+                    'capacidad' => null,
+                    'color' => null,
+                    'bateria' => null,
+                    'procesador' => null,
+                    'ram' => null,
+                    'almacenamiento' => null,
+                ];
+
+                switch ($item['tipo']) {
+
+                    /* =========================
+         * 📱 CELULAR
+         * ========================= */
+                    case 'celular':
+                        $producto = Celular::findOrFail($item['producto_id']);
+
+                        $snapshot['categoria'] = 'celulares';
+                        $snapshot['nombre_producto'] = $producto->modelo;
+                        $snapshot['modelo'] = $producto->modelo;
+                        $snapshot['capacidad'] = $producto->capacidad;
+                        $snapshot['color'] = $producto->color;
+                        $snapshot['bateria'] = $producto->bateria;
+                        break;
+
+                    /* =========================
+         * 💻 COMPUTADORA
+         * ========================= */
+                    case 'computadora':
+                        $producto = Computadora::findOrFail($item['producto_id']);
+
+                        $snapshot['categoria'] = 'computadoras';
+                        $snapshot['nombre_producto'] = $producto->nombre;
+                        $snapshot['modelo'] = $producto->nombre;
+                        $snapshot['procesador'] = $producto->procesador;
+                        $snapshot['ram'] = $producto->ram;
+                        $snapshot['almacenamiento'] = $producto->almacenamiento;
+                        break;
+
+                    /* =========================
+         * 📦 PRODUCTO GENERAL
+         * ========================= */
+                    case 'producto_general':
+                        $producto = ProductoGeneral::findOrFail($item['producto_id']);
+
+                        $snapshot['categoria'] = $producto->tipo; // vidrio, funda, cable, etc.
+                        $snapshot['nombre_producto'] = $producto->nombre;
+                        break;
+
+                    /* =========================
+         * 🍎 PRODUCTO APPLE
+         * ========================= */
+                    case 'producto_apple':
+                        $producto = ProductoApple::findOrFail($item['producto_id']);
+
+                        $snapshot['categoria'] = 'productos_apple';
+                        $snapshot['nombre_producto'] = $producto->modelo;
+                        $snapshot['modelo'] = $producto->modelo;
+                        $snapshot['capacidad'] = $producto->capacidad;
+                        $snapshot['color'] = $producto->color;
+                        $snapshot['bateria'] = $producto->bateria;
+                        break;
+                }
+
+                $venta->items()->create(array_merge([
                     'tipo' => $item['tipo'],
                     'producto_id' => $item['producto_id'],
                     'cantidad' => $item['cantidad'],
@@ -227,8 +295,9 @@ class VentaController extends Controller
                     'precio_invertido' => $item['precio_invertido'],
                     'descuento' => $item['descuento'],
                     'subtotal' => $item['subtotal'],
-                ]);
+                ], $snapshot));
             }
+
 
             /* ======================================================
          * 6) CAMBIAR ESTADO A VENDIDO (INCLUYE APPLE)
@@ -289,6 +358,16 @@ class VentaController extends Controller
                     ]);
                 }
             }
+
+            SystemNotification::create([
+                'type' => 'sale',
+                'title' => 'Nueva venta registrada',
+                'message' =>
+                auth()->user()->name .
+                    ' vendió por Bs ' .
+                    number_format($subtotal, 2) .
+                    ' (' . $codigoVenta . ')',
+            ]);
 
             return response()->json([
                 'message' => 'Venta registrada con éxito',
