@@ -1,13 +1,15 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { route } from 'ziggy-js';
 
 import EconomicCharts from '@/Components/EconomicCharts';
 import SalesChart from '@/Components/SalesChart';
 import DashboardActions from '@/Components/DashboardActions';
-import AutomationAlert from '@/Components/AutomationAlert';
+import IosNotification from "@/Components/IosNotification";
+
+
 import axios from 'axios';
 
 /* =======================
@@ -69,18 +71,17 @@ export default function Dashboard({
     : [];
 
   /* =======================
-     FILTRO AUTOMÁTICO HOY
-  ======================= */
+   NOTIFICACIONES
+======================= */
+
+  const [notifications, setNotifications] = useState([])
+
   useEffect(() => {
-    if (!filtros?.fecha_inicio && !filtros?.fecha_fin) {
-      router.get(
-        route('admin.dashboard'),
-        { fecha_inicio: hoyStr, fecha_fin: hoyStr },
-        { preserveState: true, preserveScroll: true }
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    axios.get('/admin/notifications')
+      .then(res => setNotifications(res.data.notifications))
+      .catch(() => { })
+  }, [])
+
 
   const handleFiltrar = (e) => {
     e.preventDefault();
@@ -94,18 +95,68 @@ export default function Dashboard({
       { preserveState: true, preserveScroll: true }
     );
   };
-
   /* =======================
-     AUTOMATION ALERT
+     AUTOMATION ALERT (SEMANAL)
   ======================= */
+
   const [automationReport, setAutomationReport] = useState(null);
 
   useEffect(() => {
     axios
-      .get('/admin/automation/reports/latest')
-      .then((res) => setAutomationReport(res.data?.report || null))
+      .get(route('admin.automation.latestWeekly'))
+      .then((res) => {
+        if (res.data?.show && res.data?.report) {
+
+          const periodKey = `automation_seen_${res.data.report.period}`;
+          const alreadySeen = localStorage.getItem(periodKey);
+
+          if (!alreadySeen) {
+            setAutomationReport(res.data.report);
+            localStorage.setItem(periodKey, '1');
+          }
+        }
+      })
       .catch(() => { });
   }, []);
+
+  /* =======================
+     PARSE IA CONTENT (SEGURO)
+  ======================= */
+  const parsedAutomation = useMemo(() => {
+    if (!automationReport?.content) return null;
+
+    try {
+      return JSON.parse(automationReport.content);
+    } catch {
+      return null;
+    }
+  }, [automationReport]);
+
+  /* =======================
+     METRICAS INTELIGENTES
+  ======================= */
+
+  const utilidadSemana =
+    parsedAutomation?.metricas?.utilidad_semana ?? 0;
+
+  const variacion = safeNum(
+    parsedAutomation?.metricas?.variacion_porcentual
+  );
+
+
+  const performanceColor =
+    variacion > 0
+      ? 'green'
+      : variacion < 0
+        ? 'rose'
+        : 'sky';
+
+  const variacionIcon =
+    variacion > 0 ? '📈'
+      : variacion < 0 ? '📉'
+        : '➖';
+
+
 
   return (
     <AdminLayout>
@@ -123,12 +174,120 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* ================= AUTOMATION ALERT ================= */}
-      {automationReport && (
-        <div className="px-4 mb-8">
-          <AutomationAlert report={automationReport} />
+      {/* ================= CENTRO NOTIFICACIONES ================= */}
+      <div className="px-4 mb-10">
+        <div className="bg-white rounded-2xl shadow-lg border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800">
+              🔔 Centro de Notificaciones
+            </h2>
+            <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
+              {notifications.filter(n => !n.read).length} nuevas
+            </span>
+          </div>
+
+          {notifications.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              No hay notificaciones recientes.
+            </p>
+          ) : (
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className={`p-4 rounded-xl border transition ${n.read
+                    ? 'bg-gray-50 border-gray-200'
+                    : 'bg-sky-50 border-sky-200'
+                    }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-800">
+                        {n.title}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {n.message}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+
+                      {/* BOTÓN VER (SIEMPRE) */}
+                      <button
+                        onClick={() =>
+                          router.visit(
+                            route('admin.automation.show', n.report_id)
+                          )
+                        }
+                        className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded-full transition"
+                      >
+                        Ver
+                      </button>
+
+                      {/* BOTÓN MARCAR COMO LEÍDO (solo si no está leído) */}
+                      {!n.read && (
+                        <button
+                          onClick={() => {
+                            axios.post(`/admin/notifications/${n.id}/read`);
+                            setNotifications(prev =>
+                              prev.map(x =>
+                                x.id === n.id ? { ...x, read: true } : x
+                              )
+                            );
+                          }}
+                          className="text-xs text-sky-600 hover:underline"
+                        >
+                          Marcar como leído
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-gray-400 mt-2">
+                    {dayjs(n.created_at).format('DD/MM/YYYY HH:mm')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* ================= IOS NOTIFICATION n8n ================= */}
+      {automationReport && (
+        <IosNotification
+          color={performanceColor}
+          title="AppleBoss IA"
+          subtitle="Reporte semanal inteligente"
+          message={
+            parsedAutomation ? (
+              <>
+                {parsedAutomation.resumen_ejecutivo?.descripcion ?? ''}
+
+                <br />
+                <br />
+
+                💰 Utilidad: {fmtBs(utilidadSemana)}
+                <br />
+                {variacionIcon} Variación: {variacion}%
+              </>
+            ) : 'Nuevo análisis inteligente disponible'
+          }
+          onView={async () => {
+            try {
+              await axios.post(
+                route('admin.automation.markViewed', automationReport.id)
+              );
+            } catch { }
+
+            router.visit(
+              route('admin.automation.show', automationReport.id)
+            );
+          }}
+          onClose={() => setAutomationReport(null)}
+        />
       )}
+
 
       {/* ================= ACCIONES ================= */}
       <div className="px-4 mb-10">

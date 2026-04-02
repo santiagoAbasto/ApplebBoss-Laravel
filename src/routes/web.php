@@ -25,6 +25,10 @@ use App\Http\Controllers\Vendedor\ClienteVendedorController;
 use App\Http\Controllers\EgresoController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\Automation\AutomationReportController;
+use App\Http\Controllers\Admin\SystemNotificationController;
+
+use Illuminate\Http\Request;
+
 
 
 // 🏠 Ruta pública inicial
@@ -54,240 +58,404 @@ Route::middleware(['auth'])->group(function () {
 // ========================
 // 🛡️ RUTAS ADMINISTRADOR
 // ========================
-Route::middleware(['auth', 'verified', 'rol:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'rol:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
 
-    // 📊 Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    // ========================
-    // 🤖 AUTOMATION ALERTS (Dashboard IA)
-    // ========================
-    Route::prefix('automation')->group(function () {
+        // 📊 Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
 
-        // Obtener último reporte no leído (Dashboard)
-        Route::get('/reports/latest', [
-            AutomationReportController::class,
-            'latest'
-        ])->name('automation.reports.latest');
+        // ========================
+        // 🔔 NOTIFICACIONES SISTEMA
+        // ========================
+        Route::get('/notifications', [SystemNotificationController::class, 'index'])
+            ->name('notifications.index');
 
-        // Marcar reporte como leído
-        Route::post('/reports/{report}/read', [
-            AutomationReportController::class,
-            'markAsRead'
-        ])->name('automation.reports.read');
+        Route::post('/notifications/{notification}/read', [SystemNotificationController::class, 'markAsRead'])
+            ->name('notifications.read');
+
+        // ========================
+        // 🤖 AUTOMATION REPORTS
+        // ========================
+        Route::prefix('automation')
+            ->name('automation.')
+            ->group(function () {
+
+                Route::get('/latest-weekly', [AutomationReportController::class, 'latestWeekly'])
+                    ->name('latestWeekly');
+
+                Route::post('/{report}/mark-viewed', [AutomationReportController::class, 'markViewed'])
+                    ->name('markViewed');
+
+                Route::get('/{report}', [AutomationReportController::class, 'show'])
+                    ->name('show');
+            });
+
+        // ========================
+        // 📱 CRUD Celulares
+        // ========================
+        Route::resource('celulares', CelularController::class)
+            ->names('celulares')
+            ->parameters(['celulares' => 'celular']);
+
+        // ========================
+        // 💻 CRUD Computadoras
+        // ========================
+        Route::resource('computadoras', ComputadoraController::class)
+            ->names('computadoras');
+
+        // ========================
+        // 📦 Productos Generales
+        // ========================
+        Route::get('productos-generales/verificar-codigo', [ProductoGeneralController::class, 'verificarCodigo'])
+            ->name('productos-generales.verificar-codigo');
+
+        Route::resource('productos-generales', ProductoGeneralController::class)
+            ->names('productos-generales')
+            ->parameters(['productos-generales' => 'producto']);
+
+        // ========================
+        // 🛒 Ventas
+        // ========================
+        Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])
+            ->name('ventas.buscarNota');
+
+        Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])
+            ->name('ventas.boleta');
+
+        Route::get('/ventas/{venta}/boleta-80', [VentaController::class, 'boleta80'])
+            ->name('ventas.boleta80');
+
+        Route::resource('ventas', VentaController::class)
+            ->names('ventas')
+            ->parameters(['ventas' => 'venta']);
+
+        // ========================
+        // 🧰 Servicios Técnicos
+        // ========================
+        Route::resource('servicios', ServicioTecnicoController::class)
+            ->only(['index', 'create', 'store'])
+            ->names('servicios')
+            ->parameters(['servicios' => 'servicio']);
+
+        Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])
+            ->name('servicios.boleta');
+
+        Route::get('/servicios/{servicio}/recibo-80mm', [ServicioTecnicoController::class, 'recibo80mm'])
+            ->name('servicios.recibo80mm');
+
+        // ========================
+        // 📊 Reportes
+        // ========================
+        Route::get('/reportes', [ReporteController::class, 'index'])
+            ->name('reportes.index');
+
+        Route::get('/reportes/exportar', [ReporteController::class, 'exportar'])
+            ->name('reportes.exportar');
+
+        Route::get('/reportes/exportar-dia', [ReporteController::class, 'exportDia'])
+            ->name('reportes.exportar-dia');
+
+        Route::get('/reportes/exportar-semana', [ReporteController::class, 'exportSemana'])
+            ->name('reportes.exportar-semana');
+
+        Route::get('/reportes/exportar-mes', [ReporteController::class, 'exportMes'])
+            ->name('reportes.exportar-mes');
+
+        Route::get('/reportes/exportar-anio', [ReporteController::class, 'exportAnio'])
+            ->name('reportes.exportar-anio');
+
+        // ========================
+        // ✔️ Permuta habilitar
+        // ========================
+        Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])
+            ->name('celulares.habilitar');
+
+        Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])
+            ->name('computadoras.habilitar');
+
+        Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])
+            ->name('productos-generales.habilitar');
+
+        // ========================
+        // 📦 Cotizaciones
+        // ========================
+        Route::resource('cotizaciones', CotizacionController::class)
+            ->only(['index', 'create', 'store'])
+            ->names('cotizaciones');
+
+        Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])
+            ->name('cotizaciones.pdf');
+
+        Route::post('cotizaciones/{id}/reenviar', [CotizacionController::class, 'reenviarCorreo'])
+            ->name('cotizaciones.reenviar');
+
+        Route::post('cotizaciones/enviar-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])
+            ->name('cotizaciones.enviar-lote');
+
+        Route::get('cotizaciones/whatsapp-final', [CotizacionController::class, 'whatsappFinalLibre'])
+            ->name('cotizaciones.enviar-whatsapp-libre');
+
+        // ========================
+        // 📤 Exportaciones
+        // ========================
+        Route::get('/exportar', [ExportController::class, 'index'])
+            ->name('exportaciones.index');
+
+        Route::get('/exportar/celulares', [ExportController::class, 'celulares'])
+            ->name('exportar.celulares');
+
+        Route::get('/exportar/computadoras', [ExportController::class, 'computadoras'])
+            ->name('exportar.computadoras');
+
+        Route::get('/exportar/productos-generales', [ExportController::class, 'productosGenerales'])
+            ->name('exportar.productos-generales');
+
+        Route::get('/exportar/productos-generales/{tipo}', [ExportController::class, 'productosGeneralesPorTipo'])
+            ->name('exportar.productos-generales.tipo');
+
+        Route::get('/exportar/productos-apple', [ExportController::class, 'productosApple'])
+            ->name('exportar.productos-apple');
+
+        // ========================
+        // 🍎 Productos Apple
+        // ========================
+        Route::resource('productos-apple', ProductoAppleController::class)
+            ->names('productos-apple')
+            ->parameters(['productos-apple' => 'productoApple']);
+
+        // ========================
+        // 👥 Clientes
+        // ========================
+        Route::get('/clientes', [ClienteAdminController::class, 'index'])
+            ->name('clientes.index');
+
+        Route::get('/clientes/sugerencias', [ClienteAdminController::class, 'sugerencias'])
+            ->name('clientes.sugerencias');
+
+        Route::get('/clientes/{cliente}/edit', [ClienteAdminController::class, 'edit'])
+            ->name('clientes.edit');
+
+        Route::put('/clientes/{cliente}', [ClienteAdminController::class, 'update'])
+            ->name('clientes.update');
+
+        Route::post('/clientes/promociones/enviar', [ClienteAdminController::class, 'enviarPromocionMasiva'])
+            ->name('clientes.promociones.enviar');
+
+        // ========================
+        // 💰 Egresos
+        // ========================
+        Route::get('/egresos', [EgresoController::class, 'index'])
+            ->name('egresos.index');
+
+        Route::get('/egresos/create', [EgresoController::class, 'create'])
+            ->name('egresos.create');
+
+        Route::post('/egresos', [EgresoController::class, 'store'])
+            ->name('egresos.store');
+
+        Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])
+            ->name('egresos.exportar-pdf');
     });
-
-
-    // 📱 CRUD Celulares
-    Route::resource('celulares', CelularController::class)
-        ->names('celulares')
-        ->parameters(['celulares' => 'celular']);
-
-    // 💻 CRUD Computadoras
-    Route::resource('computadoras', ComputadoraController::class)
-        ->names('computadoras');
-
-    // 📦 CRUD Productos Generales
-    Route::resource('productos-generales', ProductoGeneralController::class)
-        ->names('productos-generales')
-        ->parameters(['productos-generales' => 'producto']);
-
-    // 🛒 CRUD Ventas (rutas especiales primero)
-    Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
-    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
-
-    Route::resource('ventas', VentaController::class)
-        ->names('ventas')
-        ->parameters(['ventas' => 'venta']);
-
-    // 🧰 CRUD Servicios Técnicos
-    Route::resource('servicios', ServicioTecnicoController::class)
-        ->only(['index', 'create', 'store'])
-        ->names('servicios')
-        ->parameters(['servicios' => 'servicio']);
-
-    // 🧾 Boleta A4
-    Route::get(
-        '/servicios/{servicio}/boleta',
-        [ServicioTecnicoController::class, 'boleta']
-    )->name('servicios.boleta');
-
-    // 🖨️ Recibo térmico 80mm
-    Route::get(
-        '/servicios/{servicio}/recibo-80mm',
-        [ServicioTecnicoController::class, 'recibo80mm']
-    )->name('servicios.recibo80mm');
-
-    Route::get(
-        '/ventas/{venta}/boleta-80',
-        [VentaController::class, 'boleta80']
-    )->name('ventas.boleta80');
-
-
-    // 📤 Exportaciones de servicios técnicos
-    Route::get('/servicios/exportar', [ServicioTecnicoController::class, 'exportar'])->name('servicios.exportar');
-    Route::get('/servicios/exportar-dia', [ServicioTecnicoController::class, 'exportarDia'])->name('servicios.exportar-dia');
-    Route::get('/servicios/exportar-semana', [ServicioTecnicoController::class, 'exportarSemana'])->name('servicios.exportar-semana');
-    Route::get('/servicios/exportar-mes', [ServicioTecnicoController::class, 'exportarMes'])->name('servicios.exportar-mes');
-    Route::get('/servicios/exportar-anio', [ServicioTecnicoController::class, 'exportarAnio'])->name('servicios.exportar-anio');
-    Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
-
-    // 📊 Reportes de ventas
-    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
-    Route::get('/reportes/exportar', [ReporteController::class, 'exportar'])->name('reportes.exportar');
-    Route::get('/reportes/exportar-dia', [ReporteController::class, 'exportDia'])->name('reportes.exportar-dia');
-    Route::get('/reportes/exportar-semana', [ReporteController::class, 'exportSemana'])->name('reportes.exportar-semana');
-    Route::get('/reportes/exportar-mes', [ReporteController::class, 'exportMes'])->name('reportes.exportar-mes');
-    Route::get('/reportes/exportar-anio', [ReporteController::class, 'exportAnio'])->name('reportes.exportar-anio');
-
-
-    // ✔️ Habilitar productos entregados por permuta
-    Route::patch('/celulares/{celular}/habilitar', [CelularController::class, 'habilitar'])->name('celulares.habilitar');
-    Route::patch('/computadoras/{computadora}/habilitar', [ComputadoraController::class, 'habilitar'])->name('computadoras.habilitar');
-    Route::patch('/productos-generales/{producto}/habilitar', [ProductoGeneralController::class, 'habilitar'])->name('productos-generales.habilitar');
-
-    // 📦 Cotizaciones
-    Route::resource('cotizaciones', CotizacionController::class)
-        ->only(['index', 'create', 'store'])
-        ->names('cotizaciones');
-
-    Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
-    Route::post('cotizaciones/{id}/reenviar', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
-    Route::post('cotizaciones/enviar-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.enviar-lote');
-
-    // 🟢 WhatsApp con mensaje profesional
-    Route::get('cotizaciones/whatsapp-final', [CotizacionController::class, 'whatsappFinalLibre'])->name('cotizaciones.enviar-whatsapp-libre');
-
-    // 📄 Vista índice de exportaciones (Ziggy depende de esta)
-    Route::get('/exportar', [ExportController::class, 'index'])->name('exportaciones.index');
-
-    // 📤 Exportaciones individuales
-    Route::get('/exportar/celulares', [ExportController::class, 'celulares'])->name('exportar.celulares');
-    Route::get('/exportar/computadoras', [ExportController::class, 'computadoras'])->name('exportar.computadoras');
-    Route::get('/exportar/productos-generales', [ExportController::class, 'productosGenerales'])->name('exportar.productos-generales');
-    Route::get('/exportar/productos-generales/{tipo}', [ExportController::class, 'productosGeneralesPorTipo'])->name('exportar.productos-generales.tipo');
-    Route::get('/exportar/productos-apple', [ExportController::class, 'productosApple'])->name('exportar.productos-apple');
-
-    // 🍎 CRUD Productos Apple
-    Route::resource('productos-apple', ProductoAppleController::class)
-        ->names('productos-apple')
-        ->parameters(['productos-apple' => 'productoApple']);
-
-    // 📇 CLIENTES - ADMIN
-    Route::get('/clientes', [ClienteAdminController::class, 'index'])->name('clientes.index');
-    Route::get('/clientes/sugerencias', [ClienteAdminController::class, 'sugerencias'])->name('clientes.sugerencias');
-    Route::get('/clientes/{cliente}/edit', [ClienteAdminController::class, 'edit'])->name('clientes.edit');
-    Route::put('/clientes/{cliente}', [ClienteAdminController::class, 'update'])->name('clientes.update');
-    Route::post('/clientes/promociones/enviar', [ClienteAdminController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
-
-    // EGRESOS ADMIN
-    Route::get('/egresos', [EgresoController::class, 'index'])->name('egresos.index');
-    Route::get('/egresos/create', [EgresoController::class, 'create'])->name('egresos.create');
-    Route::post('/egresos', [EgresoController::class, 'store'])->name('egresos.store');
-    Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])->name('egresos.exportar-pdf');
-});
+// ========================
+// 🤖 RUTA PARA n8n
+// ========================
+Route::post('/automation/store', [
+    AutomationReportController::class,
+    'store'
+])->name('automation.store');
 
 // ========================
 // 🧑‍💼 RUTAS VENDEDOR
-// =======================
+// ========================
 
-Route::middleware(['auth', 'verified', 'rol:vendedor'])->prefix('vendedor')->name('vendedor.')->group(function () {
+Route::middleware(['auth', 'verified', 'rol:vendedor'])
+    ->prefix('vendedor')
+    ->name('vendedor.')
+    ->group(function () {
 
-    Route::get('/dashboard', fn() => Inertia::render('Vendedor/Dashboard'))->name('dashboard');
-    Route::get('/dashboard', [DashboardVendedorController::class, 'index'])->name('dashboard');
+        // ========================
+        // 📊 DASHBOARD
+        // ========================
 
+        Route::get('/dashboard', [DashboardVendedorController::class, 'index'])
+            ->name('dashboard');
 
-    Route::get('/productos', [ProductoVendedorController::class, 'index'])->name('productos.index');
-    Route::get('/celulares', [CelularController::class, 'index'])->name('celulares.index');
-    Route::get('/computadoras', [ComputadoraController::class, 'index'])->name('computadoras.index');
-    Route::get('/productos-generales', [ProductoGeneralController::class, 'index'])->name('productos-generales.index');
+        // ========================
+        // 📦 PRODUCTOS
+        // ========================
 
-    // VENTAS
-    Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
-    Route::get('/ventas/create', [VentaController::class, 'create'])->name('ventas.create');
-    Route::post('/ventas', [VentaController::class, 'store'])->name('ventas.store');
-    Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])->name('ventas.boleta');
-    Route::get('/ventas/exportar/pdf', [VentaController::class, 'exportarVentasVendedor'])->name('ventas.exportar');
-    Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])->name('ventas.buscarNota');
-    // Buscar ventas
-    Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])->name('ventas.buscarSoloVentas');
+        Route::get('/productos', [ProductoVendedorController::class, 'index'])
+            ->name('productos.index');
 
-    // SERVICIO TÉCNICO
-    Route::get('/servicios', [ServicioTecnicoController::class, 'index'])->name('servicios.index');
-    Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])->name('servicios.create');
-    Route::post('/servicios', [ServicioTecnicoController::class, 'store'])->name('servicios.store');
-    Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])->name('servicios.exportarFiltrado');
-    Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])->name('servicios.boleta');
-    Route::get('/servicios/buscar', [ServicioTecnicoController::class, 'buscar'])->name('servicios.buscar');
-    Route::get('/servicios/exportar-resumen', [ServicioTecnicoController::class, 'exportarResumen'])->name('servicios.exportarResumen');
+        Route::get('/celulares', [CelularController::class, 'index'])
+            ->name('celulares.index');
 
-    // COTIZACIONES PARA VENDEDOR
-    Route::get('/cotizaciones', [CotizacionController::class, 'indexVendedor'])->name('cotizaciones.index');
-    Route::get('/cotizaciones/crear', [CotizacionController::class, 'createVendedor'])->name('cotizaciones.create');
-    Route::post('/cotizaciones', [CotizacionController::class, 'storeVendedor'])->name('cotizaciones.store');
-    Route::get('cotizaciones/pdf/{id}', [CotizacionController::class, 'exportarPDF'])->name('cotizaciones.pdf');
-    Route::get('cotizaciones/ver/{id}', [CotizacionController::class, 'verPDFLocalVendedor'])->name('cotizaciones.ver-pdf');
+        Route::get('/computadoras', [ComputadoraController::class, 'index'])
+            ->name('computadoras.index');
 
-    //WHATSAPP
-    Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])->name('cotizaciones.whatsapp');
-    Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])->name('cotizaciones.reenviar');
-    Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])->name('cotizaciones.whatsapp-lote');
+        Route::get('/productos-generales', [ProductoGeneralController::class, 'index'])
+            ->name('productos-generales.index');
 
-    // CLIENTES Y PROMOCIONES PARA VENDEDOR
-    Route::prefix('clientes')->group(function () {
-        Route::get('/', [ClienteVendedorController::class, 'index'])->name('clientes.index');
-        Route::get('/sugerencias', [ClienteVendedorController::class, 'sugerencias'])->name('clientes.sugerencias');
-        Route::get('/{id}/edit', [ClienteVendedorController::class, 'edit'])->name('clientes.edit');
-        Route::put('/{id}', [ClienteVendedorController::class, 'update'])->name('clientes.update');
-        Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])->name('clientes.promociones.enviar');
+        // ========================
+        // 🛒 VENTAS
+        // ========================
 
-        // 🧾 Boleta A4
-        Route::get(
-            '/servicios/{servicio}/boleta',
-            [ServicioTecnicoController::class, 'boleta']
-        )->name('servicios.boleta');
+        Route::get('/ventas', [VentaController::class, 'index'])
+            ->name('ventas.index');
 
-        // 🖨️ Recibo térmico 80mm
-        Route::get(
-            '/servicios/{servicio}/recibo-80mm',
-            [ServicioTecnicoController::class, 'recibo80mm']
-        )->name('servicios.recibo80mm');
+        Route::get('/ventas/create', [VentaController::class, 'create'])
+            ->name('ventas.create');
+
+        Route::post('/ventas', [VentaController::class, 'store'])
+            ->name('ventas.store');
+
+        Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])
+            ->name('ventas.boleta');
+
+        Route::get('/ventas/{venta}/boleta-80', [VentaController::class, 'boleta80'])
+            ->name('ventas.boleta80');
+
+        Route::get('/ventas/exportar/pdf', [VentaController::class, 'exportarVentasVendedor'])
+            ->name('ventas.exportar');
+
+        Route::get('/ventas/buscar-nota', [VentaController::class, 'buscarNota'])
+            ->name('ventas.buscarNota');
+
+        Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])
+            ->name('ventas.buscarSoloVentas');
+
+        // ========================
+        // 🧰 SERVICIO TÉCNICO
+        // ========================
+
+        Route::get('/servicios', [ServicioTecnicoController::class, 'index'])
+            ->name('servicios.index');
+
+        Route::get('/servicios/create', [ServicioTecnicoController::class, 'create'])
+            ->name('servicios.create');
+
+        Route::post('/servicios', [ServicioTecnicoController::class, 'store'])
+            ->name('servicios.store');
+
+        Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])
+            ->name('servicios.boleta'); // ✅ CORREGIDO
+
+        Route::get('/servicios/{servicio}/recibo-80mm', [ServicioTecnicoController::class, 'recibo80mm'])
+            ->name('servicios.recibo80mm');
+
+        Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])
+            ->name('servicios.exportarFiltrado');
+
+        Route::get('/servicios/exportar-resumen', [ServicioTecnicoController::class, 'exportarResumen'])
+            ->name('servicios.exportarResumen');
+
+        Route::get('/servicios/buscar', [ServicioTecnicoController::class, 'buscar'])
+            ->name('servicios.buscar');
+
+        // ========================
+        // 📄 COTIZACIONES
+        // ========================
+
+        Route::get('/cotizaciones', [CotizacionController::class, 'indexVendedor'])
+            ->name('cotizaciones.index');
+
+        Route::get('/cotizaciones/crear', [CotizacionController::class, 'createVendedor'])
+            ->name('cotizaciones.create');
+
+        Route::post('/cotizaciones', [CotizacionController::class, 'storeVendedor'])
+            ->name('cotizaciones.store');
+
+        Route::get('/cotizaciones/pdf/{id}', [CotizacionController::class, 'exportarPDF'])
+            ->name('cotizaciones.pdf');
+
+        Route::get('/cotizaciones/ver/{id}', [CotizacionController::class, 'verPDFLocalVendedor'])
+            ->name('cotizaciones.ver-pdf');
+
+        Route::get('/cotizaciones/whatsapp/{id}', [CotizacionController::class, 'whatsappFinal'])
+            ->name('cotizaciones.whatsapp');
+
+        Route::post('/cotizaciones/reenviar/{id}', [CotizacionController::class, 'reenviarCorreo'])
+            ->name('cotizaciones.reenviar');
+
+        Route::post('/cotizaciones/whatsapp-lote', [CotizacionController::class, 'enviarLoteWhatsapp'])
+            ->name('cotizaciones.whatsapp-lote');
+
+        // ========================
+        // 👥 CLIENTES
+        // ========================
+
+        Route::prefix('clientes')
+            ->name('clientes.')
+            ->group(function () {
+
+                Route::get('/', [ClienteVendedorController::class, 'index'])
+                    ->name('index');
+
+                Route::get('/sugerencias', [ClienteVendedorController::class, 'sugerencias'])
+                    ->name('sugerencias');
+
+                Route::get('/{id}/edit', [ClienteVendedorController::class, 'edit'])
+                    ->name('edit');
+
+                Route::put('/{id}', [ClienteVendedorController::class, 'update'])
+                    ->name('update');
+
+                Route::post('/promociones/enviar', [ClienteVendedorController::class, 'enviarPromocionMasiva'])
+                    ->name('promociones.enviar');
+            });
     });
-    // 🟢 WhatsApp boleta 8 cm
-    Route::get(
-        '/ventas/{venta}/boleta-80',
-        [VentaController::class, 'boleta80']
-    )->name('ventas.boleta80');
-});
+
 
 // ========================
 // 🔄 API & EXTRAS
 // ========================
 
+// Permutas rápidas
 Route::get('/api/permuta/{tipo}', function ($tipo) {
-    if ($tipo === 'celular') {
-        return \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get();
-    } elseif ($tipo === 'computadora') {
-        return \App\Models\Computadora::where('estado', 'permuta')->latest()->take(10)->get();
-    } elseif ($tipo === 'producto_general') {
-        return \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get();
-    }
-    return response()->json([], 404);
+
+    return match ($tipo) {
+        'celular' => \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get(),
+        'computadora' => \App\Models\Computadora::where('estado', 'permuta')->latest()->take(10)->get(),
+        'producto_general' => \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get(),
+        default => response()->json([], 404),
+    };
 });
 
-Route::prefix('api/stock')->name('api.stock.')->group(function () {
-    Route::get('celulares', [StockController::class, 'celulares'])->name('celulares');
-    Route::get('computadoras', [StockController::class, 'computadoras'])->name('computadoras');
-    Route::get('productos-generales', [StockController::class, 'productosGenerales'])->name('productos_generales');
-    Route::get('productos-apple', [StockController::class, 'productosApple'])->name('productos_apple');
 
-    // ✅ Búsqueda por código (POST)
-    Route::post('buscar', [StockController::class, 'buscarPorCodigo'])->name('buscar_codigo');
-});
+// API STOCK
+Route::prefix('api/stock')
+    ->name('api.stock.')
+    ->group(function () {
 
-Route::get('/google-auth', [GoogleDriveController::class, 'redirectToGoogle'])->name('google.auth');
-Route::get('/oauth2callback', [GoogleDriveController::class, 'handleGoogleCallback'])->name('google.callback');
+        Route::get('celulares', [StockController::class, 'celulares'])
+            ->name('celulares');
+
+        Route::get('computadoras', [StockController::class, 'computadoras'])
+            ->name('computadoras');
+
+        Route::get('productos-generales', [StockController::class, 'productosGenerales'])
+            ->name('productos_generales');
+
+        Route::get('productos-apple', [StockController::class, 'productosApple'])
+            ->name('productos_apple');
+
+        Route::post('buscar', [StockController::class, 'buscarPorCodigo'])
+            ->name('buscar_codigo');
+    });
 
 
+// Google Drive OAuth
+Route::get('/google-auth', [GoogleDriveController::class, 'redirectToGoogle'])
+    ->name('google.auth');
+
+Route::get('/oauth2callback', [GoogleDriveController::class, 'handleGoogleCallback'])
+    ->name('google.callback');
+
+
+// API Permuta Store
 Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
 Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
 Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);

@@ -17,6 +17,17 @@ class VentaItem extends Model
         'precio_invertido',
         'descuento',
         'subtotal',
+
+        // 🔥 SNAPSHOT BI
+        'categoria',
+        'nombre_producto',
+        'modelo',
+        'capacidad',
+        'color',
+        'bateria',
+        'procesador',
+        'ram',
+        'almacenamiento',
     ];
 
     public function venta()
