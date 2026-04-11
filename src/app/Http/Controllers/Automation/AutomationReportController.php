@@ -7,20 +7,29 @@ use Illuminate\Http\Request;
 use App\Models\AutomationReport;
 use App\Models\AutomationReportView;
 use App\Models\SystemNotification;
+use Illuminate\Support\Facades\Schema;
 
 class AutomationReportController extends Controller
 {
-    /**
-     * 🔐 Verifica token seguro para n8n
-     */
-    protected function authorizeAutomation(Request $request): void
+    private function latestClosedReport()
     {
-        $incomingToken = (string) $request->header('X-AUTOMATION-TOKEN');
-        $systemToken   = (string) config('app.automation_token');
+        return AutomationReport::whereDate('period_end', '<=', now())
+            ->latest('period_end')
+            ->first();
+    }
 
-        if (!hash_equals($systemToken, $incomingToken)) {
-            abort(403, 'Unauthorized');
-        }
+    private function wasViewedByCurrentUser(AutomationReport $report): bool
+    {
+        return AutomationReportView::where('report_id', $report->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+    }
+
+    private function serializeReport(AutomationReport $report): AutomationReport
+    {
+        $report->setAttribute('content', json_encode($report->content));
+
+        return $report;
     }
 
     /**
@@ -29,8 +38,6 @@ class AutomationReportController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorizeAutomation($request);
-
         $validated = $request->validate([
             'period'        => ['required', 'string', 'max:20'],
             'period_start'  => ['required', 'date'],
@@ -57,16 +64,18 @@ class AutomationReportController extends Controller
         | 🔔 Crear notificación del sistema
         |--------------------------------------------------------------------------
         */
-        SystemNotification::updateOrCreate(
-            [
-                'type'      => 'report',
-                'report_id' => $saved->id,
-            ],
-            [
-                'title'   => 'Nuevo análisis inteligente disponible',
-                'message' => 'Se generó el reporte automático del periodo ' . $validated['period'],
-            ]
-        );
+        if (Schema::hasTable('system_notifications')) {
+            SystemNotification::updateOrCreate(
+                [
+                    'type'      => 'report',
+                    'report_id' => $saved->id,
+                ],
+                [
+                    'title'   => 'Nuevo análisis inteligente disponible',
+                    'message' => 'Se generó el reporte automático del periodo ' . $validated['period'],
+                ]
+            );
+        }
 
         return response()->json([
             'ok' => true,
@@ -86,21 +95,40 @@ class AutomationReportController extends Controller
             return response()->json(['show' => false]);
         }
 
-        $report = AutomationReport::whereDate('period_end', '<=', now())
-            ->latest('period_end')
-            ->first();
+        $report = $this->latestClosedReport();
 
         if (!$report) {
             return response()->json(['show' => false]);
         }
 
-        $alreadyViewed = AutomationReportView::where('report_id', $report->id)
-            ->where('user_id', $user->id)
-            ->exists();
+        $alreadyViewed = $this->wasViewedByCurrentUser($report);
 
         return response()->json([
             'show'   => !$alreadyViewed,
-            'report' => $report,
+            'report' => $this->serializeReport($report),
+        ]);
+    }
+
+    /**
+     * 📅 Último reporte semanal para el dashboard admin
+     */
+    public function latestWeekly()
+    {
+        $user = auth()->user();
+
+        if (!$user || $user->rol !== 'admin') {
+            return response()->json(['show' => false]);
+        }
+
+        $report = $this->latestClosedReport();
+
+        if (! $report) {
+            return response()->json(['show' => false]);
+        }
+
+        return response()->json([
+            'show'   => ! $this->wasViewedByCurrentUser($report),
+            'report' => $this->serializeReport($report),
         ]);
     }
 
@@ -130,5 +158,10 @@ class AutomationReportController extends Controller
         );
 
         return response()->json(['ok' => true]);
+    }
+
+    public function markAsRead(AutomationReport $report)
+    {
+        return $this->markViewed($report);
     }
 }

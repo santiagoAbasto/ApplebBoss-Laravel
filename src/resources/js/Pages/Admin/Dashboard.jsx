@@ -8,6 +8,7 @@ import EconomicCharts from '@/Components/EconomicCharts';
 import SalesChart from '@/Components/SalesChart';
 import DashboardActions from '@/Components/DashboardActions';
 import IosNotification from "@/Components/IosNotification";
+import { Bell, ChartColumnBig, DollarSign, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 
 
 import axios from 'axios';
@@ -126,7 +127,9 @@ export default function Dashboard({
     if (!automationReport?.content) return null;
 
     try {
-      return JSON.parse(automationReport.content);
+      return typeof automationReport.content === 'string'
+        ? JSON.parse(automationReport.content)
+        : automationReport.content;
     } catch {
       return null;
     }
@@ -152,9 +155,11 @@ export default function Dashboard({
         : 'sky';
 
   const variacionIcon =
-    variacion > 0 ? '📈'
-      : variacion < 0 ? '📉'
-        : '➖';
+    variacion > 0 ? TrendingUp
+      : variacion < 0 ? TrendingDown
+        : Minus;
+
+  const VariacionIcon = variacionIcon;
 
 
 
@@ -179,7 +184,10 @@ export default function Dashboard({
         <div className="bg-white rounded-2xl shadow-lg border p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800">
-              🔔 Centro de Notificaciones
+              <span className="inline-flex items-center gap-2">
+                <Bell size={18} />
+                Centro de Notificaciones
+              </span>
             </h2>
             <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
               {notifications.filter(n => !n.read).length} nuevas
@@ -267,9 +275,15 @@ export default function Dashboard({
                 <br />
                 <br />
 
-                💰 Utilidad: {fmtBs(utilidadSemana)}
+                <span className="inline-flex items-center gap-1">
+                  <DollarSign size={14} />
+                  Utilidad: {fmtBs(utilidadSemana)}
+                </span>
                 <br />
-                {variacionIcon} Variación: {variacion}%
+                <span className="inline-flex items-center gap-1">
+                  <VariacionIcon size={14} />
+                  Variacion: {variacion}%
+                </span>
               </>
             ) : 'Nuevo análisis inteligente disponible'
           }

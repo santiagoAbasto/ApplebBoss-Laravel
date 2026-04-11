@@ -36,6 +36,7 @@ export default function EnviarWhatsapp({ telefono, mensaje }) {
         <a
           href={`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`}
           target="_blank"
+          rel="noopener noreferrer"
         >
           clic aquí
         </a>.

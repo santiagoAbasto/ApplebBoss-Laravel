@@ -98,7 +98,7 @@ class StockController extends Controller
                 'tipo' => 'computadora',
                 'producto' => [
                     'id' => $computadora->id,
-                    'nombre' => $computadora->modelo,
+                    'nombre' => $computadora->nombre,
                     'precio_venta' => $computadora->precio_venta,
                     'precio_costo' => $computadora->precio_costo,
                     'stock' => 1,

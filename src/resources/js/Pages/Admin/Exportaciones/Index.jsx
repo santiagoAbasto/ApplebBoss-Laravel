@@ -1,6 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import { Apple, FolderTree, Laptop, Boxes, Smartphone, Upload } from 'lucide-react';
 
 /* =======================
    CRUD UI (OFICIAL)
@@ -24,7 +25,10 @@ export default function ExportacionesIndex({ subtipos }) {
         {/* ================= HEADER ================= */}
         <CrudHeader>
           <div>
-            <CrudTitle>📤 Exportaciones</CrudTitle>
+            <CrudTitle>
+              <Upload size={22} />
+              Exportaciones
+            </CrudTitle>
             <CrudSubtitle>
               Exportación de inventario y subcategorías
             </CrudSubtitle>
@@ -38,25 +42,25 @@ export default function ExportacionesIndex({ subtipos }) {
           <CrudGrid>
             <ExportCard
               href={route('admin.exportar.celulares')}
-              icon="📱"
+              icon={<Smartphone size={18} />}
               title="Celulares"
               description="Exportar todos los celulares disponibles."
             />
             <ExportCard
               href={route('admin.exportar.computadoras')}
-              icon="💻"
+              icon={<Laptop size={18} />}
               title="Computadoras"
               description="Exportar todas las computadoras disponibles."
             />
             <ExportCard
               href={route('admin.exportar.productos-generales')}
-              icon="📦"
+              icon={<Boxes size={18} />}
               title="Productos Generales"
               description="Exportar todo el inventario general."
             />
             <ExportCard
               href={route('admin.exportar.productos-apple')}
-              icon="🍏"
+              icon={<Apple size={18} />}
               title="Productos Apple"
               description="Exportar todos los productos Apple."
             />
@@ -78,7 +82,7 @@ export default function ExportacionesIndex({ subtipos }) {
                     'admin.exportar.productos-generales.tipo',
                     subtipo
                   )}
-                  icon="🗂"
+                  icon={<FolderTree size={18} />}
                   title={subtipo}
                   description="Exportar productos de esta subcategoría."
                 />
@@ -129,9 +133,13 @@ function ExportCard({ href, icon, title, description }) {
           fontWeight: 800,
           color: '#0f172a',
           marginBottom: 6,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
         }}
       >
-        {icon} {title}
+        {icon}
+        <span>{title}</span>
       </div>
 
       <p

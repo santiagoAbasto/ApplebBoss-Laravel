@@ -37,7 +37,7 @@ export default function Index({ ventas }) {
       });
       setResultadosBusqueda(response.data);
     } catch (error) {
-      console.error('❌ Error al buscar nota:', error);
+      console.error('Error al buscar nota:', error);
     }
   };
 
@@ -195,9 +195,10 @@ export default function Index({ ventas }) {
                         : route('admin.ventas.boleta', r.id_real)
                     }
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    🧾 Normal
+                    Normal
                   </a>
 
                   <a
@@ -207,9 +208,10 @@ export default function Index({ ventas }) {
                         : route('admin.ventas.boleta80', r.id_real)
                     }
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm text-green-600 hover:underline"
                   >
-                    🖨 Térmica
+                    Térmica
                   </a>
                 </div>
               </div>
@@ -297,16 +299,18 @@ export default function Index({ ventas }) {
                         <a
                           href={route('admin.ventas.boleta', i.id_venta)}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:underline"
                         >
-                          🧾 Normal
+                          Normal
                         </a>
                         <a
                           href={route('admin.ventas.boleta80', i.id_venta)}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="text-xs text-green-600 hover:underline"
                         >
-                          🖨 Térmica
+                          Térmica
                         </a>
                       </div>
                     </td>

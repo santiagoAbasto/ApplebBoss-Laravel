@@ -15,6 +15,13 @@ use App\Models\Cliente;
 
 class ServicioTecnicoController extends Controller
 {
+    private function authorizeServicioAccess(ServicioTecnico $servicio): void
+    {
+        if (Auth::user()->rol === 'vendedor' && (int) $servicio->user_id !== (int) Auth::id()) {
+            abort(404);
+        }
+    }
+
     /* ======================================================
      * INDEX
      * ====================================================== */
@@ -107,19 +114,22 @@ class ServicioTecnicoController extends Controller
                 ]
             );
 
-            ServicioTecnico::create([
-                'codigo_nota'       => GeneradorCodigos::siguienteServicioTecnico(),
-                'cliente'           => $cliente->nombre,
-                'telefono'          => $cliente->telefono,
-                'equipo'            => $data['equipo'],
-                'detalle_servicio'  => $data['detalle_servicio'],
-                'notas_adicionales' => $data['notas_adicionales'] ?? null,
-                'precio_costo'      => $data['precio_costo'],
-                'precio_venta'      => $data['precio_venta'],
-                'tecnico'           => $data['tecnico'],
-                'fecha'             => $data['fecha'] ?? now('America/La_Paz'),
-                'user_id'           => auth()->id(),
-            ]);
+            GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigo) use ($cliente, $data) {
+                ServicioTecnico::create([
+                    'codigo_nota'       => $codigo,
+                    'cliente_id'        => $cliente->id,
+                    'cliente'           => $cliente->nombre,
+                    'telefono'          => $cliente->telefono,
+                    'equipo'            => $data['equipo'],
+                    'detalle_servicio'  => $data['detalle_servicio'],
+                    'notas_adicionales' => $data['notas_adicionales'] ?? null,
+                    'precio_costo'      => $data['precio_costo'],
+                    'precio_venta'      => $data['precio_venta'],
+                    'tecnico'           => $data['tecnico'],
+                    'fecha'             => $data['fecha'] ?? now('America/La_Paz'),
+                    'user_id'           => auth()->id(),
+                ]);
+            });
 
             \Log::info('SERVICIO TECNICO GUARDADO', $data);
 
@@ -253,6 +263,7 @@ class ServicioTecnicoController extends Controller
     public function exportarResumen(Request $request)
     {
         $servicios = ServicioTecnico::with('vendedor')
+            ->when(Auth::user()->rol === 'vendedor', fn($q) => $q->where('user_id', Auth::id()))
             ->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin])
             ->orderByDesc('fecha')
             ->get();
@@ -269,6 +280,8 @@ class ServicioTecnicoController extends Controller
      * ====================================================== */
     public function boleta(ServicioTecnico $servicio)
     {
+        $this->authorizeServicioAccess($servicio);
+
         $servicio->load('vendedor');
 
         $servicios_cliente = collect(json_decode($servicio->detalle_servicio, true))
@@ -284,6 +297,8 @@ class ServicioTecnicoController extends Controller
 
     public function recibo80mm(ServicioTecnico $servicio)
     {
+        $this->authorizeServicioAccess($servicio);
+
         $servicios_cliente = collect(json_decode($servicio->detalle_servicio, true));
 
         return Pdf::loadView('pdf.recibo_servicio_80mm', compact('servicio', 'servicios_cliente'))

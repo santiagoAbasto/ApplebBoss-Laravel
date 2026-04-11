@@ -515,7 +515,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
               onClick={agregarItem}
               className="h-[46px] rounded-xl bg-emerald-600 text-white font-semibold px-6 hover:bg-emerald-700 active:scale-95 transition"
             >
-              ➕ Agregar
+              Agregar
             </button>
           </div>
         )}
@@ -606,7 +606,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
                 className="btn btn-secondary flex items-center gap-2"
                 onClick={() => setModalAbierto(true)}
               >
-                ➕ Registrar producto entregado
+                Registrar producto entregado
               </button>
             )}
           </>

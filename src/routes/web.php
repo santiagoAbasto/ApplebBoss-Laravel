@@ -265,7 +265,7 @@ Route::middleware(['auth', 'verified', 'rol:admin'])
 Route::post('/automation/store', [
     AutomationReportController::class,
     'store'
-])->name('automation.store');
+])->middleware('automation')->name('automation.store');
 
 // ========================
 // 🧑‍💼 RUTAS VENDEDOR
@@ -426,7 +426,8 @@ Route::get('/api/permuta/{tipo}', function ($tipo) {
 
 
 // API STOCK
-Route::prefix('api/stock')
+Route::middleware(['auth', 'verified'])
+    ->prefix('api/stock')
     ->name('api.stock.')
     ->group(function () {
 
@@ -448,16 +449,20 @@ Route::prefix('api/stock')
 
 
 // Google Drive OAuth
-Route::get('/google-auth', [GoogleDriveController::class, 'redirectToGoogle'])
-    ->name('google.auth');
+Route::middleware(['auth', 'verified', 'rol:admin'])->group(function () {
+    Route::get('/google-auth', [GoogleDriveController::class, 'redirectToGoogle'])
+        ->name('google.auth');
 
-Route::get('/oauth2callback', [GoogleDriveController::class, 'handleGoogleCallback'])
-    ->name('google.callback');
+    Route::get('/oauth2callback', [GoogleDriveController::class, 'handleGoogleCallback'])
+        ->name('google.callback');
+});
 
 
 // API Permuta Store
-Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
-Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
-Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
+    Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
+    Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);
+});
 
 require __DIR__ . '/auth.php';

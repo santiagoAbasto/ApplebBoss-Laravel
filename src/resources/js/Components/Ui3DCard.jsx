@@ -36,7 +36,7 @@ const Ui3DCard = ({
           {/* FOOTER */}
           <div className="bottom">
             <span className="status">
-              {progress >= 100 ? 'Meta alcanzada 🎉' : 'Progreso actual'}
+              {progress >= 100 ? 'Meta alcanzada' : 'Progreso actual'}
             </span>
           </div>
         </div>

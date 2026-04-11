@@ -24,7 +24,7 @@ class ComputadoraController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'procesador' => 'nullable|string|max:100',
             'numero_serie' => 'required|string|unique:computadoras,numero_serie',
@@ -38,7 +38,7 @@ class ComputadoraController extends Controller
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
 
-        Computadora::create($request->all());
+        Computadora::create($validated);
 
         return redirect(
             $request->get('return_to', route('admin.computadoras.index'))
@@ -61,7 +61,7 @@ class ComputadoraController extends Controller
 
     public function update(Request $request, Computadora $computadora)
     {
-        $request->validate([
+        $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'procesador' => 'nullable|string|max:100',
             'numero_serie' => 'required|string|unique:computadoras,numero_serie,' . $computadora->id,
@@ -75,7 +75,7 @@ class ComputadoraController extends Controller
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
 
-        $computadora->update($request->all());
+        $computadora->update($validated);
 
         return redirect()->route('admin.computadoras.index')->with('success', 'Computadora actualizada correctamente.');
     }

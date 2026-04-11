@@ -10,9 +10,10 @@ class AutomationTokenMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->header('X-AUTOMATION-TOKEN');
+        $token = (string) $request->header('X-AUTOMATION-TOKEN');
+        $expected = (string) config('automation.token');
 
-        if (!$token || $token !== config('automation.token')) {
+        if ($token === '' || $expected === '' || ! hash_equals($expected, $token)) {
             return response()->json([
                 'message' => 'Unauthorized automation request'
             ], 401);

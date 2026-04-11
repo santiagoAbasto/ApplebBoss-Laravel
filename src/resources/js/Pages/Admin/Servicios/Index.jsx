@@ -89,7 +89,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
             </CrudSubtitle>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <CrudButtonPrimary
               as={Link}
               href={route('admin.servicios.create')}
@@ -220,8 +220,8 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
         <CrudCard>
           <CrudSectionTitle>Listado de servicios</CrudSectionTitle>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="d-none d-md-block" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
               <thead>
                 <tr style={{ background: '#1e40af', color: '#fff' }}>
                   {[
@@ -286,6 +286,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                             <a
                               href={route('admin.servicios.boleta', { servicio: s.id })}
                               target="_blank"
+                              rel="noopener noreferrer"
                               className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
                             >
                               <FileText size={12} />
@@ -324,6 +325,84 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="d-md-none" style={{ display: 'grid', gap: 12 }}>
+            {listaFinal.length > 0 ? (
+              listaFinal.map((s) => {
+                const costo = parseFloat(s.precio_costo || 0);
+                const venta = parseFloat(s.precio_venta || 0);
+                const ganancia = venta - costo;
+
+                return (
+                  <div
+                    key={s.id}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 16,
+                      padding: 14,
+                      background: '#fff',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{s.cliente}</div>
+                        <div style={{ fontSize: 12, color: '#1d4ed8', fontFamily: 'monospace' }}>{s.codigo_nota || '—'}</div>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#64748b', textAlign: 'right' }}>
+                        {dayjs(s.fecha).format('DD/MM/YYYY')}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gap: 6, fontSize: 14, color: '#334155' }}>
+                      <div><strong>Equipo:</strong> {s.equipo}</div>
+                      <div><strong>Técnico:</strong> {s.tecnico}</div>
+                      <div><strong>Vendedor:</strong> {s.vendedor?.name || '—'}</div>
+                      <div><strong>Costo:</strong> {costo.toFixed(2)} Bs</div>
+                      <div><strong>Venta:</strong> {venta.toFixed(2)} Bs</div>
+                      <div><strong>Ganancia:</strong> <span style={{ color: ganancia >= 0 ? '#16a34a' : '#dc2626', fontWeight: 700 }}>{ganancia.toFixed(2)} Bs</span></div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <a
+                        href={route('admin.servicios.boleta', { servicio: s.id })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs px-3 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <FileText size={14} />
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open(
+                            route('admin.servicios.recibo80mm', { servicio: s.id }),
+                            '_blank'
+                          )
+                        }
+                        className="text-xs px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      >
+                        <Printer size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div
+                style={{
+                  padding: 20,
+                  textAlign: 'center',
+                  color: '#64748b',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 16,
+                }}
+              >
+                No hay servicios registrados.
+              </div>
+            )}
           </div>
         </CrudCard>
       </CrudWrapper>

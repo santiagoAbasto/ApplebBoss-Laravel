@@ -8,7 +8,7 @@ export default function Index({ clientes }) {
   const [enviando, setEnviando] = useState(false);
 
   const mensaje = encodeURIComponent(
-    `🎉 ¡Hola! En AppleBoss tenemos promociones especiales para ti. 💥 No te las pierdas. Visítanos o escríbenos ahora mismo 📱`
+    'Hola. En AppleBoss tenemos promociones especiales para ti. No te las pierdas. Visitanos o escribenos ahora mismo.'
   );
 
   /* ===============================
@@ -43,17 +43,17 @@ export default function Index({ clientes }) {
           const esCelular = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
           if (esCelular) {
-            window.open(enlaceApp, '_blank');
+            window.open(enlaceApp, '_blank', 'noopener,noreferrer');
           } else {
-            const win = window.open(enlaceApp, '_blank');
+            const win = window.open(enlaceApp, '_blank', 'noopener,noreferrer');
             setTimeout(() => {
               if (!win || win.closed) {
-                window.open(enlaceWeb, '_blank');
+                window.open(enlaceWeb, '_blank', 'noopener,noreferrer');
               }
             }, 800);
           }
         } else {
-          console.warn(`❌ Número inválido omitido: ${cliente.telefono}`);
+          console.warn(`Numero invalido omitido: ${cliente.telefono}`);
         }
 
         if (index === clientes.length - 1) {

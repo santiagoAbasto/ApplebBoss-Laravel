@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 import axios from 'axios';
+import { PlusCircle, Printer, Receipt } from 'lucide-react';
 
 export default function Index({ ventas }) {
   const [codigoNota, setCodigoNota] = useState('');
@@ -18,7 +19,7 @@ export default function Index({ ventas }) {
       });
       setResultadosBusqueda(response.data);
     } catch (error) {
-      console.error('❌ Error al buscar nota:', error);
+      console.error('Error al buscar nota:', error);
     }
   };
 
@@ -109,7 +110,8 @@ export default function Index({ ventas }) {
             bg-emerald-600 hover:bg-emerald-700
             text-white text-sm font-semibold shadow transition"
         >
-          ➕ Nueva Venta
+          <PlusCircle size={18} />
+          Nueva Venta
         </Link>
       </div>
 
@@ -163,9 +165,13 @@ export default function Index({ ventas }) {
                       : route('vendedor.ventas.boleta', r.id_real)
                   }
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="text-emerald-600 hover:underline font-medium"
                 >
-                  🧾 Normal
+                  <span className="inline-flex items-center gap-1">
+                    <Receipt size={14} />
+                    Normal
+                  </span>
                 </a>
 
                 <a
@@ -175,9 +181,13 @@ export default function Index({ ventas }) {
                       : route('vendedor.ventas.boleta80', r.id_real)
                   }
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="text-blue-600 hover:underline font-medium"
                 >
-                  🖨 Térmica
+                  <span className="inline-flex items-center gap-1">
+                    <Printer size={14} />
+                    Térmica
+                  </span>
                 </a>
               </div>
             </div>
@@ -186,8 +196,8 @@ export default function Index({ ventas }) {
       )}
 
       {/* TABLA */}
-      <div className="rounded-2xl border bg-white shadow-sm overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="hidden md:block rounded-2xl border bg-white shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[1180px]">
           <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
             <tr>
               <th className="px-4 py-3 text-left">Cliente</th>
@@ -247,16 +257,24 @@ export default function Index({ ventas }) {
                     <a
                       href={route('vendedor.ventas.boleta', i.id_venta)}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="text-emerald-600 hover:underline"
                     >
-                      🧾 Normal
+                      <span className="inline-flex items-center gap-1">
+                        <Receipt size={14} />
+                        Normal
+                      </span>
                     </a>
                     <a
                       href={route('vendedor.ventas.boleta80', i.id_venta)}
                       target="_blank"
+                      rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      🖨 Térmica
+                      <span className="inline-flex items-center gap-1">
+                        <Printer size={14} />
+                        Térmica
+                      </span>
                     </a>
                   </div>
                 </td>
@@ -274,6 +292,67 @@ export default function Index({ ventas }) {
             <div className="text-2xl font-bold text-emerald-600">
               {gananciaTotal.toFixed(2)} Bs
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:hidden">
+        {itemsDesglosados.map((i, idx) => (
+          <div key={idx} className="rounded-2xl border bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold text-slate-800">{i.cliente}</div>
+                <div className="font-mono text-sm text-emerald-700">{i.codigoNota}</div>
+              </div>
+              <div className="text-right text-xs text-slate-500">
+                {new Date(i.fecha).toLocaleDateString('es-BO')}
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-2 text-sm text-slate-600">
+              <div><strong>Producto:</strong> {i.producto}</div>
+              <div><strong>Venta:</strong> {i.precioVenta.toFixed(2)} Bs</div>
+              <div><strong>Desc.:</strong> -{i.descuento.toFixed(2)} Bs</div>
+              <div><strong>Permuta:</strong> -{i.permuta.toFixed(2)} Bs</div>
+              <div><strong>Capital:</strong> -{i.capital.toFixed(2)} Bs</div>
+              <div><strong>Final:</strong> {i.precioFinal.toFixed(2)} Bs</div>
+              <div className={i.ganancia < 0 ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>
+                <strong>Ganancia:</strong> {i.ganancia < 0 ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}` : `${i.ganancia.toFixed(2)} Bs`}
+              </div>
+              <div><strong>Vendedor:</strong> {i.vendedor}</div>
+            </div>
+
+            <div className="mt-4 flex gap-4 text-sm">
+              <a
+                href={route('vendedor.ventas.boleta', i.id_venta)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 hover:underline font-medium"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Receipt size={14} />
+                  Normal
+                </span>
+              </a>
+              <a
+                href={route('vendedor.ventas.boleta80', i.id_venta)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline font-medium"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Printer size={14} />
+                  Térmica
+                </span>
+              </a>
+            </div>
+          </div>
+        ))}
+
+        <div className="rounded-2xl border bg-slate-50 px-4 py-5 text-right">
+          <div className="text-sm text-slate-600">Ganancia Total Positiva</div>
+          <div className="text-2xl font-bold text-emerald-600">
+            {gananciaTotal.toFixed(2)} Bs
           </div>
         </div>
       </div>

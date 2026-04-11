@@ -1,11 +1,23 @@
 import { Link, Head, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { route } from 'ziggy-js';
 import ConfirmLogoutModal from '@/Components/ConfirmLogoutModal';
 
 export default function AdminLayout({ children }) {
   const { post } = useForm();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 992 : true);
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 992);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const handleOpenSidebar = () => setSidebarOpen(true);
+  const handleCloseSidebar = () => setSidebarOpen(false);
 
   return (
     <>
@@ -22,11 +34,36 @@ export default function AdminLayout({ children }) {
       />
 
       <div id="wrapper">
+        {!isDesktop && sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            onClick={handleCloseSidebar}
+            className="d-lg-none"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.45)',
+              border: 0,
+              zIndex: 1035,
+            }}
+          />
+        )}
 
         {/* ================= SIDEBAR ================= */}
         <ul
           className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
           id="accordionSidebar"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            height: '100vh',
+            zIndex: 1040,
+            width: 260,
+            transform: isDesktop || sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.25s ease',
+          }}
         >
           {/* BRAND */}
           <Link
@@ -93,6 +130,7 @@ export default function AdminLayout({ children }) {
               className="nav-link"
               onClick={(e) => {
                 e.preventDefault();
+                handleCloseSidebar();
                 setShowLogoutModal(true);
               }}
             >
@@ -103,11 +141,23 @@ export default function AdminLayout({ children }) {
         </ul>
 
         {/* ================= CONTENT ================= */}
-        <div id="content-wrapper" className="d-flex flex-column">
+        <div
+          id="content-wrapper"
+          className="d-flex flex-column"
+          style={{ width: '100%', minHeight: '100vh', marginLeft: isDesktop ? 260 : 0 }}
+        >
           <div id="content">
 
             {/* TOPBAR */}
             <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+              <button
+                type="button"
+                className="btn btn-link d-lg-none text-decoration-none mr-2"
+                onClick={handleOpenSidebar}
+                aria-label="Abrir menú"
+              >
+                <i className="fas fa-bars"></i>
+              </button>
               <span className="fw-bold ms-3">
                 Panel de Administración
               </span>

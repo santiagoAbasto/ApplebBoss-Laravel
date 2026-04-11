@@ -23,7 +23,7 @@ class CelularController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'modelo' => 'required|string|max:255',
             'capacidad' => 'required|string|max:100',
             'color' => 'required|string|max:100',
@@ -39,7 +39,7 @@ class CelularController extends Controller
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
     
-        Celular::create($request->all());
+        Celular::create($validated);
     
         return redirect(
             $request->get('return_to', route('admin.celulares.index'))
@@ -62,7 +62,7 @@ class CelularController extends Controller
 
     public function update(Request $request, Celular $celular)
     {
-        $request->validate([
+        $validated = $request->validate([
             'modelo' => 'required|string|max:255',
             'capacidad' => 'required|string|max:100',
             'color' => 'required|string|max:100',
@@ -79,7 +79,7 @@ class CelularController extends Controller
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
 
-        $celular->update($request->all());
+        $celular->update($validated);
 
         return redirect()->route('admin.celulares.index')->with('success', 'Celular actualizado correctamente.');
     }

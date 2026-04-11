@@ -1,8 +1,19 @@
 import { Head, Link, usePage, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { route } from 'ziggy-js';
 
 export default function VendedorLayout({ children }) {
   const { auth } = usePage().props;
   const pathname = window.location.pathname;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 992 : true);
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 992);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const handleLogout = () => {
     router.post(route('logout'));
@@ -30,15 +41,36 @@ export default function VendedorLayout({ children }) {
 
       {/* WRAPPER */}
       <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+        {!isDesktop && sidebarOpen && (
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            onClick={() => setSidebarOpen(false)}
+            className="d-lg-none"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.45)',
+              border: 0,
+              zIndex: 1035,
+            }}
+          />
+        )}
 
         {/* SIDEBAR */}
         <aside
-          className="position-fixed d-flex flex-column"
+          className="d-flex flex-column"
           style={{
             width: 260,
             height: '100vh',
             backgroundColor: '#0f3d2e',
             color: '#fff',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            zIndex: 1040,
+            transform: isDesktop || sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 0.25s ease',
           }}
         >
           {/* BRAND */}
@@ -70,6 +102,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{
                         color: active ? '#0f3d2e' : 'rgba(255,255,255,0.85)',
@@ -103,6 +136,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{
                         color: active ? '#0f3d2e' : 'rgba(255,255,255,0.85)',
@@ -134,6 +168,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{
                         color: active ? '#0f3d2e' : 'rgba(255,255,255,0.85)',
@@ -148,6 +183,20 @@ export default function VendedorLayout({ children }) {
                 );
               })}
 
+              <li className="mt-3">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-100 d-flex align-items-center gap-3 px-3 py-3 rounded border-0 text-start"
+                  style={{
+                    color: 'rgba(255,255,255,0.85)',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <i className="fas fa-sign-out-alt" style={{ width: 18 }} />
+                  <span>Cerrar sesión</span>
+                </button>
+              </li>
             </ul>
           </nav>
 
@@ -163,7 +212,7 @@ export default function VendedorLayout({ children }) {
         {/* CONTENT */}
         <main
           className="flex-grow-1 d-flex flex-column"
-          style={{ marginLeft: 260 }}
+          style={{ width: '100%', minWidth: 0, marginLeft: isDesktop ? 260 : 0 }}
         >
           {/* TOPBAR */}
           <header
@@ -174,12 +223,23 @@ export default function VendedorLayout({ children }) {
               borderBottom: '1px solid #e5e7eb',
             }}
           >
-            <div>
-              <div className="fw-semibold text-success">Panel del Vendedor</div>
-              <div className="text-muted small">Gestión de ventas y clientes</div>
+            <div className="d-flex align-items-center gap-3">
+              <button
+                type="button"
+                className="btn btn-link d-lg-none text-decoration-none p-0"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir menú"
+              >
+                <i className="fas fa-bars fs-4"></i>
+              </button>
+
+              <div>
+                <div className="fw-semibold text-success">Panel del Vendedor</div>
+                <div className="text-muted small">Gestión de ventas y clientes</div>
+              </div>
             </div>
 
-            <div className="text-end">
+            <div className="text-end ms-3">
               <div className="fw-semibold small">{auth?.user?.name}</div>
               <div className="text-muted small">Vendedor</div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import dayjs from 'dayjs'
+import { BarChart3, X } from 'lucide-react'
 
 export default function AutomationAlert({ report }) {
   const [visible, setVisible] = useState(false)
@@ -33,7 +34,7 @@ export default function AutomationAlert({ report }) {
         {/* HEADER */}
         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
+            <BarChart3 size={20} />
             <div>
               <p className="text-sm font-semibold">Análisis Inteligente</p>
               <p className="text-xs opacity-90">Periodo {report.period}</p>
@@ -44,7 +45,7 @@ export default function AutomationAlert({ report }) {
             onClick={() => setVisible(false)}
             className="text-white text-sm opacity-80 hover:opacity-100"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 
