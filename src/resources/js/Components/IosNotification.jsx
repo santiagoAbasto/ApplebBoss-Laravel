@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X } from 'lucide-react';
 
 export default function IosNotification({
   title,
@@ -39,7 +40,7 @@ export default function IosNotification({
             }}
             className="text-gray-400 hover:text-gray-600 text-sm transition"
           >
-            ✕
+            <X size={16} />
           </button>
         </div>
 

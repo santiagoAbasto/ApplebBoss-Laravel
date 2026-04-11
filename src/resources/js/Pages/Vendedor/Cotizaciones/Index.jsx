@@ -60,19 +60,19 @@ export default function Index({ cotizaciones = [] }) {
     const pdf = cot.drive_url || 'https://appleboss.bo/pdf-no-disponible';
 
     const mensaje =
-      `Hola ${nombre}, gracias por confiar en *Apple Boss* 😊\n\n` +
-      `📝 *Cotización Apple Boss*\n` +
-      `👤 Cliente: ${nombre}\n` +
-      `📄 Cotización N.º: ${cot.id}\n` +
-      `💰 Total: Bs ${total}\n` +
-      `🔗 Ver PDF: ${pdf}`;
+      `Hola ${nombre}, gracias por confiar en *Apple Boss*.\n\n` +
+      `*Cotizacion Apple Boss*\n` +
+      `Cliente: ${nombre}\n` +
+      `Cotizacion N. ${cot.id}\n` +
+      `Total: Bs ${total}\n` +
+      `Ver PDF: ${pdf}`;
 
     const encoded = encodeURIComponent(mensaje);
     const linkApp = `whatsapp://send?phone=${numero}&text=${encoded}`;
     const linkWeb = `https://web.whatsapp.com/send?phone=${numero}&text=${encoded}`;
 
     const timeout = setTimeout(() => {
-      window.open(linkWeb, '_blank');
+      window.open(linkWeb, '_blank', 'noopener,noreferrer');
     }, 2000);
 
     window.location.href = linkApp;

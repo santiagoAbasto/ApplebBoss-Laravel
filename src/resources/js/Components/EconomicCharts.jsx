@@ -362,9 +362,9 @@ export default function EconomicChart({
 
               <div className="ttSub">
                 {modo === 'utilidad' && Number(active.base ?? 0) < 0 ? (
-                  <span className="lossText">📉 Se invirtió</span>
+                  <span className="lossText">Se invirtio</span>
                 ) : (
-                  <span className="okText">📈 Movimiento</span>
+                  <span className="okText">Movimiento</span>
                 )}
               </div>
             </div>

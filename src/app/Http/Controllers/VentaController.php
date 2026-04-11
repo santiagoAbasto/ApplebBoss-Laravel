@@ -17,11 +17,19 @@ use App\Models\ServicioTecnico;
 use App\Services\GeneradorCodigos;
 use Illuminate\Support\Facades\DB;
 use App\Models\SystemNotification;
+use Illuminate\Support\Facades\Schema;
 
 
 
 class VentaController extends Controller
 {
+    private function authorizeVentaAccess(Venta $venta): void
+    {
+        if (auth()->user()->rol === 'vendedor' && (int) $venta->user_id !== (int) auth()->id()) {
+            abort(404);
+        }
+    }
+
     public function index()
     {
         $ventas = Venta::with([
@@ -180,41 +188,39 @@ class VentaController extends Controller
             /* ======================================================
          * 3) CÓDIGO CORRELATIVO VENTA (AT-V###)
          * ====================================================== */
-            $codigoVenta = GeneradorCodigos::siguienteVenta();
+            $venta = GeneradorCodigos::crearVentaConCodigo(function (string $codigoVenta) use ($request, $subtotal, $aplicaPermuta, $permutaCosto, $entregado) {
+                return Venta::create([
+                    'codigo_nota' => $codigoVenta,
 
-            /* ======================================================
-         * 4) CREAR VENTA (MISMO PAYLOAD + codigo_nota)
-         * ====================================================== */
-            $venta = Venta::create([
-                'codigo_nota' => $codigoVenta, // ✅ NUEVO
-
-                'nombre_cliente' => $request->nombre_cliente,
-                'telefono_cliente' => $request->telefono_cliente,
-                'tipo_venta' => $request->tipo_venta,
-                'es_permuta' => $request->es_permuta,
-                'tipo_permuta' => $request->tipo_permuta,
-                'precio_invertido' => $request->precio_invertido ?? 0,
-                'precio_venta' => $request->precio_venta ?? 0,
-                'descuento' => $request->descuento ?? 0,
-                'subtotal' => $subtotal,
-                'ganancia_neta' => $subtotal
-                    - ($request->descuento ?? 0)
-                    - ($aplicaPermuta ? $permutaCosto : 0)
-                    - ($request->precio_invertido ?? 0),
-                'valor_permuta' => $permutaCosto,
-                'metodo_pago' => $request->metodo_pago,
-                'tarjeta_inicio' => $request->tarjeta_inicio,
-                'tarjeta_fin' => $request->tarjeta_fin,
-                'notas_adicionales' => $request->notas_adicionales,
-                'celular_id' => $request->celular_id,
-                'computadora_id' => $request->computadora_id,
-                'producto_general_id' => $request->producto_general_id,
-                'entregado_celular_id' => $request->tipo_permuta === 'celular' ? $entregado?->id : null,
-                'entregado_computadora_id' => $request->tipo_permuta === 'computadora' ? $entregado?->id : null,
-                'entregado_producto_general_id' => $request->tipo_permuta === 'producto_general' ? $entregado?->id : null,
-                'user_id' => auth()->id(),
-                'fecha' => now('America/La_Paz'),
-            ]);
+                    'nombre_cliente' => $request->nombre_cliente,
+                    'telefono_cliente' => $request->telefono_cliente,
+                    'tipo_venta' => $request->tipo_venta,
+                    'es_permuta' => $request->es_permuta,
+                    'tipo_permuta' => $request->tipo_permuta,
+                    'precio_invertido' => $request->precio_invertido ?? 0,
+                    'precio_venta' => $request->precio_venta ?? 0,
+                    'descuento' => $request->descuento ?? 0,
+                    'subtotal' => $subtotal,
+                    'ganancia_neta' => $subtotal
+                        - ($request->descuento ?? 0)
+                        - ($aplicaPermuta ? $permutaCosto : 0)
+                        - ($request->precio_invertido ?? 0),
+                    'valor_permuta' => $permutaCosto,
+                    'metodo_pago' => $request->metodo_pago,
+                    'tarjeta_inicio' => $request->tarjeta_inicio,
+                    'tarjeta_fin' => $request->tarjeta_fin,
+                    'notas_adicionales' => $request->notas_adicionales,
+                    'celular_id' => $request->celular_id,
+                    'computadora_id' => $request->computadora_id,
+                    'producto_general_id' => $request->producto_general_id,
+                    'entregado_celular_id' => $request->tipo_permuta === 'celular' ? $entregado?->id : null,
+                    'entregado_computadora_id' => $request->tipo_permuta === 'computadora' ? $entregado?->id : null,
+                    'entregado_producto_general_id' => $request->tipo_permuta === 'producto_general' ? $entregado?->id : null,
+                    'user_id' => auth()->id(),
+                    'fecha' => now('America/La_Paz'),
+                ]);
+            });
+            $codigoVenta = $venta->codigo_nota;
             /* ======================================================
  * 5) CREAR ITEMS (CON SNAPSHOT BI PROFESIONAL)
  * ====================================================== */
@@ -324,22 +330,21 @@ class VentaController extends Controller
          * 7) SERVICIO TÉCNICO (USANDO GENERADOR AT-ST###)
          * ====================================================== */
             if ($request->tipo_venta === 'servicio_tecnico') {
-
-                $codigoServicio = GeneradorCodigos::siguienteServicioTecnico();
-
-                ServicioTecnico::create([
-                    'venta_id' => $venta->id,
-                    'codigo_nota' => $codigoServicio, // ✅ correlativo real
-                    'cliente' => $request->nombre_cliente,
-                    'telefono' => $request->telefono_cliente,
-                    'equipo' => $request->equipo,
-                    'detalle_servicio' => $request->detalle_servicio,
-                    'precio_costo' => $request->precio_invertido ?? 0,
-                    'precio_venta' => $request->precio_venta ?? 0,
-                    'tecnico' => $request->tecnico,
-                    'fecha' => now('America/La_Paz'),
-                    'user_id' => auth()->id(),
-                ]);
+                GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigoServicio) use ($request, $venta) {
+                    ServicioTecnico::create([
+                        'venta_id' => $venta->id,
+                        'codigo_nota' => $codigoServicio,
+                        'cliente' => $request->nombre_cliente,
+                        'telefono' => $request->telefono_cliente,
+                        'equipo' => $request->equipo,
+                        'detalle_servicio' => $request->detalle_servicio,
+                        'precio_costo' => $request->precio_invertido ?? 0,
+                        'precio_venta' => $request->precio_venta ?? 0,
+                        'tecnico' => $request->tecnico,
+                        'fecha' => now('America/La_Paz'),
+                        'user_id' => auth()->id(),
+                    ]);
+                });
             }
 
             /* ======================================================
@@ -359,15 +364,17 @@ class VentaController extends Controller
                 }
             }
 
-            SystemNotification::create([
-                'type' => 'sale',
-                'title' => 'Nueva venta registrada',
-                'message' =>
-                auth()->user()->name .
-                    ' vendió por Bs ' .
-                    number_format($subtotal, 2) .
-                    ' (' . $codigoVenta . ')',
-            ]);
+            if (Schema::hasTable('system_notifications')) {
+                SystemNotification::create([
+                    'type' => 'sale',
+                    'title' => 'Nueva venta registrada',
+                    'message' =>
+                    auth()->user()->name .
+                        ' vendió por Bs ' .
+                        number_format($subtotal, 2) .
+                        ' (' . $codigoVenta . ')',
+                ]);
+            }
 
             return response()->json([
                 'message' => 'Venta registrada con éxito',
@@ -378,6 +385,8 @@ class VentaController extends Controller
 
     public function boleta(Venta $venta)
     {
+        $this->authorizeVentaAccess($venta);
+
         $venta->load([
             'items',
             'items.celular',
@@ -439,6 +448,7 @@ class VentaController extends Controller
             // Buscar servicios técnicos válidos
             $serviciosRaw = \App\Models\ServicioTecnico::with('vendedor')
                 ->whereNotNull('codigo_nota')
+                ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
                 ->where(function ($q) use ($query) {
                     $q->where('codigo_nota', 'ILIKE', "%{$query}%")
                         ->orWhere('cliente', 'ILIKE', "%{$query}%");
@@ -452,6 +462,7 @@ class VentaController extends Controller
             $ventasRaw = \App\Models\Venta::with('vendedor')
                 ->whereNotNull('codigo_nota')
                 ->whereNotIn('codigo_nota', $codigosST)
+                ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
                 ->where(function ($q) use ($query) {
                     $q->where('codigo_nota', 'ILIKE', "%{$query}%")
                         ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
@@ -511,6 +522,7 @@ class VentaController extends Controller
 
         $ventas = \App\Models\Venta::select('id', 'codigo_nota', 'nombre_cliente', 'created_at')
             ->whereNotNull('codigo_nota')
+            ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
             ->where(function ($q) use ($query) {
                 $q->where('codigo_nota', 'ILIKE', "%{$query}%")
                     ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
@@ -532,6 +544,8 @@ class VentaController extends Controller
 
     public function boleta80(Venta $venta)
     {
+        $this->authorizeVentaAccess($venta);
+
         $venta->load([
             'items',
             'items.celular',

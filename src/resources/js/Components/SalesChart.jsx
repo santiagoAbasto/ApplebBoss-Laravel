@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import Chart from 'react-apexcharts';
+import { PieChart } from 'lucide-react';
 
 export default function SalesChart({
   distribucion_economica = [],
@@ -7,46 +8,49 @@ export default function SalesChart({
   title = 'Utilidad por Categoría',
 }) {
 
-  const { series, labels, totalUtilidad } = useMemo(() => {
+  const { series, labels, totalUtilidad, chartItems, hasData } = useMemo(() => {
+    const items = distribucion_economica
+      .map((item, index) => ({
+        label: String(item?.label ?? ''),
+        value: Math.round(Number(item?.valor || 0)),
+        color: [
+          '#3b82f6',
+          '#10b981',
+          '#f59e0b',
+          '#8b5cf6',
+          '#ec4899',
+        ][index],
+      }))
+      .filter((item) => item.label);
 
-    const s = distribucion_economica.map(i =>
-      Math.round(Number(i?.valor || 0))
-    );
+    const positiveItems = items
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
 
-    const l = distribucion_economica.map(i =>
-      String(i?.label ?? '')
-    );
-
-    const total = Math.round(
-      Number(resumen_total?.ganancia_neta || 0)
-    );
+    const visibleItems = positiveItems.length ? positiveItems : items;
+    const total = Math.round(Number(resumen_total?.ganancia_neta || 0));
 
     return {
-      series: s,
-      labels: l,
+      series: visibleItems.map((item) => item.value),
+      labels: visibleItems.map((item) => item.label),
       totalUtilidad: total,
+      chartItems: visibleItems,
+      hasData: positiveItems.length > 0,
     };
-
   }, [distribucion_economica, resumen_total]);
 
 
   const options = useMemo(() => ({
     chart: {
       type: 'donut',
-      height: 420,
+      height: 460,
       toolbar: { show: false },
       parentHeightOffset: 0,
     },
 
     labels,
 
-    colors: [
-      '#3b82f6', // Celulares
-      '#10b981', // Computadoras
-      '#f59e0b', // Productos Generales
-      '#8b5cf6', // Productos Apple
-      '#ec4899', // Servicios Técnicos
-    ],
+    colors: chartItems.map((item) => item.color),
 
     stroke: { width: 0 },
 
@@ -63,14 +67,26 @@ export default function SalesChart({
       pie: {
         expandOnClick: false,
         donut: {
-          size: '70%',
+          size: '68%',
           labels: {
             show: true,
+            name: {
+              show: true,
+              offsetY: 20,
+              fontSize: '14px',
+            },
+            value: {
+              show: true,
+              offsetY: -14,
+              fontSize: '24px',
+              fontWeight: 700,
+              formatter: (value) => `Bs ${Math.round(value).toLocaleString('es-BO')}`,
+            },
 
             total: {
               show: true,
               label: 'Utilidad Total',
-              fontSize: '16px',
+              fontSize: '15px',
               fontWeight: 600,
               formatter: () =>
                 totalUtilidad < 0
@@ -87,15 +103,14 @@ export default function SalesChart({
       position: 'bottom',
       horizontalAlign: 'center',
       floating: false,
-
-      offsetY: 50, // 👈 AQUI la separas hacia abajo
+      offsetY: 16,
 
       formatter: (seriesName) =>
         `<span style="white-space: nowrap;">${seriesName}</span>`,
 
       itemMargin: {
-        horizontal: 18,
-        vertical: 0,
+        horizontal: 14,
+        vertical: 6,
       },
 
       markers: {
@@ -113,7 +128,7 @@ export default function SalesChart({
       },
     },
 
-  }), [labels, totalUtilidad]);
+  }), [chartItems, labels, totalUtilidad]);
 
 
   return (
@@ -123,16 +138,30 @@ export default function SalesChart({
         {title}
       </h2>
 
-      <div className="flex justify-center">
-        <div className="w-full max-w-[850px]">
-          <Chart
-            options={options}
-            series={series}
-            type="donut"
-            height={420}
-          />
+      {!hasData ? (
+        <div className="mx-auto flex min-h-[360px] max-w-[920px] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+          <div className="mb-4 rounded-full bg-white p-4 shadow-sm">
+            <PieChart size={28} className="text-slate-500" />
+          </div>
+          <div className="text-xl font-bold text-slate-800">
+            Bs {totalUtilidad.toLocaleString('es-BO')}
+          </div>
+          <p className="mt-2 max-w-md text-sm text-slate-500">
+            Aun no hay utilidad distribuida por categoria en el periodo seleccionado.
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="w-full max-w-[920px]">
+            <Chart
+              options={options}
+              series={series}
+              type="donut"
+              height={460}
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );

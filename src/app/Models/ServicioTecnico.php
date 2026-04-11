@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use App\Services\GeneradorCodigos;
 use App\Models\User;
 use App\Models\Venta;
 
@@ -27,6 +28,7 @@ class ServicioTecnico extends Model
         'tecnico',
         'fecha',
         'user_id',
+        'cliente_id',
         'venta_id',
     ];
 
@@ -47,6 +49,10 @@ class ServicioTecnico extends Model
             if (empty($servicio->codigo_nota)) {
                 $servicio->codigo_nota = 'AT-ST' . str_pad($servicio->id, 3, '0', STR_PAD_LEFT);
                 $servicio->save();
+            }
+
+            if (preg_match('/AT-ST(\d+)/', (string) $servicio->codigo_nota, $matches)) {
+                GeneradorCodigos::sincronizarSecuencia('servicio_tecnico', (int) $matches[1]);
             }
         });
     }

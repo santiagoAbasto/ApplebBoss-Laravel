@@ -75,7 +75,7 @@ class ProductoGeneralController extends Controller
 
     public function update(Request $request, ProductoGeneral $producto)
     {
-        $request->validate([
+        $validated = $request->validate([
             'codigo' => 'required|string|unique:productos_generales,codigo,' . $producto->id,
             'tipo' => 'required|string|max:100',
             'nombre' => 'required|string|max:255',
@@ -85,7 +85,7 @@ class ProductoGeneralController extends Controller
             'estado' => 'required|in:disponible,vendido,permuta',
         ]);
 
-        $producto->update($request->all());
+        $producto->update($validated);
 
         return redirect()->route('admin.productos-generales.index')
             ->with('success', 'Producto actualizado correctamente.');

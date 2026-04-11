@@ -11,12 +11,12 @@ export default function WhatsappLote({ links }) {
   =============================== */
   const copiarMensaje = (item, index) => {
     const mensaje =
-      `Hola ${item.nombre}, gracias por confiar en *Apple Boss* 😊\n\n` +
-      `📝 *Cotización Apple Boss*\n` +
-      `👤 Cliente: ${item.nombre}\n` +
-      `📄 Cotización N.º: ${item.cotizacion_id}\n` +
-      `💰 Total: Bs ${item.total}\n` +
-      `🔗 Ver PDF: ${item.pdf}`;
+      `Hola ${item.nombre}, gracias por confiar en *Apple Boss*.\n\n` +
+      `*Cotizacion Apple Boss*\n` +
+      `Cliente: ${item.nombre}\n` +
+      `Cotizacion N. ${item.cotizacion_id}\n` +
+      `Total: Bs ${item.total}\n` +
+      `Ver PDF: ${item.pdf}`;
 
     navigator.clipboard.writeText(mensaje).then(() => {
       setCopiado(index);
@@ -64,25 +64,25 @@ export default function WhatsappLote({ links }) {
                   {/* INFO */}
                   <div>
                     <h5 className="fw-semibold text-success mb-2">
-                      👤 {item.nombre}
+                      {item.nombre}
                     </h5>
 
                     <textarea
                       className="form-control form-control-sm mb-2 mensaje-preview"
                       rows="6"
                       readOnly
-                      value={`Hola ${item.nombre}, gracias por confiar en *Apple Boss* 😊
+                      value={`Hola ${item.nombre}, gracias por confiar en *Apple Boss*.
 
-                        📝 Cotización Apple Boss
-                        👤 Cliente: ${item.nombre}
-                        📄 Cotización N.º: ${item.cotizacion_id}
-                        💰 Total: Bs ${item.total}
-                        🔗 Ver PDF: ${item.pdf}`}
+                        Cotizacion Apple Boss
+                        Cliente: ${item.nombre}
+                        Cotizacion N. ${item.cotizacion_id}
+                        Total: Bs ${item.total}
+                        Ver PDF: ${item.pdf}`}
                     />
 
                     {copiado === index && (
                       <div className="text-success small text-center mt-1">
-                        ✔ Mensaje copiado
+                        Mensaje copiado
                       </div>
                     )}
                   </div>

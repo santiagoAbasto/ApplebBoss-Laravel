@@ -162,8 +162,8 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
       {/* ===============================
          TABLA
       =============================== */}
-      <div className="bg-white rounded-xl shadow overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
+        <table className="w-full text-sm min-w-[980px]">
           <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
             <tr>
               <th className="px-4 py-3">Cliente</th>
@@ -208,6 +208,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                         <a
                           href={route('vendedor.servicios.boleta', s.id)}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="no-underline"
                         >
                           <FancyButton size="sm" variant="primary">
@@ -242,6 +243,72 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="grid gap-4 md:hidden">
+        {listaFinal.length > 0 ? (
+          listaFinal.map((s) => {
+            const costo = Number(s.precio_costo || 0);
+            const venta = Number(s.precio_venta || 0);
+            const ganancia = venta - costo;
+
+            return (
+              <div key={s.id} className="rounded-2xl border bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-slate-800">{s.cliente}</div>
+                    <div className="font-mono text-sm text-blue-600">{s.codigo_nota || '—'}</div>
+                  </div>
+                  <div className="text-right text-xs text-slate-500">
+                    {dayjs(s.fecha).format('DD/MM/YYYY')}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                  <div><strong>Equipo:</strong> {s.equipo}</div>
+                  <div><strong>Técnico:</strong> {s.tecnico}</div>
+                  <div><strong>Vendedor:</strong> {s.vendedor?.name || '—'}</div>
+                  <div><strong>Costo:</strong> {costo.toFixed(2)} Bs</div>
+                  <div><strong>Venta:</strong> {venta.toFixed(2)} Bs</div>
+                  <div className={ganancia >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                    Ganancia: {ganancia.toFixed(2)} Bs
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <a
+                    href={route('vendedor.servicios.boleta', s.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="no-underline"
+                  >
+                    <FancyButton size="sm" variant="primary">
+                      Ver
+                    </FancyButton>
+                  </a>
+
+                  <FancyButton
+                    size="sm"
+                    variant="dark"
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        route('vendedor.servicios.recibo80mm', s.id),
+                        '_blank'
+                      )
+                    }
+                  >
+                    Imprimir
+                  </FancyButton>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="rounded-2xl border bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-sm">
+            No hay servicios técnicos registrados
+          </div>
+        )}
       </div>
     </VendedorLayout>
   );

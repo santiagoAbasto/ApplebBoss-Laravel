@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+use App\Services\GeneradorCodigos;
 use App\Models\User;
 use App\Models\Celular;
 use App\Models\Computadora;
@@ -57,6 +58,10 @@ class Venta extends Model
             if (empty($venta->codigo_nota)) {
                 $venta->codigo_nota = 'AT-V' . str_pad($venta->id, 3, '0', STR_PAD_LEFT);
                 $venta->save();
+            }
+
+            if (preg_match('/AT-V(\d+)/', (string) $venta->codigo_nota, $matches)) {
+                GeneradorCodigos::sincronizarSecuencia('ventas', (int) $matches[1]);
             }
         });
     }

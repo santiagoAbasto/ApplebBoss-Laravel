@@ -206,7 +206,7 @@ export default function CreateProductoGeneral() {
 
                                 {codigoExiste && (
                                     <div style={errorBox}>
-                                        ⚠ Este código ya está registrado.
+                                        Este codigo ya esta registrado.
                                         Corrige el código para continuar.
                                     </div>
                                 )}

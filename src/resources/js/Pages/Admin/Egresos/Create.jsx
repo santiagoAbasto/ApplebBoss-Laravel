@@ -41,7 +41,7 @@ export default function Create() {
       <CrudWrapper>
         {/* HEADER */}
         <CrudHeader>
-          <CrudTitle>📤 Registrar nuevo egreso</CrudTitle>
+          <CrudTitle>Registrar nuevo egreso</CrudTitle>
           <CrudSubtitle>
             Registra gastos operativos y financieros del negocio
           </CrudSubtitle>

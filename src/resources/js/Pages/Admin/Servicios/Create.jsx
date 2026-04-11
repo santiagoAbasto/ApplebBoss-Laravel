@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import axios from 'axios';
 import AdminLayout from '@/Layouts/AdminLayout';
@@ -23,7 +23,7 @@ import {
 
 
 export default function CreateServicio() {
-  const { data, setData, post, processing } = useForm({
+  const { data, setData } = useForm({
     cliente: '',
     telefono: '',
     equipo: '',
@@ -47,6 +47,7 @@ export default function CreateServicio() {
   ====================== */
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   const buscarCliente = async (valor) => {
     setData('cliente', valor);
@@ -106,7 +107,7 @@ export default function CreateServicio() {
   /* ======================
      SUBMIT (JSON LIMPIO)
   ====================== */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const serviciosValidos = servicios.filter(
@@ -123,20 +124,27 @@ export default function CreateServicio() {
 
     const detalleJSON = serviciosValidos.map((s) => ({
       descripcion: s.descripcion,
-      costo: Number(s.costo),   // 🔴 ESTE ERA EL DATO QUE SE PERDÍA
+      costo: Number(s.costo),
       precio: Number(s.precio),
     }));
 
-    // ✅ PRIMERO setData
-    setData((prev) => ({
-      ...prev,
+    const payload = {
+      ...data,
       detalle_servicio: JSON.stringify(detalleJSON),
       precio_costo: totalCosto,
       precio_venta: totalVenta,
-    }));
+    };
 
-    // ✅ LUEGO post SIN payload
-    post(route('admin.servicios.store'));
+    try {
+      setProcessing(true);
+      await axios.post(route('admin.servicios.store'), payload);
+      router.visit(route('admin.servicios.index'));
+    } catch (error) {
+      console.error('Error al registrar servicio técnico:', error);
+      alert('No se pudo guardar el servicio técnico. Revisa la consola o el log del servidor.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (

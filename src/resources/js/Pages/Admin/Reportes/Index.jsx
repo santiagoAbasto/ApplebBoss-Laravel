@@ -1,10 +1,10 @@
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import Chart from 'react-apexcharts';
 import { route } from 'ziggy-js';
-import { BarChart3, FileText, Filter } from 'lucide-react';
+import { BarChart3, FileText, Filter, PieChart } from 'lucide-react';
 
 /* =======================
    CRUD UI (OFICIAL)
@@ -64,36 +64,129 @@ export default function ReporteIndex({
   /* ===============================
      CHART (INTACTO)
   =============================== */
-  const chartData = {
-    series: [
-      resumen.ganancias_por_tipo?.celulares ?? 0,
-      resumen.ganancias_por_tipo?.computadoras ?? 0,
-      resumen.ganancias_por_tipo?.generales ?? 0,
-      resumen.ganancias_por_tipo?.productos_apple ?? 0,
-      resumen.ganancias_por_tipo?.servicio_tecnico ?? 0,
-      resumen.total_inversion ?? 0,
-    ],
-    options: {
-      chart: { type: 'donut' },
-      labels: [
-        'Celulares',
-        'Computadoras',
-        'Productos Generales',
-        'Productos Apple',
-        'Servicio Técnico',
-        'Inversión Total',
-      ],
-      colors: [
-        '#2563eb',
-        '#16a34a',
-        '#f59e0b',
-        '#6366f1',
-        '#06b6d4',
-        '#dc2626',
-      ],
-      legend: { position: 'bottom' },
-    },
-  };
+  const gananciasCategorias = useMemo(() => {
+    const base = [
+      {
+        label: 'Celulares',
+        value: Number(resumen.ganancias_por_tipo?.celulares ?? 0),
+        color: '#2563eb',
+      },
+      {
+        label: 'Computadoras',
+        value: Number(resumen.ganancias_por_tipo?.computadoras ?? 0),
+        color: '#16a34a',
+      },
+      {
+        label: 'Productos Generales',
+        value: Number(resumen.ganancias_por_tipo?.generales ?? 0),
+        color: '#f59e0b',
+      },
+      {
+        label: 'Productos Apple',
+        value: Number(resumen.ganancias_por_tipo?.productos_apple ?? 0),
+        color: '#6366f1',
+      },
+      {
+        label: 'Servicio Técnico',
+        value: Number(resumen.ganancias_por_tipo?.servicio_tecnico ?? 0),
+        color: '#06b6d4',
+      },
+    ];
+
+    const positivas = base
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return positivas.length ? positivas : base;
+  }, [resumen]);
+
+  const totalGananciaCategorias = gananciasCategorias.reduce(
+    (acc, item) => acc + item.value,
+    0
+  );
+
+  const chartData = useMemo(
+    () => ({
+      series: gananciasCategorias.map((item) => item.value),
+      options: {
+        chart: {
+          type: 'donut',
+          toolbar: { show: false },
+          parentHeightOffset: 0,
+        },
+        labels: gananciasCategorias.map((item) => item.label),
+        colors: gananciasCategorias.map((item) => item.color),
+        stroke: {
+          width: 0,
+        },
+        legend: {
+          show: false,
+        },
+        dataLabels: {
+          enabled: true,
+          formatter: (value) => `${Math.round(value)}%`,
+          style: {
+            fontSize: '12px',
+            fontWeight: 700,
+          },
+          dropShadow: {
+            enabled: false,
+          },
+        },
+        tooltip: {
+          y: {
+            formatter: (value) => `${Number(value).toFixed(2)} Bs`,
+          },
+        },
+        plotOptions: {
+          pie: {
+            expandOnClick: false,
+            donut: {
+              size: '72%',
+              labels: {
+                show: true,
+                name: {
+                  show: true,
+                  offsetY: 18,
+                  fontSize: '13px',
+                },
+                value: {
+                  show: true,
+                  offsetY: -12,
+                  fontSize: '20px',
+                  fontWeight: 800,
+                  formatter: (value) => `${Number(value).toFixed(0)} Bs`,
+                },
+                total: {
+                  show: true,
+                  showAlways: true,
+                  label: 'Ganancia total',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  formatter: () =>
+                    `${Number(totalGananciaCategorias).toFixed(2)} Bs`,
+                },
+              },
+            },
+          },
+        },
+        responsive: [
+          {
+            breakpoint: 768,
+            options: {
+              chart: {
+                height: 320,
+              },
+              dataLabels: {
+                enabled: false,
+              },
+            },
+          },
+        ],
+      },
+    }),
+    [gananciasCategorias, totalGananciaCategorias]
+  );
 
   return (
     <AdminLayout>
@@ -158,7 +251,8 @@ export default function ReporteIndex({
 
             <CrudActions>
               <CrudButtonPrimary type="submit">
-                🔍 Filtrar
+                <Filter size={16} />
+                Filtrar
               </CrudButtonPrimary>
 
               <CrudButtonSecondary
@@ -175,21 +269,111 @@ export default function ReporteIndex({
         {/* ================= GRÁFICO ================= */}
         <CrudCard style={{ marginBottom: 24 }}>
           <CrudSectionTitle>
-            📊 Ganancias por Categoría
+            <PieChart size={16} style={{ marginRight: 6 }} />
+            Ganancias por categoría
           </CrudSectionTitle>
 
-          <Chart
-            options={chartData.options}
-            series={chartData.series}
-            type="donut"
-            height={350}
-          />
+          <div style={{ marginBottom: 18, color: '#64748b', fontSize: 14 }}>
+            El gráfico muestra únicamente la ganancia total acumulada por categoría.
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)] lg:items-center">
+            <div style={{ minWidth: 0 }}>
+              <Chart
+                options={chartData.options}
+                series={chartData.series}
+                type="donut"
+                height={380}
+              />
+            </div>
+
+            <div className="grid gap-3">
+              {gananciasCategorias.map((item) => {
+                const porcentaje =
+                  totalGananciaCategorias > 0
+                    ? (item.value / totalGananciaCategorias) * 100
+                    : 0;
+
+                return (
+                  <div
+                    key={item.label}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 14,
+                      padding: '14px 16px',
+                      background: '#f8fafc',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: 999,
+                            background: item.color,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            color: '#0f172a',
+                            fontSize: 14,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                      </div>
+
+                      <span
+                        style={{
+                          color: '#64748b',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {porcentaje.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        color: '#0f172a',
+                        fontSize: 18,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {item.value.toFixed(2)} Bs
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </CrudCard>
 
         {/* ================= TABLA ================= */}
         <CrudCard>
           <CrudSectionTitle>
-            📄 Detalle de Movimientos
+            <FileText size={16} style={{ marginRight: 6 }} />
+            Detalle de movimientos
           </CrudSectionTitle>
 
           <div style={{ overflowX: 'auto' }}>
