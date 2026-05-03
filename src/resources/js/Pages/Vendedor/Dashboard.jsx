@@ -60,7 +60,7 @@ export default function Dashboard({
 
   return (
     <VendedorLayout>
-      <Head title="Dashboard Vendedor | AppleBoss" />
+      <Head title="Dashboard Vendedor | Apple Boss" />
 
       {/* =======================
           HEADER

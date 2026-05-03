@@ -13,7 +13,10 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Atributos asignables masivamente.
+     * ⚠️  'rol' NO está aquí a propósito: el rol SOLO
+     *      se puede cambiar con asignación directa ($user->rol = …)
+     *      desde el servidor, nunca desde el cliente.
      *
      * @var list<string>
      */
@@ -24,7 +27,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atributos ocultos en serialización JSON.
      *
      * @var list<string>
      */
@@ -34,7 +37,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Casts de atributos.
      *
      * @return array<string, string>
      */
@@ -42,9 +45,23 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
+
+    /* ─── Helpers de rol ─── */
+
+    public function isAdmin(): bool
+    {
+        return $this->rol === 'admin';
+    }
+
+    public function isVendedor(): bool
+    {
+        return $this->rol === 'vendedor';
+    }
+
+    /* ─── Relaciones ─── */
 
     public function clientes()
     {

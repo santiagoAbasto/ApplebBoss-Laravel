@@ -6,13 +6,18 @@ export default function VendedorLayout({ children }) {
   const { auth } = usePage().props;
   const pathname = window.location.pathname;
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 992 : true);
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 992px)').matches : true
+  ));
 
   useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 992);
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const mediaQuery = window.matchMedia('(min-width: 992px)');
+    const onChange = (event) => setIsDesktop(event.matches);
+
+    setIsDesktop(mediaQuery.matches);
+    mediaQuery.addEventListener('change', onChange);
+
+    return () => mediaQuery.removeEventListener('change', onChange);
   }, []);
 
   const handleLogout = () => {
@@ -34,10 +39,6 @@ export default function VendedorLayout({ children }) {
       {/* SB ADMIN ASSETS */}
       <link rel="stylesheet" href="/sbadmin/vendor/fontawesome-free/css/all.min.css" />
       <link rel="stylesheet" href="/sbadmin/css/sb-admin-2.min.css" />
-
-      <script src="/sbadmin/vendor/jquery/jquery.min.js" defer></script>
-      <script src="/sbadmin/vendor/bootstrap/js/bootstrap.bundle.min.js" defer></script>
-      <script src="/sbadmin/js/sb-admin-2.min.js" defer></script>
 
       {/* WRAPPER */}
       <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
@@ -102,6 +103,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      prefetch="hover"
                       onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{
@@ -136,6 +138,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      prefetch="hover"
                       onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{
@@ -168,6 +171,7 @@ export default function VendedorLayout({ children }) {
                   <li key={label}>
                     <Link
                       href={href}
+                      prefetch="hover"
                       onClick={() => setSidebarOpen(false)}
                       className="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none"
                       style={{

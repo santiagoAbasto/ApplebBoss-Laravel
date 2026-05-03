@@ -165,7 +165,7 @@ export default function Dashboard({
 
   return (
     <AdminLayout>
-      <Head title="Panel de Administración | AppleBoss" />
+      <Head title="Panel de Administración | Apple Boss" />
 
       {/* ================= HEADER ================= */}
       <div className="px-4 mb-8">
@@ -265,7 +265,7 @@ export default function Dashboard({
       {automationReport && (
         <IosNotification
           color={performanceColor}
-          title="AppleBoss IA"
+          title="Apple Boss IA"
           subtitle="Reporte semanal inteligente"
           message={
             parsedAutomation ? (

@@ -7,13 +7,18 @@ export default function AdminLayout({ children }) {
   const { post } = useForm();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 992 : true);
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 992px)').matches : true
+  ));
 
   useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 992);
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const mediaQuery = window.matchMedia('(min-width: 992px)');
+    const onChange = (event) => setIsDesktop(event.matches);
+
+    setIsDesktop(mediaQuery.matches);
+    mediaQuery.addEventListener('change', onChange);
+
+    return () => mediaQuery.removeEventListener('change', onChange);
   }, []);
 
   const handleOpenSidebar = () => setSidebarOpen(true);
@@ -69,6 +74,7 @@ export default function AdminLayout({ children }) {
           <Link
             className="sidebar-brand d-flex align-items-center justify-content-center"
             href={route('admin.dashboard')}
+            prefetch="hover"
           >
             <div className="sidebar-brand-icon rotate-n-15">
               <i className="fas fa-mobile-alt"></i>
@@ -185,7 +191,7 @@ export default function AdminLayout({ children }) {
 function SidebarItem({ route: r, icon, label }) {
   return (
     <li className="nav-item">
-      <Link className="nav-link" href={route(r)}>
+      <Link className="nav-link" href={route(r)} prefetch="hover">
         <i className={`fas fa-fw ${icon}`}></i>
         <span>{label}</span>
       </Link>

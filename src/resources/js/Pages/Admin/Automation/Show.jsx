@@ -89,7 +89,7 @@ export default function Show({ report }) {
 
     return (
         <AdminLayout>
-            <Head title="AppleBoss Intelligence" />
+            <Head title="Apple Boss Intelligence" />
 
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-blue-100 p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl space-y-8">
@@ -97,7 +97,7 @@ export default function Show({ report }) {
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div>
                                 <p className="text-sm font-semibold uppercase tracking-[0.25em] text-sky-700">
-                                    AppleBoss Intelligence
+                                    Apple Boss Intelligence
                                 </p>
                                 <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                                     Informe Estratégico Automatizado

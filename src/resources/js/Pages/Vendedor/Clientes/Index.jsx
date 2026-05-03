@@ -8,7 +8,7 @@ export default function Index({ clientes }) {
   const [enviando, setEnviando] = useState(false);
 
   const mensaje = encodeURIComponent(
-    'Hola. En AppleBoss tenemos promociones especiales para ti. No te las pierdas. Visitanos o escribenos ahora mismo.'
+    'Hola. En Apple Boss tenemos promociones especiales para ti. No te las pierdas. Visitanos o escribenos ahora mismo.'
   );
 
   /* ===============================
