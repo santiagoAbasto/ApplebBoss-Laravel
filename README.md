@@ -1,4 +1,4 @@
-# AppleBoss Laravel
+# Apple Boss Laravel
 
 Aplicación web para la gestion operativa y comercial de AppleBoss. El proyecto centraliza flujos de ventas, clientes, cotizaciones, inventario, servicios tecnicos, reportes y automatizaciones internas en una arquitectura Laravel + React.
 
@@ -181,3 +181,7 @@ Proyecto en evolucion activa. Antes de publicar una version o desplegar a produc
 ## Licencia
 
 Este proyecto se distribuye segun la politica interna del equipo o propietario del software. Si vas a hacerlo publico, defini una licencia explicita antes de abrir contribuciones externas.
+
+## Propiedad
+
+Propiedad de Abasto Ortega Santiago Alfredo.
