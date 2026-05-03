@@ -12,6 +12,18 @@ use Inertia\Inertia;
 
 class ExportController extends Controller
 {
+    private function streamOrViewPdf($pdf, string $filename, string $title, string $routeName, array $routeParams = [])
+    {
+        if (! request()->boolean('raw')) {
+            return view('pdf.viewer', [
+                'title' => $title,
+                'pdfUrl' => route($routeName, array_merge($routeParams, ['raw' => 1])),
+            ]);
+        }
+
+        return $pdf->stream($filename);
+    }
+
     public function index()
     {
         // Subcategorías únicas (tipo) de productos generales
@@ -38,7 +50,12 @@ class ExportController extends Controller
             'tipo' => 'celular',
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('inventario-celulares.pdf');
+        return $this->streamOrViewPdf(
+            $pdf,
+            'inventario-celulares.pdf',
+            'Inventario Celulares',
+            'admin.exportar.celulares'
+        );
     }
 
     public function computadoras()
@@ -53,7 +70,12 @@ class ExportController extends Controller
             'tipo' => 'computadora',
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('inventario-computadoras.pdf');
+        return $this->streamOrViewPdf(
+            $pdf,
+            'inventario-computadoras.pdf',
+            'Inventario Computadoras',
+            'admin.exportar.computadoras'
+        );
     }
 
     public function productosApple()
@@ -68,7 +90,12 @@ class ExportController extends Controller
             'tipo' => 'producto_apple',
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('inventario-productos-apple.pdf');
+        return $this->streamOrViewPdf(
+            $pdf,
+            'inventario-productos-apple.pdf',
+            'Inventario Productos Apple',
+            'admin.exportar.productos-apple'
+        );
     }
 
     public function productosGenerales()
@@ -88,7 +115,12 @@ class ExportController extends Controller
             'subtipo' => 'todos',
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('inventario-productos-generales.pdf');
+        return $this->streamOrViewPdf(
+            $pdf,
+            'inventario-productos-generales.pdf',
+            'Inventario Productos Generales',
+            'admin.exportar.productos-generales'
+        );
     }
 
 
@@ -113,6 +145,12 @@ class ExportController extends Controller
             'subtipo' => ucfirst($tipo),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream("productos-generales-{$tipo}.pdf");
+        return $this->streamOrViewPdf(
+            $pdf,
+            "productos-generales-{$tipo}.pdf",
+            'Inventario ' . ucfirst($tipo),
+            'admin.exportar.productos-generales.tipo',
+            ['tipo' => $tipo]
+        );
     }
 }

@@ -14,7 +14,7 @@ use App\Http\Controllers\ReporteController;
 | ✅ Protegidas por X-AUTOMATION-TOKEN
 | ✅ Usadas por n8n (cron, IA, reportes automáticos)
 */
-Route::middleware('automation')
+Route::middleware(['automation', 'throttle:30,1'])
     ->prefix('automation')
     ->group(function () {
 

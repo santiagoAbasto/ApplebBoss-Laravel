@@ -11,31 +11,57 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+/*
+|--------------------------------------------------------------------------
+| ⚠️  REGISTRO RESTRINGIDO A ADMINISTRADORES
+|--------------------------------------------------------------------------
+| El registro público está DESHABILITADO.
+| Solo un admin autenticado puede crear nuevas cuentas
+| accediendo a /admin/register directamente desde el panel.
+|
+| Si necesitás habilitar el registro público temporalmente,
+| mové las rutas de 'register' al grupo 'guest' de abajo.
+|--------------------------------------------------------------------------
+*/
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+// ── Registro de usuario (solo admin autenticado) ────────────────────────
+Route::middleware(['auth', 'rol:admin'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('register', [RegisteredUserController::class, 'create'])
+            ->name('register');
+
+        Route::post('register', [RegisteredUserController::class, 'store'])
+            ->middleware('throttle:5,1');
+    });
+
+// ── Rutas de invitados (no autenticados) ────────────────────────────────
+Route::middleware('guest')->group(function () {
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:10,1');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
+        ->name('password.email')
+        ->middleware('throttle:5,1');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
+        ->name('password.store')
+        ->middleware('throttle:5,1');
 });
 
+// ── Rutas para usuarios autenticados ────────────────────────────────────
 Route::middleware('auth')->group(function () {
+
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
@@ -50,9 +76,11 @@ Route::middleware('auth')->group(function () {
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
+        ->middleware('throttle:5,1');
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('password', [PasswordController::class, 'update'])
+        ->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

@@ -60,7 +60,7 @@ class ClienteVendedorController extends Controller
         foreach ($clientes as $cliente) {
             PromocionEnviada::create([
                 'cliente_id' => $cliente->id,
-                'mensaje'    => '🎉 ¡Aprovecha nuestras nuevas promociones en AppleBoss!',
+                'mensaje'    => '🎉 ¡Aprovecha nuestras nuevas promociones en Apple Boss!',
                 'canal'      => 'whatsapp',
                 'enviado_en' => now(),
             ]);

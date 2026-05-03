@@ -35,9 +35,6 @@ use Illuminate\Http\Request;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
     ]);
 });
 
@@ -414,19 +411,19 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
 // ========================
 
 // Permutas rápidas
-Route::get('/api/permuta/{tipo}', function ($tipo) {
-
-    return match ($tipo) {
-        'celular' => \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get(),
-        'computadora' => \App\Models\Computadora::where('estado', 'permuta')->latest()->take(10)->get(),
-        'producto_general' => \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get(),
-        default => response()->json([], 404),
-    };
-});
+Route::middleware(['auth', 'verified', 'throttle:60,1'])
+    ->get('/api/permuta/{tipo}', function ($tipo) {
+        return match ($tipo) {
+            'celular' => \App\Models\Celular::where('estado', 'permuta')->latest()->take(10)->get(),
+            'computadora' => \App\Models\Computadora::where('estado', 'permuta')->latest()->take(10)->get(),
+            'producto_general' => \App\Models\ProductoGeneral::where('estado', 'permuta')->latest()->take(10)->get(),
+            default => response()->json([], 404),
+        };
+    });
 
 
 // API STOCK
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', 'throttle:120,1'])
     ->prefix('api/stock')
     ->name('api.stock.')
     ->group(function () {
@@ -459,7 +456,7 @@ Route::middleware(['auth', 'verified', 'rol:admin'])->group(function () {
 
 
 // API Permuta Store
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:60,1'])->group(function () {
     Route::post('/api/permuta/celular', [CelularController::class, 'apiStore']);
     Route::post('/api/permuta/computadora', [ComputadoraController::class, 'apiStore']);
     Route::post('/api/permuta/producto_general', [ProductoGeneralController::class, 'apiStore']);

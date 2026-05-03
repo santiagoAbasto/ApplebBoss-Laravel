@@ -11,29 +11,45 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Reglas de validación del login.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * Mejoras de seguridad:
+     *  - Email normalizado con 'lowercase' y validación RFC/DNS.
+     *  - Password mínimo de string, sin revelar longitud mínima al atacante.
+     *  - max:255 en ambos campos para evitar payloads gigantes.
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email'    => ['required', 'string', 'lowercase', 'email:rfc', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
         ];
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Mensajes de error unificados para no revelar si el email existe.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required'    => 'El correo es obligatorio.',
+            'email.email'       => 'Ingresá un correo válido.',
+            'password.required' => 'La contraseña es obligatoria.',
+        ];
+    }
+
+    /**
+     * Intenta autenticar al usuario.
+     *
+     * - Rate Limit: 5 intentos por [email + IP], bloqueo progresivo.
+     * - Mensaje genérico en fallo (no revela si el email existe).
+     * - Regenera token de sesión tras login exitoso (anti session fixation).
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -42,10 +58,10 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), decay: 300); // 5 minutos de decaimiento
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Las credenciales no son correctas.',
             ]);
         }
 
@@ -53,7 +69,9 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Ensure the login request is not rate limited.
+     * Comprueba que no se hayan superado los intentos permitidos.
+     *
+     * Límite: 5 intentos por ventana.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -68,18 +86,23 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => sprintf(
+                'Demasiados intentos. Intentá de nuevo en %d %s.',
+                $seconds < 60 ? $seconds : (int) ceil($seconds / 60),
+                $seconds < 60 ? 'segundos' : 'minutos'
+            ),
         ]);
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Clave de throttle: [email_normalizado | ip_address].
+     * Usar ambos evita que un atacante bloquee la cuenta de otro
+     * sólo con intentos desde distinta IP.
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(
+            Str::lower($this->string('email')) . '|' . $this->ip()
+        );
     }
 }

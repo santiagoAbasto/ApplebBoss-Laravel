@@ -507,7 +507,7 @@
   <table style="width: 100%; margin-top: 40px; font-size: 10.5px; text-align: center; border-collapse: collapse;">
     <tr>
       <td style="width: 50%; position: relative; height: 80px; padding: 0;">
-        <img src="{{ public_path('images/firma.png') }}" alt="Firma AppleBoss"
+        <img src="{{ public_path('images/firma.png') }}" alt="Firma Apple Boss"
           style="
           width: 150px;
           height: auto;
