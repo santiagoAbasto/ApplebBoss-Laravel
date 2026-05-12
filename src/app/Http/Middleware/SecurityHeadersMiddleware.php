@@ -12,7 +12,7 @@ class SecurityHeadersMiddleware
      * Agrega cabeceras de seguridad HTTP a TODAS las respuestas web.
      *
      * La CSP se adapta automáticamente al entorno:
-     *  - LOCAL / STAGING : permite Vite HMR (localhost:5173) y fuentes externas.
+     *  - LOCAL / STAGING : permite Vite HMR (localhost:5173/5174) y fuentes externas.
      *  - PRODUCCIÓN       : política estricta sin orígenes externos de desarrollo.
      */
     public function handle(Request $request, Closure $next): Response
@@ -121,20 +121,20 @@ class SecurityHeadersMiddleware
         return implode('; ', [
             "default-src 'self'",
 
-            // Vite HMR carga scripts desde localhost:5173
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173",
+            // Vite HMR carga scripts desde localhost:5173, o 5174 si 5173 ya esta ocupado.
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
             // Estilos: self + inline + bunny fonts + vite dev server
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net http://localhost:5173 http://127.0.0.1:5173",
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
-            // Fuentes
-            "font-src 'self' https://fonts.bunny.net data:",
+            // Fuentes: self + bunny.net + data URIs + fuentes servidas por Vite.
+            "font-src 'self' https://fonts.bunny.net data: http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
             // Imágenes
             "img-src 'self' data: blob:",
 
             // WebSocket de Vite HMR (ws://) + fetch normal
-            "connect-src 'self' http://localhost:5173 ws://localhost:5173 http://127.0.0.1:5173 ws://127.0.0.1:5173",
+            "connect-src 'self' http://localhost:5173 ws://localhost:5173 http://127.0.0.1:5173 ws://127.0.0.1:5173 http://localhost:5174 ws://localhost:5174 http://127.0.0.1:5174 ws://127.0.0.1:5174",
 
             // Workers
             "worker-src 'self' blob:",

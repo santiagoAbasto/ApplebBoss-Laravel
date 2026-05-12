@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 import axios from 'axios';
-import { PlusCircle, Printer, Receipt } from 'lucide-react';
+import { Pencil, PlusCircle, Printer, Receipt } from 'lucide-react';
 
 export default function Index({ ventas }) {
   const [codigoNota, setCodigoNota] = useState('');
@@ -50,11 +50,11 @@ export default function Index({ ventas }) {
       }];
     }
 
-    return venta.items.map((item) => {
+    return venta.items.map((item, itemIndex) => {
       const precioVenta = parseFloat(item.precio_venta || 0);
       const descuento = parseFloat(item.descuento || 0);
       const capital = parseFloat(item.precio_invertido || 0);
-      const permuta = parseFloat(venta.valor_permuta || 0);
+      const permuta = itemIndex === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
       const ganancia = precioVenta - descuento - permuta - capital;
 
       const nombre =
@@ -88,13 +88,14 @@ export default function Index({ ventas }) {
     (acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc),
     0
   );
+  const totalFinal = itemsDesglosados.reduce((acc, i) => acc + i.precioFinal, 0);
 
   return (
     <VendedorLayout>
       <Head title="Ventas Desglosadas" />
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
             Ventas Desglosadas
@@ -116,29 +117,33 @@ export default function Index({ ventas }) {
       </div>
 
       {/* BUSCADOR */}
-      <form
-        onSubmit={buscarNota}
-        className="flex flex-col sm:flex-row gap-3 mb-8"
-      >
-        <input
-          value={codigoNota}
-          onChange={(e) => setCodigoNota(e.target.value)}
-          placeholder="Buscar por código de nota o cliente"
-          className="w-full sm:w-80 rounded-xl border border-slate-200 px-4 py-3 text-sm
-            focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-        />
-        <button
-          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700
-            text-white text-sm font-semibold transition shadow"
-        >
-          Buscar
-        </button>
+      <form onSubmit={buscarNota} className="mb-5 rounded-xl border bg-white p-3 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1">
+            <label className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
+              Buscar nota
+            </label>
+            <input
+              value={codigoNota}
+              onChange={(e) => setCodigoNota(e.target.value)}
+              placeholder="Código de nota o cliente"
+              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm
+                focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+          </div>
+          <button
+            className="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700
+              text-white text-sm font-semibold transition shadow"
+          >
+            Buscar
+          </button>
+        </div>
       </form>
 
       {/* RESULTADOS BUSQUEDA */}
       {resultadosBusqueda.length > 0 && (
-        <div className="mb-8 rounded-2xl border bg-white shadow-sm">
-          <div className="px-5 py-3 border-b bg-slate-50 font-semibold text-slate-700">
+        <div className="mb-5 rounded-xl border bg-white shadow-sm">
+          <div className="px-4 py-2.5 border-b bg-slate-50 font-semibold text-slate-700">
             Resultados encontrados
           </div>
 
@@ -146,7 +151,7 @@ export default function Index({ ventas }) {
             <div
               key={r.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between
-                px-5 py-4 border-b last:border-b-0"
+                px-4 py-3 border-b last:border-b-0"
             >
               <div>
                 <div className="font-mono text-emerald-700 font-semibold">
@@ -158,6 +163,15 @@ export default function Index({ ventas }) {
               </div>
 
               <div className="flex gap-4 mt-3 sm:mt-0 text-sm">
+                {r.tipo === 'venta' && (
+                  <Link
+                    href={route('vendedor.ventas.edit', r.id_real)}
+                    className="text-slate-700 hover:underline font-medium"
+                  >
+                    Editar
+                  </Link>
+                )}
+
                 <a
                   href={
                     r.tipo === 'servicio_tecnico'
@@ -196,63 +210,79 @@ export default function Index({ ventas }) {
       )}
 
       {/* TABLA */}
-      <div className="hidden md:block rounded-2xl border bg-white shadow-sm overflow-x-auto">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-5">
+        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs text-slate-500">Movimientos</div>
+          <div className="text-xl font-bold text-slate-800">{itemsDesglosados.length}</div>
+        </div>
+        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs text-slate-500">Total final</div>
+          <div className="text-xl font-bold text-slate-800">{totalFinal.toFixed(2)} Bs</div>
+        </div>
+        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs text-slate-500">Ganancia positiva</div>
+          <div className="text-xl font-bold text-emerald-600">{gananciaTotal.toFixed(2)} Bs</div>
+        </div>
+      </div>
+
+      <div className="hidden md:block rounded-xl border bg-white shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[1180px]">
           <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3 text-left">Cliente</th>
-              <th className="px-4 py-3">Código</th>
-              <th className="px-4 py-3">Producto</th>
-              <th className="px-4 py-3 text-right">Venta</th>
-              <th className="px-4 py-3 text-right">Desc.</th>
-              <th className="px-4 py-3 text-right">Permuta</th>
-              <th className="px-4 py-3 text-right">Capital</th>
-              <th className="px-4 py-3 text-right">Final</th>
-              <th className="px-4 py-3 text-right">Ganancia</th>
-              <th className="px-4 py-3">Vendedor</th>
-              <th className="px-4 py-3">Fecha</th>
-              <th className="px-4 py-3 text-center">Boleta</th>
+              <th className="px-3 py-2.5 text-left">Cliente</th>
+              <th className="px-3 py-2.5">Código</th>
+              <th className="px-3 py-2.5">Producto</th>
+              <th className="px-3 py-2.5 text-right">Venta</th>
+              <th className="px-3 py-2.5 text-right">Desc.</th>
+              <th className="px-3 py-2.5 text-right">Permuta</th>
+              <th className="px-3 py-2.5 text-right">Capital</th>
+              <th className="px-3 py-2.5 text-right">Final</th>
+              <th className="px-3 py-2.5 text-right">Ganancia</th>
+              <th className="px-3 py-2.5">Vendedor</th>
+              <th className="px-3 py-2.5">Fecha</th>
+              <th className="px-3 py-2.5 text-center">Boleta</th>
+              <th className="px-3 py-2.5 text-center">Acciones</th>
             </tr>
           </thead>
 
           <tbody className="divide-y">
             {itemsDesglosados.map((i, idx) => (
               <tr key={idx} className="hover:bg-emerald-50/40 transition">
-                <td className="px-4 py-3">{i.cliente}</td>
-                <td className="px-4 py-3 font-mono text-emerald-700">
+                <td className="px-3 py-2.5">{i.cliente}</td>
+                <td className="px-3 py-2.5 font-mono text-emerald-700">
                   {i.codigoNota}
                 </td>
-                <td className="px-4 py-3">{i.producto}</td>
-                <td className="px-4 py-3 text-right">{i.precioVenta.toFixed(2)}</td>
-                <td className="px-4 py-3 text-right text-rose-600">
+                <td className="px-3 py-2.5">{i.producto}</td>
+                <td className="px-3 py-2.5 text-right">{i.precioVenta.toFixed(2)}</td>
+                <td className="px-3 py-2.5 text-right text-rose-600">
                   -{i.descuento.toFixed(2)}
                 </td>
-                <td className="px-4 py-3 text-right text-amber-600">
+                <td className="px-3 py-2.5 text-right text-amber-600">
                   -{i.permuta.toFixed(2)}
                 </td>
-                <td className="px-4 py-3 text-right text-blue-600">
+                <td className="px-3 py-2.5 text-right text-blue-600">
                   -{i.capital.toFixed(2)}
                 </td>
-                <td className="px-4 py-3 text-right font-medium">
+                <td className="px-3 py-2.5 text-right font-medium">
                   {i.precioFinal.toFixed(2)}
                 </td>
                 <td
-                  className={`px-4 py-3 text-right font-bold ${i.ganancia < 0 ? 'text-rose-600' : 'text-emerald-600'
+                  className={`px-3 py-2.5 text-right font-bold ${i.ganancia < 0 ? 'text-rose-600' : 'text-emerald-600'
                     }`}
                 >
                   {i.ganancia < 0
                     ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}`
                     : i.ganancia.toFixed(2)}
                 </td>
-                <td className="px-4 py-3">{i.vendedor}</td>
-                <td className="px-4 py-3 text-xs">
+                <td className="px-3 py-2.5">{i.vendedor}</td>
+                <td className="px-3 py-2.5 text-xs">
                   {new Date(i.fecha).toLocaleDateString('es-BO')}
                   <br />
                   <span className="text-slate-500">
                     {new Date(i.fecha).toLocaleTimeString('es-BO')}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-3 py-2.5 text-center">
                   <div className="flex flex-col gap-1 text-xs">
                     <a
                       href={route('vendedor.ventas.boleta', i.id_venta)}
@@ -278,13 +308,22 @@ export default function Index({ ventas }) {
                     </a>
                   </div>
                 </td>
+                <td className="px-3 py-2.5 text-center">
+                  <Link
+                    href={route('vendedor.ventas.edit', i.id_venta)}
+                    className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    <Pencil size={13} />
+                    Editar
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
         {/* RESUMEN */}
-        <div className="px-6 py-4 border-t bg-slate-50 flex justify-end">
+        <div className="px-5 py-3 border-t bg-slate-50 flex justify-end">
           <div className="text-right">
             <div className="text-sm text-slate-600">
               Ganancia Total Positiva
@@ -323,6 +362,15 @@ export default function Index({ ventas }) {
             </div>
 
             <div className="mt-4 flex gap-4 text-sm">
+              <Link
+                href={route('vendedor.ventas.edit', i.id_venta)}
+                className="text-slate-700 hover:underline font-medium"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <Pencil size={14} />
+                  Editar
+                </span>
+              </Link>
               <a
                 href={route('vendedor.ventas.boleta', i.id_venta)}
                 target="_blank"

@@ -14,11 +14,18 @@ class ProductoVendedorController extends Controller
 {
     public function index(Request $request)
     {
+        $orderedInventory = fn ($model) => $model::query()
+            ->where('estado', 'disponible')
+            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 WHEN 'vendido' THEN 1 WHEN 'permuta' THEN 2 ELSE 3 END")
+            ->orderByDesc('created_at')
+            ->paginate(25)
+            ->withQueryString();
+
         return Inertia::render('Vendedor/Productos/Index', [
-            'celulares' => Celular::where('estado', 'disponible')->paginate(25)->withQueryString(),
-            'computadoras' => Computadora::where('estado', 'disponible')->paginate(25)->withQueryString(),
-            'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->paginate(25)->withQueryString(),
-            'productosApple' => ProductoApple::where('estado', 'disponible')->paginate(25)->withQueryString(),
+            'celulares' => $orderedInventory(Celular::class),
+            'computadoras' => $orderedInventory(Computadora::class),
+            'productosGenerales' => $orderedInventory(ProductoGeneral::class),
+            'productosApple' => $orderedInventory(ProductoApple::class),
         ]);
     }
 }

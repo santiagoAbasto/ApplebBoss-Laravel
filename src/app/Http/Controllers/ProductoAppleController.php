@@ -9,7 +9,11 @@ class ProductoAppleController extends Controller
 {
     public function index()
     {
-        $productos = ProductoApple::latest()->get();
+        $productos = ProductoApple::query()
+            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 WHEN 'vendido' THEN 1 WHEN 'permuta' THEN 2 ELSE 3 END")
+            ->orderByDesc('created_at')
+            ->get();
+
         return inertia('Admin/ProductosApple/Index', compact('productos'));
     }
 

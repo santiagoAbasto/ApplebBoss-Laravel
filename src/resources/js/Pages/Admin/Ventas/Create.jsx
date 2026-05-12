@@ -8,6 +8,7 @@ import { useForm } from '@inertiajs/react';
 import NeonInput from '@/Components/NeonInput';
 import { NeonBox } from '@/Components/NeonBox';
 import { NeonField } from '@/Components/NeonField';
+import CardPaymentFields from '@/Components/CardPaymentFields';
 
 
 
@@ -316,39 +317,14 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
             </NeonField>
           </div>
 
-          {/* ================= TARJETA (CONDICIONAL) ================= */}
           {data.metodo_pago === 'tarjeta' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Inicio de tarjeta
-                </label>
-
-                <NeonInput
-                  maxLength={4}
-                  placeholder="Ej: 1234"
-                  value={data.inicio_tarjeta}
-                  onChange={(e) =>
-                    setData('inicio_tarjeta', e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Fin de tarjeta
-                </label>
-
-                <NeonInput
-                  maxLength={4}
-                  placeholder="Ej: 5678"
-                  value={data.fin_tarjeta}
-                  onChange={(e) =>
-                    setData('fin_tarjeta', e.target.value)
-                  }
-                />
-              </div>
-            </>
+            <CardPaymentFields
+              inicio={data.inicio_tarjeta}
+              fin={data.fin_tarjeta}
+              errors={errores}
+              onChangeInicio={(value) => setData('inicio_tarjeta', value)}
+              onChangeFin={(value) => setData('fin_tarjeta', value)}
+            />
           )}
         </div>
       </NeonBox>

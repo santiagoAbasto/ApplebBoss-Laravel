@@ -213,6 +213,10 @@
             <p><strong>N° Nota:</strong> {{ $venta->codigo_nota }}</p>
             <p><strong>Cliente:</strong> {{ $venta->nombre_cliente }}</p>
             <p><strong>Tel:</strong> {{ $venta->telefono_cliente ?? '—' }}</p>
+            <p><strong>Pago:</strong> {{ ucfirst($venta->metodo_pago) }}</p>
+            @if($venta->metodo_pago === 'tarjeta')
+            <p><strong>Tarjeta:</strong> {{ $venta->inicio_tarjeta ?? '••••' }} **** **** {{ $venta->fin_tarjeta ?? '••••' }}</p>
+            @endif
             <p><strong>Vendedor:</strong> {{ $venta->vendedor->name ?? '—' }}</p>
         </div>
 

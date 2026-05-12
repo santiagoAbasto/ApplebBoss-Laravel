@@ -309,6 +309,12 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
         Route::post('/ventas', [VentaController::class, 'store'])
             ->name('ventas.store');
 
+        Route::get('/ventas/{venta}/edit', [VentaController::class, 'edit'])
+            ->name('ventas.edit');
+
+        Route::put('/ventas/{venta}', [VentaController::class, 'update'])
+            ->name('ventas.update');
+
         Route::get('/ventas/{venta}/boleta', [VentaController::class, 'boleta'])
             ->name('ventas.boleta');
 
