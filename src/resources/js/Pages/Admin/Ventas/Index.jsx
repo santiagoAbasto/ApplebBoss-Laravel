@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 import axios from 'axios';
-import { Receipt, Search, PlusCircle } from 'lucide-react';
+import { Pencil, Receipt, Search, PlusCircle } from 'lucide-react';
 
 /* =======================
    CRUD UI (OFICIAL)
@@ -14,13 +14,8 @@ import {
   CrudTitle,
   CrudSubtitle,
   CrudCard,
-  CrudSectionTitle,
-  CrudGrid,
-  CrudLabel,
   CrudInput,
-  CrudActions,
   CrudButtonPrimary,
-  CrudButtonSecondary,
 } from '@/Components/CrudUI';
 
 export default function Index({ ventas }) {
@@ -68,11 +63,11 @@ export default function Index({ ventas }) {
       }];
     }
 
-    return venta.items.map((item) => {
+    return venta.items.map((item, itemIndex) => {
       const precioVenta = parseFloat(item.precio_venta || 0);
       const descuento = parseFloat(item.descuento || 0);
       const capital = parseFloat(item.precio_invertido || 0);
-      const permuta = parseFloat(venta.valor_permuta || 0);
+      const permuta = itemIndex === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
       const ganancia = precioVenta - descuento - permuta - capital;
 
       const nombre =
@@ -106,6 +101,7 @@ export default function Index({ ventas }) {
     (acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc),
     0
   );
+  const totalFinal = itemsDesglosados.reduce((acc, i) => acc + i.precioFinal, 0);
 
   return (
     <AdminLayout>
@@ -134,38 +130,35 @@ export default function Index({ ventas }) {
         </CrudHeader>
 
         {/* ================= BUSCADOR ================= */}
-        <CrudCard style={{ marginBottom: 22 }}>
-          <form onSubmit={buscarNota}>
-            <CrudSectionTitle>
-              <Search size={14} style={{ marginRight: 6 }} />
-              Buscar nota
-            </CrudSectionTitle>
+        <CrudCard style={{ marginBottom: 14, padding: '14px 16px' }}>
+          <form
+            onSubmit={buscarNota}
+            style={{ display: 'flex', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}
+          >
+            <div style={{ flex: '1 1 320px' }}>
+              <label style={compactLabel}>
+                <Search size={13} />
+                Buscar nota
+              </label>
+              <CrudInput
+                placeholder="Código de nota o cliente"
+                value={codigoNota}
+                onChange={(e) => setCodigoNota(e.target.value)}
+              />
+            </div>
 
-            <CrudGrid>
-              <div>
-                <CrudLabel>Código o cliente</CrudLabel>
-                <CrudInput
-                  placeholder="Ej: V-2024-001"
-                  value={codigoNota}
-                  onChange={(e) => setCodigoNota(e.target.value)}
-                />
-              </div>
-            </CrudGrid>
-
-            <CrudActions>
-              <CrudButtonPrimary type="submit">
-                Buscar
-              </CrudButtonPrimary>
-            </CrudActions>
+            <CrudButtonPrimary type="submit" style={{ padding: '11px 22px' }}>
+              Buscar
+            </CrudButtonPrimary>
           </form>
         </CrudCard>
 
         {/* ================= RESULTADOS ================= */}
         {resultadosBusqueda.length > 0 && (
-          <CrudCard style={{ marginBottom: 22 }}>
-            <CrudSectionTitle>
+          <CrudCard style={{ marginBottom: 14, padding: '14px 16px' }}>
+            <div style={compactTitle}>
               Resultados encontrados
-            </CrudSectionTitle>
+            </div>
 
             {resultadosBusqueda.map((r) => (
               <div
@@ -188,6 +181,15 @@ export default function Index({ ventas }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 14 }}>
+                  {r.tipo === 'venta' && (
+                    <Link
+                      href={route('admin.ventas.edit', r.id_real)}
+                      className="text-sm text-slate-700 hover:underline"
+                    >
+                      Editar
+                    </Link>
+                  )}
+
                   <a
                     href={
                       r.tipo === 'servicio_tecnico'
@@ -220,11 +222,26 @@ export default function Index({ ventas }) {
         )}
 
         {/* ================= TABLA ================= */}
-        <CrudCard>
-          <CrudSectionTitle>Detalle de movimientos</CrudSectionTitle>
+        <div style={summaryGrid}>
+          <div style={summaryBox}>
+            <span style={summaryLabel}>Movimientos</span>
+            <strong style={summaryValue}>{itemsDesglosados.length}</strong>
+          </div>
+          <div style={summaryBox}>
+            <span style={summaryLabel}>Total final</span>
+            <strong style={summaryValue}>{totalFinal.toFixed(2)} Bs</strong>
+          </div>
+          <div style={summaryBox}>
+            <span style={summaryLabel}>Ganancia positiva</span>
+            <strong style={{ ...summaryValue, color: '#16a34a' }}>{gananciaTotal.toFixed(2)} Bs</strong>
+          </div>
+        </div>
+
+        <CrudCard style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={tableHeader}>Detalle de movimientos</div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 1120, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#2563eb', color: '#fff' }}>
                   {[
@@ -240,6 +257,7 @@ export default function Index({ ventas }) {
                     'Vendedor',
                     'Fecha',
                     'Boleta',
+                    'Acciones',
                   ].map((h) => (
                     <th key={h} style={thWhite}>
                       {h}
@@ -314,6 +332,15 @@ export default function Index({ ventas }) {
                         </a>
                       </div>
                     </td>
+                    <td style={{ ...td, textAlign: 'center' }}>
+                      <Link
+                        href={route('admin.ventas.edit', i.id_venta)}
+                        className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Pencil size={13} />
+                        Editar
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -321,15 +348,7 @@ export default function Index({ ventas }) {
           </div>
 
           {/* ================= RESUMEN ================= */}
-          <div
-            style={{
-              borderTop: '1px solid #e5e7eb',
-              padding: '18px',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              background: '#f8fafc',
-            }}
-          >
+          <div style={footerSummary}>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 13, color: '#64748b' }}>
                 Ganancia Total Positiva
@@ -349,14 +368,81 @@ export default function Index({ ventas }) {
    TABLE STYLES
 =============================== */
 const thWhite = {
-  padding: '12px 14px',
+  padding: '10px 12px',
   fontSize: 12,
   fontWeight: 800,
   textAlign: 'left',
 };
 
 const td = {
-  padding: '12px 14px',
-  fontSize: 14,
+  padding: '9px 12px',
+  fontSize: 13,
   color: '#334155',
+};
+
+const compactLabel = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 6,
+  fontSize: 12,
+  fontWeight: 800,
+  color: '#1e3a8a',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+};
+
+const compactTitle = {
+  marginBottom: 8,
+  fontSize: 12,
+  fontWeight: 800,
+  color: '#1e3a8a',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+};
+
+const summaryGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 12,
+  marginBottom: 14,
+};
+
+const summaryBox = {
+  border: '1px solid #e5e7eb',
+  borderRadius: 12,
+  background: '#fff',
+  padding: '12px 14px',
+  boxShadow: '0 6px 16px rgba(15, 23, 42, 0.06)',
+};
+
+const summaryLabel = {
+  display: 'block',
+  fontSize: 12,
+  color: '#64748b',
+  marginBottom: 4,
+};
+
+const summaryValue = {
+  display: 'block',
+  fontSize: 18,
+  color: '#0f172a',
+};
+
+const tableHeader = {
+  padding: '14px 18px',
+  borderBottom: '1px solid #e5e7eb',
+  fontSize: 12,
+  fontWeight: 800,
+  color: '#1e3a8a',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+};
+
+const footerSummary = {
+  borderTop: '1px solid #e5e7eb',
+  padding: '12px 18px',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  background: '#f8fafc',
 };

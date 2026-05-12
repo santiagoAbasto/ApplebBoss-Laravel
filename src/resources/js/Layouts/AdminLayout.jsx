@@ -170,7 +170,13 @@ export default function AdminLayout({ children }) {
             </nav>
 
             {/* MAIN CONTENT */}
-            <div className="container-fluid pb-4">
+            <div
+              className="container-fluid pb-4"
+              style={{
+                paddingLeft: 'clamp(10px, 1.5vw, 24px)',
+                paddingRight: 'clamp(10px, 1.5vw, 24px)',
+              }}
+            >
               {children}
             </div>
           </div>

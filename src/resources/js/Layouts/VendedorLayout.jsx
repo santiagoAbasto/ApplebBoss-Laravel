@@ -251,7 +251,12 @@ export default function VendedorLayout({ children }) {
 
           {/* PAGE CONTENT */}
           <section className="flex-grow-1" style={{ overflowY: 'auto' }}>
-            <div className="mx-auto" style={{ padding: '1.75rem', maxWidth: 1600 }}>
+            <div
+              style={{
+                width: '100%',
+                padding: 'clamp(12px, 1.6vw, 26px)',
+              }}
+            >
               {children}
             </div>
           </section>

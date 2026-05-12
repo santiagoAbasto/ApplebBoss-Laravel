@@ -4,9 +4,14 @@ import styled from 'styled-components';
    WRAPPER GENERAL
 ===================================================== */
 export const CrudWrapper = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 18px 22px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(12px, 1.4vw, 22px);
+
+  @media (max-width: 720px) {
+    padding: 10px 8px;
+  }
 `;
 
 /* =====================================================
@@ -16,8 +21,8 @@ export const CrudHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 26px;
-  padding-bottom: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
   border-bottom: 2px solid #e5e7eb;
 
   @media (max-width: 720px) {
@@ -68,10 +73,15 @@ export const CrudBackLink = styled.a`
 ===================================================== */
 export const CrudCard = styled.div`
   background: #ffffff;
-  border-radius: 16px;
-  padding: 26px 28px;
+  border-radius: 14px;
+  padding: clamp(14px, 1.5vw, 22px);
   border: 1px solid #e5e7eb;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 720px) {
+    border-radius: 12px;
+    padding: 12px;
+  }
 `;
 
 /* =====================================================
@@ -83,7 +93,7 @@ export const CrudSectionTitle = styled.h3`
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #1e3a8a; /* azul corporativo */
-  margin: 28px 0 14px;
+  margin: 10px 0 12px;
 `;
 
 /* =====================================================
@@ -236,5 +246,4 @@ export const CrudButtonDanger = styled.button`
     transform: scale(0.96);
   }
 `;
-
 

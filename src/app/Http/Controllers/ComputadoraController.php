@@ -10,7 +10,10 @@ class ComputadoraController extends Controller
 {
     public function index()
     {
-        $computadoras = Computadora::orderBy('created_at', 'desc')->get();
+        $computadoras = Computadora::query()
+            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 WHEN 'vendido' THEN 1 WHEN 'permuta' THEN 2 ELSE 3 END")
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('Admin/Computadoras/Index', [
             'computadoras' => $computadoras,
