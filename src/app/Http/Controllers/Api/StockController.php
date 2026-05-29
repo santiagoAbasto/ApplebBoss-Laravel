@@ -43,11 +43,12 @@ class StockController extends Controller
             return response()->json(['error' => 'Código no proporcionado.'], 400);
         }
 
-        // Buscar en productos Apple (IMEI 1, IMEI 2 o número de serie)
+        // Buscar en productos Apple (IMEI 1, IMEI 2, número de serie o modelo exacto)
         $apple = ProductoApple::where(function ($q) use ($codigo) {
             $q->where('imei_1', $codigo)
               ->orWhere('imei_2', $codigo)
-              ->orWhere('numero_serie', $codigo);
+              ->orWhere('numero_serie', $codigo)
+              ->orWhere('modelo', $codigo);
         })
         ->where('estado', 'disponible')
         ->first();
@@ -88,8 +89,11 @@ class StockController extends Controller
             ]);
         }
 
-        // Buscar en computadoras (número de serie)
-        $computadora = Computadora::where('numero_serie', $codigo)
+        // Buscar en computadoras (número de serie o nombre exacto)
+        $computadora = Computadora::where(function ($q) use ($codigo) {
+            $q->where('numero_serie', $codigo)
+              ->orWhere('nombre', $codigo);
+        })
             ->where('estado', 'disponible')
             ->first();
 
@@ -107,8 +111,11 @@ class StockController extends Controller
             ]);
         }
 
-        // Buscar en productos generales (código exacto)
-        $pg = ProductoGeneral::where('codigo', $codigo)
+        // Buscar en productos generales (código o nombre exacto)
+        $pg = ProductoGeneral::where(function ($q) use ($codigo) {
+            $q->where('codigo', $codigo)
+              ->orWhere('nombre', $codigo);
+        })
             ->where('estado', 'disponible')
             ->first();
 

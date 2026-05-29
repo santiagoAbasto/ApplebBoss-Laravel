@@ -15,6 +15,8 @@ WORKDIR /var/www/html
 
 # ✅ Habilitar mod_rewrite para Laravel
 RUN a2enmod rewrite
+RUN echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf \
+ && a2enconf servername
 
 # ✅ Cambiar DocumentRoot a /var/www/html/public
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
@@ -22,3 +24,11 @@ RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /e
     AllowOverride All\n\
     Require all granted\n\
 </Directory>' >> /etc/apache2/apache2.conf
+
+# ✅ Instalar dependencias de Composer dentro de Docker (evita deadlocks de macOS VirtioFS)
+COPY src/composer.json src/composer.lock ./
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+# ✅ Preparar directorios escribibles. El código de la app entra por volumen en desarrollo.
+RUN mkdir -p bootstrap/cache storage/logs storage/framework/cache storage/framework/sessions storage/framework/views \
+    && chmod -R 777 bootstrap/cache storage

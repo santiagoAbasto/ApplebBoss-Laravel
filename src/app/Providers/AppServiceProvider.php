@@ -27,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->shouldUseBuiltAssetsInLocal()) {
+            Vite::useHotFile(storage_path('framework/vite-disabled.hot'));
+        }
+
         // ── Política de contraseñas global ────────────────────────────────
         Password::defaults(function () {
             return Password::min(8)
@@ -43,5 +47,14 @@ class AppServiceProvider extends ServiceProvider
 
         // ── Vite prefetch ─────────────────────────────────────────────────
         Vite::prefetch(concurrency: 3);
+    }
+
+    private function shouldUseBuiltAssetsInLocal(): bool
+    {
+        if (! app()->environment('local')) {
+            return false;
+        }
+
+        return ! filter_var(env('VITE_HMR', false), FILTER_VALIDATE_BOOLEAN);
     }
 }

@@ -3,11 +3,11 @@ import { Head, router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
 
-import Ui3DCard from '@/components/Ui3DCard';
-import AnimatedButton from '@/components/AnimatedButton';
-import QuickActionCards from '@/components/QuickActionCards';
-import UiversePanelCard from '@/components/UiversePanelCard';
-import ConfirmLogoutModal from '@/components/ConfirmLogoutModal';
+import Ui3DCard from '@/Components/Ui3DCard';
+import AnimatedButton from '@/Components/AnimatedButton';
+import QuickActionCards from '@/Components/QuickActionCards';
+import UiversePanelCard from '@/Components/UiversePanelCard';
+import ConfirmLogoutModal from '@/Components/ConfirmLogoutModal';
 
 export default function Dashboard({
   auth,

@@ -9,6 +9,7 @@ import NeonInput from '@/Components/NeonInput';
 import { NeonBox } from '@/Components/NeonBox';
 import { NeonField } from '@/Components/NeonField';
 import CardPaymentFields from '@/Components/CardPaymentFields';
+import { notifyRecordsUpdated, useAutoRefreshCallback } from '@/Hooks/useAutoRefresh';
 
 
 
@@ -39,6 +40,28 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const [errores, setErrores] = useState({});
   const [items, setItems] = useState([]); // necesario para el manejo de los productos
 
+  const normalizarTexto = (valor) => String(valor ?? '').trim().toLowerCase();
+
+  const camposBusquedaExacta = (producto) => [
+    producto.codigo,
+    producto.imei_1,
+    producto.imei_2,
+    producto.numero_serie,
+    producto.nombre,
+    producto.modelo,
+  ];
+
+  const claveProducto = (producto) =>
+    producto.codigo || producto.imei_1 || producto.imei_2 || producto.numero_serie || producto.nombre || producto.modelo || '';
+
+  const prepararProducto = (producto) => ({
+    ...producto,
+    precio_venta: Number(producto.precio_venta ?? 0),
+    precio_costo: Number(producto.precio_costo ?? 0),
+  });
+
+  const formatoBs = (valor) => Number(valor || 0).toFixed(2);
+
   const fetchStock = async () => {
     const [c, comp, pg, apple] = await Promise.all([
       axios.get(route('api.stock.celulares')),
@@ -55,27 +78,32 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   };
 
   const seleccionarProducto = (producto) => {
+    const productoPreparado = prepararProducto(producto);
+
     setProductoSeleccionado({
       tipo: productoSeleccionado.tipo, // ✅ EL TIPO VIENE DEL SELECT
-      codigo: producto.codigo || producto.imei_1 || producto.numero_serie,
+      codigo: claveProducto(productoPreparado),
       cantidad: 1,
       descuento: 0,
-      imei: producto.imei_1 || '',
-      producto,
+      imei: productoPreparado.imei_1 || '',
+      producto: productoPreparado,
     });
 
     setMostrarProductos(false);
   };
 
   useEffect(() => { fetchStock(); }, []);
+  useAutoRefreshCallback(fetchStock, 7000);
 
   const buscarProductoPorCodigo = (tipo, codigo) => {
     if (!codigo) return null;
+    const termino = normalizarTexto(codigo);
+    const coincideExacto = (p) => camposBusquedaExacta(p).some((campo) => normalizarTexto(campo) === termino);
 
-    if (tipo === 'celular') return stocks.celulares.find(p => p.imei_1 === codigo || p.imei_2 === codigo);
-    if (tipo === 'computadora') return stocks.computadoras.find(p => p.numero_serie === codigo);
-    if (tipo === 'producto_general') return stocks.productosGenerales.find(p => p.codigo === codigo);
-    if (tipo === 'producto_apple') return stocks.productosApple.find(p => p.imei_1 === codigo || p.imei_2 === codigo || p.numero_serie === codigo);
+    if (tipo === 'celular') return stocks.celulares.find(coincideExacto);
+    if (tipo === 'computadora') return stocks.computadoras.find(coincideExacto);
+    if (tipo === 'producto_general') return stocks.productosGenerales.find(coincideExacto);
+    if (tipo === 'producto_apple') return stocks.productosApple.find(coincideExacto);
     return null;
   };
 
@@ -83,28 +111,37 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
     const { tipo, producto, cantidad, descuento, imei, codigo } = productoSeleccionado;
     if (!producto || !tipo || cantidad <= 0 || !codigo) return alert('Datos incompletos.');
 
-    let disponibles = 1;
-    if (tipo === 'producto_general') {
-      disponibles = stocks.productosGenerales.filter(p => p.codigo === codigo).length;
-      const yaAgregados = items.filter(i => i.tipo === 'producto_general' && i.detalles.codigo === codigo).reduce((acc, i) => acc + i.cantidad, 0);
-      if (cantidad + yaAgregados > disponibles) return alert(`Solo hay ${disponibles} unidades disponibles de este producto.`);
-    } else {
-      if (cantidad > 1) return alert('Solo puedes vender una unidad a la vez.');
+    const productoExacto = buscarProductoPorCodigo(tipo, codigo);
+    if (!productoExacto || Number(productoExacto.id) !== Number(producto.id)) {
+      return alert('Selecciona un producto disponible con código, IMEI, serie o nombre exacto.');
     }
+
+    if (cantidad > 1) return alert('Solo puedes vender una unidad a la vez.');
 
     const yaExiste = items.some(i => i.tipo === tipo && i.producto_id === producto.id);
     if (yaExiste) return alert('Ya está en la lista.');
 
-    const subtotal = (producto.precio_venta - descuento) * cantidad;
-    const precio_invertido = producto.precio_costo * cantidad;
+    const precioVenta = Number(producto.precio_venta ?? 0);
+    const precioCosto = Number(producto.precio_costo ?? 0);
+
+    if (!Number.isFinite(precioVenta) || precioVenta <= 0) {
+      return alert('Este producto no tiene precio de venta válido. Revísalo en inventario antes de vender.');
+    }
+
+    if (Number(descuento || 0) > precioVenta) {
+      return alert('El descuento no puede ser mayor al precio de venta.');
+    }
+
+    const subtotal = (precioVenta - Number(descuento || 0)) * cantidad;
+    const precio_invertido = precioCosto * cantidad;
 
     setItems([...items, {
       tipo,
       producto_id: producto.id,
       cantidad,
-      precio_venta: producto.precio_venta,
+      precio_venta: precioVenta,
       precio_invertido,
-      descuento,
+      descuento: Number(descuento || 0),
       subtotal,
       nombre: producto.nombre || producto.modelo || '---',
       imei: tipo === 'celular' ? imei : null,
@@ -159,12 +196,13 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const [mostrarProductos, setMostrarProductos] = useState(false);
 
   const buscarSugerencias = (texto) => {
-    if (!productoSeleccionado.tipo || texto.length < 2) {
+    const term = normalizarTexto(texto);
+
+    if (!productoSeleccionado.tipo || term.length < 1) {
       setMostrarProductos(false);
       return;
     }
 
-    const term = texto.toLowerCase();
     let fuente = [];
 
     // 🔹 Elegimos la fuente según tipo
@@ -184,18 +222,10 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
       fuente = stocks.productosApple;
     }
 
-    // 🔹 Búsqueda FLEXIBLE por nombre, modelo, código, imei, serie
-    const resultados = fuente.filter((p) => {
-      return (
-        p.nombre?.toLowerCase().includes(term) ||
-        p.modelo?.toLowerCase().includes(term) ||
-        p.codigo?.toLowerCase().includes(term) ||
-        p.numero_serie?.toLowerCase().includes(term) ||
-        p.imei_1?.includes(term) ||
-        p.imei_2?.includes(term)
-      );
-    }).map(p => ({
-      ...p,
+    const resultados = fuente.filter((p) =>
+      camposBusquedaExacta(p).some((campo) => normalizarTexto(campo) === term)
+    ).map(p => ({
+      ...prepararProducto(p),
       tipo: productoSeleccionado.tipo, // 🔥 CLAVE
     }));
 
@@ -218,6 +248,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
 
     try {
       const response = await axios.post(route('vendedor.ventas.store'), payload);
+      notifyRecordsUpdated();
       const ventaId = response.data.venta_id;
       if (ventaId) window.open(`/vendedor/ventas/${ventaId}/boleta`, '_blank');
       router.visit(route('vendedor.ventas.index'));
@@ -371,11 +402,11 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
           {/* BUSCADOR */}
           <div className="md:col-span-2 relative">
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Código / IMEI / Nombre
+              Código / IMEI / Serie / Nombre exacto
             </label>
 
             <NeonInput
-              placeholder="Buscar por código, IMEI o nombre"
+              placeholder="Escribe el dato exacto del producto"
               value={productoSeleccionado.codigo}
               onChange={(e) => {
                 const v = e.target.value;
@@ -422,7 +453,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
                 {productoSeleccionado.producto.modelo || productoSeleccionado.producto.nombre}
               </div>
               <div>
-                <span className="font-medium">Precio:</span> Bs {productoSeleccionado.producto.precio_venta}
+                <span className="font-medium">Precio:</span> Bs {formatoBs(productoSeleccionado.producto.precio_venta)}
               </div>
               <div>
                 <span className="font-medium">Stock:</span> {productoSeleccionado.producto.stock ?? 1}
@@ -529,8 +560,8 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
                 <td>{i + 1}</td>
                 <td>{item.nombre}</td>
                 <td>{item.cantidad}</td>
-                <td>Bs {item.precio_venta}</td>
-                <td>Bs {item.descuento}</td>
+                <td>Bs {formatoBs(item.precio_venta)}</td>
+                <td>Bs {formatoBs(item.descuento)}</td>
                 <td className="font-semibold text-emerald-700">
                   Bs {item.subtotal.toFixed(2)}
                 </td>

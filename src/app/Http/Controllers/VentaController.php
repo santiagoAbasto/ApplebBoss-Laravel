@@ -18,6 +18,7 @@ use App\Services\GeneradorCodigos;
 use Illuminate\Support\Facades\DB;
 use App\Models\SystemNotification;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 
 
@@ -28,6 +29,102 @@ class VentaController extends Controller
         if (auth()->user()->rol === 'vendedor' && (int) $venta->user_id !== (int) auth()->id()) {
             abort(404);
         }
+    }
+
+    private function productModelForSaleType(string $tipo): ?string
+    {
+        return match ($tipo) {
+            'celular' => Celular::class,
+            'computadora' => Computadora::class,
+            'producto_general' => ProductoGeneral::class,
+            'producto_apple' => ProductoApple::class,
+            default => null,
+        };
+    }
+
+    private function productLabelForSale($producto): string
+    {
+        return $producto->nombre
+            ?? $producto->modelo
+            ?? $producto->codigo
+            ?? $producto->numero_serie
+            ?? ('Producto #' . $producto->id);
+    }
+
+    private function getAvailableProductForSale(string $tipo, int $productoId, int $index)
+    {
+        $modelo = $this->productModelForSaleType($tipo);
+
+        if (! $modelo) {
+            throw ValidationException::withMessages([
+                "items.$index.tipo" => 'Tipo de producto inválido.',
+            ]);
+        }
+
+        $producto = $modelo::whereKey($productoId)
+            ->where('estado', 'disponible')
+            ->lockForUpdate()
+            ->first();
+
+        if (! $producto) {
+            throw ValidationException::withMessages([
+                "items.$index.producto_id" => 'El producto seleccionado no existe o ya no está disponible.',
+            ]);
+        }
+
+        if ((float) ($producto->precio_venta ?? 0) <= 0) {
+            throw ValidationException::withMessages([
+                "items.$index.precio_venta" => 'El producto "' . $this->productLabelForSale($producto) . '" no tiene precio de venta válido.',
+            ]);
+        }
+
+        if ((float) ($producto->precio_costo ?? 0) < 0) {
+            throw ValidationException::withMessages([
+                "items.$index.precio_invertido" => 'El producto "' . $this->productLabelForSale($producto) . '" tiene costo inválido.',
+            ]);
+        }
+
+        return $producto;
+    }
+
+    private function buildValidatedSaleItems(array $items): array
+    {
+        $validated = [];
+
+        foreach ($items as $index => $item) {
+            $tipo = (string) ($item['tipo'] ?? '');
+            $cantidad = max(1, (int) ($item['cantidad'] ?? 1));
+            $descuento = max(0, (float) ($item['descuento'] ?? 0));
+            $producto = $this->getAvailableProductForSale($tipo, (int) ($item['producto_id'] ?? 0), $index);
+
+            if ($cantidad > 1) {
+                throw ValidationException::withMessages([
+                    "items.$index.cantidad" => 'Solo se puede vender una unidad por producto seleccionado.',
+                ]);
+            }
+
+            $precioVenta = (float) $producto->precio_venta;
+            $precioCosto = (float) ($producto->precio_costo ?? 0);
+
+            if ($descuento > $precioVenta) {
+                throw ValidationException::withMessages([
+                    "items.$index.descuento" => 'El descuento no puede ser mayor al precio de venta.',
+                ]);
+            }
+
+            $validated[] = [
+                'tipo' => $tipo,
+                'producto_id' => (int) $producto->id,
+                'cantidad' => $cantidad,
+                'precio_venta' => $precioVenta,
+                'precio_invertido' => $precioCosto * $cantidad,
+                'descuento' => $descuento,
+                'subtotal' => ($precioVenta - $descuento) * $cantidad,
+                'producto' => $producto,
+            ];
+        }
+
+        return $validated;
     }
 
     private function ventaEditSnapshot(Venta $venta): array
@@ -221,6 +318,10 @@ class VentaController extends Controller
             'inicio_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
             'fin_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
             'items' => 'required|array|min:1',
+            'items.*.tipo' => 'required|in:celular,computadora,producto_general,producto_apple',
+            'items.*.producto_id' => 'required|integer',
+            'items.*.cantidad' => 'required|integer|min:1',
+            'items.*.descuento' => 'nullable|numeric|min:0',
             'equipo' => 'required_if:tipo_venta,servicio_tecnico|string',
             'detalle_servicio' => 'required_if:tipo_venta,servicio_tecnico|string',
             'tecnico' => 'required_if:tipo_venta,servicio_tecnico|string',
@@ -299,10 +400,13 @@ class VentaController extends Controller
             $subtotal = 0;
             $ganancia = 0;
             $aplicaPermuta = false;
+            $itemsValidados = $this->buildValidatedSaleItems($request->items);
+            $precioInvertidoTotal = 0;
 
-            foreach ($request->items as $item) {
+            foreach ($itemsValidados as $item) {
                 $subtotal += $item['subtotal'];
                 $ganancia += ($item['subtotal'] - $item['precio_invertido']);
+                $precioInvertidoTotal += $item['precio_invertido'];
 
                 if (in_array($item['tipo'], ['celular', 'computadora'])) {
                     $aplicaPermuta = true;
@@ -312,7 +416,7 @@ class VentaController extends Controller
             /* ======================================================
          * 3) CÓDIGO CORRELATIVO VENTA (AT-V###)
          * ====================================================== */
-            $venta = GeneradorCodigos::crearVentaConCodigo(function (string $codigoVenta) use ($request, $subtotal, $aplicaPermuta, $permutaCosto, $entregado) {
+            $venta = GeneradorCodigos::crearVentaConCodigo(function (string $codigoVenta) use ($request, $subtotal, $aplicaPermuta, $permutaCosto, $entregado, $precioInvertidoTotal) {
                 return Venta::create([
                     'codigo_nota' => $codigoVenta,
 
@@ -321,14 +425,14 @@ class VentaController extends Controller
                     'tipo_venta' => $request->tipo_venta,
                     'es_permuta' => $request->es_permuta,
                     'tipo_permuta' => $request->tipo_permuta,
-                    'precio_invertido' => $request->precio_invertido ?? 0,
-                    'precio_venta' => $request->precio_venta ?? 0,
+                    'precio_invertido' => $precioInvertidoTotal,
+                    'precio_venta' => $subtotal,
                     'descuento' => $request->descuento ?? 0,
                     'subtotal' => $subtotal,
                     'ganancia_neta' => $subtotal
                         - ($request->descuento ?? 0)
                         - ($aplicaPermuta ? $permutaCosto : 0)
-                        - ($request->precio_invertido ?? 0),
+                        - $precioInvertidoTotal,
                     'valor_permuta' => $permutaCosto,
                     'metodo_pago' => $request->metodo_pago,
                     'inicio_tarjeta' => $request->metodo_pago === 'tarjeta' ? $request->inicio_tarjeta : null,
@@ -348,7 +452,7 @@ class VentaController extends Controller
             /* ======================================================
  * 5) CREAR ITEMS (CON SNAPSHOT BI PROFESIONAL)
  * ====================================================== */
-            foreach ($request->items as $item) {
+            foreach ($itemsValidados as $item) {
 
                 $snapshot = [
                     'categoria' => null,
@@ -368,7 +472,7 @@ class VentaController extends Controller
          * 📱 CELULAR
          * ========================= */
                     case 'celular':
-                        $producto = Celular::findOrFail($item['producto_id']);
+                        $producto = $item['producto'];
 
                         $snapshot['categoria'] = 'celulares';
                         $snapshot['nombre_producto'] = $producto->modelo;
@@ -382,7 +486,7 @@ class VentaController extends Controller
          * 💻 COMPUTADORA
          * ========================= */
                     case 'computadora':
-                        $producto = Computadora::findOrFail($item['producto_id']);
+                        $producto = $item['producto'];
 
                         $snapshot['categoria'] = 'computadoras';
                         $snapshot['nombre_producto'] = $producto->nombre;
@@ -396,7 +500,7 @@ class VentaController extends Controller
          * 📦 PRODUCTO GENERAL
          * ========================= */
                     case 'producto_general':
-                        $producto = ProductoGeneral::findOrFail($item['producto_id']);
+                        $producto = $item['producto'];
 
                         $snapshot['categoria'] = $producto->tipo; // vidrio, funda, cable, etc.
                         $snapshot['nombre_producto'] = $producto->nombre;
@@ -406,7 +510,7 @@ class VentaController extends Controller
          * 🍎 PRODUCTO APPLE
          * ========================= */
                     case 'producto_apple':
-                        $producto = ProductoApple::findOrFail($item['producto_id']);
+                        $producto = $item['producto'];
 
                         $snapshot['categoria'] = 'productos_apple';
                         $snapshot['nombre_producto'] = $producto->modelo;
@@ -432,22 +536,9 @@ class VentaController extends Controller
             /* ======================================================
          * 6) CAMBIAR ESTADO A VENDIDO (INCLUYE APPLE)
          * ====================================================== */
-            foreach ($request->items as $item) {
-                $modelo = match ($item['tipo']) {
-                    'celular' => Celular::class,
-                    'computadora' => Computadora::class,
-                    'producto_general' => ProductoGeneral::class,
-                    'producto_apple' => ProductoApple::class,
-                    default => null,
-                };
-
-                if ($modelo) {
-                    $producto = $modelo::find($item['producto_id']);
-                    if ($producto) {
-                        $producto->estado = 'vendido';
-                        $producto->save();
-                    }
-                }
+            foreach ($itemsValidados as $item) {
+                $item['producto']->estado = 'vendido';
+                $item['producto']->save();
             }
 
             /* ======================================================

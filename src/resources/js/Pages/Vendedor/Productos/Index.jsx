@@ -3,6 +3,7 @@ import InventoryTable from "@/Components/InventoryTable";
 import { Head } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
+import { useAutoRefresh } from "@/Hooks/useAutoRefresh";
 
 export default function Index({
   celulares = [],
@@ -13,6 +14,7 @@ export default function Index({
   const [activeTab, setActiveTab] = useState("celulares");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+  useAutoRefresh(["celulares", "computadoras", "productosGenerales", "productosApple"]);
 
   const tabs = {
     celulares: {
