@@ -4,10 +4,12 @@ import { route } from 'ziggy-js';
 import { useState } from 'react';
 import axios from 'axios';
 import { Pencil, PlusCircle, Printer, Receipt } from 'lucide-react';
+import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 
 export default function Index({ ventas }) {
   const [codigoNota, setCodigoNota] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+  useAutoRefresh(['ventas']);
 
   const buscarNota = async (e) => {
     e.preventDefault();

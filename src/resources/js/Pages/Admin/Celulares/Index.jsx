@@ -4,6 +4,7 @@ import { route } from "ziggy-js";
 import AdminLayout from "@/Layouts/AdminLayout";
 import ToastContainer, { showError, showSuccess } from "@/Components/ToastNotification";
 import InventoryTable from "@/Components/InventoryTable";
+import { useAutoRefresh } from "@/Hooks/useAutoRefresh";
 import { Plus, Smartphone } from "lucide-react";
 import {
   CrudButtonDanger,
@@ -20,6 +21,7 @@ import {
 
 export default function CelularesIndex({ celulares = [] }) {
   const [busqueda, setBusqueda] = useState("");
+  useAutoRefresh(["celulares"]);
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();

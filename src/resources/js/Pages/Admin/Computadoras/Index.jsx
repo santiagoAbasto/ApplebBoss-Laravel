@@ -4,6 +4,7 @@ import { route } from "ziggy-js";
 import AdminLayout from "@/Layouts/AdminLayout";
 import ToastContainer, { showError, showSuccess } from "@/Components/ToastNotification";
 import InventoryTable from "@/Components/InventoryTable";
+import { useAutoRefresh } from "@/Hooks/useAutoRefresh";
 import { Laptop, Plus } from "lucide-react";
 import {
   CrudButtonDanger,
@@ -20,6 +21,7 @@ import {
 
 export default function ComputadorasIndex({ computadoras = [] }) {
   const [busqueda, setBusqueda] = useState("");
+  useAutoRefresh(["computadoras"]);
 
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
