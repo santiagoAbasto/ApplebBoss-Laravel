@@ -11,6 +11,7 @@ use App\Http\Controllers\CelularController;
 use App\Http\Controllers\ProductoGeneralController;
 use App\Http\Controllers\ComputadoraController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\ServicioTecnicoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\DashboardController;
@@ -128,6 +129,26 @@ Route::middleware(['auth', 'verified', 'rol:admin'])
         Route::resource('ventas', VentaController::class)
             ->names('ventas')
             ->parameters(['ventas' => 'venta']);
+
+        // ========================
+        // 📌 Reservas
+        // ========================
+        Route::get('/reservas/activas', [ReservaController::class, 'activas'])
+            ->name('reservas.activas');
+
+        Route::patch('/reservas/{reserva}/estado', [ReservaController::class, 'updateEstado'])
+            ->name('reservas.estado');
+
+        Route::get('/reservas/{reserva}/boleta', [ReservaController::class, 'boleta'])
+            ->name('reservas.boleta');
+
+        Route::get('/reservas/{reserva}/boleta-80', [ReservaController::class, 'boleta80'])
+            ->name('reservas.boleta80');
+
+        Route::resource('reservas', ReservaController::class)
+            ->only(['index', 'create', 'store'])
+            ->names('reservas')
+            ->parameters(['reservas' => 'reserva']);
 
         // ========================
         // 🧰 Servicios Técnicos
@@ -329,6 +350,31 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
 
         Route::get('/ventas/buscar-solo-ventas', [VentaController::class, 'buscarSoloVentas'])
             ->name('ventas.buscarSoloVentas');
+
+        // ========================
+        // 📌 RESERVAS
+        // ========================
+
+        Route::get('/reservas', [ReservaController::class, 'index'])
+            ->name('reservas.index');
+
+        Route::get('/reservas/create', [ReservaController::class, 'create'])
+            ->name('reservas.create');
+
+        Route::post('/reservas', [ReservaController::class, 'store'])
+            ->name('reservas.store');
+
+        Route::get('/reservas/activas', [ReservaController::class, 'activas'])
+            ->name('reservas.activas');
+
+        Route::patch('/reservas/{reserva}/estado', [ReservaController::class, 'updateEstado'])
+            ->name('reservas.estado');
+
+        Route::get('/reservas/{reserva}/boleta', [ReservaController::class, 'boleta'])
+            ->name('reservas.boleta');
+
+        Route::get('/reservas/{reserva}/boleta-80', [ReservaController::class, 'boleta80'])
+            ->name('reservas.boleta80');
 
         // ========================
         // 🧰 SERVICIO TÉCNICO

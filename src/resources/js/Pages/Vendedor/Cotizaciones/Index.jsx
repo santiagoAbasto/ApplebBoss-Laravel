@@ -43,10 +43,13 @@ export default function Index({ cotizaciones = [] }) {
       return;
     }
 
-    router.post(route('vendedor.cotizaciones.enviar-lote'), {
+    router.post(route('vendedor.cotizaciones.whatsapp-lote'), {
       ids: seleccionados,
     });
   };
+
+  const getPdfUrl = (cot) =>
+    cot.drive_url || route('vendedor.cotizaciones.pdf', cot.id);
 
   const enviarWhatsApp = (cot) => {
     const numero = `${cot.telefono || ''}`.replace(/\D/g, '');
@@ -57,7 +60,7 @@ export default function Index({ cotizaciones = [] }) {
 
     const nombre = cot.nombre_cliente;
     const total = calcularTotalCotizacion(cot, 'con_factura').toFixed(2);
-    const pdf = cot.drive_url || 'https://appleboss.bo/pdf-no-disponible';
+    const pdf = getPdfUrl(cot);
 
     const mensaje =
       `Hola ${nombre}, gracias por confiar en *Apple Boss*.\n\n` +
@@ -218,13 +221,11 @@ export default function Index({ cotizaciones = [] }) {
 
                   <td className="px-2 py-3">
                     <div className="flex flex-wrap justify-center gap-1">
-                      {cot.drive_url && (
-                        <a href={cot.drive_url} target="_blank" rel="noreferrer">
-                          <FancyButton size="sm" variant="primary">
-                            Ver PDF
-                          </FancyButton>
-                        </a>
-                      )}
+                      <a href={getPdfUrl(cot)} target="_blank" rel="noreferrer">
+                        <FancyButton size="sm" variant="primary">
+                          Ver PDF
+                        </FancyButton>
+                      </a>
 
                       <FancyButton
                         size="sm"

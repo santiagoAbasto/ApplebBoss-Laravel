@@ -24,6 +24,9 @@ export default defineConfig({
     host: '0.0.0.0',      // Docker escucha en todos
     port: 5173,
     strictPort: true,
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
     hmr: {
       host: 'localhost', // 👈 CLAVE: lo que ve el navegador
       overlay: false,

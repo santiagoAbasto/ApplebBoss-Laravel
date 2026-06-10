@@ -1,10 +1,10 @@
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import VentaEditForm from '@/Components/VentaEditForm';
 
-export default function Edit({ venta }) {
+export default function Edit({ venta, productosGenerales = [] }) {
   return (
     <VendedorLayout>
-      <VentaEditForm venta={venta} routePrefix="vendedor" accent="emerald" />
+      <VentaEditForm venta={venta} productosGenerales={productosGenerales} routePrefix="vendedor" accent="emerald" />
     </VendedorLayout>
   );
 }

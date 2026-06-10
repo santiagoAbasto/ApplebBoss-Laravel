@@ -41,4 +41,35 @@ class Celular extends Model
     public const ESTADO_DISPONIBLE = 'disponible';
     public const ESTADO_VENDIDO = 'vendido';
     public const ESTADO_PERMUTA = 'permuta';
+
+    public function scopeOrdenInventarioIphone($query)
+    {
+        $modeloNormalizado = "LOWER(REGEXP_REPLACE(COALESCE(modelo, ''), '[^a-zA-Z0-9]', '', 'g'))";
+        $ordenModelo = [
+            ["({$modeloNormalizado} = 'x' OR {$modeloNormalizado} LIKE '%iphonex%') AND {$modeloNormalizado} NOT LIKE '%xs%' AND {$modeloNormalizado} NOT LIKE '%xr%'", 100],
+            ["({$modeloNormalizado} LIKE '%iphonexs%' OR {$modeloNormalizado} LIKE '%xs%') AND {$modeloNormalizado} NOT LIKE '%xsmax%'", 110],
+            ["{$modeloNormalizado} LIKE '%iphonexsmax%' OR {$modeloNormalizado} LIKE '%xsmax%'", 120],
+            ["{$modeloNormalizado} LIKE '%iphonexr%' OR {$modeloNormalizado} LIKE '%xr%'", 130],
+        ];
+
+        foreach (range(11, 20) as $serie) {
+            $base = $serie * 100;
+            $ordenModelo[] = ["{$modeloNormalizado} LIKE '%{$serie}mini%'", $base + 10];
+            $ordenModelo[] = ["({$modeloNormalizado} LIKE '%iphone{$serie}%' OR {$modeloNormalizado} LIKE '{$serie}%') AND {$modeloNormalizado} NOT LIKE '%mini%' AND {$modeloNormalizado} NOT LIKE '%plus%' AND {$modeloNormalizado} NOT LIKE '%pro%'", $base + 20];
+            $ordenModelo[] = ["{$modeloNormalizado} LIKE '%{$serie}plus%'", $base + 30];
+            $ordenModelo[] = ["{$modeloNormalizado} LIKE '%{$serie}pro%' AND {$modeloNormalizado} NOT LIKE '%promax%'", $base + 40];
+            $ordenModelo[] = ["{$modeloNormalizado} LIKE '%{$serie}promax%'", $base + 50];
+        }
+
+        $caseModelo = collect($ordenModelo)
+            ->map(fn ($orden) => "WHEN {$orden[0]} THEN {$orden[1]}")
+            ->implode(' ');
+
+        return $query
+            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 ELSE 1 END")
+            ->orderByRaw("CASE {$caseModelo} ELSE 9999 END")
+            ->orderByRaw($modeloNormalizado)
+            ->orderBy('capacidad')
+            ->orderBy('color');
+    }
 }

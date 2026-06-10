@@ -11,8 +11,7 @@ class CelularController extends Controller
     public function index()
     {
         $celulares = Celular::query()
-            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 WHEN 'vendido' THEN 1 WHEN 'permuta' THEN 2 ELSE 3 END")
-            ->orderByDesc('created_at')
+            ->ordenInventarioIphone()
             ->get();
 
         return Inertia::render('Admin/Celulares/Index', [

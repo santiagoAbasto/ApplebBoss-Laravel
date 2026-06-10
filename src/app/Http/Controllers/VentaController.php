@@ -17,6 +17,8 @@ use App\Models\ServicioTecnico;
 use App\Services\GeneradorCodigos;
 use Illuminate\Support\Facades\DB;
 use App\Models\SystemNotification;
+use App\Models\Reserva;
+use App\Models\ReservaItem;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
@@ -27,6 +29,13 @@ class VentaController extends Controller
     private function authorizeVentaAccess(Venta $venta): void
     {
         if (auth()->user()->rol === 'vendedor' && (int) $venta->user_id !== (int) auth()->id()) {
+            abort(404);
+        }
+    }
+
+    private function authorizeReservaAccess(Reserva $reserva): void
+    {
+        if (auth()->user()->rol === 'vendedor' && (int) $reserva->user_id !== (int) auth()->id()) {
             abort(404);
         }
     }
@@ -51,7 +60,66 @@ class VentaController extends Controller
             ?? ('Producto #' . $producto->id);
     }
 
-    private function getAvailableProductForSale(string $tipo, int $productoId, int $index)
+    private function activeReservationExistsForProduct(string $tipo, int $productoId, ?Reserva $allowedReserva = null): bool
+    {
+        return ReservaItem::where('tipo', $tipo)
+            ->where('producto_id', $productoId)
+            ->whereHas('reserva', function ($q) use ($allowedReserva) {
+                $q->where('estado', 'activa');
+                if ($allowedReserva) {
+                    $q->where('id', '!=', $allowedReserva->id);
+                }
+            })
+            ->exists();
+    }
+
+    private function reservationItemsPayload(Reserva $reserva): array
+    {
+        return $reserva->items->map(fn($item) => [
+            'tipo' => $item->tipo,
+            'producto_id' => $item->producto_id,
+            'cantidad' => $item->cantidad,
+            'descuento' => $item->descuento,
+        ])->all();
+    }
+
+    private function mergeSaleItemsWithReservation(array $items, Reserva $reserva): array
+    {
+        $reservedItems = collect($this->reservationItemsPayload($reserva));
+        $reservedKeys = $reservedItems
+            ->mapWithKeys(fn($item) => [$item['tipo'] . ':' . $item['producto_id'] => true]);
+
+        $reservedSingleUnitTypes = $reservedItems
+            ->pluck('tipo')
+            ->filter(fn($tipo) => in_array($tipo, ['celular', 'computadora', 'producto_apple'], true))
+            ->unique()
+            ->values();
+
+        $additionalItems = collect($items)
+            ->filter(function ($item) use ($reservedKeys, $reservedSingleUnitTypes) {
+                $tipo = (string) ($item['tipo'] ?? '');
+                $productoId = (int) ($item['producto_id'] ?? 0);
+                $key = $tipo . ':' . $productoId;
+
+                if ($reservedKeys->has($key)) {
+                    return false;
+                }
+
+                if ($reservedSingleUnitTypes->contains($tipo)) {
+                    return false;
+                }
+
+                return $tipo !== '' && $productoId > 0;
+            })
+            ->values();
+
+        return $reservedItems
+            ->concat($additionalItems)
+            ->values()
+            ->all();
+    }
+
+    private function getAvailableProductForSale(string $tipo, int $productoId, int $index, ?Reserva $reserva = null)
     {
         $modelo = $this->productModelForSaleType($tipo);
 
@@ -66,7 +134,7 @@ class VentaController extends Controller
             ->lockForUpdate()
             ->first();
 
-        if (! $producto) {
+        if (! $producto || $this->activeReservationExistsForProduct($tipo, $productoId, $reserva)) {
             throw ValidationException::withMessages([
                 "items.$index.producto_id" => 'El producto seleccionado no existe o ya no está disponible.',
             ]);
@@ -87,7 +155,7 @@ class VentaController extends Controller
         return $producto;
     }
 
-    private function buildValidatedSaleItems(array $items): array
+    private function buildValidatedSaleItems(array $items, ?Reserva $reserva = null): array
     {
         $validated = [];
 
@@ -95,7 +163,7 @@ class VentaController extends Controller
             $tipo = (string) ($item['tipo'] ?? '');
             $cantidad = max(1, (int) ($item['cantidad'] ?? 1));
             $descuento = max(0, (float) ($item['descuento'] ?? 0));
-            $producto = $this->getAvailableProductForSale($tipo, (int) ($item['producto_id'] ?? 0), $index);
+            $producto = $this->getAvailableProductForSale($tipo, (int) ($item['producto_id'] ?? 0), $index, $reserva);
 
             if ($cantidad > 1) {
                 throw ValidationException::withMessages([
@@ -125,6 +193,70 @@ class VentaController extends Controller
         }
 
         return $validated;
+    }
+
+    private function snapshotForSaleItem(string $tipo, $producto): array
+    {
+        $snapshot = [
+            'categoria' => null,
+            'nombre_producto' => null,
+            'modelo' => null,
+            'capacidad' => null,
+            'color' => null,
+            'bateria' => null,
+            'procesador' => null,
+            'ram' => null,
+            'almacenamiento' => null,
+        ];
+
+        switch ($tipo) {
+            case 'celular':
+                $snapshot['categoria'] = 'celulares';
+                $snapshot['nombre_producto'] = $producto->modelo;
+                $snapshot['modelo'] = $producto->modelo;
+                $snapshot['capacidad'] = $producto->capacidad;
+                $snapshot['color'] = $producto->color;
+                $snapshot['bateria'] = $producto->bateria;
+                break;
+
+            case 'computadora':
+                $snapshot['categoria'] = 'computadoras';
+                $snapshot['nombre_producto'] = $producto->nombre;
+                $snapshot['modelo'] = $producto->nombre;
+                $snapshot['procesador'] = $producto->procesador;
+                $snapshot['ram'] = $producto->ram;
+                $snapshot['almacenamiento'] = $producto->almacenamiento;
+                break;
+
+            case 'producto_general':
+                $snapshot['categoria'] = $producto->tipo;
+                $snapshot['nombre_producto'] = $producto->nombre;
+                break;
+
+            case 'producto_apple':
+                $snapshot['categoria'] = 'productos_apple';
+                $snapshot['nombre_producto'] = $producto->modelo;
+                $snapshot['modelo'] = $producto->modelo;
+                $snapshot['capacidad'] = $producto->capacidad;
+                $snapshot['color'] = $producto->color;
+                $snapshot['bateria'] = $producto->bateria;
+                break;
+        }
+
+        return $snapshot;
+    }
+
+    private function createVentaItemFromValidated(Venta $venta, array $item): VentaItem
+    {
+        return $venta->items()->create(array_merge([
+            'tipo' => $item['tipo'],
+            'producto_id' => $item['producto_id'],
+            'cantidad' => $item['cantidad'],
+            'precio_venta' => $item['precio_venta'],
+            'precio_invertido' => $item['precio_invertido'],
+            'descuento' => $item['descuento'],
+            'subtotal' => $item['subtotal'],
+        ], $this->snapshotForSaleItem($item['tipo'], $item['producto'])));
     }
 
     private function ventaEditSnapshot(Venta $venta): array
@@ -267,6 +399,7 @@ class VentaController extends Controller
             'items.productoGeneral',
             'items.productoApple',
             'servicioTecnico', // ✅ Añade esta relación
+            'reserva',
         ])
             ->when(auth()->user()->rol === 'vendedor', function ($q) {
                 $q->where('user_id', auth()->id());
@@ -297,6 +430,17 @@ class VentaController extends Controller
             'computadoras' => $computadoras,
             'productosGenerales' => $productosGenerales,
             'productosApple' => $productosApple,
+            'reservasActivas' => Reserva::with([
+                'items',
+                'items.celular',
+                'items.computadora',
+                'items.productoGeneral',
+                'items.productoApple',
+            ])
+                ->where('estado', 'activa')
+                ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
+                ->latest()
+                ->get(),
         ];
 
         if (auth()->user()->rol === 'admin') {
@@ -308,6 +452,30 @@ class VentaController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('reserva_id')) {
+            $reservaParaValidacion = Reserva::with('items')
+                ->whereKey($request->reserva_id)
+                ->where('estado', 'activa')
+                ->first();
+
+            if ($reservaParaValidacion) {
+                $this->authorizeReservaAccess($reservaParaValidacion);
+
+                $request->merge([
+                    'nombre_cliente' => $request->filled('nombre_cliente')
+                        ? $request->nombre_cliente
+                        : $reservaParaValidacion->nombre_cliente,
+                    'telefono_cliente' => $request->filled('telefono_cliente')
+                        ? $request->telefono_cliente
+                        : $reservaParaValidacion->telefono_cliente,
+                    'items' => $this->mergeSaleItemsWithReservation(
+                        $request->input('items', []),
+                        $reservaParaValidacion
+                    ),
+                ]);
+            }
+        }
+
         $request->validate([
             'nombre_cliente' => 'required|string',
             'telefono_cliente' => 'nullable|string',
@@ -317,6 +485,7 @@ class VentaController extends Controller
             'metodo_pago' => 'required|in:efectivo,qr,tarjeta',
             'inicio_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
             'fin_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
+            'reserva_id' => 'nullable|integer|exists:reservas,id',
             'items' => 'required|array|min:1',
             'items.*.tipo' => 'required|in:celular,computadora,producto_general,producto_apple',
             'items.*.producto_id' => 'required|integer',
@@ -331,6 +500,31 @@ class VentaController extends Controller
 
             $permutaCosto = 0;
             $entregado = null;
+            $reserva = null;
+            $montoReservaAplicado = 0;
+
+            if ($request->filled('reserva_id')) {
+                $reserva = Reserva::with('items')
+                    ->whereKey($request->reserva_id)
+                    ->where('estado', 'activa')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $reserva) {
+                    throw ValidationException::withMessages([
+                        'reserva_id' => 'La reserva seleccionada ya no está activa.',
+                    ]);
+                }
+
+                $this->authorizeReservaAccess($reserva);
+                $montoReservaAplicado = (float) $reserva->monto_reserva;
+                $request->merge([
+                    'items' => $this->mergeSaleItemsWithReservation(
+                        $request->input('items', []),
+                        $reserva
+                    ),
+                ]);
+            }
 
             /* ======================================================
          * 1) PERMUTA (MISMAS VALIDACIONES COMPLETAS)
@@ -400,7 +594,7 @@ class VentaController extends Controller
             $subtotal = 0;
             $ganancia = 0;
             $aplicaPermuta = false;
-            $itemsValidados = $this->buildValidatedSaleItems($request->items);
+            $itemsValidados = $this->buildValidatedSaleItems($request->items, $reserva);
             $precioInvertidoTotal = 0;
 
             foreach ($itemsValidados as $item) {
@@ -413,12 +607,28 @@ class VentaController extends Controller
                 }
             }
 
+            if ($reserva) {
+                $vendidos = collect($itemsValidados)
+                    ->mapWithKeys(fn($item) => [$item['tipo'] . ':' . $item['producto_id'] => true]);
+
+                $faltanteReservado = $reserva->items->contains(function ($item) use ($vendidos) {
+                    return ! $vendidos->has($item->tipo . ':' . $item->producto_id);
+                });
+
+                if ($faltanteReservado) {
+                    throw ValidationException::withMessages([
+                        'reserva_id' => 'Para fusionar la reserva, la venta debe incluir los productos reservados.',
+                    ]);
+                }
+            }
+
             /* ======================================================
          * 3) CÓDIGO CORRELATIVO VENTA (AT-V###)
          * ====================================================== */
-            $venta = GeneradorCodigos::crearVentaConCodigo(function (string $codigoVenta) use ($request, $subtotal, $aplicaPermuta, $permutaCosto, $entregado, $precioInvertidoTotal) {
+            $venta = GeneradorCodigos::crearVentaConCodigo(function (string $codigoVenta) use ($request, $subtotal, $aplicaPermuta, $permutaCosto, $entregado, $precioInvertidoTotal, $reserva, $montoReservaAplicado) {
                 return Venta::create([
                     'codigo_nota' => $codigoVenta,
+                    'reserva_id' => $reserva?->id,
 
                     'nombre_cliente' => $request->nombre_cliente,
                     'telefono_cliente' => $request->telefono_cliente,
@@ -434,6 +644,7 @@ class VentaController extends Controller
                         - ($aplicaPermuta ? $permutaCosto : 0)
                         - $precioInvertidoTotal,
                     'valor_permuta' => $permutaCosto,
+                    'monto_reserva_aplicado' => $montoReservaAplicado,
                     'metodo_pago' => $request->metodo_pago,
                     'inicio_tarjeta' => $request->metodo_pago === 'tarjeta' ? $request->inicio_tarjeta : null,
                     'fin_tarjeta' => $request->metodo_pago === 'tarjeta' ? $request->fin_tarjeta : null,
@@ -454,82 +665,7 @@ class VentaController extends Controller
  * ====================================================== */
             foreach ($itemsValidados as $item) {
 
-                $snapshot = [
-                    'categoria' => null,
-                    'nombre_producto' => null,
-                    'modelo' => null,
-                    'capacidad' => null,
-                    'color' => null,
-                    'bateria' => null,
-                    'procesador' => null,
-                    'ram' => null,
-                    'almacenamiento' => null,
-                ];
-
-                switch ($item['tipo']) {
-
-                    /* =========================
-         * 📱 CELULAR
-         * ========================= */
-                    case 'celular':
-                        $producto = $item['producto'];
-
-                        $snapshot['categoria'] = 'celulares';
-                        $snapshot['nombre_producto'] = $producto->modelo;
-                        $snapshot['modelo'] = $producto->modelo;
-                        $snapshot['capacidad'] = $producto->capacidad;
-                        $snapshot['color'] = $producto->color;
-                        $snapshot['bateria'] = $producto->bateria;
-                        break;
-
-                    /* =========================
-         * 💻 COMPUTADORA
-         * ========================= */
-                    case 'computadora':
-                        $producto = $item['producto'];
-
-                        $snapshot['categoria'] = 'computadoras';
-                        $snapshot['nombre_producto'] = $producto->nombre;
-                        $snapshot['modelo'] = $producto->nombre;
-                        $snapshot['procesador'] = $producto->procesador;
-                        $snapshot['ram'] = $producto->ram;
-                        $snapshot['almacenamiento'] = $producto->almacenamiento;
-                        break;
-
-                    /* =========================
-         * 📦 PRODUCTO GENERAL
-         * ========================= */
-                    case 'producto_general':
-                        $producto = $item['producto'];
-
-                        $snapshot['categoria'] = $producto->tipo; // vidrio, funda, cable, etc.
-                        $snapshot['nombre_producto'] = $producto->nombre;
-                        break;
-
-                    /* =========================
-         * 🍎 PRODUCTO APPLE
-         * ========================= */
-                    case 'producto_apple':
-                        $producto = $item['producto'];
-
-                        $snapshot['categoria'] = 'productos_apple';
-                        $snapshot['nombre_producto'] = $producto->modelo;
-                        $snapshot['modelo'] = $producto->modelo;
-                        $snapshot['capacidad'] = $producto->capacidad;
-                        $snapshot['color'] = $producto->color;
-                        $snapshot['bateria'] = $producto->bateria;
-                        break;
-                }
-
-                $venta->items()->create(array_merge([
-                    'tipo' => $item['tipo'],
-                    'producto_id' => $item['producto_id'],
-                    'cantidad' => $item['cantidad'],
-                    'precio_venta' => $item['precio_venta'],
-                    'precio_invertido' => $item['precio_invertido'],
-                    'descuento' => $item['descuento'],
-                    'subtotal' => $item['subtotal'],
-                ], $snapshot));
+                $this->createVentaItemFromValidated($venta, $item);
             }
 
 
@@ -539,6 +675,13 @@ class VentaController extends Controller
             foreach ($itemsValidados as $item) {
                 $item['producto']->estado = 'vendido';
                 $item['producto']->save();
+            }
+
+            if ($reserva) {
+                $reserva->update([
+                    'estado' => 'vendida',
+                    'venta_id' => $venta->id,
+                ]);
             }
 
             /* ======================================================
@@ -614,16 +757,19 @@ class VentaController extends Controller
             'entregadoComputadora',
             'entregadoProductoGeneral',
             'entregadoProductoApple',
+            'reserva',
         ]);
 
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Edit', [
                 'venta' => $venta,
+                'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
             ]);
         }
 
         return Inertia::render('Vendedor/Ventas/Edit', [
             'venta' => $venta,
+            'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
         ]);
     }
 
@@ -641,10 +787,12 @@ class VentaController extends Controller
             'descuento' => 'nullable|numeric|min:0',
             'valor_permuta' => 'nullable|numeric|min:0',
             'items' => 'nullable|array',
-            'items.*.id' => 'required|integer|exists:ventas_items,id',
+            'items.*.id' => 'nullable|integer|exists:ventas_items,id',
+            'items.*.tipo' => 'nullable|in:celular,computadora,producto_general,producto_apple',
+            'items.*.producto_id' => 'nullable|integer',
             'items.*.cantidad' => 'required|integer|min:1',
-            'items.*.precio_venta' => 'required|numeric|min:0',
-            'items.*.precio_invertido' => 'required|numeric|min:0',
+            'items.*.precio_venta' => 'nullable|numeric|min:0',
+            'items.*.precio_invertido' => 'nullable|numeric|min:0',
             'items.*.descuento' => 'required|numeric|min:0',
             'servicio_tecnico.equipo' => 'nullable|string|max:255',
             'servicio_tecnico.detalle_servicio' => 'nullable|string',
@@ -711,11 +859,30 @@ class VentaController extends Controller
             $subtotal = 0;
             $capitalTotal = 0;
 
-            foreach ($itemsPayload as $itemData) {
-                $item = $itemsPorId->get((int) $itemData['id']);
+            foreach ($itemsPayload as $index => $itemData) {
+                $item = ! empty($itemData['id'])
+                    ? $itemsPorId->get((int) $itemData['id'])
+                    : null;
 
-                if (!$item) {
+                if (! empty($itemData['id']) && ! $item) {
                     abort(422, 'Uno de los items no pertenece a esta venta.');
+                }
+
+                if (! $item) {
+                    if (empty($itemData['tipo']) || empty($itemData['producto_id'])) {
+                        throw ValidationException::withMessages([
+                            "items.$index.producto_id" => 'Selecciona un producto válido para agregarlo a la venta.',
+                        ]);
+                    }
+
+                    $validatedItem = $this->buildValidatedSaleItems([$itemData])[0];
+                    $this->createVentaItemFromValidated($venta, $validatedItem);
+                    $validatedItem['producto']->estado = 'vendido';
+                    $validatedItem['producto']->save();
+
+                    $subtotal += $validatedItem['subtotal'];
+                    $capitalTotal += $validatedItem['precio_invertido'];
+                    continue;
                 }
 
                 $cantidad = (int) $itemData['cantidad'];
@@ -794,13 +961,15 @@ class VentaController extends Controller
             'entregadoComputadora',
             'entregadoProductoGeneral',
             'entregadoProductoApple',
+            'reserva',
         ]);
 
         $sumaSubtotalItems = $venta->items->sum('subtotal');
         $valorPermuta = $venta->valor_permuta ?? 0;
-        $totalAPagar = $sumaSubtotalItems - $valorPermuta;
+        $montoReserva = $venta->monto_reserva_aplicado ?? 0;
+        $totalAPagar = $sumaSubtotalItems - $valorPermuta - $montoReserva;
 
-        return PDF::loadView('pdf.boleta', compact('venta', 'sumaSubtotalItems', 'valorPermuta', 'totalAPagar'))
+        return PDF::loadView('pdf.boleta', compact('venta', 'sumaSubtotalItems', 'valorPermuta', 'montoReserva', 'totalAPagar'))
             ->stream("boleta-venta-{$venta->id}.pdf");
     }
 
@@ -953,16 +1122,19 @@ class VentaController extends Controller
             'entregadoComputadora',
             'entregadoProductoGeneral',
             'entregadoProductoApple',
+            'reserva',
         ]);
 
         $sumaSubtotalItems = $venta->items->sum('subtotal');
         $valorPermuta = $venta->valor_permuta ?? 0;
-        $totalAPagar = $sumaSubtotalItems - $valorPermuta;
+        $montoReserva = $venta->monto_reserva_aplicado ?? 0;
+        $totalAPagar = $sumaSubtotalItems - $valorPermuta - $montoReserva;
 
         $pdf = Pdf::loadView('pdf.boleta_80mm', [
             'venta' => $venta,
             'sumaSubtotalItems' => $sumaSubtotalItems,
             'valorPermuta' => $valorPermuta,
+            'montoReserva' => $montoReserva,
             'totalAPagar' => $totalAPagar,
         ]);
 

@@ -315,9 +315,16 @@
 
         <div class="divider"></div>
 
+        @if(($montoReserva ?? $venta->monto_reserva_aplicado ?? 0) > 0)
+        <div class="price-line">
+            <span>Reserva aplicada</span>
+            <span>- Bs {{ number_format(($montoReserva ?? $venta->monto_reserva_aplicado), 2) }}</span>
+        </div>
+        @endif
+
         <!-- TOTAL -->
         <div class="total-box">
-            <div class="total-label">TOTAL A PAGAR</div>
+            <div class="total-label">TOTAL A PAGAR / DIFERENCIA</div>
             <div class="total-amount">Bs {{ number_format($totalAPagar, 2) }}</div>
         </div>
 

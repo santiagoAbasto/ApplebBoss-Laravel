@@ -22,7 +22,10 @@ class ProductoVendedorController extends Controller
             ->withQueryString();
 
         return Inertia::render('Vendedor/Productos/Index', [
-            'celulares' => $orderedInventory(Celular::class),
+            'celulares' => Celular::query()
+                ->ordenInventarioIphone()
+                ->paginate(25)
+                ->withQueryString(),
             'computadoras' => $orderedInventory(Computadora::class),
             'productosGenerales' => $orderedInventory(ProductoGeneral::class),
             'productosApple' => $orderedInventory(ProductoApple::class),

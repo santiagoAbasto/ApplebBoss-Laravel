@@ -12,6 +12,7 @@ use App\Models\Cliente;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Mail\CotizacionMailable;
@@ -143,7 +144,9 @@ class CotizacionController extends Controller
         ]);
 
         $driveUrl = $this->exportarPDFYGuardar($cotizacion->id);
-        $cotizacion->update(['drive_url' => $driveUrl]);
+        if ($driveUrl) {
+            $cotizacion->update(['drive_url' => $driveUrl]);
+        }
 
         if ($cliente->correo) {
             Mail::to($cliente->correo)->queue(new CotizacionMailable($cotizacion));
@@ -162,37 +165,84 @@ class CotizacionController extends Controller
         $pdf = Pdf::loadView('pdf.cotizacion', compact('cotizacion'));
         $content = $pdf->output();
 
-        $client = new Google_Client();
-        $client->setAuthConfig(storage_path('app/google/credentials.json'));
-        $client->addScope(Google_Service_Drive::DRIVE_FILE);
-        $client->setAccessType('offline');
+        try {
+            $credentialsPath = storage_path('app/google/credentials.json');
+            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
 
-        $tokenPath = storage_path('app/google/token.json');
-        if (file_exists($tokenPath)) {
-            $client->setAccessToken(json_decode(file_get_contents($tokenPath), true));
+            if (!file_exists($credentialsPath) || !$folderId) {
+                Log::warning('Cotización creada sin subir PDF a Drive: falta configuración.', [
+                    'cotizacion_id' => $cotizacion->id,
+                ]);
+                return null;
+            }
+
+            $client = new Google_Client();
+            $client->setAuthConfig($credentialsPath);
+            $client->addScope(Google_Service_Drive::DRIVE_FILE);
+            $client->setAccessType('offline');
+
+            $tokenPath = storage_path('app/google/token.json');
+            if (file_exists($tokenPath)) {
+                $client->setAccessToken(json_decode(file_get_contents($tokenPath), true));
+            }
+
+            $service = new Google_Service_Drive($client);
+
+            $file = $service->files->create(
+                new \Google_Service_Drive_DriveFile([
+                    'name' => "cotizacion_{$id}.pdf",
+                    'parents' => [$folderId],
+                ]),
+                [
+                    'data' => $content,
+                    'mimeType' => 'application/pdf',
+                    'uploadType' => 'multipart',
+                    'fields' => 'id',
+                ]
+            );
+
+            $service->permissions->create($file->id, new Google_Service_Drive_Permission([
+                'type' => 'anyone',
+                'role' => 'reader',
+            ]));
+
+            return "https://drive.google.com/file/d/{$file->id}/view";
+        } catch (\Throwable $e) {
+            Log::warning('Cotización creada, pero falló la subida del PDF a Google Drive.', [
+                'cotizacion_id' => $cotizacion->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    public function exportarPDF($id)
+    {
+        $cotizacion = Cotizacion::findOrFail($id);
+
+        if (auth()->user()->rol === 'vendedor' && $cotizacion->user_id !== auth()->id()) {
+            abort(403);
         }
 
-        $service = new Google_Service_Drive($client);
+        return Pdf::loadView('pdf.cotizacion', compact('cotizacion'))
+            ->stream("cotizacion_{$cotizacion->id}.pdf");
+    }
 
-        $file = $service->files->create(
-            new \Google_Service_Drive_DriveFile([
-                'name' => "cotizacion_{$id}.pdf",
-                'parents' => [env('GOOGLE_DRIVE_FOLDER_ID')],
-            ]),
-            [
-                'data' => $content,
-                'mimeType' => 'application/pdf',
-                'uploadType' => 'multipart',
-                'fields' => 'id',
-            ]
-        );
+    public function verPDFLocalVendedor($id)
+    {
+        return $this->exportarPDF($id);
+    }
 
-        $service->permissions->create($file->id, new Google_Service_Drive_Permission([
-            'type' => 'anyone',
-            'role' => 'reader',
-        ]));
+    private function urlPDF(Cotizacion $cotizacion): string
+    {
+        if ($cotizacion->drive_url) {
+            return $cotizacion->drive_url;
+        }
 
-        return "https://drive.google.com/file/d/{$file->id}/view";
+        return auth()->user()->rol === 'vendedor'
+            ? route('vendedor.cotizaciones.pdf', $cotizacion->id)
+            : route('admin.cotizaciones.pdf', $cotizacion->id);
     }
 
     /* ======================================================
@@ -215,11 +265,22 @@ class CotizacionController extends Controller
             . "📝 *Cotización Apple Technology*\n"
             . "📄 N° {$cotizacion->id}\n"
             . "💰 Total: Bs " . number_format($cotizacion->total, 2) . "\n"
-            . "🔗 {$cotizacion->drive_url}";
+            . "🔗 " . $this->urlPDF($cotizacion);
 
         return redirect()->away(
             "https://wa.me/{$numero}?text=" . rawurlencode($mensaje)
         );
+    }
+
+    public function whatsappFinalLibre(Request $request)
+    {
+        $id = $request->query('id') ?? $request->query('cotizacion_id');
+
+        if (!$id) {
+            return back()->with('error', 'Selecciona una cotización para enviar por WhatsApp.');
+        }
+
+        return $this->whatsappFinal($id);
     }
 
     /* ======================================================
@@ -243,11 +304,12 @@ class CotizacionController extends Controller
                 . "📝 *Cotización Apple Technology*\n"
                 . "📄 N° {$cotizacion->id}\n"
                 . "💰 Total: Bs " . number_format($cotizacion->total, 2) . "\n"
-                . "🔗 {$cotizacion->drive_url}";
+                . "🔗 " . $this->urlPDF($cotizacion);
 
             $links[] = [
                 'nombre' => $cotizacion->nombre_cliente,
                 'telefono' => $numero,
+                'pdf' => $this->urlPDF($cotizacion),
                 'link' => "https://wa.me/{$numero}?text=" . rawurlencode($mensaje),
             ];
         }
