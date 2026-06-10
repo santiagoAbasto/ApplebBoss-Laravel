@@ -17,6 +17,11 @@ class GeneradorCodigos
         return self::previsualizar('servicio_tecnico', 'AT-ST', 3);
     }
 
+    public static function siguienteReserva(): string
+    {
+        return self::previsualizar('reservas', 'AT-R', 3);
+    }
+
     public static function crearVentaConCodigo(callable $callback): mixed
     {
         return self::crearConCodigo('ventas', 'AT-V', 3, $callback);
@@ -25,6 +30,11 @@ class GeneradorCodigos
     public static function crearServicioTecnicoConCodigo(callable $callback): mixed
     {
         return self::crearConCodigo('servicio_tecnico', 'AT-ST', 3, $callback);
+    }
+
+    public static function crearReservaConCodigo(callable $callback): mixed
+    {
+        return self::crearConCodigo('reservas', 'AT-R', 3, $callback);
     }
 
     public static function sincronizarSecuencia(string $clave, int $numero): void

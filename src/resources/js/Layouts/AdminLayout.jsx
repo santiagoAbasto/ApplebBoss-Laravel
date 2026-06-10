@@ -104,6 +104,7 @@ export default function AdminLayout({ children }) {
           <div className="sidebar-heading">Operaciones</div>
 
           <SidebarItem route="admin.ventas.index" icon="fa-shopping-cart" label="Ventas" />
+          <SidebarItem route="admin.reservas.index" icon="fa-calendar-check" label="Reservas" />
           <SidebarItem route="admin.servicios.index" icon="fa-tools" label="Servicio Técnico" />
           <SidebarItem route="admin.reportes.index" icon="fa-chart-line" label="Reportes" />
           <SidebarItem route="admin.cotizaciones.index" icon="fa-file-invoice-dollar" label="Cotizaciones" />

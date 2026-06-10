@@ -70,6 +70,7 @@ export default function Index({ ventas }) {
       const descuento = parseFloat(item.descuento || 0);
       const capital = parseFloat(item.precio_invertido || 0);
       const permuta = itemIndex === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
+      const reserva = itemIndex === 0 ? parseFloat(venta.monto_reserva_aplicado || 0) : 0;
       const ganancia = precioVenta - descuento - permuta - capital;
 
       const nombre =
@@ -90,8 +91,9 @@ export default function Index({ ventas }) {
         precioVenta,
         descuento,
         permuta,
+        reserva,
         capital,
-        precioFinal: precioVenta - descuento - permuta,
+        precioFinal: precioVenta - descuento - permuta - reserva,
         ganancia,
         vendedor: venta.vendedor?.name || '—',
         fecha: venta.created_at,
@@ -243,7 +245,7 @@ export default function Index({ ventas }) {
           <div style={tableHeader}>Detalle de movimientos</div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 1120, borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: 1200, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#2563eb', color: '#fff' }}>
                   {[
@@ -253,6 +255,7 @@ export default function Index({ ventas }) {
                     'Venta',
                     'Desc.',
                     'Permuta',
+                    'Reserva',
                     'Capital',
                     'Final',
                     'Ganancia',
@@ -287,6 +290,9 @@ export default function Index({ ventas }) {
                     </td>
                     <td style={{ ...td, textAlign: 'right', color: '#ca8a04' }}>
                       -{i.permuta.toFixed(2)}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: '#2563eb' }}>
+                      -{Number(i.reserva || 0).toFixed(2)}
                     </td>
                     <td style={{ ...td, textAlign: 'right', color: '#2563eb' }}>
                       -{i.capital.toFixed(2)}

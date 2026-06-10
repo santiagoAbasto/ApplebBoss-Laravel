@@ -131,6 +131,7 @@ export default function VendedorLayout({ children }) {
                 { href: '/vendedor/productos', icon: 'fa-box-open', label: 'Ver Productos' },
                 { href: '/vendedor/ventas', icon: 'fa-file-invoice-dollar', label: 'Mis Ventas', exact: true },
                 { href: '/vendedor/ventas/create', icon: 'fa-receipt', label: 'Registrar Venta', exact: true },
+                { href: '/vendedor/reservas', icon: 'fa-calendar-check', label: 'Reservas' },
                 { href: '/vendedor/cotizaciones', icon: 'fa-file-alt', label: 'Mis Cotizaciones' },
               ].map(({ href, icon, label, exact }) => {
                 const active = isActive(href, exact);

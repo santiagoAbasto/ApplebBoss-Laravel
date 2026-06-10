@@ -57,6 +57,7 @@ export default function Index({ ventas }) {
       const descuento = parseFloat(item.descuento || 0);
       const capital = parseFloat(item.precio_invertido || 0);
       const permuta = itemIndex === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
+      const reserva = itemIndex === 0 ? parseFloat(venta.monto_reserva_aplicado || 0) : 0;
       const ganancia = precioVenta - descuento - permuta - capital;
 
       const nombre =
@@ -77,8 +78,9 @@ export default function Index({ ventas }) {
         precioVenta,
         descuento,
         permuta,
+        reserva,
         capital,
-        precioFinal: precioVenta - descuento - permuta,
+        precioFinal: precioVenta - descuento - permuta - reserva,
         ganancia,
         vendedor: venta.vendedor?.name || '—',
         fecha: venta.created_at,
@@ -228,7 +230,7 @@ export default function Index({ ventas }) {
       </div>
 
       <div className="hidden md:block rounded-xl border bg-white shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[1180px]">
+        <table className="w-full text-sm min-w-[1240px]">
           <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
             <tr>
               <th className="px-3 py-2.5 text-left">Cliente</th>
@@ -237,6 +239,7 @@ export default function Index({ ventas }) {
               <th className="px-3 py-2.5 text-right">Venta</th>
               <th className="px-3 py-2.5 text-right">Desc.</th>
               <th className="px-3 py-2.5 text-right">Permuta</th>
+              <th className="px-3 py-2.5 text-right">Reserva</th>
               <th className="px-3 py-2.5 text-right">Capital</th>
               <th className="px-3 py-2.5 text-right">Final</th>
               <th className="px-3 py-2.5 text-right">Ganancia</th>
@@ -261,6 +264,9 @@ export default function Index({ ventas }) {
                 </td>
                 <td className="px-3 py-2.5 text-right text-amber-600">
                   -{i.permuta.toFixed(2)}
+                </td>
+                <td className="px-3 py-2.5 text-right text-blue-600">
+                  -{Number(i.reserva || 0).toFixed(2)}
                 </td>
                 <td className="px-3 py-2.5 text-right text-blue-600">
                   -{i.capital.toFixed(2)}
@@ -355,6 +361,7 @@ export default function Index({ ventas }) {
               <div><strong>Venta:</strong> {i.precioVenta.toFixed(2)} Bs</div>
               <div><strong>Desc.:</strong> -{i.descuento.toFixed(2)} Bs</div>
               <div><strong>Permuta:</strong> -{i.permuta.toFixed(2)} Bs</div>
+              <div><strong>Reserva:</strong> -{Number(i.reserva || 0).toFixed(2)} Bs</div>
               <div><strong>Capital:</strong> -{i.capital.toFixed(2)} Bs</div>
               <div><strong>Final:</strong> {i.precioFinal.toFixed(2)} Bs</div>
               <div className={i.ganancia < 0 ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>

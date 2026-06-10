@@ -479,7 +479,8 @@
   @php
   $sumaSubtotalItems = $sumaSubtotalItems ?? $venta->items->sum('subtotal');
   $valorPermuta = $valorPermuta ?? ($venta->valor_permuta ?? 0);
-  $totalAPagar = $totalAPagar ?? ($sumaSubtotalItems - $valorPermuta);
+  $montoReserva = $montoReserva ?? ($venta->monto_reserva_aplicado ?? 0);
+  $totalAPagar = $totalAPagar ?? ($sumaSubtotalItems - $valorPermuta - $montoReserva);
   @endphp
 
   <table class="resumen">
@@ -495,8 +496,15 @@
     </tr>
     @endif
 
+    @if ($montoReserva > 0)
     <tr>
-      <td><strong>Total a pagar:</strong></td>
+      <td>Reserva aplicada{{ $venta->reserva ? ' (' . $venta->reserva->codigo_nota . ')' : '' }}:</td>
+      <td>- Bs {{ number_format($montoReserva, 2) }}</td>
+    </tr>
+    @endif
+
+    <tr>
+      <td><strong>Total a pagar / diferencia:</strong></td>
       <td><strong>Bs {{ number_format($totalAPagar, 2) }}</strong></td>
     </tr>
   </table>

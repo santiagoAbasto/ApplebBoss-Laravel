@@ -8,27 +8,43 @@ use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
 use App\Models\ProductoApple;
+use App\Models\ReservaItem;
 
 class StockController extends Controller
 {
+    private function idsReservados(string $tipo)
+    {
+        return ReservaItem::where('tipo', $tipo)
+            ->whereHas('reserva', fn($q) => $q->where('estado', 'activa'))
+            ->pluck('producto_id');
+    }
+
     public function celulares()
     {
-        return response()->json(Celular::where('estado', 'disponible')->get());
+        return response()->json(Celular::where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('celular'))
+            ->get());
     }
 
     public function computadoras()
     {
-        return response()->json(Computadora::where('estado', 'disponible')->get());
+        return response()->json(Computadora::where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('computadora'))
+            ->get());
     }
 
     public function productosGenerales()
     {
-        return response()->json(ProductoGeneral::where('estado', 'disponible')->get());
+        return response()->json(ProductoGeneral::where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('producto_general'))
+            ->get());
     }
 
     public function productosApple()
     {
-        return response()->json(ProductoApple::where('estado', 'disponible')->get());
+        return response()->json(ProductoApple::where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('producto_apple'))
+            ->get());
     }
 
     /**
@@ -51,6 +67,7 @@ class StockController extends Controller
               ->orWhere('modelo', $codigo);
         })
         ->where('estado', 'disponible')
+        ->whereNotIn('id', $this->idsReservados('producto_apple'))
         ->first();
 
         if ($apple) {
@@ -73,6 +90,7 @@ class StockController extends Controller
               ->orWhere('imei_2', $codigo);
         })
         ->where('estado', 'disponible')
+        ->whereNotIn('id', $this->idsReservados('celular'))
         ->first();
 
         if ($celular) {
@@ -95,6 +113,7 @@ class StockController extends Controller
               ->orWhere('nombre', $codigo);
         })
             ->where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('computadora'))
             ->first();
 
         if ($computadora) {
@@ -117,6 +136,7 @@ class StockController extends Controller
               ->orWhere('nombre', $codigo);
         })
             ->where('estado', 'disponible')
+            ->whereNotIn('id', $this->idsReservados('producto_general'))
             ->first();
 
         if ($pg) {

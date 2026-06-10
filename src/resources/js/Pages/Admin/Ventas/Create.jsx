@@ -14,7 +14,7 @@ import { notifyRecordsUpdated, useAutoRefreshCallback } from '@/Hooks/useAutoRef
 
 
 
-export default function Create({ celulares, computadoras, productosGenerales }) {
+export default function Create({ celulares, computadoras, productosGenerales, reservasActivas = [] }) {
   const { data, setData, post, processing, errors } = useForm({
     nombre_cliente: '',
     telefono_cliente: '',
@@ -24,6 +24,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
     notas_adicionales: '',
     inicio_tarjeta: '',
     fin_tarjeta: '',
+    reserva_id: '',
   });
 
   const form = data;
@@ -39,6 +40,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const [stocks, setStocks] = useState({ celulares: [], computadoras: [], productosGenerales: [], productosApple: [] });
   const [errores, setErrores] = useState({});
   const [items, setItems] = useState([]); // necesario para el manejo de los productos
+  const [reservaSeleccionada, setReservaSeleccionada] = useState(null);
 
   const normalizarTexto = (valor) => String(valor ?? '').trim().toLowerCase();
 
@@ -170,18 +172,54 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   const quitarItem = (index) => setItems(items.filter((_, i) => i !== index));
 
   const calcularTotal = () => {
-    let total = 0;
-    items.forEach((item) => {
-      let subtotal = (item.precio_venta - item.descuento) * item.cantidad;
-      if (esPermuta && productoEntregado) {
-        subtotal -= productoEntregado.precio_costo;
-      }
-      total += subtotal;
-    });
-    return total - Number(form.descuento || 0);
+    const subtotalItems = items.reduce((total, item) => {
+      return total + ((item.precio_venta - item.descuento) * item.cantidad);
+    }, 0);
+    const valorPermuta = esPermuta && productoEntregado ? Number(productoEntregado.precio_costo || 0) : 0;
+
+    return subtotalItems - valorPermuta - Number(form.descuento || 0);
   };
 
   const total = calcularTotal();
+  const mensajesErrores = Object.values(errores || {}).flat();
+
+  const productoDesdeReserva = (item) =>
+    item.celular || item.computadora || item.producto_apple || item.producto_general || {};
+
+  const aplicarReserva = (reserva) => {
+    if (!reserva) {
+      setReservaSeleccionada(null);
+      setData('reserva_id', '');
+      return;
+    }
+
+    setReservaSeleccionada(reserva);
+    setData('reserva_id', reserva.id);
+    setData('nombre_cliente', reserva.nombre_cliente || '');
+    setData('telefono_cliente', reserva.telefono_cliente || '');
+    setItems((reserva.items || []).map((item) => {
+      const producto = productoDesdeReserva(item);
+      return {
+        tipo: item.tipo,
+        producto_id: item.producto_id,
+        cantidad: item.cantidad || 1,
+        precio_venta: Number(item.precio_venta || producto.precio_venta || 0),
+        precio_invertido: Number(producto.precio_costo || 0) * Number(item.cantidad || 1),
+        descuento: Number(item.descuento || 0),
+        subtotal: Number(item.subtotal || 0),
+        nombre: item.nombre_producto || producto.nombre || producto.modelo || 'Producto reservado',
+        imei: item.tipo === 'celular' ? producto.imei_1 : null,
+        detalles: producto,
+      };
+    }));
+  };
+
+  useEffect(() => {
+    const reservaId = new URLSearchParams(window.location.search).get('reserva_id');
+    if (!reservaId || reservaSeleccionada) return;
+    const reserva = reservasActivas.find((r) => Number(r.id) === Number(reservaId));
+    if (reserva) aplicarReserva(reserva);
+  }, [reservasActivas]);
 
   // =======================
   // CLIENTES
@@ -244,6 +282,7 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
       es_permuta: esPermuta,
       tipo_permuta: esPermuta ? tipoPermuta : null,
       producto_entregado: productoEntregado,
+      reserva_id: reservaSeleccionada?.id || form.reserva_id || null,
     };
 
     try {
@@ -253,7 +292,11 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
       if (ventaId) window.open(`/admin/ventas/${ventaId}/boleta`, '_blank');
       router.visit(route('admin.ventas.index'));
     } catch (error) {
-      if (error.response?.status === 422) setErrores(error.response.data.errors);
+      if (error.response?.status === 422) {
+        const validationErrors = error.response.data.errors || {};
+        setErrores(validationErrors);
+        console.warn('Validación al registrar venta:', validationErrors);
+      }
       else console.error('Error al registrar venta:', error);
     }
   };
@@ -265,6 +308,42 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
       {/* ===============================
     INFORMACIÓN DEL CLIENTE
 =============================== */}
+      {reservasActivas.length > 0 && (
+        <NeonBox className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">
+            Fusionar con reserva
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Reserva activa
+              </label>
+              <NeonField>
+                <select
+                  value={reservaSeleccionada?.id || ''}
+                  onChange={(e) => {
+                    const reserva = reservasActivas.find((r) => Number(r.id) === Number(e.target.value));
+                    aplicarReserva(reserva || null);
+                  }}
+                >
+                  <option value="">Venta sin reserva</option>
+                  {reservasActivas.map((reserva) => (
+                    <option key={reserva.id} value={reserva.id}>
+                      {reserva.codigo_nota} - {reserva.nombre_cliente} - Abono Bs {Number(reserva.monto_reserva || 0).toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </NeonField>
+            </div>
+            {reservaSeleccionada && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                Se cobrara solo la diferencia: Bs {Math.max(0, calcularTotal() - Number(reservaSeleccionada.monto_reserva || 0)).toFixed(2)}
+              </div>
+            )}
+          </div>
+        </NeonBox>
+      )}
+
       <NeonBox className="mb-6">
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Información del cliente
@@ -635,7 +714,12 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
   =============================== */}
       <NeonBox className="space-y-4">
         <div className="text-right text-lg font-bold text-emerald-700">
-          Total a pagar: Bs {calcularTotal().toFixed(2)}
+          Total a pagar: Bs {Math.max(0, calcularTotal() - Number(reservaSeleccionada?.monto_reserva || 0)).toFixed(2)}
+          {reservaSeleccionada && (
+            <div className="text-sm font-medium text-blue-700">
+              Reserva aplicada: - Bs {Number(reservaSeleccionada.monto_reserva || 0).toFixed(2)}
+            </div>
+          )}
         </div>
 
         <NeonField>
@@ -647,6 +731,17 @@ export default function Create({ celulares, computadoras, productosGenerales }) 
             }
           />
         </NeonField>
+
+        {mensajesErrores.length > 0 && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700">
+            <div className="font-semibold mb-1">Revisa estos datos antes de guardar:</div>
+            <ul className="list-disc pl-5 space-y-1">
+              {mensajesErrores.map((mensaje, index) => (
+                <li key={index}>{mensaje}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="text-center">
           <button

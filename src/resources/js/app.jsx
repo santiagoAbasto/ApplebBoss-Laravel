@@ -1,4 +1,4 @@
-import '../css/app.css';
+import '../css/app-vite.css';
 import './bootstrap';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'react-phone-number-input/style.css';

@@ -52,6 +52,26 @@ const fmtBs = (n) =>
     maximumFractionDigits: 2,
   })}`;
 
+const notificationTarget = (notification) => {
+  if (notification?.type === 'report' && notification?.report_id) {
+    return route('admin.automation.show', notification.report_id);
+  }
+
+  if (['sale', 'sale_edit'].includes(notification?.type)) {
+    return route('admin.ventas.index');
+  }
+
+  if (notification?.type === 'service') {
+    return route('admin.servicios.index');
+  }
+
+  if (notification?.type === 'stock') {
+    return route('admin.dashboard');
+  }
+
+  return route('admin.dashboard');
+};
+
 
 export default function Dashboard({
   user,
@@ -221,14 +241,10 @@ export default function Dashboard({
                     <div className="flex items-center gap-4">
 
                       {/* BOTÓN VER (SIEMPRE) */}
-                      <button
-                        onClick={() =>
-                          router.visit(
-                            route('admin.automation.show', n.report_id)
-                          )
-                        }
-                        className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded-full transition"
-                      >
+	                      <button
+	                        onClick={() => router.visit(notificationTarget(n))}
+	                        className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded-full transition"
+	                      >
                         Ver
                       </button>
 

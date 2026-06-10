@@ -93,6 +93,71 @@ function CellValue({ item, column }) {
   return value;
 }
 
+function MobileInventoryCard({ item, index, columns, actionsRenderer, showIndex }) {
+  const primaryColumn = columns[0];
+  const statusColumn = columns.find((column) => column.status);
+  const priceColumn =
+    columns.find((column) => column.key === "precio_venta") ||
+    columns.find((column) => column.money);
+  const detailColumns = columns.filter(
+    (column) =>
+      column.key !== primaryColumn?.key &&
+      column.key !== statusColumn?.key &&
+      column.key !== priceColumn?.key
+  );
+
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {showIndex && (
+              <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-500">
+                #{index + 1}
+              </span>
+            )}
+            {statusColumn && <CellValue item={item} column={statusColumn} />}
+          </div>
+          <h3 className="mt-2 text-base font-extrabold leading-snug text-slate-950">
+            {clean(item[primaryColumn?.key]) || "Producto"}
+          </h3>
+        </div>
+
+        {priceColumn && (
+          <div className="shrink-0 text-right">
+            <p className="text-[11px] font-bold uppercase text-slate-400">{priceColumn.label}</p>
+            <p className="text-sm font-extrabold text-slate-950">
+              <CellValue item={item} column={priceColumn} />
+            </p>
+          </div>
+        )}
+      </div>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 text-sm">
+        {detailColumns.map((column) => (
+          <div key={column.key} className="min-w-0 rounded-md bg-slate-50 px-3 py-2">
+            <dt className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+              {column.label}
+            </dt>
+            <dd
+              className={`mt-1 truncate text-[13px] font-semibold text-slate-700 ${column.mono ? "font-mono text-[11px]" : ""}`}
+              title={clean(item[column.key])}
+            >
+              <CellValue item={item} column={column} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {actionsRenderer && (
+        <div className="inventory-actions mt-4 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+          {actionsRenderer(item)}
+        </div>
+      )}
+    </article>
+  );
+}
+
 export default function InventoryTable({
   items = [],
   type,
@@ -109,9 +174,8 @@ export default function InventoryTable({
       <style>{`
         .inventory-actions button,
         .inventory-actions a {
-          height: 36px !important;
-          min-height: 36px !important;
-          padding: 0 10px !important;
+          min-height: 44px !important;
+          padding: 0 12px !important;
           border-radius: 8px !important;
           font-size: 12px !important;
           line-height: 1 !important;
@@ -122,78 +186,101 @@ export default function InventoryTable({
         }
       `}</style>
 
-      <table className="w-full table-fixed border-collapse text-left">
-        <colgroup>
-          {showIndex && <col style={{ width: "3%" }} />}
-          {columns.map((column) => (
-            <col key={column.key} style={{ width: column.width }} />
-          ))}
-          {actionsRenderer && <col style={{ width: actionWidth }} />}
-        </colgroup>
-
-        <thead>
-          <tr className="border-y border-slate-200 bg-slate-100/90">
-            {showIndex && (
-              <th className="px-3 py-3 text-xs font-extrabold uppercase tracking-wide text-slate-500 align-middle">
-                #
-              </th>
-            )}
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                className={`px-3 py-3 text-[11px] font-extrabold uppercase tracking-wide text-slate-500 align-middle ${column.center ? "text-center" : ""}`}
-              >
-                {column.label}
-              </th>
+      <div className="lg:hidden">
+        {items.length > 0 ? (
+          <div className="space-y-3 bg-slate-50 p-3">
+            {items.map((item, index) => (
+              <MobileInventoryCard
+                key={item.id}
+                item={item}
+                index={index}
+                columns={columns}
+                actionsRenderer={actionsRenderer}
+                showIndex={showIndex}
+              />
             ))}
-            {actionsRenderer && (
-              <th className="px-3 py-3 text-center text-[11px] font-extrabold uppercase tracking-wide text-slate-500 align-middle">
-                Acciones
-              </th>
-            )}
-          </tr>
-        </thead>
+          </div>
+        ) : (
+          <div className="px-5 py-12 text-center text-sm font-medium text-slate-400">
+            {emptyMessage}
+          </div>
+        )}
+      </div>
 
-        <tbody className="divide-y divide-slate-200 bg-white">
-          {items.length > 0 ? (
-            items.map((item, index) => (
-              <tr key={item.id} className="transition-colors even:bg-slate-50/45 hover:bg-blue-50/40">
-                {showIndex && (
-                  <td className="px-3 py-4 text-xs font-semibold text-slate-500 align-middle">
-                    {index + 1}
-                  </td>
-                )}
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`px-3 py-4 text-[13px] text-slate-700 align-middle ${column.center ? "text-center" : ""}`}
-                  >
-                    <div
-                      className={`min-w-0 truncate ${column.strong ? "font-semibold text-slate-900" : ""} ${column.mono ? "font-mono text-[11px]" : ""}`}
-                      title={clean(item[column.key])}
-                    >
-                      <CellValue item={item} column={column} />
-                    </div>
-                  </td>
-                ))}
-                {actionsRenderer && (
-                  <td className="px-3 py-4 text-center align-middle">
-                    <div className="inventory-actions flex items-center justify-center gap-2">
-                      {actionsRenderer(item)}
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={totalColumns} className="px-5 py-12 text-center text-sm font-medium text-slate-400">
-                {emptyMessage}
-              </td>
+      <div className="hidden lg:block">
+        <table className="w-full table-fixed border-collapse text-left">
+          <colgroup>
+            {showIndex && <col style={{ width: "3%" }} />}
+            {columns.map((column) => (
+              <col key={column.key} style={{ width: column.width }} />
+            ))}
+            {actionsRenderer && <col style={{ width: actionWidth }} />}
+          </colgroup>
+
+          <thead>
+            <tr className="border-y border-slate-200 bg-slate-100/90">
+              {showIndex && (
+                <th className="px-3 py-3 text-xs font-extrabold uppercase tracking-wide text-slate-500 align-middle">
+                  #
+                </th>
+              )}
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`px-3 py-3 text-[11px] font-extrabold uppercase tracking-wide text-slate-500 align-middle ${column.center ? "text-center" : ""}`}
+                >
+                  {column.label}
+                </th>
+              ))}
+              {actionsRenderer && (
+                <th className="px-3 py-3 text-center text-[11px] font-extrabold uppercase tracking-wide text-slate-500 align-middle">
+                  Acciones
+                </th>
+              )}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200 bg-white">
+            {items.length > 0 ? (
+              items.map((item, index) => (
+                <tr key={item.id} className="transition-colors even:bg-slate-50/45 hover:bg-blue-50/40">
+                  {showIndex && (
+                    <td className="px-3 py-4 text-xs font-semibold text-slate-500 align-middle">
+                      {index + 1}
+                    </td>
+                  )}
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={`px-3 py-4 text-[13px] text-slate-700 align-middle ${column.center ? "text-center" : ""}`}
+                    >
+                      <div
+                        className={`min-w-0 truncate ${column.strong ? "font-semibold text-slate-900" : ""} ${column.mono ? "font-mono text-[11px]" : ""}`}
+                        title={clean(item[column.key])}
+                      >
+                        <CellValue item={item} column={column} />
+                      </div>
+                    </td>
+                  ))}
+                  {actionsRenderer && (
+                    <td className="px-3 py-4 text-center align-middle">
+                      <div className="inventory-actions flex items-center justify-center gap-2">
+                        {actionsRenderer(item)}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={totalColumns} className="px-5 py-12 text-center text-sm font-medium text-slate-400">
+                  {emptyMessage}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

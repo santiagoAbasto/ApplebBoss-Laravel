@@ -18,5 +18,10 @@ class SecuenciasSeeder extends Seeder
             ['clave' => 'servicio_tecnico'],
             ['ultimo_numero' => 0, 'created_at' => now(), 'updated_at' => now()]
         );
+
+        DB::table('secuencias')->updateOrInsert(
+            ['clave' => 'reservas'],
+            ['ultimo_numero' => 0, 'created_at' => now(), 'updated_at' => now()]
+        );
     }
 }

@@ -13,6 +13,7 @@ use App\Models\ProductoGeneral;
 use App\Models\ProductoApple;
 use App\Models\VentaItem;
 use App\Models\ServicioTecnico;
+use App\Models\Reserva;
 
 class Venta extends Model
 {
@@ -23,6 +24,7 @@ class Venta extends Model
         'telefono_cliente',
         'fecha',
         'codigo_nota',
+        'reserva_id',
         'tipo_venta',
         'es_permuta',
         'tipo_permuta',
@@ -33,6 +35,7 @@ class Venta extends Model
         'subtotal',
         'descuento',
         'valor_permuta',
+        'monto_reserva_aplicado',
         'celular_id',
         'computadora_id',
         'producto_general_id',
@@ -149,5 +152,10 @@ class Venta extends Model
     public function servicioTecnico()
     {
         return $this->hasOne(ServicioTecnico::class, 'venta_id');
+    }
+
+    public function reserva()
+    {
+        return $this->belongsTo(Reserva::class);
     }
 }
