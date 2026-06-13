@@ -1,0 +1,243 @@
+{
+  "id": "b32d4d8d-a1f4-4d79-8703-786dd7af2e8a",
+  "name": "Reporte semanal inteligente ChatGPT",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "586d7b44-4148-4a80-af40-66f5c31b5af1",
+      "name": "Cada lunes 08:00 Bolivia",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -980,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const now = new Date();\nconst local = new Date(now.toLocaleString('en-US', { timeZone: 'America/La_Paz' }));\nconst day = local.getDay();\nconst daysSinceMonday = (day + 6) % 7;\nconst currentMonday = new Date(local);\ncurrentMonday.setDate(local.getDate() - daysSinceMonday);\ncurrentMonday.setHours(0, 0, 0, 0);\nconst start = new Date(currentMonday);\nstart.setDate(currentMonday.getDate() - 7);\nconst end = new Date(currentMonday);\nend.setDate(currentMonday.getDate() - 1);\nconst fmt = (date) => date.toISOString().slice(0, 10);\nreturn [{\n  json: {\n    period: `semana_${fmt(start)}`,\n    period_start: fmt(start),\n    period_end: fmt(end),\n  },\n}];"
+      },
+      "id": "ea0fa975-dc23-42f9-a824-e71b29ce04cc",
+      "name": "Calcular semana anterior",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://app/api/automation/top-products?fecha_inicio=' + $json.period_start + '&fecha_fin=' + $json.period_end }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-AUTOMATION-TOKEN",
+              "value": "={{ $env.AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1bcce554-ce63-4561-9518-ed6ff2781f04",
+      "name": "Obtener datos comerciales",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const data = $input.first().json;\nconst period = 'semana_' + data.period_start;\nconst trim = (value, depth = 0) => {\n  if (Array.isArray(value)) return value.slice(0, 8).map((entry) => trim(entry, depth + 1));\n  if (value && typeof value === 'object' && depth < 4) {\n    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, trim(entry, depth + 1)]));\n  }\n  return value;\n};\nconst sourceData = trim({\n  period,\n  period_start: data.period_start,\n  period_end: data.period_end,\n  facturacion_total: data.facturacion_total,\n  utilidad_bruta: data.utilidad_bruta,\n  utilidad_disponible: data.utilidad_disponible,\n  margen_global_pct: data.margen_global_pct,\n  crecimiento_mensual_pct: data.crecimiento_mensual_pct,\n  categoria_mas_rentable: data.categoria_mas_rentable,\n  resumen_categorias: data.resumen_categorias,\n  mix_ventas_categorias: data.mix_ventas_categorias,\n  kpis_comerciales: data.kpis_comerciales,\n  top_productos_rentables: data.top_productos_rentables,\n  top_productos_mayor_rotacion: data.top_productos_mayor_rotacion,\n  analisis_celulares: data.analisis_celulares,\n  analisis_computadoras: data.analisis_computadoras,\n  analisis_accesorios: data.analisis_accesorios,\n  analisis_productos_apple: data.analisis_productos_apple,\n  analisis_servicios_tecnicos: data.analisis_servicios_tecnicos,\n});\nconst system = 'Eres analista comercial senior para AppleBoss. Responde SOLO JSON valido, sin markdown. Usa espanol claro, breve y accionable. No inventes cifras: conserva los valores numericos del JSON recibido.';\nconst schema = [\n  'Genera un informe inteligente semanal para AppleBoss con esta estructura exacta:',\n  '{',\n  '  \"period_start\":\"' + data.period_start + '\",',\n  '  \"period_end\":\"' + data.period_end + '\",',\n  '  \"resumen_ejecutivo\":{\"descripcion\":\"texto breve\",\"facturacion_total\":0,\"utilidad_total\":0,\"utilidad_disponible\":0,\"margen_global_pct\":0,\"crecimiento_mensual_pct\":0},',\n  '  \"analisis_por_categoria\":[{\"categoria\":\"texto\",\"ingresos\":0,\"utilidad\":0,\"margen_promedio_pct\":0,\"ticket_promedio\":0,\"nivel_riesgo\":\"BAJO|MEDIO|ALTO\",\"observacion\":\"texto\"}],',\n  '  \"analisis_celulares\":{},',\n  '  \"analisis_computadoras\":{},',\n  '  \"analisis_accesorios\":{},',\n  '  \"riesgos_estrategicos\":[{\"tipo\":\"texto\",\"descripcion\":\"texto\",\"impacto\":\"texto\"}],',\n  '  \"oportunidades\":[{\"descripcion\":\"texto\",\"impacto_estimado\":\"texto\"}],',\n  '  \"recomendaciones_ejecutivas\":[{\"accion\":\"texto\",\"prioridad\":\"ALTA|MEDIA|BAJA\"}],',\n  '  \"productos_destacados\":[{\"producto\":\"texto\",\"categoria\":\"texto\",\"unidades\":0,\"ingresos\":0,\"utilidad\":0,\"margen_pct\":0}],',\n  '  \"datos_base\":{}',\n  '}',\n  '',\n  'Reglas:',\n  '- Mantén facturacion_total=' + Number(data.facturacion_total || 0) + ', utilidad_total=' + Number(data.utilidad_bruta || 0) + ', utilidad_disponible=' + Number(data.utilidad_disponible || 0) + ' y margen_global_pct=' + Number(data.margen_global_pct || 0) + '.',\n  '- Usa maximo 5 items por lista.',\n  '- Si no hay datos suficientes en una seccion, devuelve lista vacia o texto Sin registro suficiente.',\n  '- Las recomendaciones deben ser concretas para inventario, precios, margen, descuentos o reposicion.',\n  '',\n  'Datos comerciales: ' + JSON.stringify(sourceData)\n].join('\\n');\nreturn [{\n  json: {\n    period,\n    period_start: data.period_start,\n    period_end: data.period_end,\n    sourceData,\n    openaiRequest: {\n      model: 'gpt-4o-mini',\n      temperature: 0.2,\n      max_tokens: 1800,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: system },\n        { role: 'user', content: schema }\n      ]\n    }\n  }\n}];"
+      },
+      "id": "38d02f7d-94f7-441c-935c-05b290453ddb",
+      "name": "Preparar prompt ChatGPT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.openaiRequest }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "4dcac583-89cb-4095-b917-88c7a9a6f59e",
+      "name": "ChatGPT resumen inteligente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        60,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const response = $input.first().json;\nconst context = $node['Preparar prompt ChatGPT'].json;\nlet content = response?.choices?.[0]?.message?.content;\nif (Array.isArray(content)) {\n  content = content.map((part) => part?.text || part?.content || '').join('');\n}\nif (typeof content !== 'string' || !content.trim()) {\n  throw new Error('ChatGPT no devolvio contenido para el informe');\n}\nlet report;\ntry {\n  report = JSON.parse(content);\n} catch (error) {\n  throw new Error('ChatGPT devolvio JSON invalido: ' + error.message);\n}\nconst source = context.sourceData || {};\nconst num = (value) => Number(value ?? 0);\nreport.period_start = context.period_start;\nreport.period_end = context.period_end;\nreport.datos_base = source;\nreport.resumen_ejecutivo = report.resumen_ejecutivo || {};\nreport.resumen_ejecutivo.facturacion_total = num(source.facturacion_total);\nreport.resumen_ejecutivo.utilidad_total = num(source.utilidad_bruta);\nreport.resumen_ejecutivo.utilidad_disponible = num(source.utilidad_disponible);\nreport.resumen_ejecutivo.margen_global_pct = num(source.margen_global_pct);\nreport.resumen_ejecutivo.crecimiento_mensual_pct = num(source.crecimiento_mensual_pct);\nif (!report.resumen_ejecutivo.descripcion) {\n  report.resumen_ejecutivo.descripcion = 'Reporte del ' + context.period_start + ' al ' + context.period_end + '. Facturacion Bs ' + num(source.facturacion_total).toFixed(2) + ', utilidad Bs ' + num(source.utilidad_bruta).toFixed(2) + ' y margen ' + num(source.margen_global_pct).toFixed(2) + '%.';\n}\nif (!Array.isArray(report.analisis_por_categoria)) {\n  report.analisis_por_categoria = [];\n}\nif (report.analisis_por_categoria.length === 0 && Array.isArray(source.resumen_categorias)) {\n  report.analisis_por_categoria = source.resumen_categorias.slice(0, 5).map((item) => ({\n    categoria: item.categoria || 'sin_categoria',\n    ingresos: num(item.ingresos),\n    utilidad: num(item.utilidad),\n    margen_promedio_pct: num(item.margen_pct),\n    ticket_promedio: 0,\n    nivel_riesgo: num(item.margen_pct) < 10 ? 'MEDIO' : 'BAJO',\n    observacion: 'Categoria incluida por datos comerciales.'\n  }));\n}\nreport.analisis_celulares = report.analisis_celulares || source.analisis_celulares || {};\nreport.analisis_computadoras = report.analisis_computadoras || source.analisis_computadoras || {};\nreport.analisis_accesorios = report.analisis_accesorios || source.analisis_accesorios || {};\nreport.riesgos_estrategicos = Array.isArray(report.riesgos_estrategicos) ? report.riesgos_estrategicos.slice(0, 5) : [];\nreport.oportunidades = Array.isArray(report.oportunidades) ? report.oportunidades.slice(0, 5) : [];\nreport.recomendaciones_ejecutivas = Array.isArray(report.recomendaciones_ejecutivas) ? report.recomendaciones_ejecutivas.slice(0, 5) : [];\nreport.productos_destacados = Array.isArray(report.productos_destacados) ? report.productos_destacados.slice(0, 5) : (source.top_productos_rentables || []).slice(0, 5);\nreturn [{\n  json: {\n    laravelPayload: {\n      period: context.period,\n      period_start: context.period_start,\n      period_end: context.period_end,\n      report,\n      engine: response.model || context.openaiRequest?.model || 'gpt-4o-mini',\n      prompt_version: 'retail_v2_chatgpt_json'\n    },\n    openaiUsage: response.usage || null\n  }\n}];"
+      },
+      "id": "2dc0f98d-1c66-4d60-a394-b8f4bf111be4",
+      "name": "Formatear reporte Laravel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://app/api/automation/reports",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-AUTOMATION-TOKEN",
+              "value": "={{ $env.AUTOMATION_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.laravelPayload }}",
+        "options": {}
+      },
+      "id": "3854dffb-bfec-4e5d-a1da-dd29bbfd537f",
+      "name": "Guardar reporte en Laravel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        580,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Cada lunes 08:00 Bolivia": {
+      "main": [
+        [
+          {
+            "node": "Calcular semana anterior",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular semana anterior": {
+      "main": [
+        [
+          {
+            "node": "Obtener datos comerciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener datos comerciales": {
+      "main": [
+        [
+          {
+            "node": "Preparar prompt ChatGPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar prompt ChatGPT": {
+      "main": [
+        [
+          {
+            "node": "ChatGPT resumen inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatGPT resumen inteligente": {
+      "main": [
+        [
+          {
+            "node": "Formatear reporte Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear reporte Laravel": {
+      "main": [
+        [
+          {
+            "node": "Guardar reporte en Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/La_Paz"
+  },
+  "active": true
+}

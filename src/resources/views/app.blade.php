@@ -22,7 +22,7 @@
 
     <!-- Vite + React -->
     @viteReactRefresh
-    @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+    @vite(['resources/js/app.jsx'])
 
     <!-- Inertia Head -->
     @inertiaHead

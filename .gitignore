@@ -28,3 +28,7 @@ dist/
 build/
 coverage/
 *.tsbuildinfo
+
+# Local database backups
+/backups/database/*
+!/backups/database/.gitkeep

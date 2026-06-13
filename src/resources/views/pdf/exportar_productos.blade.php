@@ -153,10 +153,13 @@
     'producto_general' => 'Productos Generales' . (isset($subtipo) && $subtipo !== 'todos' ? ': ' . $subtipo : ''),
     default => $tipo === 'producto_apple' ? 'Productos Apple' : ucfirst($tipo),
   };
+  $nombreFiltrado = isset($filtroNombre) && filled($filtroNombre)
+    ? ' - Nombre: ' . $filtroNombre
+    : '';
 @endphp
 
 <h2 style="text-align: center; color:#003366;">
-  🗂 Inventario de {{ $tituloInventario }}
+  🗂 Inventario de {{ $tituloInventario }}{{ $nombreFiltrado }}
 </h2>
 
 
