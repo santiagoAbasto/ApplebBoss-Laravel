@@ -1,7 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { Apple, FolderTree, Laptop, Boxes, Smartphone, Upload } from 'lucide-react';
+import { Apple, FolderTree, Laptop, Boxes, Smartphone, Upload, Search } from 'lucide-react';
 
 /* =======================
    CRUD UI (OFICIAL)
@@ -63,6 +63,12 @@ export default function ExportacionesIndex({ subtipos }) {
               icon={<Apple size={18} />}
               title="Productos Apple"
               description="Exportar todos los productos Apple."
+            />
+            <ExportCard
+              href={route('admin.exportar.personalizado')}
+              icon={<Search size={18} />}
+              title="Exportador por nombre"
+              description="Filtrar por modelo o nombre y exportar coincidencias."
             />
           </CrudGrid>
         </CrudCard>

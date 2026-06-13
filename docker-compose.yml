@@ -36,16 +36,16 @@ services:
     container_name: appleboss-db
     restart: always
     environment:
-      POSTGRES_DB: appleboss
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: APPLEBOSSjulian2023
+      POSTGRES_DB: ${POSTGRES_DB:-appleboss}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - appleboss-laravel_db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   node:
-    image: node:18
+    image: node:24
     container_name: appleboss-node
     working_dir: /var/www/html
     environment:
@@ -66,7 +66,19 @@ services:
     container_name: appleboss-tunnel
     depends_on:
       - app
-    command: tunnel --no-autoupdate --protocol http2 --url http://app:80
+    command: tunnel --no-autoupdate --protocol http2 --url ${CLOUDFLARE_TARGET_URL:-http://app:80}
+    environment:
+      - CLOUDFLARE_TARGET_URL=${CLOUDFLARE_TARGET_URL:-http://app:80}
+    restart: unless-stopped
+
+  tunnel-token:
+    image: cloudflare/cloudflared:latest
+    container_name: appleboss-tunnel-token
+    depends_on:
+      - app
+    profiles:
+      - cloudflare-token
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
     restart: unless-stopped
 
   adminer:
@@ -78,25 +90,41 @@ services:
 
   # ✅ NUEVO: n8n local
   n8n:
-    image: n8nio/n8n:latest
+    build:
+      context: .
+      dockerfile: docker/n8n/Dockerfile
+    image: appleboss-n8n:local
     container_name: appleboss-n8n
     restart: unless-stopped
+    depends_on:
+      - db
     ports:
       - "5678:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=superseguro
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD is required}
 
       - TZ=America/La_Paz
+      - GENERIC_TIMEZONE=America/La_Paz
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
+      - NODES_EXCLUDE=["n8n-nodes-base.localFileTrigger"]
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - AUTOMATION_TOKEN=${AUTOMATION_TOKEN:?AUTOMATION_TOKEN is required}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PGHOST=db
+      - PGPORT=5432
+      - PGDATABASE=${POSTGRES_DB:-appleboss}
+      - PGUSER=${POSTGRES_USER:-user}
+      - PGPASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
 
     # 🔴 FIX PARA SAFARI / DEV
       - N8N_SECURE_COOKIE=false
     volumes:
       - appleboss_n8n_data:/home/node/.n8n
+      - ./backups/database:/backups/database
 
 volumes:
   appleboss-laravel_db_data:

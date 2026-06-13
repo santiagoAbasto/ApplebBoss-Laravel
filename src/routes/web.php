@@ -222,6 +222,15 @@ Route::middleware(['auth', 'verified', 'rol:admin'])
         Route::get('/exportar', [ExportController::class, 'index'])
             ->name('exportaciones.index');
 
+        Route::get('/exportar/personalizado', [ExportController::class, 'personalizado'])
+            ->name('exportar.personalizado');
+
+        Route::get('/exportar/por-nombre', [ExportController::class, 'porNombre'])
+            ->name('exportar.por-nombre');
+
+        Route::get('/exportar/fundas-magsafe-14-pro-max', [ExportController::class, 'fundasMagsafe14ProMax'])
+            ->name('exportar.fundas-magsafe-14-pro-max');
+
         Route::get('/exportar/celulares', [ExportController::class, 'celulares'])
             ->name('exportar.celulares');
 

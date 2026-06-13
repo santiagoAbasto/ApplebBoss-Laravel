@@ -118,6 +118,11 @@ export default function AdminLayout({ children }) {
             icon="fa-file-export"
             label="Exportaciones"
           />
+          <SidebarItem
+            route="admin.exportar.personalizado"
+            icon="fa-search"
+            label="Exportador por nombre"
+          />
 
           <hr className="sidebar-divider" />
           <div className="sidebar-heading">Clientes</div>

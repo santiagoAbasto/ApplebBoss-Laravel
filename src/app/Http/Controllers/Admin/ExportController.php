@@ -8,6 +8,8 @@ use App\Models\Computadora;
 use App\Models\ProductoGeneral;
 use App\Models\ProductoApple;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ExportController extends Controller
@@ -24,6 +26,105 @@ class ExportController extends Controller
         return $pdf->stream($filename);
     }
 
+    private function normalizeSearchText(?string $value): string
+    {
+        $text = Str::ascii(Str::lower((string) $value));
+        $text = preg_replace('/[^a-z0-9]+/', ' ', $text);
+
+        return trim(preg_replace('/\s+/', ' ', $text));
+    }
+
+    private function searchTerms(string $value): array
+    {
+        $stopWords = ['de', 'del', 'la', 'las', 'el', 'los', 'para', 'por'];
+
+        return collect(explode(' ', $this->normalizeSearchText($value)))
+            ->filter(fn ($term) => $term !== '' && ! in_array($term, $stopWords, true))
+            ->values()
+            ->all();
+    }
+
+    private function matchesNameFilter(?string $value, string $filter): bool
+    {
+        $haystack = $this->normalizeSearchText($value);
+
+        foreach ($this->searchTerms($filter) as $term) {
+            $variants = [$term];
+
+            if (Str::endsWith($term, 's') && Str::length($term) > 3) {
+                $variants[] = Str::substr($term, 0, -1);
+            }
+
+            if ($term === 'iphone') {
+                $variants[] = 'ip';
+            }
+
+            if ($term === 'ip') {
+                $variants[] = 'iphone';
+            }
+
+            if (! collect($variants)->contains(fn ($variant) => str_contains($haystack, $variant))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function inventoryConfig(string $inventory): array
+    {
+        return match ($inventory) {
+            'celulares' => [
+                'model' => Celular::class,
+                'column' => 'modelo',
+                'tipo' => 'celular',
+                'label' => 'Celulares',
+            ],
+            'computadoras' => [
+                'model' => Computadora::class,
+                'column' => 'nombre',
+                'tipo' => 'computadora',
+                'label' => 'Computadoras',
+            ],
+            'productos_apple' => [
+                'model' => ProductoApple::class,
+                'column' => 'modelo',
+                'tipo' => 'producto_apple',
+                'label' => 'Productos Apple',
+            ],
+            default => [
+                'model' => ProductoGeneral::class,
+                'column' => 'nombre',
+                'tipo' => 'producto_general',
+                'label' => 'Productos Generales',
+            ],
+        };
+    }
+
+    private function sortFilteredProducts($products, string $inventory)
+    {
+        if ($inventory === 'productos_generales') {
+            return $products
+                ->sortBy([
+                    fn ($a, $b) => strnatcasecmp((string) $a->nombre, (string) $b->nombre),
+                    fn ($a, $b) => strnatcasecmp((string) $a->codigo, (string) $b->codigo),
+                ])
+                ->values();
+        }
+
+        if ($inventory === 'celulares') {
+            return $products
+                ->sortBy([
+                    fn ($a, $b) => strnatcasecmp((string) $a->modelo, (string) $b->modelo),
+                    fn ($a, $b) => strnatcasecmp((string) $a->capacidad, (string) $b->capacidad),
+                    fn ($a, $b) => strnatcasecmp((string) $a->color, (string) $b->color),
+                ])
+                ->values();
+        }
+
+        return $products->sortBy('id')->values();
+    }
+
     public function index()
     {
         // Subcategorías únicas (tipo) de productos generales
@@ -35,6 +136,17 @@ class ExportController extends Controller
 
         return Inertia::render('Admin/Exportaciones/Index', [
             'subtipos' => $subtipos,
+        ]);
+    }
+
+    public function personalizado()
+    {
+        return Inertia::render('Admin/Exportaciones/Personalizado', [
+            'defaults' => [
+                'inventario' => 'productos_generales',
+                'nombre' => 'fundas magsafe de 14 pro max',
+                'solo_disponibles' => true,
+            ],
         ]);
     }
 
@@ -152,5 +264,67 @@ class ExportController extends Controller
             'admin.exportar.productos-generales.tipo',
             ['tipo' => $tipo]
         );
+    }
+
+    public function porNombre(Request $request)
+    {
+        $validated = $request->validate([
+            'inventario' => ['required', 'string', 'in:celulares,computadoras,productos_generales,productos_apple'],
+            'nombre' => ['required', 'string', 'max:120'],
+            'solo_disponibles' => ['nullable'],
+        ]);
+
+        $inventory = $validated['inventario'];
+        $name = trim($validated['nombre']);
+        $onlyAvailable = $request->boolean('solo_disponibles', true);
+        $config = $this->inventoryConfig($inventory);
+        $model = $config['model'];
+        $column = $config['column'];
+
+        $query = $model::query();
+
+        if ($onlyAvailable) {
+            $query->where('estado', 'disponible');
+        }
+
+        $products = $this->sortFilteredProducts(
+            $query->get()->filter(fn ($product) => $this->matchesNameFilter($product->{$column}, $name)),
+            $inventory
+        );
+
+        if ($products->isEmpty()) {
+            return back()->with('error', 'No hay productos con ese nombre.');
+        }
+
+        $pdf = Pdf::loadView('pdf.exportar_productos', [
+            'productos' => $products,
+            'tipo' => $config['tipo'],
+            'subtipo' => $config['label'],
+            'filtroNombre' => $name,
+            'soloDisponibles' => $onlyAvailable,
+        ])->setPaper('a4', 'landscape');
+
+        return $this->streamOrViewPdf(
+            $pdf,
+            'inventario-' . Str::slug($name) . '.pdf',
+            'Inventario ' . $config['label'] . ' - ' . $name,
+            'admin.exportar.por-nombre',
+            [
+                'inventario' => $inventory,
+                'nombre' => $name,
+                'solo_disponibles' => $onlyAvailable ? 1 : 0,
+            ]
+        );
+    }
+
+    public function fundasMagsafe14ProMax(Request $request)
+    {
+        $request->merge([
+            'inventario' => 'productos_generales',
+            'nombre' => 'fundas magsafe de 14 pro max',
+            'solo_disponibles' => $request->input('solo_disponibles', 1),
+        ]);
+
+        return $this->porNombre($request);
     }
 }
