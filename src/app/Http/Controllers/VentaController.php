@@ -155,6 +155,112 @@ class VentaController extends Controller
         return $producto;
     }
 
+    private function productsForSaleEdit(Venta $venta, string $tipo)
+    {
+        $modelo = $this->productModelForSaleType($tipo);
+        if (! $modelo) {
+            return collect();
+        }
+
+        $currentIds = $venta->items
+            ->where('tipo', $tipo)
+            ->pluck('producto_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $reservedIds = ReservaItem::where('tipo', $tipo)
+            ->whereHas('reserva', fn($q) => $q->where('estado', 'activa'))
+            ->pluck('producto_id');
+
+        $query = $modelo::query()
+            ->where(function ($q) use ($currentIds, $reservedIds) {
+                $q->where(function ($available) use ($reservedIds) {
+                    $available->where('estado', 'disponible')
+                        ->whereNotIn('id', $reservedIds);
+                });
+
+                if ($currentIds->isNotEmpty()) {
+                    $q->orWhereIn('id', $currentIds);
+                }
+            });
+
+        if ($tipo === 'celular') {
+            return $query->ordenInventarioIphone()->get();
+        }
+
+        $orderColumn = match ($tipo) {
+            'computadora' => 'nombre',
+            'producto_general' => 'nombre',
+            'producto_apple' => 'modelo',
+            default => 'id',
+        };
+
+        return $query
+            ->orderByRaw("CASE estado WHEN 'disponible' THEN 0 ELSE 1 END")
+            ->orderBy($orderColumn)
+            ->get();
+    }
+
+    private function getProductForSaleItemEdit(string $tipo, int $productoId, int $index, ?VentaItem $currentItem = null)
+    {
+        $modelo = $this->productModelForSaleType($tipo);
+
+        if (! $modelo) {
+            throw ValidationException::withMessages([
+                "items.$index.tipo" => 'Tipo de producto inválido.',
+            ]);
+        }
+
+        $producto = $modelo::whereKey($productoId)->lockForUpdate()->first();
+        $sameProduct = $currentItem
+            && $currentItem->tipo === $tipo
+            && (int) $currentItem->producto_id === $productoId;
+
+        if (! $producto) {
+            throw ValidationException::withMessages([
+                "items.$index.producto_id" => 'El producto seleccionado no existe.',
+            ]);
+        }
+
+        if (! $sameProduct) {
+            if ($producto->estado !== 'disponible' || $this->activeReservationExistsForProduct($tipo, $productoId)) {
+                throw ValidationException::withMessages([
+                    "items.$index.producto_id" => 'El producto seleccionado ya no está disponible.',
+                ]);
+            }
+        }
+
+        return [$producto, $sameProduct];
+    }
+
+    private function releasePreviousSaleItemProduct(VentaItem $item): void
+    {
+        if (! $item->tipo || ! $item->producto_id) {
+            return;
+        }
+
+        $modelo = $this->productModelForSaleType($item->tipo);
+        if (! $modelo) {
+            return;
+        }
+
+        $stillUsed = VentaItem::where('tipo', $item->tipo)
+            ->where('producto_id', $item->producto_id)
+            ->where('id', '!=', $item->id)
+            ->exists();
+
+        if ($stillUsed) {
+            return;
+        }
+
+        $producto = $modelo::whereKey($item->producto_id)->lockForUpdate()->first();
+        if ($producto && $producto->estado === 'vendido') {
+            $producto->estado = 'disponible';
+            $producto->save();
+        }
+    }
+
     private function buildValidatedSaleItems(array $items, ?Reserva $reserva = null): array
     {
         $validated = [];
@@ -348,6 +454,13 @@ class VentaController extends Controller
 
         foreach (($after['items'] ?? []) as $id => $itemAfter) {
             $itemBefore = $before['items'][$id] ?? [];
+            if (($itemBefore['producto'] ?? null) != ($itemAfter['producto'] ?? null)) {
+                $changes[] = 'Producto de línea #' . $id . ': ' .
+                    $this->formatSnapshotValue($itemBefore['producto'] ?? null) .
+                    ' → ' .
+                    $this->formatSnapshotValue($itemAfter['producto'] ?? null);
+            }
+
             foreach (['cantidad', 'precio_venta', 'precio_invertido', 'descuento', 'subtotal'] as $key) {
                 if (($itemBefore[$key] ?? null) != ($itemAfter[$key] ?? null)) {
                     $isMoney = $key !== 'cantidad';
@@ -362,22 +475,39 @@ class VentaController extends Controller
         return $changes;
     }
 
-    private function notifyAdminSaleEditedBySeller(Venta $venta, array $before, array $after): void
+    private function notifyAdminSaleEdited(Venta $venta, array $before, array $after): void
     {
-        if (auth()->user()->rol !== 'vendedor' || ! Schema::hasTable('system_notifications')) {
+        if (! Schema::hasTable('system_notifications')) {
             return;
         }
 
         $changes = $this->buildVentaEditChanges($before, $after);
+        if (empty($changes)) {
+            return;
+        }
+
+        $visibleChanges = array_slice($changes, 0, 8);
+        $remainingChanges = count($changes) - count($visibleChanges);
+        if ($remainingChanges > 0) {
+            $visibleChanges[] = '+' . $remainingChanges . ' cambios adicionales.';
+        }
+
+        $editorName = auth()->user()->name ?? 'Usuario';
+        $codigoVenta = $venta->codigo_nota ?? '#' . $venta->id;
 
         SystemNotification::create([
             'type' => 'sale_edit',
-            'title' => 'Venta editada por vendedor',
-            'message' => auth()->user()->name .
+            'title' => 'Venta editada',
+            'message' => $editorName .
                 ' editó la venta ' .
-                ($venta->codigo_nota ?? '#' . $venta->id) .
-                ".\nCambios:\n- " .
-                implode("\n- ", $changes ?: ['Sin cambios detectables en campos auditados.']),
+                $codigoVenta .
+                ".\nCliente: " .
+                ($venta->nombre_cliente ?: 'Sin cliente') .
+                "\nTotal actual: Bs " .
+                number_format((float) ($venta->subtotal ?? $venta->precio_venta ?? 0), 2) .
+                "\nCambios registrados:\n- " .
+                implode("\n- ", $visibleChanges),
+            'sale_id' => $venta->id,
         ]);
     }
 
@@ -760,16 +890,25 @@ class VentaController extends Controller
             'reserva',
         ]);
 
+        $inventarioEdicion = [
+            'celulares' => $this->productsForSaleEdit($venta, 'celular'),
+            'computadoras' => $this->productsForSaleEdit($venta, 'computadora'),
+            'productosGenerales' => $this->productsForSaleEdit($venta, 'producto_general'),
+            'productosApple' => $this->productsForSaleEdit($venta, 'producto_apple'),
+        ];
+
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Edit', [
                 'venta' => $venta,
-                'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
+                'productosGenerales' => $inventarioEdicion['productosGenerales'],
+                'inventarioEdicion' => $inventarioEdicion,
             ]);
         }
 
         return Inertia::render('Vendedor/Ventas/Edit', [
             'venta' => $venta,
-            'productosGenerales' => ProductoGeneral::where('estado', 'disponible')->get(),
+            'productosGenerales' => $inventarioEdicion['productosGenerales'],
+            'inventarioEdicion' => $inventarioEdicion,
         ]);
     }
 
@@ -839,7 +978,7 @@ class VentaController extends Controller
                 ]);
 
                 $venta->refresh()->load(['items', 'servicioTecnico']);
-                $this->notifyAdminSaleEditedBySeller(
+                $this->notifyAdminSaleEdited(
                     $venta,
                     $beforeEdit,
                     $this->ventaEditSnapshot($venta)
@@ -858,6 +997,7 @@ class VentaController extends Controller
             $itemsPorId = $venta->items->keyBy('id');
             $subtotal = 0;
             $capitalTotal = 0;
+            $selectedProducts = [];
 
             foreach ($itemsPayload as $index => $itemData) {
                 $item = ! empty($itemData['id'])
@@ -868,13 +1008,24 @@ class VentaController extends Controller
                     abort(422, 'Uno de los items no pertenece a esta venta.');
                 }
 
-                if (! $item) {
-                    if (empty($itemData['tipo']) || empty($itemData['producto_id'])) {
-                        throw ValidationException::withMessages([
-                            "items.$index.producto_id" => 'Selecciona un producto válido para agregarlo a la venta.',
-                        ]);
-                    }
+                $requestedTipo = (string) ($itemData['tipo'] ?? $item?->tipo ?? '');
+                $requestedProductId = (int) ($itemData['producto_id'] ?? $item?->producto_id ?? 0);
 
+                if ($requestedTipo === '' || $requestedProductId <= 0) {
+                    throw ValidationException::withMessages([
+                        "items.$index.producto_id" => 'Selecciona un producto válido para esta línea.',
+                    ]);
+                }
+
+                $selectedKey = $requestedTipo . ':' . $requestedProductId;
+                if (isset($selectedProducts[$selectedKey])) {
+                    throw ValidationException::withMessages([
+                        "items.$index.producto_id" => 'Este producto ya está en otra línea de la misma venta.',
+                    ]);
+                }
+                $selectedProducts[$selectedKey] = true;
+
+                if (! $item) {
                     $validatedItem = $this->buildValidatedSaleItems([$itemData])[0];
                     $this->createVentaItemFromValidated($venta, $validatedItem);
                     $validatedItem['producto']->estado = 'vendido';
@@ -889,15 +1040,48 @@ class VentaController extends Controller
                 $precioVenta = (float) $itemData['precio_venta'];
                 $precioInvertido = (float) $itemData['precio_invertido'];
                 $descuentoItem = (float) $itemData['descuento'];
-                $subtotalItem = max(0, ($precioVenta - $descuentoItem) * $cantidad);
 
-                $item->update([
+                if ($precioVenta <= 0) {
+                    throw ValidationException::withMessages([
+                        "items.$index.precio_venta" => 'El precio de venta debe ser mayor a cero.',
+                    ]);
+                }
+
+                if ($cantidad > 1 && in_array($requestedTipo, ['celular', 'computadora', 'producto_apple'], true)) {
+                    throw ValidationException::withMessages([
+                        "items.$index.cantidad" => 'Celulares, computadoras y productos Apple se editan de a una unidad por línea.',
+                    ]);
+                }
+
+                if ($descuentoItem > $precioVenta) {
+                    throw ValidationException::withMessages([
+                        "items.$index.descuento" => 'El descuento no puede ser mayor al precio de venta.',
+                    ]);
+                }
+
+                $subtotalItem = max(0, ($precioVenta - $descuentoItem) * $cantidad);
+                [$producto, $sameProduct] = $this->getProductForSaleItemEdit(
+                    $requestedTipo,
+                    $requestedProductId,
+                    $index,
+                    $item
+                );
+
+                if (! $sameProduct) {
+                    $this->releasePreviousSaleItemProduct($item);
+                    $producto->estado = 'vendido';
+                    $producto->save();
+                }
+
+                $item->update(array_merge([
+                    'tipo' => $requestedTipo,
+                    'producto_id' => $requestedProductId,
                     'cantidad' => $cantidad,
                     'precio_venta' => $precioVenta,
                     'precio_invertido' => $precioInvertido,
                     'descuento' => $descuentoItem,
                     'subtotal' => $subtotalItem,
-                ]);
+                ], $this->snapshotForSaleItem($requestedTipo, $producto)));
 
                 $subtotal += $subtotalItem;
                 $capitalTotal += $precioInvertido;
@@ -934,7 +1118,7 @@ class VentaController extends Controller
             }
 
             $venta->refresh()->load(['items', 'servicioTecnico']);
-            $this->notifyAdminSaleEditedBySeller(
+            $this->notifyAdminSaleEdited(
                 $venta,
                 $beforeEdit,
                 $this->ventaEditSnapshot($venta)

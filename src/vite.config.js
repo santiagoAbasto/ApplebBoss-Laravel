@@ -3,6 +3,11 @@ import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
+const containerPort = Number(process.env.VITE_CONTAINER_PORT || 5173);
+const hostPort = Number(process.env.VITE_HOST_PORT || containerPort);
+const hmrHost = process.env.VITE_HMR_HOST || 'localhost';
+const appPort = Number(process.env.APP_HTTP_PORT || 8010);
+
 export default defineConfig({
   cacheDir: '/tmp/vite-cache',
 
@@ -22,13 +27,22 @@ export default defineConfig({
 
   server: {
     host: '0.0.0.0',      // Docker escucha en todos
-    port: 5173,
+    port: containerPort,
     strictPort: true,
+    origin: `http://${hmrHost}:${hostPort}`,
+    cors: {
+      origin: [
+        `http://localhost:${appPort}`,
+        `http://127.0.0.1:${appPort}`,
+        `http://[::1]:${appPort}`,
+      ],
+    },
     headers: {
       'Cache-Control': 'no-store, max-age=0',
     },
     hmr: {
-      host: 'localhost', // 👈 CLAVE: lo que ve el navegador
+      host: hmrHost, // Lo que ve el navegador fuera de Docker
+      clientPort: hostPort,
       overlay: false,
     },
     watch: {

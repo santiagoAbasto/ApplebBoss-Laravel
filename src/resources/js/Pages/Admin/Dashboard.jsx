@@ -8,7 +8,7 @@ import EconomicCharts from '@/Components/EconomicCharts';
 import SalesChart from '@/Components/SalesChart';
 import DashboardActions from '@/Components/DashboardActions';
 import IosNotification from "@/Components/IosNotification";
-import { Bell, ChartColumnBig, DollarSign, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Bell, ChartColumnBig, DollarSign, Minus, PencilLine, TrendingDown, TrendingUp } from 'lucide-react';
 
 
 import axios from 'axios';
@@ -57,6 +57,10 @@ const notificationTarget = (notification) => {
     return route('admin.automation.show', notification.report_id);
   }
 
+  if (notification?.type === 'sale_edit' && notification?.sale_id) {
+    return route('admin.ventas.edit', notification.sale_id);
+  }
+
   if (['sale', 'sale_edit'].includes(notification?.type)) {
     return route('admin.ventas.index');
   }
@@ -70,6 +74,60 @@ const notificationTarget = (notification) => {
   }
 
   return route('admin.dashboard');
+};
+
+const notificationMeta = (notification) => {
+  const types = {
+    sale_edit: {
+      label: 'Venta editada',
+      badge: 'border-amber-200 bg-amber-50 text-amber-700',
+      unread: 'bg-amber-50 border-amber-200',
+      read: 'bg-white border-slate-200',
+      action: 'Ver venta',
+      icon: PencilLine,
+    },
+    sale: {
+      label: 'Venta nueva',
+      badge: 'border-sky-200 bg-sky-50 text-sky-700',
+      unread: 'bg-sky-50 border-sky-200',
+      read: 'bg-white border-slate-200',
+      action: 'Ver ventas',
+      icon: Bell,
+    },
+    report: {
+      label: 'Reporte',
+      badge: 'border-violet-200 bg-violet-50 text-violet-700',
+      unread: 'bg-violet-50 border-violet-200',
+      read: 'bg-white border-slate-200',
+      action: 'Ver reporte',
+      icon: Bell,
+    },
+    service: {
+      label: 'Servicio',
+      badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      unread: 'bg-emerald-50 border-emerald-200',
+      read: 'bg-white border-slate-200',
+      action: 'Ver servicios',
+      icon: Bell,
+    },
+    stock: {
+      label: 'Stock',
+      badge: 'border-rose-200 bg-rose-50 text-rose-700',
+      unread: 'bg-rose-50 border-rose-200',
+      read: 'bg-white border-slate-200',
+      action: 'Ver dashboard',
+      icon: Bell,
+    },
+  };
+
+  return types[notification?.type] || {
+    label: 'Sistema',
+    badge: 'border-slate-200 bg-slate-50 text-slate-700',
+    unread: 'bg-slate-50 border-slate-200',
+    read: 'bg-white border-slate-200',
+    action: 'Ver',
+    icon: Bell,
+  };
 };
 
 
@@ -220,58 +278,67 @@ export default function Dashboard({
             </p>
           ) : (
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`p-4 rounded-xl border transition ${n.read
-                    ? 'bg-gray-50 border-gray-200'
-                    : 'bg-sky-50 border-sky-200'
-                    }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-sm text-gray-800">
-                        {n.title}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {n.message}
-                      </p>
-                    </div>
+              {notifications.map((n) => {
+                const meta = notificationMeta(n);
+                const Icon = meta.icon;
 
-                    <div className="flex items-center gap-4">
+                return (
+                  <div
+                    key={n.id}
+                    className={`p-4 rounded-xl border transition ${n.read ? meta.read : meta.unread}`}
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${meta.badge}`}>
+                            <Icon size={13} />
+                            {meta.label}
+                          </span>
+                          {!n.read && (
+                            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
+                              Nueva
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-semibold text-sm text-gray-900">
+                          {n.title}
+                        </p>
+                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-gray-600">
+                          {n.message}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-3">
+                          {dayjs(n.created_at).format('DD/MM/YYYY HH:mm')}
+                        </p>
+                      </div>
 
-                      {/* BOTÓN VER (SIEMPRE) */}
-	                      <button
-	                        onClick={() => router.visit(notificationTarget(n))}
-	                        className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1 rounded-full transition"
-	                      >
-                        Ver
-                      </button>
-
-                      {/* BOTÓN MARCAR COMO LEÍDO (solo si no está leído) */}
-                      {!n.read && (
+                      <div className="flex shrink-0 items-center gap-3">
                         <button
-                          onClick={() => {
-                            axios.post(`/admin/notifications/${n.id}/read`);
-                            setNotifications(prev =>
-                              prev.map(x =>
-                                x.id === n.id ? { ...x, read: true } : x
-                              )
-                            );
-                          }}
-                          className="text-xs text-sky-600 hover:underline"
+                          onClick={() => router.visit(notificationTarget(n))}
+                          className="text-xs bg-slate-900 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full transition"
                         >
-                          Marcar como leído
+                          {meta.action}
                         </button>
-                      )}
+
+                        {!n.read && (
+                          <button
+                            onClick={() => {
+                              axios.post(`/admin/notifications/${n.id}/read`);
+                              setNotifications(prev =>
+                                prev.map(x =>
+                                  x.id === n.id ? { ...x, read: true } : x
+                                )
+                              );
+                            }}
+                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
+                          >
+                            Marcar como leída
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  <p className="text-[10px] text-gray-400 mt-2">
-                    {dayjs(n.created_at).format('DD/MM/YYYY HH:mm')}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
