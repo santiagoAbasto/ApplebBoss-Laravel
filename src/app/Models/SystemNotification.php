@@ -11,12 +11,18 @@ class SystemNotification extends Model
         'title',
         'message',
         'read',
-        'report_id', 
+        'report_id',
+        'sale_id',
 
     ];
 
     public function report()
     {
         return $this->belongsTo(AutomationReport::class, 'report_id');
+    }
+
+    public function sale()
+    {
+        return $this->belongsTo(Venta::class, 'sale_id');
     }
 }
