@@ -27,17 +27,31 @@ use App\Http\Controllers\EgresoController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\Automation\AutomationReportController;
 use App\Http\Controllers\Admin\SystemNotificationController;
+use App\Http\Controllers\Admin\InventoryAuditController;
+use App\Http\Controllers\Admin\CatalogoPublicacionController;
+use App\Http\Controllers\PublicCatalogController;
 
 use Illuminate\Http\Request;
 
 
 
-// 🏠 Ruta pública inicial
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-    ]);
-});
+// 🏠 Rutas públicas del catálogo
+Route::get('/', [PublicCatalogController::class, 'home'])->name('store.home');
+Route::get('/catalogo', [PublicCatalogController::class, 'index'])->name('store.catalog');
+Route::get('/productos/{slug}', [PublicCatalogController::class, 'show'])->name('store.product');
+
+// Category hubs — URLs canónicas por categoría
+Route::get('/iphone',       fn () => redirect('/catalogo?categoria=celulares', 301))->name('hub.iphone');
+Route::get('/mac',          fn () => redirect('/catalogo?categoria=computadoras', 301))->name('hub.mac');
+Route::get('/apple',        fn () => redirect('/catalogo?categoria=productos-apple', 301))->name('hub.apple');
+Route::get('/myskin',       fn () => redirect('/catalogo?categoria=fundas', 301))->name('hub.myskin');
+Route::get('/accesorios',   fn () => redirect('/catalogo?categoria=accesorios', 301))->name('hub.accesorios');
+Route::get('/seminuevos',   fn () => redirect('/catalogo?condicion=Seminuevo', 301))->name('hub.seminuevos');
+
+// API pública: sincronización del carrito (el servidor es autoridad de precios)
+Route::post('/api/carrito/sync', [PublicCatalogController::class, 'syncCart'])
+    ->name('api.carrito.sync')
+    ->middleware('throttle:60,1');
 
 // 🚀 Redirección al dashboard según el rol autenticado
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
@@ -64,6 +78,24 @@ Route::middleware(['auth', 'verified', 'rol:admin'])
         // 📊 Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
+
+        // ========================
+        // 🌐 CATÁLOGO WEB (publicaciones)
+        // ========================
+        Route::prefix('catalogo')->name('catalogo.')->group(function () {
+            Route::get('/', [CatalogoPublicacionController::class, 'index'])->name('index');
+            Route::post('/', [CatalogoPublicacionController::class, 'store'])->name('store');
+            Route::get('/nuevo/{tipo}/{id}', [CatalogoPublicacionController::class, 'createFromInventory'])->name('create');
+            Route::get('/{publicacion}/editar', [CatalogoPublicacionController::class, 'edit'])->name('edit');
+            Route::patch('/{publicacion}', [CatalogoPublicacionController::class, 'update'])->name('update');
+            Route::delete('/{publicacion}', [CatalogoPublicacionController::class, 'destroy'])->name('destroy');
+
+            // Imágenes
+            Route::post('/{publicacion}/imagenes', [CatalogoPublicacionController::class, 'uploadImagen'])->name('imagenes.upload');
+            Route::delete('/{publicacion}/imagenes/{imagen}', [CatalogoPublicacionController::class, 'deleteImagen'])->name('imagenes.delete');
+            Route::post('/{publicacion}/imagenes/reordenar', [CatalogoPublicacionController::class, 'reordenarImagenes'])->name('imagenes.reordenar');
+            Route::post('/{publicacion}/imagenes/{imagen}/principal', [CatalogoPublicacionController::class, 'setPrincipal'])->name('imagenes.principal');
+        });
 
         // ========================
         // 🔔 NOTIFICACIONES SISTEMA
@@ -252,6 +284,18 @@ Route::middleware(['auth', 'verified', 'rol:admin'])
         Route::resource('productos-apple', ProductoAppleController::class)
             ->names('productos-apple')
             ->parameters(['productos-apple' => 'productoApple']);
+
+        // ========================
+        // 🔎 Auditoría física de inventario
+        // ========================
+        Route::get('/auditoria-inventario', [InventoryAuditController::class, 'index'])
+            ->name('inventory-audits.index');
+        Route::post('/auditoria-inventario', [InventoryAuditController::class, 'store'])
+            ->name('inventory-audits.store');
+        Route::post('/auditoria-inventario/{inventoryAudit}/escanear', [InventoryAuditController::class, 'scan'])
+            ->name('inventory-audits.scan');
+        Route::post('/auditoria-inventario/{inventoryAudit}/cerrar', [InventoryAuditController::class, 'close'])
+            ->name('inventory-audits.close');
 
         // ========================
         // 👥 Clientes

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './tokens.css';
+
 @layer components {
   .input {
     @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white;

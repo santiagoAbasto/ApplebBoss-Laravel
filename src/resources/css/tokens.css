@@ -1,0 +1,58 @@
+/* ===============================
+   APPLE BOSS — DESIGN TOKENS
+   Fuente única de verdad. Importar desde app.css y app-vite.css.
+   No editar tokens en otros archivos.
+=============================== */
+:root {
+  /* Brand */
+  --ab-navy:          #011446;
+  --ab-deep-violet:   #28224F;
+  --ab-periwinkle:    #585E9F;
+  --ab-lime:          #C6CB36;
+
+  /* MYSKIN sub-brand */
+  --ms-lime:          #A3BD31;
+  --ms-navy:          #0C1B47;
+  --ms-gray:          #87868A;
+
+  /* Surfaces */
+  --surface-page:     #FAFAF9;
+  --surface-white:    #FFFFFF;
+  --surface-muted:    #F2F2F7;
+  --surface-dark:     var(--ab-navy);
+
+  /* Text */
+  --text-primary:     #0D0D1A;
+  --text-secondary:   #55556A;
+  --text-muted:       #8E8EA0;
+  --text-on-dark:     #FFFFFF;
+  --text-on-lime:     #0D0D1A;
+
+  /* Borders */
+  --border-light:     rgba(13,13,26,0.10);
+  --border-medium:    rgba(13,13,26,0.18);
+
+  /* Shadows */
+  --shadow-card:      0 1px 3px rgba(1,20,70,0.07), 0 4px 12px rgba(1,20,70,0.05);
+  --shadow-raised:    0 4px 16px rgba(1,20,70,0.12), 0 1px 4px rgba(1,20,70,0.08);
+
+  /* Radius */
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        16px;
+  --radius-xl:        24px;
+  --radius-full:      9999px;
+
+  /* Spacing */
+  --gutter:           clamp(1rem, 4vw, 2.5rem);
+  --container:        1440px;
+
+  /* Motion */
+  --dur-press:        120ms;
+  --dur-fast:         180ms;
+  --dur-ui:           240ms;
+  --dur-panel:        320ms;
+  --ease-out:         cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out:      cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer:      cubic-bezier(0.32, 0.72, 0, 1);
+}
