@@ -1,8 +1,8 @@
 # Memory — apple-boss
 
-> Generated: 2026-09-17 00:24:47  
-> Total memories: **100**  
-> Breakdown: instruction: 17, fact: 11, decision: 25, goal: 2, preference: 10, context: 4, learning: 25, artifact: 3, error: 3
+> Generated: 2026-09-17 06:42:05  
+> Total memories: **101**  
+> Breakdown: instruction: 18, fact: 11, decision: 25, goal: 2, preference: 10, context: 4, learning: 25, artifact: 3, error: 3
 
 ---
 
@@ -33,6 +33,12 @@
 > La configuración de WhatsApp queda como está (null hasta que el usuario la configure) y las credenciales SMTP van solo en .env. A Inertia solo se comparte una lista blanca de configuracion_tienda.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `configuracion`, `smtp`, `whatsapp`*
+
+### En Apple Boss (repositorio público) nunca se escri...
+
+> En Apple Boss (repositorio público) nunca se escriben contraseñas, tokens ni correos de personas en el código, seeders y tests incluidos. La primera cuenta de administrador sale de SEED_ADMIN_NAME, SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD en .env (UserSeeder), el seeder nunca cambia la contraseña de una cuenta que ya existe y los vendedores se crean desde Usuarios y roles. Antes de un push, revisar lo versionado con git grep buscando credenciales y correos personales.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-17T04:39:17 | Tags: `seguridad`, `credenciales`, `seeders`, `git`, `apple-boss`*
 
 ### MYSKIN solo para fundas
 
@@ -208,6 +214,12 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T05:17:00 | Tags: `faq`, `preguntas-frecuentes`, `tienda-online`, `dominio`*
 
+### Actualización del documento de grado de Apple Boss...
+
+> Actualización del documento de grado de Apple Boss (UCATEC, «apple boss Proyecto final.docx», 8 capítulos): se mantienen el título y los objetivos aprobados; se actualizan resumen, introducción, alcance, límites, requerimientos, diseño, desarrollo, pruebas, costos, conclusiones y bibliografía con la versión actual del sistema; la portada pasa a «Cochabamba, septiembre de 2026»; se rehacen solo los diagramas (los mockups quedan); se entregan dos Word nuevos, uno limpio y otro con control de cambios, sin tocar el original.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-17T04:59:10 | Tags: `tesis`, `documento-de-grado`, `apple-boss`, `docx`*
+
 ### Qué muestra la ficha pública
 
 > La ficha pública del producto no muestra lo que el modelo no tiene (teleobjetivo, LiDAR, Thread, Botón Acción, Control de Cámara); la excepción es Apple Intelligence, que se muestra como «No compatible». La comparativa pública sí muestra «No tiene».
@@ -333,12 +345,6 @@
 > Apple Boss (Laravel): H5 corregido sin romper n8n. Se comprobó que n8n SOLO llama /api/automation/reports y /api/automation/top-products; el export financiero no lo usa nadie de n8n y el admin exporta desde el panel (ruta web con sesión). Fix: /api/automation/reportes/exportar pasó a ámbito 'automation:export' con AUTOMATION_EXPORT_TOKEN aparte (vacío=cerrado por defecto). AutomationTokenMiddleware ahora acepta varios tokens (AUTOMATION_TOKEN + AUTOMATION_TOKENS_PREVIOS) para rotar sin cortar n8n; comando 'php artisan automation:token'. El backup diario 20:00 es scheduleTrigger (dump PostgreSQL), no usa la API. H8 (nuevo): el vendedor no inicia sesión fuera de 09:00-13:00 y 14:00-19:00 (America/La_Paz); se hace en LoginRequest con App\Support\HorarioLaboral (config/horario.php), NO en n8n porque n8n no intercepta un login en tiempo real; el admin no se restringe. 575 tests verdes.
 
 *Confidence: 0.9 | Status: active | Created: 2026-09-17T04:03:14 | Tags: `seguridad`, `n8n`, `token`, `horario`, `vendedor`, `apple-boss`, `tesis`*
-
-### Apple Boss, servicio técnico (2026-09-16, pedido d...
-
-> Apple Boss, servicio técnico (2026-09-16, pedido del usuario): el vendedor registra solo lo que paga el cliente y al guardar sale la nota; el servicio queda con costo_pendiente = true. Al administrador le llega en el momento una SystemNotification de tipo servicio_sin_costo (Resumen, abre /admin/servicios?pendientes=1) y la alerta fija en Servicio técnico. El administrador carga el costo de cada trabajo con PATCH admin.servicios.costo (ServicioTecnicoController::cargarCosto, solo rol admin): se completa el costo en el JSON sin tocar descripción ni precio (la nota no cambia), se guardan costo_cargado_por y costo_cargado_en y el aviso queda leído. Mientras falta el costo, ese servicio suma a lo cobrado pero no suma costo ni utilidad en ningún reporte (costoParaReportes y gananciaParaReportes del modelo) y se muestra como «Costo pendiente».
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T20:17:59 | Tags: `servicio-tecnico`, `costos`, `utilidad`, `vendedor`, `trazabilidad`*
 
 ---
 
@@ -678,17 +684,17 @@
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-17T03:24:21 | Tags: `seguridad`, `laravel`, `rate-limit`, `trustproxies`, `apple-boss`*
 
+### Dump de BD estuvo en la historia pública; limpiado con filter-repo; rotar credenciales
+
+> Apple Boss (repo público santiagoAbasto/ApplebBoss-Laravel) tuvo dos filtraciones en GitHub. (1) Un dump completo de la base (commit fbc8ea5 «1.4.3») con hashes, clientes, costos, IMEI y sesiones: se limpió la historia con git-filter-repo y force-push, y el 2026-09-17 se borró la rama local claude/fervent-ardinghelli-b52ce4 que todavía lo tenía; filter-repo sobre un mirror de origin no limpia ramas locales, así que hay que verificar con git rev-list --all --objects en el repo de trabajo. GitHub igual sigue sirviendo el commit viejo por su SHA (HTTP 200 el 2026-09-17). (2) src/database/seeders/UserSeeder.php tuvo desde el primer commit (02d5e63, 2025-05-05) las contraseñas en texto plano del admin y de dos vendedores, con sus correos, y además las reponía en cada db:seed. El 2026-09-17 se reescribió para leer SEED_ADMIN_* de .env sin pisar contraseñas (UserSeederTest), pero la historia pública todavía las tiene. Pendiente del dueño: repo privado o purga con GitHub Support, cambiar esas tres contraseñas (y donde se hayan reutilizado), rotar AUTOMATION_TOKEN. .gitignore bloquea *.sql, *.dump, *.bak, __pycache__, *.pyc, /output/ y /tmp/.
+
+*Confidence: 0.97 | Status: active | Created: 2026-09-17T04:23:12 | Tags: `seguridad`, `git`, `filtracion`, `backup-bd`, `apple-boss`, `tesis`*
+
 ### SinCostos no cubre crear/editar venta ni reservas activas del vendedor
 
 > Apple Boss (Laravel): el ocultamiento de costo al vendedor (App\Support\SinCostos) tiene huecos. VentaController@create (:554), VentaController@edit (:890) y ReservaController@activas (:263) mandan los modelos completos (Celular/Computadora/ProductoGeneral/ProductoApple) al panel del vendedor SIN pasar por SinCostos. Los modelos no tienen $hidden, asi que precio_costo, procedencia, imei_1 y numero_serie viajan en las props de Inertia (verificado: precio_costo=4000, procedencia con nombre+telefono del proveedor). Rompe la regla dura de negocio. Arreglo: aplicar SinCostos ahi y agregar $hidden/$visible en esos modelos como red de seguridad.
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-17T03:24:30 | Tags: `seguridad`, `vendedor`, `sincostos`, `fuga-costo`, `apple-boss`*
-
-### Dump de BD estuvo en la historia pública; limpiado con filter-repo; rotar credenciales
-
-> Apple Boss (repo público santiagoAbasto/ApplebBoss-Laravel): había un dump completo de la base commiteado en la historia (BACKUP_OFICIAL_TF_...APPLEBOSS.sql, en fbc8ea5 '1.4.3', borrado luego en 35b3f8f pero seguía en la historia y YA estaba en origin/main). Contenía users (hashes bcrypt), clientes (PII), ventas/costos, celulares (precio_costo/IMEI), sessions y password_reset_tokens. Se limpió con git-filter-repo (mirror clone en scratchpad, sin tocar el working tree con 158 mod + 569 untracked sin commitear) y force-push: origin/main pasó de 2fb1c4c a d0e4395, 0 blobs .sql, árbol idéntico (no se perdió código). .gitignore ahora bloquea *.sql, *.dump, *.bak, output/, tmp/. PENDIENTE del dueño por haber sido público: rotar contraseñas del panel, rotar AUTOMATION_TOKEN, invalidar sessions, y pedir a GitHub Support purgar caché (forks conservan copia). Regla: nunca git add de un .sql/.dump.
-
-*Confidence: 0.95 | Status: active | Created: 2026-09-17T04:23:12 | Tags: `seguridad`, `git`, `filtracion`, `backup-bd`, `apple-boss`, `tesis`*
 
 ---
 
