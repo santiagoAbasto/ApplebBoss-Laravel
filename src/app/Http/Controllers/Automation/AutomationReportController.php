@@ -39,7 +39,7 @@ class AutomationReportController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'period'        => ['required', 'string', 'max:20'],
+            'period'        => ['required', 'string', 'max:60'],
             'period_start'  => ['required', 'date'],
             'period_end'    => ['required', 'date'],
             'report'        => ['required', 'array'],

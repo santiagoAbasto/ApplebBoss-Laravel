@@ -13,25 +13,21 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Administrador',
-            'email' => 'santyadmin@appleboss.com',
-            'password' => Hash::make('Santyadmin123'),
-            'rol' => 'admin',
-        ]);
+        $this->seedUser('Administrador', 'santyadmin@appleboss.com', 'Santyadmin123', 'admin');
+        $this->seedUser('Ayelen Vargas', 'ayelenvargas877@gmail.com', 'TeKieromucho9', 'vendedor');
+        $this->seedUser('Jhoel Abasto', 'jhoelabastoortega@gmail.com', 'Jesusmitodo93', 'vendedor');
+    }
 
-        User::create([
-            'name' => 'Ayelen Vargas',
-            'email' => 'Ayelenvargas877@gmail.com',
-            'password' => Hash::make('TeKieromucho9'),
-            'rol' => 'vendedor',
-        ]);
-
-        User::create([
-            'name' => 'Jhoel Abasto',
-            'email' => 'jhoelabastoortega@gmail.com',
-            'password' => Hash::make('Jesusmitodo93'),
-            'rol' => 'vendedor',
-        ]);
+    private function seedUser(string $name, string $email, string $password, string $role): void
+    {
+        $normalizedEmail = strtolower($email);
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->first() ?? new User();
+        $user->name = $name;
+        $user->email = $normalizedEmail;
+        $user->password = Hash::make($password);
+        $user->rol = $role;
+        $user->save();
     }
 }

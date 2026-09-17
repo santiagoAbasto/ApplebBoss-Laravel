@@ -1,0 +1,116 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Preguntas frecuentes: una pregunta, un lugar",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "panel", "label": "Panel" },
+    { "id": "tienda", "label": "Tienda" },
+    { "id": "portada", "label": "Portada" },
+    { "id": "oculta", "label": "Sin preguntas", "variant": "exception" }
+  ],
+  "mainPath": ["pregunta", "lugar", "bloque", "cliente"],
+  "nodes": [
+    {
+      "id": "pregunta",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Pregunta",
+      "sublabel": "y su respuesta"
+    },
+    {
+      "id": "lugar",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Un lugar",
+      "sublabel": "dónde se muestra"
+    },
+    {
+      "id": "seccion",
+      "lane": "portada",
+      "col": 1,
+      "type": "frontend",
+      "width": 150,
+      "label": "Portada",
+      "sublabel": "enciende la del inicio"
+    },
+    {
+      "id": "bloque",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Su bloque",
+      "sublabel": "en esa página"
+    },
+    {
+      "id": "vacio",
+      "lane": "oculta",
+      "col": 2,
+      "type": "security",
+      "width": 150,
+      "label": "Sin ninguna",
+      "sublabel": "no se dibuja"
+    },
+    {
+      "id": "cliente",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "width": 150,
+      "label": "El cliente",
+      "sublabel": "la lee antes de comprar"
+    }
+  ],
+  "edges": [
+    { "from": "pregunta", "to": "lugar", "label": "eliges dónde va", "variant": "emphasis" },
+    { "from": "lugar", "to": "bloque", "label": "encendida", "variant": "emphasis" },
+    { "from": "lugar", "to": "vacio", "label": "si no hay ninguna", "variant": "security", "role": "error" },
+    { "from": "bloque", "to": "cliente", "label": "en el orden que elegiste" },
+    { "from": "seccion", "to": "bloque", "label": "solo la del inicio", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Los cuatro lugares",
+      "items": [
+        "El final del inicio",
+        "La ficha de todos los productos",
+        "Las páginas de iPhone y de Seminuevos"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Cómo escribirlas",
+      "items": [
+        "La pregunta, como la hace el cliente",
+        "La respuesta, corta y clara",
+        "Nada que no puedas cumplir"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "El orden manda",
+      "items": [
+        "Arriba, lo que más te preguntan",
+        "Se arrastra y se guarda solo",
+        "El interruptor la esconde sin borrarla"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Sin preguntas, esa sección no aparece",
+        "La del inicio se enciende en Portada",
+        "Copiar de otro lugar no repite"
+      ]
+    }
+  ]
+}

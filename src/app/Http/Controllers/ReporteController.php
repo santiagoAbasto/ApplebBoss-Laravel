@@ -13,16 +13,28 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 
 class ReporteController extends Controller
 {
+    /** Tipos de movimiento tal como aparecen en el reporte. */
+    private const TIPOS = ['Celular', 'Computadora', 'Producto General', 'Producto Apple', 'Servicio Técnico'];
+
     public function index(Request $request)
     {
         $request->validate([
             'fecha_inicio' => 'nullable|date',
             'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id'  => 'nullable|exists:users,id',
+            'tipo'         => ['nullable', Rule::in(self::TIPOS)],
+            'buscar'       => 'nullable|string|max:100',
+            'por_pagina'   => 'nullable|in:25,50,100',
+            'page'         => 'nullable|integer|min:1',
+        ], [
+            'fecha_fin.after_or_equal' => 'La fecha final no puede ser anterior a la inicial.',
         ]);
 
         /* =====================================================
@@ -161,10 +173,10 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $gananciasPorTipo['servicio_tecnico'] += $ganancia;
-            $inversionTotal += $servicio->precio_costo;
+            $inversionTotal += $servicio->costoParaReportes();
 
             $items->push([
                 'fecha'     => $servicio->created_at,
@@ -172,9 +184,10 @@ class ReporteController extends Controller
                 'tipo'      => 'Servicio Técnico',
                 'subtotal'  => $servicio->precio_venta,
                 'ganancia'  => $ganancia,
+                'costo_pendiente' => (bool) $servicio->costo_pendiente,
                 'descuento' => 0,
                 'permuta'   => 0,
-                'capital'   => $servicio->precio_costo,
+                'capital'   => $servicio->costoParaReportes(),
                 'vendedor'  => $servicio->vendedor?->name,
                 'codigo'    => $servicio->codigo_nota ?? '—',
             ]);
@@ -196,34 +209,134 @@ class ReporteController extends Controller
             'total_ventas'       => $items->sum('subtotal'),
             'total_ganancia'     => $items->sum('ganancia'),
             'total_descuento'    => $items->sum('descuento'),
+            'total_permuta'      => $items->sum('permuta'),
             'total_inversion'    => $inversionTotal,
+            'movimientos'        => $items->count(),
             'ganancias_por_tipo' => $gananciasPorTipo,
             'ganancia_servicio'  => $gananciasPorTipo['servicio_tecnico'],
+            // Servicios técnicos sin costo cargado: su utilidad no está sumada hasta que el administrador lo cargue
+            'servicios_sin_costo' => $serviciosTecnicos->where('costo_pendiente', true)->count(),
             'ganancia_liquida'   => $items
                 ->where('tipo', '!=', 'Servicio Técnico')
                 ->sum('ganancia'),
         ];
 
 
-        $resumenGrafico = $items
-            ->groupBy(fn($i) => Carbon::parse($i['fecha'])->toDateString())
-            ->map(fn($g, $fecha) => [
-                'fecha' => $fecha,
-                'total_venta' => $g->sum('subtotal'),
-                'ganancia' => $g->sum('ganancia'),
+        /* =====================================================
+     * TENDENCIA POR CATEGORÍA (por día hasta 62 días; si no, por mes)
+     * ===================================================== */
+        $porDia = $request->filled('fecha_inicio') && $request->filled('fecha_fin')
+            && Carbon::parse($request->fecha_inicio)->diffInDays(Carbon::parse($request->fecha_fin)) <= 62;
+        $formatoClave = $porDia ? 'Y-m-d' : 'Y-m';
+        $etiquetasSerie = [
+            'Celular'          => 'Celulares',
+            'Computadora'      => 'Computadoras',
+            'Producto General' => 'Productos Generales',
+            'Producto Apple'   => 'Productos Apple',
+            'Servicio Técnico' => 'Servicios Técnicos',
+        ];
+
+        $serie = [
+            'granularidad' => $porDia ? 'dia' : 'mes',
+            'puntos' => $items
+                ->groupBy(fn($i) => Carbon::parse($i['fecha'])->format($formatoClave))
+                ->sortKeys()
+                ->map(fn($g, $clave) => [
+                    'clave' => $clave,
+                    'categorias' => collect($etiquetasSerie)
+                        ->mapWithKeys(fn($label, $tipo) => [$label => round($g->where('tipo', $tipo)->sum('ganancia'), 2)])
+                        ->all(),
+                ])
+                ->values(),
+        ];
+
+
+        /* =====================================================
+     * RENDIMIENTO POR VENDEDOR
+     * ===================================================== */
+        $porVendedor = $items
+            ->groupBy(fn($i) => $i['vendedor'] ?? 'Sin vendedor')
+            ->map(fn($g, $nombre) => [
+                'nombre'      => $nombre,
+                'movimientos' => $g->count(),
+                'vendido'     => round($g->sum('subtotal'), 2),
+                'ganancia'    => round($g->sum('ganancia'), 2),
             ])
+            ->sortByDesc('vendido')
             ->values();
 
 
+        /* =====================================================
+     * DETALLE: lo más reciente primero, con tipo y búsqueda, paginado
+     * (el resumen de arriba siempre cuenta todo el período)
+     * ===================================================== */
+        $detalle = $items
+            ->sortByDesc(fn($i) => Carbon::parse($i['fecha'])->timestamp)
+            ->when($request->filled('tipo'), fn($c) => $c->where('tipo', $request->tipo))
+            ->when($request->filled('buscar'), function ($c) use ($request) {
+                $texto = Str::lower(Str::ascii($request->buscar));
+
+                return $c->filter(fn($i) => Str::contains(
+                    Str::lower(Str::ascii(implode(' ', [$i['producto'], $i['codigo'], $i['vendedor'], $i['tipo']]))),
+                    $texto
+                ));
+            })
+            ->values();
+
+        $porPagina = (int) $request->input('por_pagina', 25);
+        $ultimaPagina = max(1, (int) ceil($detalle->count() / $porPagina));
+        $pagina = min(LengthAwarePaginator::resolveCurrentPage(), $ultimaPagina);
+
+        $paginados = new LengthAwarePaginator(
+            $detalle->forPage($pagina, $porPagina)->values(),
+            $detalle->count(),
+            $porPagina,
+            $pagina,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+
         return Inertia::render('Admin/Reportes/Index', [
-            'ventas' => $items,
+            'ventas' => $paginados,
+            'totales_vista' => [
+                'movimientos' => $detalle->count(),
+                'subtotal'    => round($detalle->sum('subtotal'), 2),
+                'ganancia'    => round($detalle->sum('ganancia'), 2),
+                'capital'     => round($detalle->sum('capital'), 2),
+                'descuento'   => round($detalle->sum('descuento'), 2),
+                'permuta'     => round($detalle->sum('permuta'), 2),
+            ],
+            'conteo_tipos' => $items->countBy('tipo'),
             'resumen' => $resumen,
-            'resumen_grafico' => $resumenGrafico,
-            'filtros' => $request->only(['vendedor_id', 'fecha_inicio', 'fecha_fin']),
-            'vendedores' => User::where('rol', 'vendedor')
-                ->select('id', 'name')
-                ->get(),
+            'serie' => $serie,
+            'por_vendedor' => $porVendedor,
+            'filtros' => $request->only(['vendedor_id', 'fecha_inicio', 'fecha_fin', 'tipo', 'buscar', 'por_pagina']),
+            // Quienes registraron ventas o servicios (el administrador también vende)
+            'vendedores' => User::whereIn('id', Venta::query()->select('user_id'))
+                ->orWhereIn('id', ServicioTecnico::query()->select('user_id'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
+    }
+
+    /** Encabezado del PDF: período, vendedor y tipo del reporte. */
+    private function descripcionFiltros(Request $request): string
+    {
+        $partes = [
+            $request->filled('fecha_inicio') && $request->filled('fecha_fin')
+                ? 'Del ' . Carbon::parse($request->fecha_inicio)->format('d/m/Y') . ' al ' . Carbon::parse($request->fecha_fin)->format('d/m/Y')
+                : 'Todas las fechas',
+        ];
+
+        if ($request->filled('vendedor_id')) {
+            $partes[] = 'Vendedor: ' . (User::whereKey($request->vendedor_id)->value('name') ?? '—');
+        }
+
+        if ($request->filled('tipo')) {
+            $partes[] = 'Tipo: ' . $request->tipo;
+        }
+
+        return implode(' · ', $partes);
     }
 
     public function exportar(Request $request)
@@ -232,6 +345,7 @@ class ReporteController extends Controller
             'fecha_inicio' => 'nullable|date',
             'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id'  => 'nullable|exists:users,id',
+            'tipo'         => ['nullable', Rule::in(self::TIPOS)],
         ]);
 
         /* =====================================================
@@ -369,7 +483,7 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $resultados->push((object)[
                 'fecha' => $servicio->created_at,
@@ -377,12 +491,13 @@ class ReporteController extends Controller
                 'producto'        => 'Servicio Técnico',
                 'tipo'            => 'Servicio Técnico',
                 'cantidad'        => 1,
-                'precio_invertido' => $servicio->precio_costo,
+                'precio_invertido' => $servicio->costoParaReportes(),
                 'precio_venta'    => $servicio->precio_venta,
                 'descuento'       => 0,
                 'permuta'         => 0,
                 'subtotal'        => $servicio->precio_venta,
                 'ganancia'        => $ganancia,
+                'costo_pendiente'  => (bool) $servicio->costo_pendiente,
                 'vendedor'        => $servicio->vendedor?->name,
             ]);
         }
@@ -397,10 +512,16 @@ class ReporteController extends Controller
             })
             ->values();
 
+        // Si en la pantalla se eligió un tipo, el PDF sale solo con ese tipo
+        if ($request->filled('tipo')) {
+            $resultados = $resultados->where('tipo', $request->tipo)->values();
+        }
+
         $pdf = Pdf::loadView('pdf.reporte_ventas', [
-            'ventas'       => $resultados,
-            'fecha_inicio' => $request->fecha_inicio,
-            'fecha_fin'    => $request->fecha_fin,
+            'ventas'        => $resultados,
+            'fecha_inicio'  => $request->fecha_inicio,
+            'fecha_fin'     => $request->fecha_fin,
+            'filtros_texto' => $this->descripcionFiltros($request),
         ])->setPaper('A4', 'portrait');
 
         return $pdf->download('reporte_ventas.pdf');
@@ -523,7 +644,7 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $resultados->push((object)[
                 'fecha'            => $servicio->fecha,
@@ -531,12 +652,13 @@ class ReporteController extends Controller
                 'producto'         => 'Servicio Técnico',
                 'tipo'             => 'Servicio Técnico',
                 'cantidad'         => 1,
-                'precio_invertido' => $servicio->precio_costo,
+                'precio_invertido' => $servicio->costoParaReportes(),
                 'precio_venta'     => $servicio->precio_venta,
                 'descuento'        => 0,
                 'permuta'          => 0,
                 'subtotal'         => $servicio->precio_venta,
                 'ganancia'         => $ganancia,
+                'costo_pendiente'   => (bool) $servicio->costo_pendiente,
                 'vendedor'         => $servicio->vendedor?->name,
             ]);
         }
@@ -694,7 +816,7 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $resultados->push((object)[
                 'fecha'            => $servicio->fecha,
@@ -702,12 +824,13 @@ class ReporteController extends Controller
                 'producto'         => 'Servicio Técnico',
                 'tipo'             => 'Servicio Técnico',
                 'cantidad'         => 1,
-                'precio_invertido' => $servicio->precio_costo,
+                'precio_invertido' => $servicio->costoParaReportes(),
                 'precio_venta'     => $servicio->precio_venta,
                 'descuento'        => 0,
                 'permuta'          => 0,
                 'subtotal'         => $servicio->precio_venta,
                 'ganancia'         => $ganancia,
+                'costo_pendiente'   => (bool) $servicio->costo_pendiente,
                 'vendedor'         => $servicio->vendedor?->name,
             ]);
         }
@@ -864,7 +987,7 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $resultados->push((object)[
                 'fecha'            => $servicio->fecha,
@@ -872,12 +995,13 @@ class ReporteController extends Controller
                 'producto'         => 'Servicio Técnico',
                 'tipo'             => 'Servicio Técnico',
                 'cantidad'         => 1,
-                'precio_invertido' => $servicio->precio_costo,
+                'precio_invertido' => $servicio->costoParaReportes(),
                 'precio_venta'     => $servicio->precio_venta,
                 'descuento'        => 0,
                 'permuta'          => 0,
                 'subtotal'         => $servicio->precio_venta,
                 'ganancia'         => $ganancia,
+                'costo_pendiente'   => (bool) $servicio->costo_pendiente,
                 'vendedor'         => $servicio->vendedor?->name,
             ]);
         }
@@ -1035,7 +1159,7 @@ class ReporteController extends Controller
      * ===================================================== */
         foreach ($serviciosTecnicos as $servicio) {
 
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $resultados->push((object)[
                 'fecha'            => $servicio->fecha,
@@ -1043,12 +1167,13 @@ class ReporteController extends Controller
                 'producto'         => 'Servicio Técnico',
                 'tipo'             => 'Servicio Técnico',
                 'cantidad'         => 1,
-                'precio_invertido' => $servicio->precio_costo,
+                'precio_invertido' => $servicio->costoParaReportes(),
                 'precio_venta'     => $servicio->precio_venta,
                 'descuento'        => 0,
                 'permuta'          => 0,
                 'subtotal'         => $servicio->precio_venta,
                 'ganancia'         => $ganancia,
+                'costo_pendiente'   => (bool) $servicio->costo_pendiente,
                 'vendedor'         => $servicio->vendedor?->name,
             ]);
         }

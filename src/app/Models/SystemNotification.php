@@ -13,6 +13,8 @@ class SystemNotification extends Model
         'read',
         'report_id',
         'sale_id',
+        'trade_in_id',
+        'servicio_tecnico_id',
 
     ];
 

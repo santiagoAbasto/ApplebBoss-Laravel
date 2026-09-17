@@ -14,8 +14,12 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+        display: ['"Barlow Condensed"', 'Barlow', ...defaultTheme.fontFamily.sans],
+        brand: ['Barlow', ...defaultTheme.fontFamily.sans],
       },
       colors: {
+        // Línea visual Apple Boss (tienda, acceso y panel)
+        ab: { navy: '#011446', navy2: '#0A1F5C', periwinkle: '#585E9F', lime: '#C6CB36', ink: '#0D0D1A', page: '#F5F6FA' },
         primary: {
           DEFAULT: '#0f172a', // Azul oscuro profesional
           light: '#1e293b',

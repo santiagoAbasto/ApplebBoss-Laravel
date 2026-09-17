@@ -1,6 +1,6 @@
-import AdminLayout from "@/Layouts/AdminLayout";
-import ReservaForm from '@/Components/ReservaForm';
+import AdminLayout from '@/Layouts/AdminLayout';
+import ReservasForm from '@/Components/Panel/ReservasForm';
 
 export default function Create() {
-  return <ReservaForm role="admin" Layout={AdminLayout} />;
+  return <ReservasForm Layout={AdminLayout} prefijo="admin" />;
 }

@@ -1,12 +1,17 @@
-import { Headphones, Laptop, Package, Smartphone, Watch } from 'lucide-react';
+import { Headphones, Laptop, Package, Smartphone, Watch } from '@/Components/Store/Icons';
+import AccesorioVisual from '@/Components/Store/AccesorioVisual';
+import { useNombreTienda } from '@/Components/Store/tienda';
 
-// Placeholders de marca por tipo — solo cuando no hay foto
+// Placeholders de marca por tipo — solo cuando no hay foto (las claves son el tipo de la publicación)
 const PLACEHOLDERS = {
     celular:          { bg: 'linear-gradient(145deg,#E8EBF5,#D0D5EE)', Icon: Smartphone, ink: '#011446' },
     computadora:      { bg: 'linear-gradient(145deg,#EAEAF2,#D5D5E8)', Icon: Laptop,     ink: '#28224F' },
-    'producto-apple': { bg: 'linear-gradient(145deg,#E5E8F5,#CDD3EE)', Icon: Watch,      ink: '#011446' },
-    'producto-general':{ bg: 'linear-gradient(145deg,#EEF2E5,#DDE8C8)', Icon: Headphones, ink: '#1A2A00' },
+    producto_apple:   { bg: 'linear-gradient(145deg,#E5E8F5,#CDD3EE)', Icon: Watch,      ink: '#011446' },
+    producto_general: { bg: 'linear-gradient(145deg,#EEF2E5,#DDE8C8)', Icon: Headphones, ink: '#1A2A00' },
 };
+
+// Fondo de las ilustraciones de accesorios: el mismo de la comparativa (ModeloVisual)
+const FONDO_ACCESORIO = 'linear-gradient(165deg, #F6F7FB 0%, #E3E6F2 100%)';
 
 function BrandCircles({ isMyskin }) {
     if (isMyskin) return (
@@ -24,6 +29,14 @@ function BrandCircles({ isMyskin }) {
 }
 
 function Placeholder({ product, compact, isMyskin }) {
+    // Accesorio o producto Apple con ficha: la ilustración de su tipo (cargador, vidrio, iPad, AirPods…)
+    if (['producto_general', 'producto_apple'].includes(product.type) && product.visual) {
+        return (
+            <div className="relative h-full w-full overflow-hidden" style={{ background: FONDO_ACCESORIO }} aria-hidden="true">
+                <AccesorioVisual visual={product.visual} />
+            </div>
+        );
+    }
     const cfg = PLACEHOLDERS[product.type] ?? { bg: 'linear-gradient(145deg,#F0F0F5,#E0E0EE)', Icon: Package, ink: '#28224F' };
     const Icon = cfg.Icon;
     return (
@@ -48,14 +61,15 @@ function Placeholder({ product, compact, isMyskin }) {
  *   compact          — para el mini-visual del carrito
  *   style / className — forwarded al wrapper
  */
-export default function ProductVisual({ product, className = '', compact = false, style }) {
+export default function ProductVisual({ product, className = '', compact = false, style, priority = false }) {
+    const nombre = useNombreTienda();
     const isMyskin = product.is_myskin ?? false;
 
     // Imagen principal: primer elemento marcado como principal, o el primero disponible
     const images  = product.images ?? [];
     const primary = images.find((i) => i.es_principal) ?? images[0] ?? null;
     const src     = compact ? primary?.url_thumb : primary?.url_card;
-    const alt     = primary?.alt || product.name || 'Producto Apple Boss';
+    const alt     = primary?.alt || product.name || `Producto ${nombre}`;
 
     return (
         <div
@@ -68,9 +82,10 @@ export default function ProductVisual({ product, className = '', compact = false
                     alt={alt}
                     width={compact ? 80 : 600}
                     height={compact ? 80 : 600}
-                    loading={compact ? 'lazy' : undefined}
-                    decoding="async"
-                    className="h-full w-full object-cover"
+                    loading={priority ? 'eager' : 'lazy'}
+                    fetchpriority={priority ? 'high' : undefined}
+                    decoding={priority ? 'sync' : 'async'}
+                    className="h-full w-full object-contain"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
             ) : (

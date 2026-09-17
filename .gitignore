@@ -32,3 +32,14 @@ coverage/
 # Local database backups
 /backups/database/*
 !/backups/database/.gitkeep
+
+# Salidas locales de PDFs/imágenes (pueden tener datos de clientes)
+/output/
+/tmp/
+
+# Red de seguridad: NUNCA versionar volcados/backups de base de datos
+*.sql
+*.sql.gz
+*.dump
+*.dump.gz
+*.bak

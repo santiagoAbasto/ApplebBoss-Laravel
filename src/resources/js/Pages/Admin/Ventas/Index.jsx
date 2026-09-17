@@ -1,47 +1,85 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Pencil, Receipt, Search, PlusCircle } from 'lucide-react';
-import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
-
-/* =======================
-   CRUD UI (OFICIAL)
-======================= */
 import {
-  CrudWrapper,
-  CrudHeader,
-  CrudTitle,
-  CrudSubtitle,
-  CrudCard,
-  CrudInput,
-  CrudButtonPrimary,
-} from '@/Components/CrudUI';
+  FileText, Pencil, Plus, Printer, Receipt, Search, ShoppingCart, TrendingDown, TrendingUp, Wallet, X,
+} from 'lucide-react';
+import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
+import { Badge, EmptyState, PageHeader, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+
+const TIPOS = {
+  celular: { label: 'Celular', tone: 'blue' },
+  computadora: { label: 'Computadora', tone: 'violet' },
+  producto_apple: { label: 'Producto Apple', tone: 'amber' },
+  producto_general: { label: 'Producto general', tone: 'slate' },
+  servicio_tecnico: { label: 'Servicio técnico', tone: 'emerald' },
+};
+
+const normalizar = (v) => String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const fecha = (iso) => new Date(iso).toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric' });
+const hora = (iso) => new Date(iso).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+
+function Stat({ icon: Icon, label, value, hint, tone = 'navy' }) {
+  const tones = {
+    navy: 'bg-[#011446]/[0.07] text-[#011446]',
+    emerald: 'bg-emerald-50 text-emerald-700',
+    rose: 'bg-rose-50 text-rose-600',
+    lila: 'bg-[#585E9F]/10 text-[#585E9F]',
+  };
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex items-center gap-3">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tones[tone]}`}><Icon className="h-5 w-5" /></span>
+        <p className="text-[13px] font-semibold text-slate-500">{label}</p>
+      </div>
+      <p className="mt-4 text-[24px] font-extrabold leading-none tracking-tight text-slate-900">{value}</p>
+      {hint && <p className="mt-2 text-xs text-slate-400">{hint}</p>}
+    </div>
+  );
+}
+
+function AccionNota({ href, icon: Icon, label }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" title={label}
+      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </a>
+  );
+}
 
 export default function Index({ ventas }) {
-  const [codigoNota, setCodigoNota] = useState('');
-  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   useAutoRefresh(['ventas']);
 
-  const buscarNota = async (e) => {
-    e.preventDefault();
-    if (!codigoNota.trim()) return;
+  const [texto, setTexto] = useState('');
+  const [tipo, setTipo] = useState('todos');
+  const [vendedor, setVendedor] = useState('todos');
+  const [limite, setLimite] = useState(50);
+  const [notas, setNotas] = useState(null);
+  const [buscando, setBuscando] = useState(false);
 
+  const buscarNota = async (e) => {
+    e?.preventDefault();
+    if (!texto.trim()) return;
+    setBuscando(true);
     try {
       const response = await axios.get(route('admin.ventas.buscarNota'), {
-        params: { codigo_nota: codigoNota.trim() },
+        params: { codigo_nota: texto.trim() },
       });
-      setResultadosBusqueda(response.data);
+      setNotas(response.data);
     } catch (error) {
       console.error('Error al buscar nota:', error);
+      setNotas([]);
+    } finally {
+      setBuscando(false);
     }
   };
 
   /* ===============================
-     DESGLOSE DE ITEMS (INTACTO)
+     DESGLOSE DE ITEMS (misma lógica de siempre)
   =============================== */
-  const itemsDesglosados = ventas.flatMap((venta) => {
+  const itemsDesglosados = useMemo(() => ventas.flatMap((venta) => {
     if (venta.tipo_venta === 'servicio_tecnico') {
       const precioVenta = parseFloat(venta.precio_venta || 0);
       const descuento = parseFloat(venta.descuento || 0);
@@ -57,6 +95,7 @@ export default function Index({ ventas }) {
         precioVenta,
         descuento,
         permuta: 0,
+        reserva: 0,
         capital,
         precioFinal: precioVenta - descuento,
         ganancia,
@@ -99,358 +138,255 @@ export default function Index({ ventas }) {
         fecha: venta.created_at,
       };
     });
-  });
+  }), [ventas]);
 
-  const gananciaTotal = itemsDesglosados.reduce(
-    (acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc),
-    0
+  /* ===============================
+     FILTROS (instantáneos)
+  =============================== */
+  const vendedores = useMemo(
+    () => [...new Set(itemsDesglosados.map((i) => i.vendedor).filter((v) => v && v !== '—'))].sort(),
+    [itemsDesglosados],
   );
-  const totalFinal = itemsDesglosados.reduce((acc, i) => acc + i.precioFinal, 0);
+  const conteoTipos = useMemo(() => itemsDesglosados.reduce((acc, i) => ({ ...acc, [i.tipo]: (acc[i.tipo] || 0) + 1 }), {}), [itemsDesglosados]);
+
+  const q = normalizar(texto.trim());
+  const filtrados = useMemo(() => itemsDesglosados.filter((i) =>
+    (tipo === 'todos' || i.tipo === tipo)
+    && (vendedor === 'todos' || i.vendedor === vendedor)
+    && (!q || normalizar([i.cliente, i.codigoNota, i.producto, i.vendedor].join(' ')).includes(q)),
+  ), [itemsDesglosados, tipo, vendedor, q]);
+
+  useEffect(() => { setLimite(50); }, [texto, tipo, vendedor]);
+
+  const visibles = filtrados.slice(0, limite);
+  const totalCobrado = filtrados.reduce((acc, i) => acc + i.precioFinal, 0);
+  const gananciaTotal = filtrados.reduce((acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc), 0);
+  const perdidas = filtrados.reduce((acc, i) => (i.ganancia < 0 ? acc + Math.abs(i.ganancia) : acc), 0);
+  const ventasUnicas = new Set(filtrados.map((i) => i.id_venta)).size;
+  const hayFiltros = q || tipo !== 'todos' || vendedor !== 'todos';
+
+  const limpiar = () => { setTexto(''); setTipo('todos'); setVendedor('todos'); setNotas(null); };
 
   return (
     <AdminLayout>
-      <Head title="Ventas Desglosadas" />
+      <Head title="Ventas" />
 
-      <CrudWrapper>
-        {/* ================= HEADER ================= */}
-        <CrudHeader>
-          <div>
-            <CrudTitle>
-              <Receipt size={22} />
-              Ventas Desglosadas
-            </CrudTitle>
-            <CrudSubtitle>
-              Detalle completo de ventas, servicios y ganancias
-            </CrudSubtitle>
-          </div>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <PageHeader
+          title="Ventas"
+          subtitle="Cada fila es un producto vendido. Desde aquí imprimes la nota o corriges una venta."
+          actions={
+            <Link href={route('admin.ventas.create')} className={buttonCls('primary', 'h-11 px-5')}>
+              <Plus className="h-4 w-4" /> Nueva venta
+            </Link>
+          }
+        />
 
-          <CrudButtonPrimary
-            as={Link}
-            href={route('admin.ventas.create')}
-          >
-            <PlusCircle size={18} />
-            Nueva Venta
-          </CrudButtonPrimary>
-        </CrudHeader>
-
-        {/* ================= BUSCADOR ================= */}
-        <CrudCard style={{ marginBottom: 14, padding: '14px 16px' }}>
-          <form
-            onSubmit={buscarNota}
-            style={{ display: 'flex', alignItems: 'end', gap: 12, flexWrap: 'wrap' }}
-          >
-            <div style={{ flex: '1 1 320px' }}>
-              <label style={compactLabel}>
-                <Search size={13} />
-                Buscar nota
-              </label>
-              <CrudInput
-                placeholder="Código de nota o cliente"
-                value={codigoNota}
-                onChange={(e) => setCodigoNota(e.target.value)}
-              />
-            </div>
-
-            <CrudButtonPrimary type="submit" style={{ padding: '11px 22px' }}>
-              Buscar
-            </CrudButtonPrimary>
-          </form>
-        </CrudCard>
-
-        {/* ================= RESULTADOS ================= */}
-        {resultadosBusqueda.length > 0 && (
-          <CrudCard style={{ marginBottom: 14, padding: '14px 16px' }}>
-            <div style={compactTitle}>
-              Resultados encontrados
-            </div>
-
-            {resultadosBusqueda.map((r) => (
-              <div
-                key={r.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 0',
-                  borderBottom: '1px solid #e5e7eb',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, color: '#1d4ed8' }}>
-                    {r.codigo_nota}
-                  </div>
-                  <div style={{ fontSize: 13, color: '#64748b' }}>
-                    {r.nombre_cliente}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 14 }}>
-                  {r.tipo === 'venta' && (
-                    <Link
-                      href={route('admin.ventas.edit', r.id_real)}
-                      className="text-sm text-slate-700 hover:underline"
-                    >
-                      Editar
-                    </Link>
-                  )}
-
-                  <a
-                    href={
-                      r.tipo === 'servicio_tecnico'
-                        ? route('admin.servicios.boleta', r.id_real)
-                        : route('admin.ventas.boleta', r.id_real)
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Normal
-                  </a>
-
-                  <a
-                    href={
-                      r.tipo === 'servicio_tecnico'
-                        ? route('admin.servicios.recibo80mm', r.id_real)
-                        : route('admin.ventas.boleta80', r.id_real)
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-green-600 hover:underline"
-                  >
-                    Térmica
-                  </a>
-                </div>
-              </div>
-            ))}
-          </CrudCard>
-        )}
-
-        {/* ================= TABLA ================= */}
-        <div style={summaryGrid}>
-          <div style={summaryBox}>
-            <span style={summaryLabel}>Movimientos</span>
-            <strong style={summaryValue}>{itemsDesglosados.length}</strong>
-          </div>
-          <div style={summaryBox}>
-            <span style={summaryLabel}>Total final</span>
-            <strong style={summaryValue}>{totalFinal.toFixed(2)} Bs</strong>
-          </div>
-          <div style={summaryBox}>
-            <span style={summaryLabel}>Ganancia positiva</span>
-            <strong style={{ ...summaryValue, color: '#16a34a' }}>{gananciaTotal.toFixed(2)} Bs</strong>
-          </div>
+        {/* Resumen de lo filtrado */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat icon={Receipt} label="Ventas" value={ventasUnicas.toLocaleString('es-BO')} hint={`${filtrados.length.toLocaleString('es-BO')} productos vendidos`} />
+          <Stat icon={Wallet} label="Total cobrado" value={bsFmt(totalCobrado)} tone="lila" />
+          <Stat icon={TrendingUp} label="Ganancia" value={bsFmt(gananciaTotal)} hint="Suma de las ventas con ganancia" tone="emerald" />
+          <Stat icon={TrendingDown} label="Invertido de más" value={bsFmt(perdidas)} hint={perdidas > 0 ? 'Ventas por debajo del costo' : 'Ninguna venta bajo el costo'} tone="rose" />
         </div>
 
-        <CrudCard style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={tableHeader}>Detalle de movimientos</div>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 1200, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#2563eb', color: '#fff' }}>
-                  {[
-                    'Cliente',
-                    'Código',
-                    'Producto',
-                    'Venta',
-                    'Desc.',
-                    'Permuta',
-                    'Reserva',
-                    'Capital',
-                    'Final',
-                    'Ganancia',
-                    'Vendedor',
-                    'Fecha',
-                    'Boleta',
-                    'Acciones',
-                  ].map((h) => (
-                    <th key={h} style={thWhite}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {itemsDesglosados.map((i, idx) => (
-                  <tr
-                    key={idx}
-                    style={{ borderTop: '1px solid #e5e7eb' }}
-                  >
-                    <td style={td}>{i.cliente}</td>
-                    <td style={{ ...td, fontFamily: 'monospace', color: '#1d4ed8' }}>
-                      {i.codigoNota}
-                    </td>
-                    <td style={td}>{i.producto}</td>
-                    <td style={{ ...td, textAlign: 'right' }}>
-                      {i.precioVenta.toFixed(2)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', color: '#dc2626' }}>
-                      -{i.descuento.toFixed(2)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', color: '#ca8a04' }}>
-                      -{i.permuta.toFixed(2)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', color: '#2563eb' }}>
-                      -{Number(i.reserva || 0).toFixed(2)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', color: '#2563eb' }}>
-                      -{i.capital.toFixed(2)}
-                    </td>
-                    <td style={{ ...td, textAlign: 'right', fontWeight: 600 }}>
-                      {i.precioFinal.toFixed(2)}
-                    </td>
-                    <td
-                      style={{
-                        ...td,
-                        textAlign: 'right',
-                        fontWeight: 700,
-                        color: i.ganancia < 0 ? '#dc2626' : '#16a34a',
-                      }}
-                    >
-                      {i.ganancia < 0
-                        ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}`
-                        : i.ganancia.toFixed(2)}
-                    </td>
-                    <td style={td}>{i.vendedor}</td>
-                    <td style={{ ...td, fontSize: 12 }}>
-                      {new Date(i.fecha).toLocaleDateString('es-BO')}
-                      <br />
-                      <span style={{ color: '#64748b' }}>
-                        {new Date(i.fecha).toLocaleTimeString('es-BO')}
-                      </span>
-                    </td>
-                    <td style={{ ...td, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <a
-                          href={route('admin.ventas.boleta', i.id_venta)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Normal
-                        </a>
-                        <a
-                          href={route('admin.ventas.boleta80', i.id_venta)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-green-600 hover:underline"
-                        >
-                          Térmica
-                        </a>
-                      </div>
-                    </td>
-                    <td style={{ ...td, textAlign: 'center' }}>
-                      <Link
-                        href={route('admin.ventas.edit', i.id_venta)}
-                        className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        <Pencil size={13} />
-                        Editar
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* ================= RESUMEN ================= */}
-          <div style={footerSummary}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 13, color: '#64748b' }}>
-                Ganancia Total Positiva
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#16a34a' }}>
-                {gananciaTotal.toFixed(2)} Bs
-              </div>
+        {/* Búsqueda y filtros */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <form onSubmit={buscarNota} className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Buscar por cliente, código de nota, producto o vendedor"
+                className={`${inputCls} h-11 pl-10 pr-10`}
+              />
+              {texto && (
+                <button type="button" onClick={() => { setTexto(''); setNotas(null); }} aria-label="Borrar búsqueda"
+                  className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
+            <select value={vendedor} onChange={(e) => setVendedor(e.target.value)} className={`${inputCls} h-11 pr-9 lg:w-56`} aria-label="Vendedor">
+              <option value="todos">Todos los vendedores</option>
+              {vendedores.map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+            <button type="submit" disabled={!texto.trim() || buscando} className={buttonCls('secondary', 'h-11')} title="Busca también en servicios técnicos">
+              <FileText className="h-4 w-4" /> {buscando ? 'Buscando…' : 'Buscar nota'}
+            </button>
+          </form>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {[['todos', 'Todos', itemsDesglosados.length], ...Object.entries(TIPOS).filter(([k]) => conteoTipos[k]).map(([k, t]) => [k, t.label, conteoTipos[k]])].map(([k, label, n]) => (
+              <button key={k} type="button" onClick={() => setTipo(k)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${tipo === k ? 'bg-[#011446] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                {label} <span className={tipo === k ? 'text-white/70' : 'text-slate-400'}>{n}</span>
+              </button>
+            ))}
           </div>
-        </CrudCard>
-      </CrudWrapper>
+        </section>
+
+        {/* Notas encontradas (incluye servicios técnicos) */}
+        {notas !== null && (
+          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+              <p className="text-sm font-bold text-slate-900">
+                Notas encontradas <span className="font-semibold text-slate-400">· {notas.length}</span>
+              </p>
+              <button type="button" onClick={() => setNotas(null)} className={buttonCls('ghost', 'h-8 px-2.5 text-xs')}>
+                <X className="h-3.5 w-3.5" /> Cerrar
+              </button>
+            </div>
+            {notas.length === 0 ? (
+              <p className="px-5 py-6 text-center text-sm text-slate-500">No hay notas con «{texto}».</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {notas.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-[#585E9F]">{r.codigo_nota}</span>
+                      <span className="truncate text-sm font-semibold text-slate-800">{r.nombre_cliente}</span>
+                      <Badge tone={r.tipo === 'servicio_tecnico' ? 'emerald' : 'navy'}>{r.tipo === 'servicio_tecnico' ? 'Servicio técnico' : 'Venta'}</Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      {r.tipo === 'venta' && (
+                        <Link href={route('admin.ventas.edit', r.id_real)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900">
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Link>
+                      )}
+                      <AccionNota icon={FileText} label="Nota"
+                        href={r.tipo === 'servicio_tecnico' ? route('admin.servicios.boleta', r.id_real) : route('admin.ventas.boleta', r.id_real)} />
+                      <AccionNota icon={Printer} label="Térmica"
+                        href={r.tipo === 'servicio_tecnico' ? route('admin.servicios.recibo80mm', r.id_real) : route('admin.ventas.boleta80', r.id_real)} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {/* Detalle */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
+              <ShoppingCart className="h-[18px] w-[18px] text-[#585E9F]" /> Detalle de ventas
+            </h2>
+            {hayFiltros && (
+              <button type="button" onClick={limpiar} className={buttonCls('ghost', 'h-8 px-2.5 text-xs')}>
+                <X className="h-3.5 w-3.5" /> Quitar filtros
+              </button>
+            )}
+          </div>
+
+          {itemsDesglosados.length === 0 ? (
+            <EmptyState icon={Receipt} title="Todavía no hay ventas"
+              text="Cuando registres la primera venta aparecerá aquí con su nota para imprimir."
+              action={<Link href={route('admin.ventas.create')} className={buttonCls('primary')}><Plus className="h-4 w-4" /> Registrar una venta</Link>} />
+          ) : filtrados.length === 0 ? (
+            <EmptyState icon={Search} title="Sin resultados" text="Prueba con otro nombre, código o quita los filtros."
+              action={<button type="button" onClick={limpiar} className={buttonCls('secondary')}>Quitar filtros</button>} />
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1080px] text-[13px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-5 py-3">Venta</th>
+                      <th className="px-4 py-3">Cliente</th>
+                      <th className="px-4 py-3">Producto</th>
+                      <th className="px-4 py-3 text-right">Precio</th>
+                      <th className="px-4 py-3 text-right">Descuentos</th>
+                      <th className="px-4 py-3 text-right">Costo</th>
+                      <th className="px-4 py-3 text-right">Cobrado</th>
+                      <th className="px-4 py-3 text-right">Ganancia</th>
+                      <th className="px-5 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibles.map((i, idx) => {
+                      const tipoInfo = TIPOS[i.tipo] ?? { label: i.tipo, tone: 'slate' };
+                      const rebajas = i.descuento + i.permuta;
+                      return (
+                        <tr key={`${i.id_venta}-${idx}`} className="align-top transition-colors hover:bg-slate-50/70">
+                          <td className="px-5 py-3">
+                            <p className="font-mono text-[13px] font-bold text-[#585E9F]">{i.codigoNota}</p>
+                            <p className="mt-0.5 whitespace-nowrap text-xs text-slate-400">{fecha(i.fecha)} · {hora(i.fecha)}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="max-w-[180px] truncate font-semibold text-slate-900">{i.cliente || 'Sin nombre'}</p>
+                            <p className="mt-0.5 text-xs text-slate-400">por {i.vendedor}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="max-w-[240px] truncate font-medium text-slate-800">{i.producto || '—'}</p>
+                            <Badge tone={tipoInfo.tone} className="mt-1">{tipoInfo.label}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-slate-700">{bsFmt(i.precioVenta)}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            {rebajas > 0 ? (
+                              <>
+                                <p className="text-rose-600">−{bsFmt(rebajas)}</p>
+                                {i.descuento > 0 && i.permuta > 0 && (
+                                  <p className="mt-0.5 text-[11px] text-slate-400">Desc. {bsFmt(i.descuento)} · Permuta {bsFmt(i.permuta)}</p>
+                                )}
+                                {i.permuta > 0 && !(i.descuento > 0) && <p className="mt-0.5 text-[11px] text-slate-400">Permuta</p>}
+                              </>
+                            ) : <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums text-slate-500">{bsFmt(i.capital)}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            <p className="font-bold text-slate-900">{bsFmt(i.precioFinal)}</p>
+                            {i.reserva > 0 && <p className="mt-0.5 text-[11px] text-slate-400">Abono previo {bsFmt(i.reserva)}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            {i.ganancia < 0 ? (
+                              <span className="inline-flex flex-col items-end">
+                                <span className="font-bold text-rose-600">−{bsFmt(Math.abs(i.ganancia))}</span>
+                                <span className="text-[11px] text-slate-400">Se invirtió</span>
+                              </span>
+                            ) : (
+                              <span className="font-bold text-emerald-700">+{bsFmt(i.ganancia)}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3">
+                            <div className="flex justify-end gap-1.5">
+                              <AccionNota icon={FileText} label="Nota" href={route('admin.ventas.boleta', i.id_venta)} />
+                              <AccionNota icon={Printer} label="Térmica" href={route('admin.ventas.boleta80', i.id_venta)} />
+                              <Link href={route('admin.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-slate-200 bg-slate-50/70 text-[13px]">
+                      <td className="px-5 py-3 font-bold text-slate-900" colSpan={6}>
+                        Total {hayFiltros ? 'filtrado' : 'general'} · {filtrados.length.toLocaleString('es-BO')} productos
+                      </td>
+                      <td className="px-4 py-3 text-right font-extrabold tabular-nums text-slate-900">{bsFmt(totalCobrado)}</td>
+                      <td className="px-4 py-3 text-right font-extrabold tabular-nums text-emerald-700">+{bsFmt(gananciaTotal)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {filtrados.length > limite && (
+                <div className="border-t border-slate-100 px-5 py-3 text-center">
+                  <button type="button" onClick={() => setLimite((l) => l + 50)} className={buttonCls('secondary')}>
+                    Mostrar 50 más <span className="text-slate-400">({(filtrados.length - limite).toLocaleString('es-BO')} restantes)</span>
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
     </AdminLayout>
   );
 }
-
-/* ===============================
-   TABLE STYLES
-=============================== */
-const thWhite = {
-  padding: '10px 12px',
-  fontSize: 12,
-  fontWeight: 800,
-  textAlign: 'left',
-};
-
-const td = {
-  padding: '9px 12px',
-  fontSize: 13,
-  color: '#334155',
-};
-
-const compactLabel = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  marginBottom: 6,
-  fontSize: 12,
-  fontWeight: 800,
-  color: '#1e3a8a',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-};
-
-const compactTitle = {
-  marginBottom: 8,
-  fontSize: 12,
-  fontWeight: 800,
-  color: '#1e3a8a',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-};
-
-const summaryGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: 12,
-  marginBottom: 14,
-};
-
-const summaryBox = {
-  border: '1px solid #e5e7eb',
-  borderRadius: 12,
-  background: '#fff',
-  padding: '12px 14px',
-  boxShadow: '0 6px 16px rgba(15, 23, 42, 0.06)',
-};
-
-const summaryLabel = {
-  display: 'block',
-  fontSize: 12,
-  color: '#64748b',
-  marginBottom: 4,
-};
-
-const summaryValue = {
-  display: 'block',
-  fontSize: 18,
-  color: '#0f172a',
-};
-
-const tableHeader = {
-  padding: '14px 18px',
-  borderBottom: '1px solid #e5e7eb',
-  fontSize: 12,
-  fontWeight: 800,
-  color: '#1e3a8a',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-};
-
-const footerSummary = {
-  borderTop: '1px solid #e5e7eb',
-  padding: '12px 18px',
-  display: 'flex',
-  justifyContent: 'flex-end',
-  background: '#f8fafc',
-};

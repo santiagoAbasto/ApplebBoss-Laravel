@@ -1,6 +1,7 @@
-import VendedorLayout from "@/Layouts/VendedorLayout";
-import ReservaForm from '@/Components/ReservaForm';
+import VendedorLayout from '@/Layouts/VendedorLayout';
+import ReservasForm from '@/Components/Panel/ReservasForm';
 
+// Mismo formulario que el del administrador (Components/Panel/ReservasForm), con el menú del vendedor.
 export default function Create() {
-  return <ReservaForm role="vendedor" Layout={VendedorLayout} />;
+  return <ReservasForm Layout={VendedorLayout} prefijo="vendedor" />;
 }

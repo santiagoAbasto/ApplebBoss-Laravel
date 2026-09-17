@@ -1,0 +1,177 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Panel del vendedor: su día de trabajo",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "vendedor",
+      "label": "Lo que hace"
+    },
+    {
+      "id": "panel",
+      "label": "Lo que le muestra el panel"
+    },
+    {
+      "id": "limite",
+      "label": "Lo que no ve",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "entra",
+    "mi_dia",
+    "stock",
+    "venta",
+    "nota"
+  ],
+  "nodes": [
+    {
+      "id": "entra",
+      "lane": "vendedor",
+      "col": 0,
+      "type": "frontend",
+      "width": 160,
+      "label": "Entra a /vendedor",
+      "sublabel": "su correo y su clave"
+    },
+    {
+      "id": "venta",
+      "lane": "vendedor",
+      "col": 3,
+      "type": "frontend",
+      "width": 160,
+      "label": "Registra la venta",
+      "sublabel": "permuta, seña o descuento"
+    },
+    {
+      "id": "meta",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 160,
+      "label": "Meta del mes",
+      "sublabel": "la carga el administrador"
+    },
+    {
+      "id": "mi_dia",
+      "lane": "panel",
+      "col": 1,
+      "type": "frontend",
+      "width": 160,
+      "label": "Mi día",
+      "sublabel": "sus números y su meta"
+    },
+    {
+      "id": "stock",
+      "lane": "panel",
+      "col": 2,
+      "type": "backend",
+      "width": 160,
+      "label": "Productos en stock",
+      "sublabel": "solo lo disponible"
+    },
+    {
+      "id": "nota",
+      "lane": "panel",
+      "col": 4,
+      "type": "backend",
+      "width": 160,
+      "label": "Nota lista",
+      "sublabel": "normal o térmica"
+    },
+    {
+      "id": "costos",
+      "lane": "limite",
+      "col": 2,
+      "type": "security",
+      "width": 160,
+      "label": "Costo y ganancia",
+      "sublabel": "no salen del servidor"
+    }
+  ],
+  "edges": [
+    {
+      "from": "entra",
+      "to": "mi_dia",
+      "label": "lo primero que ve",
+      "variant": "emphasis"
+    },
+    {
+      "from": "meta",
+      "to": "mi_dia",
+      "label": "users.meta_mensual"
+    },
+    {
+      "from": "mi_dia",
+      "to": "stock",
+      "label": "¿qué hay para vender?",
+      "variant": "emphasis"
+    },
+    {
+      "from": "stock",
+      "to": "venta",
+      "label": "elige el equipo",
+      "variant": "emphasis"
+    },
+    {
+      "from": "venta",
+      "to": "nota",
+      "label": "se guarda a su nombre",
+      "variant": "emphasis"
+    },
+    {
+      "from": "stock",
+      "to": "costos",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "nota",
+      "to": "stock",
+      "label": "el equipo sale del stock",
+      "variant": "dashed",
+      "role": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Un solo armazón",
+      "items": [
+        "PanelShell arma los dos menús",
+        "Las pantallas viven en Components/Panel",
+        "El color va en --ab-acento"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Lo suyo y nada más",
+      "items": [
+        "El servidor filtra por user_id",
+        "Sus clientes, sus ventas, sus reservas",
+        "No entra al panel de administración"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Ve el precio, no el margen",
+      "items": [
+        "Precio, su descuento y lo cobrado",
+        "Ni costo ni ganancia, en ningún lado",
+        "El servidor guarda el costo real igual"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "La meta ya no es inventada",
+      "items": [
+        "Estaba a mano: 10.000 para todos",
+        "Ahora es un dato de cada cuenta",
+        "En 0 el panel lo dice"
+      ]
+    }
+  ]
+}

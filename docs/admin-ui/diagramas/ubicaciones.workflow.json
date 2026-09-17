@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Ubicaciones: un solo lugar para tus locales",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "tienda",
+      "label": "Tienda y Google"
+    },
+    {
+      "id": "sinhorario",
+      "label": "Sin horario",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "local",
+    "orden",
+    "inicio",
+    "cliente"
+  ],
+  "nodes": [
+    {
+      "id": "local",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Local",
+      "sublabel": "dirección y horario"
+    },
+    {
+      "id": "orden",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Orden",
+      "sublabel": "el primero manda"
+    },
+    {
+      "id": "google",
+      "lane": "tienda",
+      "col": 1,
+      "type": "external",
+      "width": 150,
+      "label": "Pie y Google",
+      "sublabel": "datos del principal"
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Dónde estamos",
+      "sublabel": "los encendidos"
+    },
+    {
+      "id": "cliente",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "width": 150,
+      "label": "El cliente",
+      "sublabel": "llega sin preguntar"
+    },
+    {
+      "id": "vacio",
+      "lane": "sinhorario",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "No se muestra",
+      "sublabel": "ni va a Google"
+    }
+  ],
+  "edges": [
+    {
+      "from": "local",
+      "to": "orden",
+      "label": "encendido",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "orden",
+      "to": "inicio",
+      "label": "en ese orden",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "from": "orden",
+      "to": "google",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "inicio",
+      "to": "cliente",
+      "label": "abierto ahora",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "local",
+      "to": "vacio",
+      "variant": "security",
+      "role": "error",
+      "fromSide": "bottom",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué muestra",
+      "items": [
+        "La dirección con calle y número",
+        "El horario día por día",
+        "Teléfono, WhatsApp y mapa"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "El principal",
+      "items": [
+        "El primero encendido de la lista",
+        "Da la ciudad y la dirección del pie",
+        "Se cambia arrastrando"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Cómo cargarlo",
+      "items": [
+        "La dirección como para llegar",
+        "El horario real, con feriados",
+        "Igual que en Google Maps"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Sin locales, la sección no aparece",
+        "El título se cambia en Portada",
+        "Configuración ya no los repite"
+      ]
+    }
+  ]
+}

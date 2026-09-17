@@ -14,7 +14,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Contexto SEO por request (lo completan los controladores de páginas dinámicas)
+        $this->app->scoped(\App\Support\Seo::class);
     }
 
     /**
@@ -33,16 +34,22 @@ class AppServiceProvider extends ServiceProvider
 
         // ── Política de contraseñas global ────────────────────────────────
         Password::defaults(function () {
-            return Password::min(8)
-                ->mixedCase()
-                ->numbers()
-                ->symbols()
-                ->uncompromised();
+            $rule = Password::min(8)->mixedCase()->numbers()->symbols();
+            // uncompromised() requiere HTTP externo — solo en producción
+            if (app()->isProduction()) {
+                $rule = $rule->uncompromised();
+            }
+            return $rule;
         });
 
-        // ── Forzar HTTPS en producción ────────────────────────────────────
+        // ── Forzar HTTPS y fijar el dominio en producción ─────────────────
+        // forceRootUrl ata las URLs generadas (ej.: el enlace de restablecer contraseña)
+        // a APP_URL, así un Host falso en la petición no puede envenenar esos enlaces.
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
+            if ($raiz = config('app.url')) {
+                URL::forceRootUrl($raiz);
+            }
         }
 
         // ── Vite prefetch ─────────────────────────────────────────────────

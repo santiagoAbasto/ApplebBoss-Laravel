@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:15
+    image: postgres:18
     container_name: appleboss-db
     restart: always
     environment:
@@ -40,7 +40,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
-      - appleboss-laravel_db_data:/var/lib/postgresql/data
+      # PostgreSQL 18 guarda los datos en /var/lib/postgresql/18/docker. El volumen de la 15
+      # (appleboss-laravel_db_data) queda sin usar como respaldo de la migración del 2026-09-16.
+      - appleboss_db_data_pg18:/var/lib/postgresql
     ports:
       - "${APP_BIND_IP:-127.0.0.1}:${POSTGRES_FORWARD_PORT:-5434}:5432"
 
@@ -77,19 +79,19 @@ services:
     container_name: appleboss-tunnel
     depends_on:
       - app
-    command: tunnel --no-autoupdate --protocol http2 --url ${CLOUDFLARE_TARGET_URL:-http://app:80}
-    environment:
-      - CLOUDFLARE_TARGET_URL=${CLOUDFLARE_TARGET_URL:-http://app:80}
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
     restart: unless-stopped
 
-  tunnel-token:
-    image: cloudflare/cloudflared:latest
-    container_name: appleboss-tunnel-token
+  tunnel-quick:
+    # Fijado: las versiones 2026.x invalidan algunos Quick Tunnels con
+    # "Unauthorized: Tunnel not found" poco después de crearlos.
+    image: cloudflare/cloudflared:2025.10.1
+    container_name: appleboss-tunnel-quick
     depends_on:
       - app
     profiles:
-      - cloudflare-token
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+      - cloudflare-quick
+    command: tunnel --no-autoupdate --protocol http2 --url ${CLOUDFLARE_TARGET_URL:-http://app:80}
     restart: unless-stopped
 
   adminer:
@@ -139,6 +141,7 @@ services:
 
 volumes:
   appleboss-laravel_db_data:
+  appleboss_db_data_pg18:
   appleboss_node_modules:
   appleboss_n8n_data:
   appleboss_vendor:

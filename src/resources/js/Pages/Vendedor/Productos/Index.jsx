@@ -1,194 +1,145 @@
-import VendedorLayout from "@/Layouts/VendedorLayout";
-import InventoryTable from "@/Components/InventoryTable";
-import { Head } from "@inertiajs/react";
-import { useMemo, useState } from "react";
-import { useDebounce } from "use-debounce";
-import { useAutoRefresh } from "@/Hooks/useAutoRefresh";
-import { Search } from "lucide-react";
+import VendedorLayout from '@/Layouts/VendedorLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+import { useEffect, useState } from 'react';
+import { Boxes, PlusCircle, Search, Tag, X } from 'lucide-react';
+import { EmptyState, PageHeader, Paginador, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { Stat } from '@/Components/Admin/inventario';
+import AdminGuide from '@/Components/Admin/AdminGuide';
+import { TablaStock } from '@/Components/Vendedor/stock';
+import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 
-export default function Index({
-  celulares = [],
-  computadoras = [],
-  productosGenerales = [],
-  productosApple = [],
-}) {
-  const [activeTab, setActiveTab] = useState("celulares");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
-  useAutoRefresh(["celulares", "computadoras", "productosGenerales", "productosApple"]);
+// Productos en stock: solo lo que está disponible para vender, con el precio de venta.
+// El costo y la procedencia no llegan desde el servidor: son datos del administrador.
 
-  const tabs = useMemo(() => ({
-    celulares: {
-      label: "Celulares",
-      data: celulares?.data || [],
-      links: celulares?.links || [],
-      empty: "No se encontraron celulares con esa búsqueda.",
-    },
-    computadoras: {
-      label: "Computadoras",
-      data: computadoras?.data || [],
-      links: computadoras?.links || [],
-      empty: "No se encontraron computadoras con esa búsqueda.",
-    },
-    productosGenerales: {
-      label: "Productos Generales",
-      data: productosGenerales?.data || [],
-      links: productosGenerales?.links || [],
-      empty: "No se encontraron productos generales con esa búsqueda.",
-    },
-    productosApple: {
-      label: "Productos Apple",
-      data: productosApple?.data || [],
-      links: productosApple?.links || [],
-      empty: "No se encontraron productos Apple con esa búsqueda.",
-    },
-  }), [celulares, computadoras, productosGenerales, productosApple]);
+export default function Index({ tipo, pestanas = [], productos, filtros = {}, resumen = {} }) {
+  const [q, setQ] = useState(filtros.q ?? '');
+  const [cargando, setCargando] = useState(false);
+  // Otro vendedor puede vender un equipo mientras esta pantalla está abierta
+  useAutoRefresh(['productos', 'pestanas', 'resumen']);
 
-  const filteredProducts = useMemo(() => {
-    const currentData = tabs[activeTab]?.data || [];
-    const term = debouncedSearchTerm.trim().toLowerCase();
+  useEffect(() => { setQ(filtros.q ?? ''); }, [filtros.q]);
 
-    if (!term) return currentData;
-
-    return currentData.filter((item) =>
-      [
-        item.modelo,
-        item.nombre,
-        item.procesador,
-        item.numero_serie,
-        item.codigo,
-        item.tipo,
-        item.capacidad,
-        item.color,
-        item.imei_1,
-        item.imei_2,
-        item.estado,
-      ].some((value) => String(value || "").toLowerCase().includes(term))
-    );
-  }, [debouncedSearchTerm, activeTab, tabs]);
-
-  const activeSummary = useMemo(() => {
-    const currentData = tabs[activeTab]?.data || [];
-    const disponibles = currentData.filter((item) => item.estado === "disponible").length;
-
-    return {
-      total: currentData.length,
-      disponibles,
-      filtrados: filteredProducts.length,
-    };
-  }, [activeTab, filteredProducts.length, tabs]);
-
-  const formatPaginationLabel = (label) => {
-    if (label.includes("previous")) return "Anterior";
-    if (label.includes("next")) return "Siguiente";
-    return label;
+  const ir = (extra = {}) => {
+    setCargando(true);
+    router.get(route('vendedor.productos.index'), { tipo, q, ...extra }, {
+      preserveState: true, preserveScroll: true, replace: true,
+      onFinish: () => setCargando(false),
+    });
   };
 
+  const cambiarPestana = (clave) => {
+    setCargando(true);
+    router.get(route('vendedor.productos.index'), { tipo: clave }, {
+      preserveScroll: true, replace: true, onFinish: () => setCargando(false),
+    });
+  };
+
+  const items = productos?.data ?? [];
+  const pestanaActiva = pestanas.find((p) => p.clave === tipo);
+  const stockTotal = pestanas.reduce((a, p) => a + p.total, 0);
+
   return (
-    <VendedorLayout>
-      <Head title="Inventario" />
+    <VendedorLayout title="Productos en stock">
+      <Head title="Productos en stock | Apple Boss" />
 
-      <div className="space-y-5">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                Inventario
-              </h1>
-              <p className="text-sm text-slate-500">
-                Consulta rápida de stock disponible, con lectura cómoda en móvil y escritorio.
-              </p>
-            </div>
-
-            <div className="mt-3 flex gap-2 sm:mt-0">
-              <span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-700 ring-1 ring-emerald-100">
-                {activeSummary.disponibles} disponibles
-              </span>
-              <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-600 ring-1 ring-slate-200">
-                {activeSummary.filtrados}/{activeSummary.total}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2 border-b border-slate-200 pb-3 sm:flex sm:flex-wrap">
-            {Object.entries(tabs).map(([key, { label }]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  setActiveTab(key);
-                  setSearchTerm("");
-                }}
-                className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition sm:rounded-full sm:px-4 ${
-                  activeTab === key
-                    ? "bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-600/30"
-                    : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4">
-            <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-slate-500">
-              Buscar en {tabs[activeTab].label}
-            </label>
-            <div className="relative">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                placeholder="Modelo, IMEI, serie, código o estado"
-                className="min-h-11 w-full rounded-lg border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 shadow-sm transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-slate-700">
-              {tabs[activeTab].label}
-            </h2>
-            <span className="text-xs font-semibold text-slate-500">
-              {activeSummary.filtrados} resultado{activeSummary.filtrados === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          <InventoryTable
-            items={filteredProducts}
-            type={activeTab}
-            showIndex
-            emptyMessage={tabs[activeTab].empty}
-          />
-
-          {tabs[activeTab]?.links?.length > 1 && (
-            <div className="flex flex-wrap justify-center gap-2 border-t border-slate-200 bg-white p-5">
-              {tabs[activeTab].links.map((link, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  disabled={!link.url}
-                  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                    link.active
-                      ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-700"
-                  } ${!link.url ? "cursor-not-allowed opacity-50" : ""}`}
-                  onClick={() => {
-                    if (link.url) window.location.href = link.url;
-                  }}
-                >
-                  {formatPaginationLabel(link.label)}
-                </button>
-              ))}
-            </div>
+      <div className="ab-reset space-y-5">
+        <PageHeader
+          title="Productos en stock"
+          subtitle="Lo que hay disponible hoy para vender, con su precio. Si no está acá, ya se vendió o está reservado."
+          actions={(
+            <Link href={route('vendedor.ventas.create')} className={buttonCls('primary', 'h-11')}>
+              <PlusCircle className="h-4 w-4" /> Registrar venta
+            </Link>
           )}
+        />
+
+        <AdminGuide
+          id="vendedor-stock"
+          title="¿Cómo usar el stock?"
+          steps={[
+            'Elige la pestaña del tipo de producto: el número dice cuántos quedan disponibles.',
+            'Busca por modelo, color, IMEI, serie o código; la búsqueda recorre todo el inventario, no solo esta página.',
+            'El precio que ves es el de venta al cliente. Si necesitas hacer un descuento, se aplica al registrar la venta.',
+          ]}
+          tip="Cuando registras una venta, el equipo desaparece de esta lista automáticamente."
+        >
+          Solo aparece lo disponible
+        </AdminGuide>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Stat icon={Boxes} tone="navy" label={`Disponibles en ${pestanaActiva?.label ?? 'esta pestaña'}`} value={pestanaActiva?.total ?? 0}
+            hint={`${stockTotal} en todo el inventario`} />
+          <Stat icon={Search} tone="lila" label="Con lo que buscaste" value={resumen.encontrados ?? 0}
+            hint={filtros.q ? `Buscando «${filtros.q}»` : 'Sin filtro de búsqueda'} />
+          <Stat icon={Tag} tone="emerald" label="Valor de lo listado" value={bsFmt(resumen.valor)}
+            hint="Sumando los precios de venta" />
         </div>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="border-b border-slate-100 p-4">
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Tipo de producto">
+              {pestanas.map((p) => {
+                const activa = p.clave === tipo;
+                return (
+                  <button
+                    key={p.clave}
+                    type="button"
+                    role="tab"
+                    aria-selected={activa}
+                    onClick={() => !activa && cambiarPestana(p.clave)}
+                    className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors ${
+                      activa ? 'bg-[#011446] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                    }`}
+                  >
+                    {p.label}
+                    <span className={`rounded-full px-1.5 py-px text-[11px] font-bold tabular-nums ${activa ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>
+                      {p.total}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); ir({ page: 1 }); }} className="mt-3 flex flex-wrap gap-2">
+              <div className="relative min-w-[220px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Modelo, color, IMEI, serie o código"
+                  aria-label="Buscar en el stock"
+                  className={`${inputCls} h-10 pl-9 ${filtros.q ? 'pr-9' : ''}`}
+                />
+                {filtros.q && (
+                  <button type="button" onClick={() => { setQ(''); ir({ q: '', page: 1 }); }} aria-label="Limpiar la búsqueda"
+                    className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-slate-400 hover:bg-slate-100">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <button type="submit" className={buttonCls('secondary', 'h-10')}>Buscar</button>
+            </form>
+          </div>
+
+          {items.length === 0 ? (
+            <EmptyState
+              icon={Boxes}
+              title={filtros.q ? 'Nada coincide con esa búsqueda' : `No queda ningún ${pestanaActiva?.label?.toLowerCase() ?? 'producto'} disponible`}
+              text={filtros.q
+                ? 'Probá con parte del modelo, con el IMEI completo o con el código del producto.'
+                : 'Cuando el administrador cargue equipos nuevos, van a aparecer acá solos.'}
+              action={filtros.q
+                ? <button type="button" onClick={() => { setQ(''); ir({ q: '', page: 1 }); }} className={buttonCls('secondary')}>Ver todo el stock</button>
+                : null}
+            />
+          ) : (
+            <>
+              <TablaStock items={items} tipo={tipo} />
+              <Paginador meta={productos} cargando={cargando} onPagina={(p) => ir({ page: p })} />
+            </>
+          )}
+        </section>
       </div>
     </VendedorLayout>
   );

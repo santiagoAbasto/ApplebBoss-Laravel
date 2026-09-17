@@ -21,6 +21,8 @@ use App\Models\Reserva;
 use App\Models\ReservaItem;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use App\Support\Busqueda;
+use App\Support\SinCostos;
 
 
 
@@ -541,11 +543,12 @@ class VentaController extends Controller
             return Inertia::render('Admin/Ventas/Index', [
                 'ventas' => $ventas,
             ]);
-        } else {
-            return Inertia::render('Vendedor/Ventas/Index', [
-                'ventas' => $ventas,
-            ]);
         }
+
+        // El vendedor ve el precio, su descuento y lo que cobró; el costo y la ganancia no salen del servidor
+        return Inertia::render('Vendedor/Ventas/Index', [
+            'ventas' => SinCostos::deColeccion($ventas),
+        ]);
     }
 
     public function create()
@@ -575,9 +578,11 @@ class VentaController extends Controller
 
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Create', $data);
-        } else {
-            return Inertia::render('Vendedor/Ventas/Create', $data);
         }
+
+        // El vendedor arma la venta con el precio de venta; el costo, la ganancia y la procedencia
+        // no salen del servidor (el servidor recalcula el costo real al guardar).
+        return Inertia::render('Vendedor/Ventas/Create', SinCostos::purgar($data));
     }
 
     public function store(Request $request)
@@ -818,21 +823,34 @@ class VentaController extends Controller
          * 7) SERVICIO TÉCNICO (USANDO GENERADOR AT-ST###)
          * ====================================================== */
             if ($request->tipo_venta === 'servicio_tecnico') {
-                GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigoServicio) use ($request, $venta) {
-                    ServicioTecnico::create([
+                // Igual que en Servicio técnico: el vendedor registra lo que cobra y el administrador carga el costo
+                $sinCosto = \App\Support\SinCostos::aplica(auth()->user());
+                $servicioDeLaVenta = null;
+
+                GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigoServicio) use ($request, $venta, $sinCosto, &$servicioDeLaVenta) {
+                    $servicioDeLaVenta = ServicioTecnico::create([
                         'venta_id' => $venta->id,
                         'codigo_nota' => $codigoServicio,
                         'cliente' => $request->nombre_cliente,
                         'telefono' => $request->telefono_cliente,
                         'equipo' => $request->equipo,
-                        'detalle_servicio' => $request->detalle_servicio,
-                        'precio_costo' => $request->precio_invertido ?? 0,
+                        'detalle_servicio' => $sinCosto
+                            ? \App\Support\SinCostos::detalleDeServicio($request->detalle_servicio)
+                            : $request->detalle_servicio,
+                        'precio_costo' => $sinCosto ? 0 : ($request->precio_invertido ?? 0),
                         'precio_venta' => $request->precio_venta ?? 0,
+                        'costo_pendiente' => $sinCosto,
+                        'costo_cargado_por' => $sinCosto ? null : auth()->id(),
+                        'costo_cargado_en' => $sinCosto ? null : now(),
                         'tecnico' => $request->tecnico,
                         'fecha' => now('America/La_Paz'),
                         'user_id' => auth()->id(),
                     ]);
                 });
+
+                if ($sinCosto && $servicioDeLaVenta) {
+                    $servicioDeLaVenta->load('vendedor')->avisarCostoPendiente();
+                }
             }
 
             /* ======================================================
@@ -905,11 +923,12 @@ class VentaController extends Controller
             ]);
         }
 
-        return Inertia::render('Vendedor/Ventas/Edit', [
+        // Al vendedor no le viaja el costo ni la ganancia de la venta ni del inventario a editar.
+        return Inertia::render('Vendedor/Ventas/Edit', SinCostos::purgar([
             'venta' => $venta,
             'productosGenerales' => $inventarioEdicion['productosGenerales'],
             'inventarioEdicion' => $inventarioEdicion,
-        ]);
+        ]));
     }
 
     public function update(Request $request, Venta $venta)
@@ -1180,6 +1199,8 @@ class VentaController extends Controller
             'vendedor' => auth()->user(),
             'fechaInicio' => $fechaInicio,
             'fechaFin' => $fechaFin,
+            // El pie sale de Configuración y de Ubicaciones, no de la plantilla
+            'tienda' => \App\Support\DatosDeLaTienda::paraPdf(),
         ]);
 
         return $pdf->stream("ventas-vendedor.pdf");
@@ -1199,8 +1220,8 @@ class VentaController extends Controller
                 ->whereNotNull('codigo_nota')
                 ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
                 ->where(function ($q) use ($query) {
-                    $q->where('codigo_nota', 'ILIKE', "%{$query}%")
-                        ->orWhere('cliente', 'ILIKE', "%{$query}%");
+                    $q->whereRaw('LOWER(codigo_nota) LIKE ?', [Busqueda::contiene($query)])
+                        ->orWhereRaw('LOWER(cliente) LIKE ?', [Busqueda::contiene($query)]);
                 })
                 ->get();
 
@@ -1213,8 +1234,8 @@ class VentaController extends Controller
                 ->whereNotIn('codigo_nota', $codigosST)
                 ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
                 ->where(function ($q) use ($query) {
-                    $q->where('codigo_nota', 'ILIKE', "%{$query}%")
-                        ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
+                    $q->whereRaw('LOWER(codigo_nota) LIKE ?', [Busqueda::contiene($query)])
+                        ->orWhereRaw('LOWER(nombre_cliente) LIKE ?', [Busqueda::contiene($query)]);
                 })
                 ->get();
 
@@ -1273,8 +1294,8 @@ class VentaController extends Controller
             ->whereNotNull('codigo_nota')
             ->when(auth()->user()->rol === 'vendedor', fn($q) => $q->where('user_id', auth()->id()))
             ->where(function ($q) use ($query) {
-                $q->where('codigo_nota', 'ILIKE', "%{$query}%")
-                    ->orWhere('nombre_cliente', 'ILIKE', "%{$query}%");
+                $q->whereRaw('LOWER(codigo_nota) LIKE ?', [Busqueda::contiene($query)])
+                    ->orWhereRaw('LOWER(nombre_cliente) LIKE ?', [Busqueda::contiene($query)]);
             })
             ->orderBy('created_at', 'desc')
             ->get()

@@ -9,6 +9,14 @@ class Egreso extends Model
 {
     use HasFactory;
 
+    /** Tipos de gasto con su nombre para mostrar. */
+    public const TIPOS = [
+        'servicio_basico' => 'Servicio básico',
+        'cuota_bancaria' => 'Cuota bancaria',
+        'gasto_personal' => 'Gasto personal',
+        'sueldos' => 'Sueldos',
+    ];
+
     protected $fillable = [
         'concepto',
         'precio_invertido',

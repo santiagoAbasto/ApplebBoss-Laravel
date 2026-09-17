@@ -3,109 +3,78 @@
 namespace App\Http\Controllers\Vendedor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cliente;
+use App\Support\ActividadDelCliente;
+use App\Support\Busqueda;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Cliente;
-use App\Models\PromocionEnviada;
 use Inertia\Inertia;
 
+/**
+ * Mis clientes: los que registró este vendedor.
+ *
+ * Es la misma pantalla del administrador (Components/Panel/ClientesIndex) pero con su propia lista:
+ * el vendedor no ve ni edita clientes de otra persona, y los movimientos de la ficha son solo los suyos.
+ */
 class ClienteVendedorController extends Controller
 {
-    /**
-     * Mostrar todos los clientes del vendedor autenticado.
-     */
     public function index()
     {
-        $clientes = Cliente::where('user_id', Auth::id())
-            ->latest()
-            ->get();
-
         return Inertia::render('Vendedor/Clientes/Index', [
-            'clientes' => $clientes,
+            'clientes' => Cliente::where('user_id', Auth::id())
+                ->with('usuario:id,name')
+                ->latest()
+                ->get(),
         ]);
     }
 
-    /**
-     * Sugerencias para autocompletar clientes (solo del vendedor).
-     * Usado en ventas y servicio técnico.
-     */
+    /** Sugerencias para autocompletar en ventas, reservas y servicio técnico. */
     public function sugerencias(Request $request)
     {
-        $term = $request->input('term');
+        $term = trim((string) $request->input('term'));
 
-        if (!$term || strlen($term) < 2) {
+        if (mb_strlen($term) < 2) {
             return [];
         }
 
         return Cliente::where('user_id', Auth::id())
             ->where(function ($q) use ($term) {
-                $q->where('nombre', 'ilike', "%{$term}%")
-                    ->orWhere('telefono', 'ilike', "%{$term}%");
+                $q->whereRaw('LOWER(nombre) LIKE ?', [Busqueda::contiene($term)])
+                    ->orWhereRaw('LOWER(telefono) LIKE ?', [Busqueda::contiene($term)]);
             })
             ->select('id', 'nombre', 'telefono', 'correo')
             ->limit(8)
             ->get();
     }
 
-
-
-
-    /**
-     * Enviar promociones por WhatsApp a los clientes del vendedor.
-     */
-    public function enviarPromocionMasiva()
-    {
-        $clientes = Cliente::where('user_id', Auth::id())->get();
-
-        foreach ($clientes as $cliente) {
-            PromocionEnviada::create([
-                'cliente_id' => $cliente->id,
-                'mensaje'    => '🎉 ¡Aprovecha nuestras nuevas promociones en Apple Boss!',
-                'canal'      => 'whatsapp',
-                'enviado_en' => now(),
-            ]);
-        }
-
-        return response()->json([
-            'message' => '✅ Promoción enviada a tus clientes correctamente.',
-        ]);
-    }
-
-    /**
-     * Formulario para editar cliente.
-     */
     public function edit($id)
     {
-        $cliente = Cliente::where('user_id', Auth::id())
-            ->findOrFail($id);
+        $cliente = Cliente::where('user_id', Auth::id())->with('usuario:id,name')->findOrFail($id);
 
         return Inertia::render('Vendedor/Clientes/Edit', [
-            'cliente' => $cliente,
+            'cliente'   => $cliente,
+            'actividad' => ActividadDelCliente::de($cliente, 'vendedor', Auth::id()),
         ]);
     }
 
-    /**
-     * Actualizar cliente.
-     */
     public function update(Request $request, $id)
     {
-        $cliente = Cliente::where('user_id', Auth::id())
-            ->findOrFail($id);
+        $cliente = Cliente::where('user_id', Auth::id())->findOrFail($id);
 
-        $request->validate([
-            'nombre'   => 'required|string|max:255',
-            'telefono' => 'required|string|max:20',
-            'correo'   => 'nullable|email|max:255',
+        $validated = $request->validate([
+            'nombre'    => 'required|string|max:255',
+            'telefono'  => 'required|string|min:7|max:20',
+            'correo'    => 'nullable|email|max:255',
+            'documento' => 'nullable|string|max:30',
+        ], [
+            'nombre.required'   => 'Escribe el nombre del cliente.',
+            'telefono.required' => 'Escribe el teléfono del cliente.',
+            'telefono.min'      => 'El teléfono parece incompleto.',
+            'correo.email'      => 'Revisa el correo.',
         ]);
 
-        $cliente->update([
-            'nombre'   => $request->nombre,
-            'telefono' => $request->telefono,
-            'correo'   => $request->correo,
-        ]);
+        $cliente->update($validated);
 
-        return redirect()
-            ->route('vendedor.clientes.index')
-            ->with('success', 'Cliente actualizado correctamente.');
+        return redirect()->route('vendedor.clientes.index')->with('success', 'Cliente actualizado correctamente.');
     }
 }

@@ -83,11 +83,11 @@ class SecurityHeadersMiddleware
             // Scripts: solo self + inline (Inertia/React necesita inline en el <head>)
             "script-src 'self' 'unsafe-inline'",
 
-            // Estilos: self + inline (Tailwind genera estilos inline) + bunny fonts
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
+            // Estilos: self + inline (Tailwind genera estilos inline) + bunny fonts + google fonts
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com",
 
-            // Fuentes: self + bunny.net (Figtree) + data URIs (FontAwesome local inline)
-            "font-src 'self' https://fonts.bunny.net data:",
+            // Fuentes: self + bunny.net (Figtree) + google fonts + data URIs
+            "font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data:",
 
             // Imágenes: self + data URIs + blob (avatares, logos inline)
             "img-src 'self' data: blob:",
@@ -100,6 +100,9 @@ class SecurityHeadersMiddleware
 
             // Embeds → bloqueado
             "object-src 'none'",
+
+            // iframes embebidos → solo el mapa de Google Maps de la sección de ubicación
+            "frame-src 'self' https://www.google.com https://maps.google.com",
 
             // Base href → solo self
             "base-uri 'self'",
@@ -124,11 +127,11 @@ class SecurityHeadersMiddleware
             // Vite HMR carga scripts desde localhost:5173, o 5174 si 5173 ya esta ocupado.
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
-            // Estilos: self + inline + bunny fonts + vite dev server
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
+            // Estilos: self + inline + bunny fonts + google fonts + vite dev server
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
-            // Fuentes: self + bunny.net + data URIs + fuentes servidas por Vite.
-            "font-src 'self' https://fonts.bunny.net data: http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
+            // Fuentes: self + bunny.net + google fonts + data URIs + fuentes servidas por Vite.
+            "font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data: http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
             // Imágenes
             "img-src 'self' data: blob:",
@@ -140,6 +143,7 @@ class SecurityHeadersMiddleware
             "worker-src 'self' blob:",
 
             "object-src 'none'",
+            "frame-src 'self' https://www.google.com https://maps.google.com",
             "base-uri 'self'",
             "form-action 'self'",
             "frame-ancestors 'self'",

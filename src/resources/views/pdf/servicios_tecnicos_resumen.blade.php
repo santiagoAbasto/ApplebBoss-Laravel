@@ -107,6 +107,12 @@
             font-size: 9px;
             color: #666;
         }
+
+        .periodo {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #555;
+        }
     </style>
 </head>
 
@@ -117,6 +123,9 @@
         <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
         <div class="title">APPLE BOSS</div>
         <div class="subtitle">Resumen Consolidado de Servicios Técnicos</div>
+        @if(!empty($periodo))
+            <div class="periodo">{{ $periodo }}</div>
+        @endif
     </div>
 
     <!-- TABLA PRINCIPAL -->
@@ -129,7 +138,9 @@
                 <th>Servicio</th>
                 <th>Técnico</th>
                 <th>Registrado por</th>
-                <th class="text-right">Costo (Bs)</th>
+                @if ($conCostos ?? true)
+                    <th class="text-right">Costo (Bs)</th>
+                @endif
                 <th class="text-right">Cobro (Bs)</th>
                 <th>Fecha</th>
             </tr>
@@ -138,30 +149,41 @@
             @php
                 $totalCosto = 0;
                 $totalVenta = 0;
+                $totalVentaConCosto = 0;
+                $sinCosto = 0;
             @endphp
 
             @forelse ($filas as $fila)
                 @php
+                    // Un trabajo sin costo cargado no se suma a la utilidad: se marca «Pendiente»
+                    $pendiente = ! empty($fila['pendiente']);
                     $costo = (float) ($fila['costo'] ?? 0);
                     $venta = (float) ($fila['venta'] ?? 0);
 
-                    $totalCosto += $costo;
                     $totalVenta += $venta;
+                    if ($pendiente) {
+                        $sinCosto++;
+                    } else {
+                        $totalCosto += $costo;
+                        $totalVentaConCosto += $venta;
+                    }
                 @endphp
                 <tr>
                     <td>{{ $fila['codigo_nota'] }}</td>
                     <td>{{ $fila['cliente'] }}</td>
                     <td>{{ $fila['equipo'] }}</td>
-                    <td>{{ strtoupper($fila['servicio']) }}</td>
+                    <td>{{ mb_strtoupper($fila['servicio'], 'UTF-8') }}</td>
                     <td>{{ $fila['tecnico'] }}</td>
                     <td>{{ $fila['vendedor'] }}</td>
-                    <td class="text-right">{{ number_format($costo, 2) }}</td>
+                    @if ($conCostos ?? true)
+                        <td class="text-right">{{ $pendiente ? 'Pendiente' : number_format($costo, 2) }}</td>
+                    @endif
                     <td class="text-right">{{ number_format($venta, 2) }}</td>
                     <td>{{ \Carbon\Carbon::parse($fila['fecha'])->format('d/m/Y') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" style="text-align:center;">
+                    <td colspan="{{ ($conCostos ?? true) ? 9 : 8 }}" style="text-align:center;">
                         No existen registros de servicios técnicos
                     </td>
                 </tr>
@@ -171,22 +193,33 @@
 
     <!-- RESUMEN ECONÓMICO -->
     <table class="resumen">
+        @if ($conCostos ?? true)
+            <tr>
+                <td class="label">Total Costo Invertido</td>
+                <td class="text-right">{{ number_format($totalCosto, 2) }} Bs</td>
+            </tr>
+        @endif
         <tr>
-            <td class="label">📦 Total Costo Invertido</td>
-            <td class="text-right">{{ number_format($totalCosto, 2) }} Bs</td>
-        </tr>
-        <tr>
-            <td class="label">💰 Total Cobrado</td>
+            <td class="label">Total Cobrado</td>
             <td class="text-right">{{ number_format($totalVenta, 2) }} Bs</td>
         </tr>
-        <tr>
-            <td class="label">📈 Ganancia Neta</td>
-            <td class="text-right">
-                <strong style="color: {{ ($totalVenta - $totalCosto) >= 0 ? '#198754' : '#dc3545' }}">
-                    {{ number_format($totalVenta - $totalCosto, 2) }} Bs
-                </strong>
-            </td>
-        </tr>
+        @if ($conCostos ?? true)
+            <tr>
+                <td class="label">Ganancia Neta</td>
+                <td class="text-right">
+                    <strong style="color: {{ ($totalVentaConCosto - $totalCosto) >= 0 ? '#198754' : '#dc3545' }}">
+                        {{ number_format($totalVentaConCosto - $totalCosto, 2) }} Bs
+                    </strong>
+                </td>
+            </tr>
+            @if ($sinCosto > 0)
+                <tr>
+                    <td class="label" colspan="2">
+                        {{ $sinCosto }} {{ $sinCosto === 1 ? 'trabajo no tiene' : 'trabajos no tienen' }} el costo cargado: su utilidad no está sumada.
+                    </td>
+                </tr>
+            @endif
+        @endif
     </table>
 
     <!-- FIRMA -->

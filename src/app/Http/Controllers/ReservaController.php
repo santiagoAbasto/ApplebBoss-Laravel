@@ -274,7 +274,8 @@ class ReservaController extends Controller
             ->latest()
             ->get();
 
-        return response()->json($reservas);
+        // El costo y la procedencia de los equipos reservados no salen del servidor al vendedor.
+        return response()->json(\App\Support\SinCostos::paraUsuario($reservas, auth()->user()));
     }
 
     public function boleta(Reserva $reserva)

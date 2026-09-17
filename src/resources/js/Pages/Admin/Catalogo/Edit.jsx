@@ -1,1049 +1,806 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
+import { route } from 'ziggy-js';
 import {
-    AlertCircle, ArrowLeft, Check, CheckCircle, ChevronDown, Eye, Globe,
-    GripVertical, Image as ImageIcon, Info, Loader2, Save, Star, Tag, Trash2, X,
+  AlertTriangle, ArrowLeft, ArrowRight, BadgePercent, CheckCircle2, Circle, ClipboardList, Eye, FileText, Globe,
+  Image as ImageIcon, Loader2, Smartphone, Star, Tag, Trash2, Upload,
 } from 'lucide-react';
+import { Field, Input, Modal, Segmented, Select, StepCard, Switch, Textarea, Toast, bsFmt, buttonCls, inputCls, useToast } from '@/Components/Admin/ui';
+import { EncabezadoFormulario, ErroresResumen, Linea, Nota } from '@/Components/Admin/inventario';
+import {
+  CATEGORIAS, CONDICIONES_TIENDA, EstadoPublicacionBadge, MARCAS, TarjetaTienda, faltantesDe, fechaParaCampo, inventarioUrl, slugDe, tiendaUrl,
+} from '@/Components/Admin/catalogo';
+import { BateriaNivel, CAMPOS_AUTOMATICOS, camposDeFamilia, gruposFicha } from '@/Components/Store/fichaTecnica';
+import { noTiene } from '@/Components/Store/comparativa';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-const money = (v) =>
-    v != null
-        ? new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB', maximumFractionDigits: 0 }).format(v)
-        : '—';
+// Editor de una publicación de la tienda: lo que se ve en la ficha pública del producto.
 
-const CATEGORIAS = [
-    { value: 'celulares',         label: 'Celulares' },
-    { value: 'computadoras',      label: 'Computadoras' },
-    { value: 'productos-apple',   label: 'Productos Apple' },
-    { value: 'fundas',            label: 'Fundas' },
-    { value: 'accesorios',        label: 'Accesorios' },
+const GARANTIAS = ['1 mes por el negocio', '3 meses por el negocio', '6 meses por el negocio', '12 meses por el negocio', 'Sin garantía'];
+const ETIQUETAS = ['OFERTA', 'NUEVO INGRESO', 'ÚLTIMAS UNIDADES', 'RECOMENDADO', 'MÁS VENDIDO'];
+
+const FAMILIAS = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', watch: 'Apple Watch', airpods: 'AirPods', general: 'General' };
+
+const SECCIONES = [
+  ['producto', 'Producto'], ['fotos', 'Fotos'], ['descripcion', 'Descripción'], ['ficha', 'Ficha técnica'],
+  ['precio', 'Precio y promoción'], ['compatibilidad', 'Compatibilidad'], ['google', 'Google'],
 ];
 
-const GARANTIA_SUGERIDAS = [
-    '1 mes por el negocio',
-    '3 meses por el negocio',
-    '6 meses por el negocio',
-    '12 meses por el negocio',
-    'Sin garantía',
-];
-
-const BADGES = ['OFERTA', 'NUEVO INGRESO', 'ÚLTIMAS UNIDADES', 'RECOMENDADO', 'MÁS VENDIDO'];
-
-// ─── Field ─────────────────────────────────────────────────────────────────────
-function Field({ label, required, hint, error, children }) {
-    return (
-        <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">
-                {label}{required && <span className="ml-0.5 text-red-500">*</span>}
-            </label>
-            {children}
-            {hint && !error && <p className="mt-1 text-[11px] text-gray-400">{hint}</p>}
-            {error && <p className="mt-1 text-[11px] font-medium text-red-600">{error}</p>}
-        </div>
-    );
+function Sugeridos({ opciones, onElegir }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {opciones.map((o) => (
+        <button key={o} type="button" onClick={() => onElegir(o)}
+          className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-900">{o}</button>
+      ))}
+    </div>
+  );
 }
 
-function Input({ error, ...props }) {
-    return (
-        <input
-            {...props}
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 ${
-                error ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-blue-400'
-            }`}
-        />
-    );
+/** Descripción con botones de formato. El servidor limpia el HTML (solo etiquetas seguras). */
+function EditorDescripcion({ value, onChange }) {
+  const ref = useRef(null);
+  const [vista, setVista] = useState(false);
+
+  const envolver = (antes, despues = '') => {
+    const ta = ref.current;
+    if (!ta) return;
+    const { selectionStart: a, selectionEnd: b } = ta;
+    onChange(value.slice(0, a) + antes + value.slice(a, b) + despues + value.slice(b));
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(a + antes.length, b + antes.length); }, 0);
+  };
+
+  const herramientas = [
+    ['B', 'Negrita', () => envolver('<strong>', '</strong>'), 'font-bold'],
+    ['I', 'Cursiva', () => envolver('<em>', '</em>'), 'italic'],
+    ['Título', 'Subtítulo', () => envolver('<h3>', '</h3>')],
+    ['Lista', 'Lista con viñetas', () => envolver('<ul>\n  <li>', '</li>\n</ul>')],
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 focus-within:border-[#585E9F] focus-within:ring-4 focus-within:ring-[#585E9F]/15">
+      <div className="flex items-center gap-1 border-b border-slate-100 bg-slate-50 px-2 py-1.5">
+        {!vista && herramientas.map(([label, title, accion, cls]) => (
+          <button key={label} type="button" title={title} onClick={accion}
+            className={`rounded-lg px-2.5 py-1 text-xs text-slate-600 hover:bg-white hover:text-slate-900 ${cls ?? 'font-semibold'}`}>{label}</button>
+        ))}
+        <button type="button" onClick={() => setVista((v) => !v)} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-[#585E9F] hover:bg-white">
+          {vista ? 'Editar' : 'Vista previa'}
+        </button>
+      </div>
+      {vista ? (
+        // Vista previa solo para quien edita; lo que se guarda pasa por la limpieza del servidor
+        <div className="prose prose-sm min-h-[10rem] max-w-none px-3 py-2 text-slate-700"
+          dangerouslySetInnerHTML={{ __html: value || '<p class="text-slate-400">Sin contenido todavía.</p>' }} />
+      ) : (
+        <textarea ref={ref} rows={8} value={value} onChange={(e) => onChange(e.target.value)}
+          placeholder="Cuenta todo lo importante del producto. Usa los botones para negrita, subtítulos o listas."
+          className="block w-full resize-y border-0 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0" />
+      )}
+    </div>
+  );
 }
 
-function Textarea({ error, rows = 3, ...props }) {
-    return (
-        <textarea
-            rows={rows}
-            {...props}
-            className={`w-full resize-y rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 ${
-                error ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-blue-400'
-            }`}
-        />
-    );
-}
+/* ─── Fotos ─── */
 
-function Select({ error, children, ...props }) {
-    return (
-        <select
-            {...props}
-            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
-                error ? 'border-red-400 focus:ring-red-300' : 'border-gray-300 focus:ring-blue-400'
-            }`}
-        >
-            {children}
-        </select>
-    );
-}
+function Fotos({ publicacion, imagenes, setImagenes, titulo, avisar }) {
+  const [subiendo, setSubiendo] = useState(0);
+  const [borrar, setBorrar] = useState(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  const inputRef = useRef(null);
+  const desde = useRef(null);
 
-// ─── Readiness pill ────────────────────────────────────────────────────────────
-function ReadinessPill({ missing }) {
-    if (missing.length === 0) {
-        return (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                <CheckCircle className="h-3.5 w-3.5" /> Listo para publicar
-            </span>
-        );
+  const subir = async (archivos) => {
+    const lista = Array.from(archivos ?? []);
+    if (!lista.length) return;
+    setSubiendo((n) => n + lista.length);
+    await Promise.all(lista.map(async (archivo) => {
+      const fd = new FormData();
+      fd.append('imagen', archivo);
+      try {
+        const { data } = await axios.post(route('admin.catalogo.imagenes.upload', publicacion.id), fd);
+        setImagenes((prev) => [...prev, data]);
+      } catch (e) {
+        avisar(`${archivo.name}: ${e.response?.data?.error || e.response?.data?.message || 'no se pudo subir.'}`, 'error');
+      } finally {
+        setSubiendo((n) => n - 1);
+      }
+    }));
+  };
+
+  const principal = async (img) => {
+    setImagenes((prev) => prev.map((i) => ({ ...i, es_principal: i.id === img.id })));
+    try {
+      await axios.post(route('admin.catalogo.imagenes.principal', { publicacion: publicacion.id, imagen: img.id }));
+    } catch {
+      avisar('No se pudo marcar la foto principal.', 'error');
     }
-    return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
-            <AlertCircle className="h-3.5 w-3.5" /> {missing.length} campo{missing.length !== 1 ? 's' : ''} faltante{missing.length !== 1 ? 's' : ''}
+  };
+
+  const eliminar = async () => {
+    const img = borrar;
+    setBorrar(null);
+    try {
+      await axios.delete(route('admin.catalogo.imagenes.delete', { publicacion: publicacion.id, imagen: img.id }));
+      setImagenes((prev) => prev.filter((i) => i.id !== img.id));
+    } catch {
+      avisar('No se pudo eliminar la foto.', 'error');
+    }
+  };
+
+  const mover = async (de, a) => {
+    if (a < 0 || a >= imagenes.length || de === a) return;
+    const nuevo = [...imagenes];
+    const [m] = nuevo.splice(de, 1);
+    nuevo.splice(a, 0, m);
+    setImagenes(nuevo);
+    try {
+      await axios.post(route('admin.catalogo.imagenes.reordenar', publicacion.id), { orden: nuevo.map((img, i) => ({ id: img.id, orden: i })) });
+    } catch {
+      avisar('No se pudo guardar el orden de las fotos.', 'error');
+    }
+  };
+
+  return (
+    <StepCard step={2} title="Fotos" subtitle="La primera marcada con estrella es la principal. Arrastra o usa las flechas para ordenar."
+      actions={<span className="text-xs font-semibold tabular-nums text-slate-400">{imagenes.length} {imagenes.length === 1 ? 'foto' : 'fotos'}</span>}>
+      {imagenes.length > 0 && (
+        <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {imagenes.map((img, i) => (
+            <li key={img.id} draggable
+              onDragStart={() => { desde.current = i; }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); mover(desde.current, i); desde.current = null; }}
+              className={`group relative overflow-hidden rounded-xl border-2 bg-slate-50 ${img.es_principal ? 'border-amber-400' : 'border-transparent'}`}>
+              <img src={img.url_card ?? img.url_thumb} alt={img.alt || titulo} className="aspect-square w-full cursor-grab object-contain active:cursor-grabbing" draggable={false} />
+              {img.es_principal && <span className="absolute left-2 top-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold text-amber-950">Principal</span>}
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                <div className="flex gap-1">
+                  <button type="button" onClick={() => mover(i, i - 1)} disabled={i === 0} aria-label="Mover a la izquierda"
+                    className="grid h-7 w-7 place-items-center rounded-lg bg-white/90 text-slate-700 disabled:opacity-40"><ArrowLeft className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => mover(i, i + 1)} disabled={i === imagenes.length - 1} aria-label="Mover a la derecha"
+                    className="grid h-7 w-7 place-items-center rounded-lg bg-white/90 text-slate-700 disabled:opacity-40"><ArrowRight className="h-3.5 w-3.5" /></button>
+                </div>
+                <div className="flex gap-1">
+                  {!img.es_principal && (
+                    <button type="button" onClick={() => principal(img)} aria-label="Marcar como principal" title="Marcar como principal"
+                      className="grid h-7 w-7 place-items-center rounded-lg bg-amber-400 text-amber-950"><Star className="h-3.5 w-3.5" /></button>
+                  )}
+                  <button type="button" onClick={() => setBorrar(img)} aria-label="Eliminar foto"
+                    className="grid h-7 w-7 place-items-center rounded-lg bg-white/90 text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <button type="button" onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
+        onDragLeave={() => setArrastrando(false)}
+        onDrop={(e) => { e.preventDefault(); setArrastrando(false); if (e.dataTransfer.files?.length) subir(e.dataTransfer.files); }}
+        className={`flex w-full items-center gap-3 rounded-xl border-2 border-dashed px-5 py-5 text-left transition-colors ${arrastrando ? 'border-[#585E9F] bg-[#585E9F]/[0.06]' : 'border-slate-200 bg-slate-50 hover:border-slate-300'}`}>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-[#585E9F]">
+          {subiendo > 0 ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
         </span>
-    );
+        <span>
+          <span className="block text-sm font-semibold text-slate-800">{subiendo > 0 ? `Subiendo ${subiendo} ${subiendo === 1 ? 'foto' : 'fotos'}…` : 'Elegir fotos o arrastrarlas aquí'}</span>
+          <span className="block text-xs text-slate-500">JPG, PNG o WebP, hasta 10 MB cada una.</span>
+        </span>
+      </button>
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden"
+        onChange={(e) => { subir(e.target.files); e.target.value = ''; }} />
+      {imagenes.length === 0 && <Nota tono="amber">Con foto se vende mejor. Sin foto, la tienda muestra una ilustración.</Nota>}
+
+      {borrar && (
+        <Modal title="Eliminar foto" onClose={() => setBorrar(null)}
+          footer={<><button type="button" onClick={() => setBorrar(null)} className={buttonCls('secondary')}>Cancelar</button><button type="button" onClick={eliminar} className={buttonCls('danger')}>Eliminar</button></>}>
+          <div className="flex items-center gap-4">
+            <img src={borrar.url_thumb ?? borrar.url_card} alt="" className="h-20 w-20 rounded-xl bg-slate-50 object-contain" />
+            <p className="text-sm text-slate-600">La foto se borra de la tienda y no se puede recuperar.</p>
+          </div>
+        </Modal>
+      )}
+    </StepCard>
+  );
 }
 
-// ─── Tab nav ───────────────────────────────────────────────────────────────────
-const TABS = ['GENERAL', 'MEDIA', 'ATRIBUTOS', 'COMERCIAL', 'INVENTARIO', 'SEO', 'PUBLICACIÓN', 'PREVIEW'];
+/* ─── Compatibilidad ─── */
 
-function TabNav({ active, onChange, errors }) {
-    const tabsWithErrors = {
-        GENERAL:      ['titulo','slug','resumen','descripcion','garantia','condicion','categoria','storefront'],
-        MEDIA:        [],
-        ATRIBUTOS:    ['atributos'],
-        COMERCIAL:    ['precio_promocional','promocion_desde','promocion_hasta','badge'],
-        INVENTARIO:   [],
-        SEO:          ['seo_title','seo_description'],
-        'PUBLICACIÓN': ['publicado','publicar_desde','publicar_hasta'],
-        PREVIEW:      [],
-    };
+function Compatibilidad({ publicacion, iniciales, targets, avisar }) {
+  const [sel, setSel] = useState(() => new Set(iniciales ?? []));
+  const [guardadas, setGuardadas] = useState(() => new Set(iniciales ?? []));
+  const [familia, setFamilia] = useState(() => (targets.some((t) => t.family === 'iphone') ? 'iphone' : targets[0]?.family));
+  const [texto, setTexto] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
-    return (
-        <nav className="flex gap-0 overflow-x-auto border-b border-gray-200 bg-white">
-            {TABS.map((tab) => {
-                const hasError = tabsWithErrors[tab]?.some((k) => errors[k]);
-                return (
-                    <button
-                        key={tab}
-                        type="button"
-                        onClick={() => onChange(tab)}
-                        className={`relative shrink-0 px-4 py-3 text-xs font-semibold uppercase tracking-wider transition-colors ${
-                            active === tab
-                                ? 'border-b-2 border-gray-900 text-gray-900'
-                                : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                    >
-                        {tab}
-                        {hasError && (
-                            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-                        )}
-                    </button>
-                );
-            })}
-        </nav>
-    );
-}
+  const porFamilia = useMemo(() => targets.reduce((acc, t) => {
+    (acc[t.family] ??= {});
+    (acc[t.family][t.generation] ??= []).push(t);
+    return acc;
+  }, {}), [targets]);
 
-// ─── MEDIA TAB ─────────────────────────────────────────────────────────────────
-function MediaTab({ publicacion, imagenes: init }) {
-    const [imagenes, setImagenes] = useState(init ?? []);
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState('');
-    const inputRef = useRef(null);
-    const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+  const q = texto.trim().toLowerCase();
+  const generaciones = Object.entries(porFamilia[familia] ?? {})
+    .map(([gen, items]) => [gen, q ? items.filter((t) => t.name.toLowerCase().includes(q)) : items])
+    .filter(([, items]) => items.length);
 
-    const apiCall = useCallback(async (url, options) => {
-        const res = await fetch(url, { ...options, headers: { 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest', ...options?.headers } });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Error ${res.status}`);
-        return res.json();
-    }, []);
+  const cambios = sel.size !== guardadas.size || [...sel].some((id) => !guardadas.has(id));
+  const alternar = (ids, marcar) => setSel((s) => { const n = new Set(s); ids.forEach((id) => (marcar ? n.add(id) : n.delete(id))); return n; });
 
-    const upload = useCallback(async (file) => {
-        setUploadError('');
-        setUploading(true);
-        const fd = new FormData();
-        fd.append('imagen', file);
-        try {
-            const img = await apiCall(route('admin.catalogo.imagenes.upload', publicacion.id), { method: 'POST', body: fd });
-            setImagenes((prev) => [...prev, img]);
-        } catch (e) {
-            setUploadError(e.message);
-        } finally {
-            setUploading(false);
-        }
-    }, [publicacion.id, apiCall]);
-
-    const setPrincipal = useCallback(async (img) => {
-        await apiCall(route('admin.catalogo.imagenes.principal', { publicacion: publicacion.id, imagen: img.id }), { method: 'POST' });
-        setImagenes((prev) => prev.map((i) => ({ ...i, es_principal: i.id === img.id })));
-    }, [publicacion.id, apiCall]);
-
-    const deleteImg = useCallback(async (img) => {
-        if (!window.confirm('¿Eliminar esta imagen?')) return;
-        await apiCall(route('admin.catalogo.imagenes.delete', { publicacion: publicacion.id, imagen: img.id }), { method: 'DELETE' });
-        setImagenes((prev) => prev.filter((i) => i.id !== img.id));
-    }, [publicacion.id, apiCall]);
-
-    const handleFiles = (files) => Array.from(files).forEach(upload);
-    const handleDrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
-
-    const principal = imagenes.find((i) => i.es_principal) ?? imagenes[0];
-
-    return (
-        <div className="space-y-6">
-            {/* Imagen principal */}
-            {principal && (
-                <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Imagen principal</p>
-                    <div className="relative inline-block">
-                        <img
-                            src={principal.url_detail ?? principal.url_card}
-                            alt={principal.alt || publicacion.titulo}
-                            className="h-56 w-auto max-w-xs rounded-xl object-contain border border-gray-100 bg-gray-50"
-                        />
-                        <span className="absolute bottom-2 left-2 rounded bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-amber-900">
-                            Principal
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {/* Galería */}
-            {imagenes.length > 0 && (
-                <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Galería</p>
-                    <div className="flex flex-wrap gap-3">
-                        {imagenes.map((img) => (
-                            <div
-                                key={img.id}
-                                className="group relative h-20 w-20 overflow-hidden rounded-xl border-2 bg-gray-50"
-                                style={{ borderColor: img.es_principal ? '#F59E0B' : 'transparent' }}
-                            >
-                                <img
-                                    src={img.url_thumb ?? img.url_card}
-                                    alt={img.alt || ''}
-                                    className="h-full w-full object-cover"
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                                    {!img.es_principal && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setPrincipal(img)}
-                                            title="Marcar como principal"
-                                            className="rounded-full bg-amber-400 p-1.5 text-amber-900 hover:bg-amber-300"
-                                        >
-                                            <Star className="h-3 w-3" />
-                                        </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => deleteImg(img)}
-                                        title="Eliminar"
-                                        className="rounded-full bg-white p-1.5 text-gray-700 hover:bg-red-50 hover:text-red-600"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Zona de upload */}
-            <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">Agregar imágenes</p>
-                <div
-                    onDrop={handleDrop}
-                    onDragOver={(e) => e.preventDefault()}
-                    onClick={() => inputRef.current?.click()}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-5 py-5 transition-colors hover:border-gray-400 hover:bg-gray-100"
-                >
-                    <input
-                        ref={inputRef}
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        multiple
-                        className="hidden"
-                        onChange={(e) => handleFiles(e.target.files)}
-                    />
-                    {uploading ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                    ) : (
-                        <ImageIcon className="h-5 w-5 text-gray-400" />
-                    )}
-                    <div>
-                        <p className="text-sm text-gray-600">
-                            {uploading ? 'Subiendo...' : <><span className="font-semibold text-blue-600">Seleccionar archivos</span> o arrastrar aquí</>}
-                        </p>
-                        <p className="text-[11px] text-gray-400">JPG, PNG, WebP — máx. 10 MB por imagen</p>
-                    </div>
-                </div>
-                {uploadError && <p className="mt-2 text-xs font-medium text-red-600">{uploadError}</p>}
-                {imagenes.length === 0 && (
-                    <p className="mt-2 text-xs text-amber-600 flex items-center gap-1">
-                        <AlertCircle className="h-3.5 w-3.5" /> La imagen principal es requerida para publicar.
-                    </p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ─── ATRIBUTOS TAB ─────────────────────────────────────────────────────────────
-const ATRIBUTOS_BY_TIPO = {
-    celular: [
-        { key: 'modelo',      label: 'Modelo' },
-        { key: 'generacion',  label: 'Generación' },
-        { key: 'capacidad',   label: 'Almacenamiento' },
-        { key: 'color',       label: 'Color' },
-        { key: 'bateria',     label: 'Salud batería (%)' },
-        { key: 'sim',         label: 'SIM / eSIM' },
-        { key: 'pantalla',    label: 'Pantalla' },
-        { key: 'chip',        label: 'Chip' },
-    ],
-    computadora: [
-        { key: 'familia',        label: 'Familia' },
-        { key: 'modelo',         label: 'Modelo' },
-        { key: 'chip',           label: 'Chip' },
-        { key: 'cpu_cores',      label: 'CPU (núcleos)' },
-        { key: 'gpu_cores',      label: 'GPU (núcleos)' },
-        { key: 'ram',            label: 'RAM' },
-        { key: 'almacenamiento', label: 'Almacenamiento' },
-        { key: 'pantalla',       label: 'Pantalla' },
-        { key: 'color',          label: 'Color' },
-    ],
-    producto_apple: [
-        { key: 'modelo',    label: 'Modelo' },
-        { key: 'capacidad', label: 'Capacidad' },
-        { key: 'color',     label: 'Color' },
-        { key: 'chip',      label: 'Chip' },
-    ],
-    producto_general: [
-        { key: 'modelo_compatible', label: 'iPhone compatible' },
-        { key: 'material',          label: 'Material' },
-        { key: 'color',             label: 'Color' },
-        { key: 'magsafe',           label: 'MagSafe' },
-        { key: 'acabado',           label: 'Acabado' },
-        { key: 'proteccion',        label: 'Protección' },
-        { key: 'coleccion',         label: 'Colección MYSKIN' },
-    ],
-};
-
-function AtributosTab({ tipo, value, onChange, inventario }) {
-    const fields = ATRIBUTOS_BY_TIPO[tipo] ?? [];
-    if (!fields.length) return <p className="text-sm text-gray-500">No hay atributos definidos para este tipo de producto.</p>;
-
-    return (
-        <div className="space-y-4">
-            {inventario?.existe && (
-                <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm border border-blue-100">
-                    <p className="font-semibold text-blue-800 flex items-center gap-1.5">
-                        <Info className="h-4 w-4" /> Datos del inventario
-                    </p>
-                    <p className="mt-0.5 text-blue-700 text-xs">Los valores del inventario se muestran como referencia. Completá los atributos públicos según lo que querés mostrar en la tienda.</p>
-                </div>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2">
-                {fields.map(({ key, label }) => (
-                    <Field key={key} label={label}>
-                        <Input
-                            type="text"
-                            value={value?.[key] ?? ''}
-                            onChange={(e) => onChange({ ...value, [key]: e.target.value })}
-                            placeholder={`Ej: ${key === 'bateria' ? '87' : key === 'ram' ? '16 GB' : '...'}`}
-                        />
-                    </Field>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-// ─── GENERAL TAB ───────────────────────────────────────────────────────────────
-function GeneralTab({ data, setData, errors, condiciones, storefronts, inventario }) {
-    const autoSlug = (titulo) => {
-        const base = titulo
-            .toLowerCase()
-            .normalize('NFD').replace(/[̀-ͯ]/g, '')
-            .replace(/[^a-z0-9\s-]/g, '')
-            .trim().replace(/\s+/g, '-');
-        setData((d) => ({ ...d, titulo, slug: d.slug && d.slug !== autoSlugFrom(d.titulo) ? d.slug : base }));
-    };
-    const autoSlugFrom = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-
-    return (
-        <div className="space-y-8">
-            {/* Identidad */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Identidad</h3>
-                <div className="grid gap-4">
-                    {inventario?.existe && (
-                        <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-xs text-gray-500">
-                            Nombre interno: <span className="font-mono font-semibold text-gray-700">{inventario.nombre_interno ?? `${inventario.tipo} #${inventario.id}`}</span>
-                        </div>
-                    )}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Título público" required error={errors.titulo}>
-                            <Input
-                                type="text"
-                                value={data.titulo}
-                                onChange={(e) => autoSlug(e.target.value)}
-                                placeholder="iPhone 15 Pro Max 256 GB Titanio Natural"
-                                error={errors.titulo}
-                            />
-                        </Field>
-                        <Field label="Subtítulo" hint="Opcional — aparece debajo del título en PDP">
-                            <Input
-                                type="text"
-                                value={data.subtitulo}
-                                onChange={(e) => setData('subtitulo', e.target.value)}
-                                placeholder="La cámara más avanzada de la línea"
-                            />
-                        </Field>
-                    </div>
-                    <Field label="Slug (URL)" required hint={`URL: /productos/${data.slug || 'slug-del-producto'}`} error={errors.slug}>
-                        <Input
-                            type="text"
-                            value={data.slug}
-                            onChange={(e) => setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
-                            className="font-mono"
-                            error={errors.slug}
-                        />
-                    </Field>
-                </div>
-            </section>
-
-            {/* Organización */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Organización</h3>
-                <div className="grid gap-4 sm:grid-cols-3">
-                    <Field label="Categoría" required error={errors.categoria}>
-                        <Select
-                            value={data.categoria}
-                            onChange={(e) => setData('categoria', e.target.value)}
-                            error={errors.categoria}
-                        >
-                            <option value="">— seleccionar —</option>
-                            {CATEGORIAS.map((c) => (
-                                <option key={c.value} value={c.value}>{c.label}</option>
-                            ))}
-                        </Select>
-                    </Field>
-                    <Field label="Marca / Storefront" required error={errors.storefront}>
-                        <Select
-                            value={data.storefront}
-                            onChange={(e) => setData('storefront', e.target.value)}
-                            error={errors.storefront}
-                        >
-                            <option value="APPLE_BOSS">Apple Boss</option>
-                            <option value="MYSKIN">MYSKIN</option>
-                        </Select>
-                        {data.storefront === 'MYSKIN' && data.categoria !== 'fundas' && (
-                            <p className="mt-1 text-[11px] font-medium text-red-600">MYSKIN solo está permitido para la categoría Fundas.</p>
-                        )}
-                    </Field>
-                    <Field label="Condición" required hint="El equipo la define. Nunca automática." error={errors.condicion}>
-                        <Select
-                            value={data.condicion}
-                            onChange={(e) => setData('condicion', e.target.value)}
-                            error={errors.condicion}
-                        >
-                            <option value="">— definir condición —</option>
-                            {condiciones.map((c) => <option key={c} value={c}>{c}</option>)}
-                        </Select>
-                    </Field>
-                </div>
-            </section>
-
-            {/* Contenido */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Contenido</h3>
-                <div className="grid gap-4">
-                    <Field label="Resumen" required hint="Visible en tarjeta de catálogo. Máx. 1000 caracteres." error={errors.resumen}>
-                        <Textarea
-                            rows={2}
-                            value={data.resumen}
-                            onChange={(e) => setData('resumen', e.target.value)}
-                            maxLength={1000}
-                            placeholder="Descripción concisa para el catálogo y buscadores."
-                            error={errors.resumen}
-                        />
-                        <p className="mt-1 text-right text-[11px] text-gray-400">{data.resumen.length}/1000</p>
-                    </Field>
-                    <Field label="Descripción completa" hint="Texto editorial extenso. Aparece en la solapa Descripción del PDP.">
-                        <Textarea
-                            rows={5}
-                            value={data.descripcion}
-                            onChange={(e) => setData('descripcion', e.target.value)}
-                        />
-                    </Field>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Field label="Qué incluye" hint="Ej: Caja original, cable USB-C, documentación">
-                            <Textarea
-                                rows={2}
-                                value={data.que_incluye}
-                                onChange={(e) => setData('que_incluye', e.target.value)}
-                            />
-                        </Field>
-                        <Field label="Observaciones públicas" hint="Detalles de estado, rayones, etc. Solo para seminuevos.">
-                            <Textarea
-                                rows={2}
-                                value={data.observaciones}
-                                onChange={(e) => setData('observaciones', e.target.value)}
-                            />
-                        </Field>
-                    </div>
-                    <Field label="Garantía" hint="Ej: 3 meses por el negocio">
-                        <div className="flex gap-2">
-                            <Input
-                                type="text"
-                                value={data.garantia}
-                                onChange={(e) => setData('garantia', e.target.value)}
-                            />
-                            <div className="relative">
-                                <select
-                                    onChange={(e) => e.target.value && setData('garantia', e.target.value)}
-                                    value=""
-                                    className="h-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-600 focus:outline-none"
-                                >
-                                    <option value="">Sugeridas</option>
-                                    {GARANTIA_SUGERIDAS.map((g) => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </Field>
-                </div>
-            </section>
-        </div>
-    );
-}
-
-// ─── COMERCIAL TAB ─────────────────────────────────────────────────────────────
-function ComercialTab({ data, setData, errors, inventario }) {
-    const precioNormal = inventario?.precio_venta;
-    const promoActiva = data.precio_promocional
-        && (!data.promocion_desde || new Date(data.promocion_desde) <= new Date())
-        && (!data.promocion_hasta || new Date(data.promocion_hasta) >= new Date());
-
-    return (
-        <div className="space-y-6">
-            {/* Precio de inventario */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Precio de venta (inventario)</p>
-                <p className="mt-1 text-2xl font-black text-gray-900">{money(precioNormal)}</p>
-                <p className="mt-1 text-[11px] text-gray-400">Precio autoridad. No editable aquí — se gestiona desde el módulo de inventario.</p>
-            </div>
-
-            {/* Promoción */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Promoción</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Precio promocional" hint="Debe ser menor al precio de venta." error={errors.precio_promocional}>
-                        <div className="flex items-center gap-2">
-                            <span className="shrink-0 text-sm font-semibold text-gray-500">Bs</span>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={data.precio_promocional ?? ''}
-                                onChange={(e) => setData('precio_promocional', e.target.value ? parseFloat(e.target.value) : null)}
-                                placeholder="0.00"
-                                error={errors.precio_promocional}
-                            />
-                        </div>
-                        {data.precio_promocional && precioNormal && data.precio_promocional >= precioNormal && (
-                            <p className="mt-1 text-[11px] font-medium text-red-600">El precio promocional debe ser menor a {money(precioNormal)}.</p>
-                        )}
-                    </Field>
-                    <Field label="Badge" hint="Etiqueta visible en la tarjeta del catálogo.">
-                        <div className="flex gap-2">
-                            <Input
-                                type="text"
-                                value={data.badge ?? ''}
-                                onChange={(e) => setData('badge', e.target.value)}
-                                placeholder="OFERTA"
-                                maxLength={60}
-                            />
-                            <select
-                                onChange={(e) => e.target.value && setData('badge', e.target.value)}
-                                value=""
-                                className="rounded-lg border border-gray-300 bg-gray-50 px-3 text-xs text-gray-600 focus:outline-none"
-                            >
-                                <option value="">Sugeridos</option>
-                                {BADGES.map((b) => <option key={b} value={b}>{b}</option>)}
-                            </select>
-                        </div>
-                    </Field>
-                    <Field label="Promoción desde" hint="Opcional. Si vacío, aplica de inmediato." error={errors.promocion_desde}>
-                        <Input
-                            type="datetime-local"
-                            value={data.promocion_desde ?? ''}
-                            onChange={(e) => setData('promocion_desde', e.target.value || null)}
-                            error={errors.promocion_desde}
-                        />
-                    </Field>
-                    <Field label="Promoción hasta" hint="Opcional. Si vacío, aplica indefinidamente." error={errors.promocion_hasta}>
-                        <Input
-                            type="datetime-local"
-                            value={data.promocion_hasta ?? ''}
-                            onChange={(e) => setData('promocion_hasta', e.target.value || null)}
-                            error={errors.promocion_hasta}
-                        />
-                    </Field>
-                </div>
-
-                {/* Preview de promoción */}
-                {data.precio_promocional > 0 && (
-                    <div className="mt-4 rounded-xl border border-gray-100 p-4 bg-white">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Vista previa de promoción</p>
-                        <div className="flex items-baseline gap-3">
-                            <span className="text-lg font-black" style={{ color: '#011446' }}>{money(data.precio_promocional)}</span>
-                            <span className="text-sm text-gray-400 line-through">{money(precioNormal)}</span>
-                        </div>
-                        {(data.promocion_desde || data.promocion_hasta) && (
-                            <p className="mt-1 text-xs text-gray-500">
-                                {data.promocion_desde && `Desde ${new Date(data.promocion_desde).toLocaleDateString('es-BO')}`}
-                                {data.promocion_desde && data.promocion_hasta && ' → '}
-                                {data.promocion_hasta && `Hasta ${new Date(data.promocion_hasta).toLocaleDateString('es-BO')}`}
-                            </p>
-                        )}
-                        <p className={`mt-1 text-xs font-semibold ${promoActiva ? 'text-emerald-600' : 'text-gray-400'}`}>
-                            {promoActiva ? '● Activa ahora' : '○ Inactiva (fuera de vigencia)'}
-                        </p>
-                    </div>
-                )}
-            </section>
-
-            {/* Visibilidad */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Visibilidad</h3>
-                <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={data.destacado}
-                            onChange={(e) => setData('destacado', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                        />
-                        <span className="text-sm text-gray-700">Destacado en Home</span>
-                    </label>
-                    <Field label="Orden (menor = primero)" hint="">
-                        <Input
-                            type="number"
-                            min={0}
-                            value={data.orden}
-                            onChange={(e) => setData('orden', parseInt(e.target.value) || 0)}
-                            className="w-24"
-                        />
-                    </Field>
-                </div>
-            </section>
-        </div>
-    );
-}
-
-// ─── INVENTARIO TAB ────────────────────────────────────────────────────────────
-function InventarioTab({ inventario, publicacion }) {
-    if (!inventario?.existe) {
-        return (
-            <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-center">
-                <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
-                <p className="text-sm font-semibold text-red-700">Producto de inventario no encontrado</p>
-                <p className="mt-1 text-xs text-red-500">El producto {publicacion.producto_tipo} #{publicacion.producto_id} no existe o fue eliminado.</p>
-            </div>
-        );
+  const guardar = async () => {
+    setGuardando(true);
+    try {
+      await axios.post(route('admin.catalogo.compatibilidades.sync', publicacion.id), { target_ids: [...sel] });
+      setGuardadas(new Set(sel));
+      avisar('Compatibilidades guardadas.');
+    } catch {
+      avisar('No se pudieron guardar las compatibilidades.', 'error');
+    } finally {
+      setGuardando(false);
     }
+  };
 
-    const rows = [
-        { label: 'Tipo', value: inventario.tipo },
-        { label: 'ID interno', value: `#${inventario.id}` },
-        { label: 'Estado', value: inventario.estado },
-        { label: 'Precio de venta', value: money(inventario.precio_venta) },
-    ];
+  if (!targets.length) return <p className="text-sm text-slate-500">Todavía no hay modelos cargados para elegir.</p>;
 
-    return (
-        <div className="space-y-4">
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">Datos del inventario</p>
-                <dl className="grid gap-y-2 sm:grid-cols-2">
-                    {rows.map(({ label, value }) => (
-                        <div key={label} className="flex flex-col">
-                            <dt className="text-[11px] text-gray-400">{label}</dt>
-                            <dd className="text-sm font-semibold text-gray-800">{value}</dd>
-                        </div>
-                    ))}
-                </dl>
-                <p className="mt-3 text-[11px] text-gray-400">
-                    El precio de venta, IMEI, serial y datos de procedencia son internos y nunca se exponen públicamente.
-                </p>
+  return (
+    <>
+      <div className="flex flex-wrap gap-1.5">
+        {Object.keys(porFamilia).map((f) => {
+          const n = Object.values(porFamilia[f]).flat().filter((t) => sel.has(t.id)).length;
+          const activo = familia === f;
+          return (
+            <button key={f} type="button" onClick={() => { setFamilia(f); setTexto(''); }}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${activo ? 'bg-[#011446] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              {FAMILIAS[f] ?? f}{n > 0 && <span className={activo ? 'text-white/70' : 'opacity-60'}>{n}</span>}
+            </button>
+          );
+        })}
+      </div>
+      <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Buscar en ${FAMILIAS[familia] ?? familia}`} aria-label="Buscar modelo"
+        className={`${inputCls} mt-3 h-10`} />
+      <div className="mt-3 max-h-[380px] space-y-3 overflow-y-auto pr-1">
+        {generaciones.length === 0 && <p className="py-6 text-center text-sm text-slate-400">Sin resultados.</p>}
+        {generaciones.map(([gen, items]) => {
+          const todos = items.every((t) => sel.has(t.id));
+          return (
+            <div key={gen} className="rounded-xl border border-slate-200 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">{gen}</span>
+                <button type="button" onClick={() => alternar(items.map((t) => t.id), !todos)} className="text-[11px] font-semibold text-[#585E9F] hover:underline">
+                  {todos ? 'Quitar todos' : 'Elegir todos'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {items.map((t) => {
+                  const on = sel.has(t.id);
+                  return (
+                    <button key={t.id} type="button" aria-pressed={on} onClick={() => alternar([t.id], !on)}
+                      className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors ${on ? 'border-[#011446] bg-[#011446] text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                      {t.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-                <p className="text-xs text-blue-700">
-                    Para modificar el estado o precio del inventario, usá el módulo de{' '}
-                    <Link href={route('admin.celulares.index')} className="font-semibold underline">Inventario</Link>.
-                </p>
-            </div>
-        </div>
-    );
+          );
+        })}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={guardar} disabled={guardando || !cambios} className={buttonCls('primary')}>
+          {guardando ? 'Guardando…' : `Guardar compatibilidad (${sel.size})`}
+        </button>
+        <span className="text-xs text-slate-500">{cambios ? 'Se guarda aparte del resto del formulario.' : 'Sin cambios pendientes.'}</span>
+      </div>
+    </>
+  );
 }
 
-// ─── SEO TAB ───────────────────────────────────────────────────────────────────
-function SeoTab({ data, setData, errors }) {
-    const effectiveTitle = data.seo_title || data.titulo;
-    const effectiveDesc  = data.seo_description || data.resumen;
+/* ─── Página ─── */
 
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-4">
-                <Field
-                    label="SEO Title"
-                    hint={data.seo_title ? '' : 'Usando título público como fallback.'}
-                    error={errors.seo_title}
-                >
-                    <Input
-                        type="text"
-                        value={data.seo_title}
-                        onChange={(e) => setData('seo_title', e.target.value)}
-                        maxLength={60}
-                        placeholder={data.titulo || 'Dejar vacío para usar el título público'}
-                        error={errors.seo_title}
-                    />
-                    <p className="mt-1 text-right text-[11px] text-gray-400">{(data.seo_title || '').length}/60</p>
-                </Field>
-                <Field
-                    label="Meta description"
-                    hint={data.seo_description ? '' : 'Usando resumen como fallback.'}
-                    error={errors.seo_description}
-                >
-                    <Textarea
-                        rows={2}
-                        value={data.seo_description}
-                        onChange={(e) => setData('seo_description', e.target.value)}
-                        maxLength={160}
-                        placeholder={data.resumen || 'Dejar vacío para usar el resumen'}
-                        error={errors.seo_description}
-                    />
-                    <p className="mt-1 text-right text-[11px] text-gray-400">{(data.seo_description || '').length}/160</p>
-                </Field>
-            </div>
-
-            {/* Google preview */}
-            <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Vista previa — Google</p>
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <p className="text-[13px] font-medium text-blue-700 truncate">{effectiveTitle} — Apple Boss Cochabamba</p>
-                    <p className="text-[11px] text-green-700">appleboss.bo/productos/{data.slug || 'slug'}</p>
-                    <p className="mt-1 text-[12px] text-gray-500 line-clamp-2">{effectiveDesc || 'Sin descripción aún.'}</p>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ─── PUBLICACIÓN TAB ───────────────────────────────────────────────────────────
-function PublicacionTab({ data, setData, errors, missing }) {
-    return (
-        <div className="space-y-6">
-            {/* Readiness */}
-            <div className={`rounded-xl p-4 ${missing.length === 0 ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}`}>
-                <p className={`font-semibold text-sm flex items-center gap-2 ${missing.length === 0 ? 'text-emerald-800' : 'text-amber-800'}`}>
-                    {missing.length === 0 ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                    {missing.length === 0 ? 'Todos los campos requeridos completos' : `Faltan ${missing.length} campo${missing.length !== 1 ? 's' : ''}`}
-                </p>
-                {missing.length > 0 && (
-                    <ul className="mt-2 space-y-0.5 text-sm text-amber-700 list-disc list-inside">
-                        {missing.map((f) => <li key={f}>{f}</li>)}
-                    </ul>
-                )}
-            </div>
-
-            {/* Estado */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Estado</h3>
-                <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={data.publicado}
-                            onChange={(e) => setData('publicado', e.target.checked)}
-                            disabled={missing.length > 0 && !data.publicado}
-                            className="h-5 w-5 rounded border-gray-300 text-blue-600 disabled:opacity-40"
-                        />
-                        <div>
-                            <p className="text-sm font-semibold text-gray-800">Publicar en la tienda</p>
-                            <p className="text-[11px] text-gray-500">Visible para todos los visitantes.</p>
-                        </div>
-                    </label>
-                    {missing.length > 0 && !data.publicado && (
-                        <p className="text-[11px] text-amber-600 ml-8">Completá los campos faltantes para poder publicar.</p>
-                    )}
-                    {errors.publicado && <p className="text-xs text-red-600">{errors.publicado}</p>}
-                </div>
-            </section>
-
-            {/* Programación */}
-            <section>
-                <h3 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gray-400">Programación (opcional)</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Publicar desde" error={errors.publicar_desde}>
-                        <Input
-                            type="datetime-local"
-                            value={data.publicar_desde ?? ''}
-                            onChange={(e) => setData('publicar_desde', e.target.value || null)}
-                            error={errors.publicar_desde}
-                        />
-                    </Field>
-                    <Field label="Publicar hasta" error={errors.publicar_hasta}>
-                        <Input
-                            type="datetime-local"
-                            value={data.publicar_hasta ?? ''}
-                            onChange={(e) => setData('publicar_hasta', e.target.value || null)}
-                            error={errors.publicar_hasta}
-                        />
-                    </Field>
-                </div>
-            </section>
-        </div>
-    );
-}
-
-// ─── PREVIEW TAB ───────────────────────────────────────────────────────────────
-function PreviewTab({ publicacion, data, inventario }) {
-    const money2 = (v) => v != null ? `Bs ${Number(v).toLocaleString('es-BO')}` : '—';
-    const price = data.precio_promocional || inventario?.precio_venta;
-    const imgs = publicacion.imagenes ?? [];
-    const main = imgs.find((i) => i.es_principal) ?? imgs[0];
-
-    return (
-        <div className="space-y-8">
-            {/* Card preview */}
-            <div>
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">Vista de tarjeta</p>
-                <div className="w-48">
-                    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                        <div className="relative aspect-square bg-gray-50">
-                            {main ? (
-                                <img src={main.url_card ?? main.url_thumb} alt="" className="h-full w-full object-contain" />
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                    <ImageIcon className="h-10 w-10 text-gray-200" />
-                                </div>
-                            )}
-                            {data.badge && (
-                                <span className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: '#C6CB36', color: '#0D0D1A' }}>
-                                    {data.badge}
-                                </span>
-                            )}
-                        </div>
-                        <div className="p-3">
-                            <p className="text-xs font-bold truncate" style={{ color: '#011446' }}>{data.titulo || 'Sin título'}</p>
-                            <p className="mt-1 text-[11px] text-gray-500 line-clamp-2">{data.resumen || 'Sin resumen'}</p>
-                            <p className="mt-2 text-sm font-black" style={{ color: '#011446' }}>{money2(price)}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Link a preview público */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-sm text-gray-600">
-                    Para ver el PDP completo con datos guardados:{' '}
-                    <a
-                        href={`/productos/${data.slug || publicacion.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-blue-600 hover:underline"
-                    >
-                        /productos/{data.slug || publicacion.slug} →
-                    </a>
-                </p>
-                {!publicacion.publicado && (
-                    <p className="mt-1 text-[11px] text-amber-600">La publicación no está activa — el URL existe pero no aparece en el catálogo.</p>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// ─── PÁGINA PRINCIPAL ──────────────────────────────────────────────────────────
-export default function CatalogoEdit({
-    publicacion,
-    inventario,
-    condiciones,
-    storefronts,
-    camposFaltantes,
-    estadoPublicacion,
+export default function Edit({
+  publicacion, inventario, condiciones = [], estadoPublicacion, compatibilidades = [], compatibility_targets = [], modelosReferencia = [], modeloSugerido = null,
+  familiaAccesorio = null,
 }) {
-    const [activeTab, setActiveTab] = useState('GENERAL');
-    const [dirty, setDirty] = useState(false);
+  const [toast, avisar] = useToast();
+  const [imagenes, setImagenes] = useState(publicacion.imagenes ?? []);
+  const [borrar, setBorrar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [verCompat, setVerCompat] = useState(false);
 
-    const { data, setData: _setData, patch, processing, errors } = useForm({
-        storefront:          publicacion.storefront          ?? 'APPLE_BOSS',
-        titulo:              publicacion.titulo               ?? '',
-        subtitulo:           publicacion.subtitulo            ?? '',
-        slug:                publicacion.slug                 ?? '',
-        resumen:             publicacion.resumen              ?? '',
-        descripcion:         publicacion.descripcion          ?? '',
-        que_incluye:         publicacion.que_incluye          ?? '',
-        observaciones:       publicacion.observaciones        ?? '',
-        garantia:            publicacion.garantia             ?? '',
-        condicion:           publicacion.condicion            ?? '',
-        categoria:           publicacion.categoria            ?? '',
-        subcategoria:        publicacion.subcategoria         ?? '',
-        tags:                publicacion.tags                 ?? [],
-        atributos:           publicacion.atributos            ?? {},
-        seo_title:           publicacion.seo_title            ?? '',
-        seo_description:     publicacion.seo_description      ?? '',
-        publicado:           publicacion.publicado            ?? false,
-        destacado:           publicacion.destacado            ?? false,
-        publicar_desde:      publicacion.publicar_desde       ?? null,
-        publicar_hasta:      publicacion.publicar_hasta       ?? null,
-        orden:               publicacion.orden                ?? 0,
-        precio_promocional:  publicacion.precio_promocional   ?? null,
-        promocion_desde:     publicacion.promocion_desde      ?? null,
-        promocion_hasta:     publicacion.promocion_hasta      ?? null,
-        badge:               publicacion.badge                ?? '',
+  const inicial = useMemo(() => ({
+    storefront: publicacion.storefront ?? 'APPLE_BOSS',
+    titulo: publicacion.titulo ?? '',
+    subtitulo: publicacion.subtitulo ?? '',
+    slug: publicacion.slug ?? '',
+    resumen: publicacion.resumen ?? '',
+    descripcion: publicacion.descripcion ?? '',
+    que_incluye: publicacion.que_incluye ?? '',
+    observaciones: publicacion.observaciones ?? '',
+    garantia: publicacion.garantia ?? '',
+    condicion: publicacion.condicion ?? '',
+    categoria: publicacion.categoria ?? '',
+    subcategoria: publicacion.subcategoria ?? '',
+    tags: publicacion.tags ?? [],
+    atributos: publicacion.atributos ?? {},
+    seo_title: publicacion.seo_title ?? '',
+    seo_description: publicacion.seo_description ?? '',
+    publicado: Boolean(publicacion.publicado),
+    destacado: Boolean(publicacion.destacado),
+    publicar_desde: fechaParaCampo(publicacion.publicar_desde),
+    publicar_hasta: fechaParaCampo(publicacion.publicar_hasta),
+    orden: publicacion.orden ?? 0,
+    precio_promocional: publicacion.precio_promocional ?? '',
+    promocion_desde: fechaParaCampo(publicacion.promocion_desde),
+    promocion_hasta: fechaParaCampo(publicacion.promocion_hasta),
+    badge: publicacion.badge ?? '',
+    modelo_referencia_id: publicacion.modelo_referencia_id ?? '',
+  }), [publicacion]);
+
+  const { data, setData, transform, patch, processing, errors, isDirty } = useForm(inicial);
+  const cambiar = useCallback((campo, valor) => setData(campo, valor), [setData]);
+
+  // Los campos vacíos viajan como null y los números como número
+  transform((d) => ({
+    ...d,
+    condicion: d.condicion || null,
+    precio_promocional: d.precio_promocional === '' ? null : Number(d.precio_promocional),
+    publicar_desde: d.publicar_desde || null,
+    publicar_hasta: d.publicar_hasta || null,
+    promocion_desde: d.promocion_desde || null,
+    promocion_hasta: d.promocion_hasta || null,
+    orden: Number(d.orden) || 0,
+    modelo_referencia_id: d.modelo_referencia_id ? Number(d.modelo_referencia_id) : null,
+  }));
+
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const fn = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', fn);
+    return () => window.removeEventListener('beforeunload', fn);
+  }, [isDirty]);
+
+  const precio = Number(inventario?.precio_venta) || 0;
+  const promo = Number(data.precio_promocional) || 0;
+  const faltan = faltantesDe(data, inventario?.existe ? precio : 0);
+  const myskinInvalido = data.storefront === 'MYSKIN' && data.categoria !== 'fundas';
+  const promoInvalida = promo > 0 && precio > 0 && promo >= precio;
+  const principal = imagenes.find((i) => i.es_principal) ?? imagenes[0];
+  const esAccesorio = ['fundas', 'accesorios'].includes(data.categoria);
+  const grupos = gruposFicha(publicacion.producto_tipo);
+  const bateria = inventario?.bateria ?? {};
+  const ahora = new Date();
+  const promoActiva = promo > 0 && (!data.promocion_desde || new Date(data.promocion_desde) <= ahora) && (!data.promocion_hasta || new Date(data.promocion_hasta) >= ahora);
+  const urlTienda = tiendaUrl(publicacion.slug);
+
+  const [modeloElegido, setModeloElegido] = useState(String(publicacion.modelo_referencia_id ?? modeloSugerido ?? ''));
+  const [aMano, setAMano] = useState({});
+
+  // Con un modelo vinculado se sabe por qué un campo está vacío: lo que el modelo no tiene (teleobjetivo, LiDAR…) se
+  // resume al pie de su grupo en vez de quedar como un campo en blanco; y si la base sumó datos después de llenar la
+  // ficha (p. ej. «No compatible» en Apple Intelligence), se avisa que «Llenar desde modelo» los completa.
+  const vacio = (v) => String(v ?? '').trim() === '';
+  const modeloVinculado = modelosReferencia.find((m) => String(m.id) === String(data.modelo_referencia_id ?? ''));
+  const noLoTiene = (campo) => Boolean(modeloVinculado && noTiene(publicacion.producto_tipo, campo.key)
+    && vacio(data.atributos?.[campo.key]) && vacio(modeloVinculado.ficha?.[campo.key]));
+  // Mac o PC: cada una ve sus campos (Neural Engine y Touch ID son de la Mac; tarjeta gráfica y ampliación, de la PC).
+  // Sin modelo vinculado se deduce del título («MacBook», «iMac»); si no se sabe, se ven todos.
+  // Un accesorio ve los campos de la familia de su ficha (cargador, vidrio, funda…) o, sin ficha vinculada, los de su tipo
+  // en el inventario. En todos los casos se ven también los campos que ya tienen un dato, para no esconder nada.
+  // Un producto Apple ve los de su familia (iPad, Apple Watch, AirPods o accesorio de Apple), por su ficha o por el título.
+  const familiaApple = () => {
+    const t = (data.titulo ?? '').toLowerCase();
+    if (/\bipad\b/.test(t)) return 'ipad';
+    if (/\b(i?watch)\b/.test(t)) return 'watch';
+    if (/\bairpods\b/.test(t)) return 'airpods';
+    return /\b(pencil|magic (mouse|keyboard|trackpad))\b/.test(t) ? 'accesorio_apple' : null;
+  };
+  const familiaFicha = publicacion.producto_tipo === 'producto_general'
+    ? modeloVinculado?.familia ?? familiaAccesorio
+    : publicacion.producto_tipo === 'producto_apple' ? modeloVinculado?.familia ?? familiaApple()
+    : publicacion.producto_tipo !== 'computadora' ? null
+      : modeloVinculado?.familia ?? (/\b(macbook|imac|mac mini|mac studio|mac pro)\b/i.test(data.titulo ?? '') ? 'mac' : null);
+  const camposDe = (g) => {
+    const deLaFamilia = new Set(camposDeFamilia(g, familiaFicha).map((campo) => campo.key));
+    return g.campos.filter((campo) => deLaFamilia.has(campo.key) || !vacio(data.atributos?.[campo.key]));
+  };
+  // Textos de la publicación que un accesorio toma de su ficha si están vacíos
+  const TEXTOS_DEL_MODELO = ['resumen', 'descripcion', 'que_incluye'];
+  const sinCopiar = modeloVinculado && String(modeloVinculado.id) === modeloElegido
+    ? Object.entries(modeloVinculado.ficha ?? {})
+      .filter(([clave, valor]) => clave !== 'autonomia_video_horas' && !CAMPOS_AUTOMATICOS.includes(clave) && !vacio(valor) && vacio(data.atributos?.[clave]))
+      .length
+      + TEXTOS_DEL_MODELO.filter((clave) => !vacio(modeloVinculado.contenido?.[clave]) && vacio(data[clave])).length
+    : 0;
+
+  // Completa solo los campos vacíos de la ficha (y, en un accesorio, la descripción); lo escrito a mano y lo del
+  // inventario no se tocan
+  const llenarDesdeModelo = () => {
+    const modelo = modelosReferencia.find((m) => String(m.id) === modeloElegido);
+    if (!modelo) return;
+    const actuales = data.atributos ?? {};
+    const nuevos = { ...actuales };
+    let completados = 0;
+    Object.entries(modelo.ficha ?? {}).forEach(([clave, valor]) => {
+      if (CAMPOS_AUTOMATICOS.includes(clave) || String(actuales[clave] ?? '').trim() !== '') return;
+      nuevos[clave] = valor;
+      if (clave !== 'autonomia_video_horas') completados += 1;
     });
+    const textos = {};
+    TEXTOS_DEL_MODELO.forEach((clave) => {
+      if (vacio(data[clave]) && !vacio(modelo.contenido?.[clave])) {
+        textos[clave] = modelo.contenido[clave];
+        completados += 1;
+      }
+    });
+    setData((d) => ({ ...d, ...textos, atributos: nuevos, modelo_referencia_id: modelo.id }));
+    avisar(completados
+      ? `Se completaron ${completados} datos con la ficha del ${modelo.nombre}. Revisa y guarda.`
+      : `La ficha ya tenía todos los datos del ${modelo.nombre}.`);
+  };
 
-    const setData = useCallback((...args) => {
-        setDirty(true);
-        if (typeof args[0] === 'function') {
-            _setData(args[0]);
-        } else {
-            _setData(...args);
-        }
-    }, [_setData]);
+  const cambiarTitulo = (titulo) => setData((d) => ({ ...d, titulo, slug: !d.slug || d.slug === slugDe(d.titulo) ? slugDe(titulo) : d.slug }));
 
-    const submit = (e) => {
-        e.preventDefault();
-        patch(route('admin.catalogo.update', publicacion.id), {
-            onSuccess: () => setDirty(false),
-        });
-    };
+  const guardar = () => {
+    if (processing) return;
+    if (data.publicado && faltan.length) {
+      avisar('Para mostrarlo en la tienda completa lo que falta, o apaga «En la tienda».', 'error');
+      return;
+    }
+    patch(route('admin.catalogo.update', publicacion.id), {
+      preserveScroll: true,
+      onError: () => avisar('Revisa los datos marcados.', 'error'),
+    });
+  };
 
-    // Warn on unsaved changes
-    useEffect(() => {
-        if (!dirty) return;
-        const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
-        window.addEventListener('beforeunload', handler);
-        return () => window.removeEventListener('beforeunload', handler);
-    }, [dirty]);
+  const eliminar = () => {
+    if (eliminando) return;
+    router.delete(route('admin.catalogo.destroy', publicacion.id), { onStart: () => setEliminando(true), onFinish: () => setEliminando(false) });
+  };
 
-    const missing = camposFaltantes ?? [];
+  const irA = (id) => document.getElementById(`seccion-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    return (
-        <AdminLayout>
-            <Head title={`Editor: ${publicacion.titulo}`} />
+  return (
+    <AdminLayout>
+      <Head title={`Editar · ${publicacion.titulo}`} />
+      <Toast toast={toast} />
 
-            <div className="flex h-full flex-col">
-                {/* Header sticky */}
-                <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
-                    <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <Link
-                                href={route('admin.catalogo.index')}
-                                className="shrink-0 rounded-lg border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                            </Link>
-                            <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-gray-900">{publicacion.titulo}</p>
-                                <p className="text-[11px] text-gray-400">{publicacion.producto_tipo} #{publicacion.producto_id}</p>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <EncabezadoFormulario volverUrl={route('admin.catalogo.index')} volverLabel="Volver a productos en la tienda" titulo="Editar publicación"
+          subtitulo={[publicacion.titulo, inventario?.nombre_interno && `Inventario: ${inventario.nombre_interno}`].filter(Boolean).join(' · ')} />
+
+        <nav aria-label="Secciones" className="sticky top-16 z-10 -mx-1 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] backdrop-blur">
+          {SECCIONES.filter(([id]) => id !== 'ficha' || grupos.length).map(([id, label]) => (
+            <button key={id} type="button" onClick={() => irA(id)}
+              className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900">{label}</button>
+          ))}
+        </nav>
+
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5">
+            <div id="seccion-producto" className="scroll-mt-32">
+              <StepCard step={1} title="Producto" subtitle="Nombre, dirección web, categoría y condición.">
+                <div className="grid gap-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Nombre en la tienda" error={errors.titulo} value={data.titulo} max={255}>
+                      <Input value={data.titulo} maxLength={255} onChange={(e) => cambiarTitulo(e.target.value)} placeholder="iPhone 15 Pro Max 256 GB Titanio Natural" />
+                    </Field>
+                    <Field label="Subtítulo (opcional)" error={errors.subtitulo} hint="Aparece debajo del nombre en la ficha.">
+                      <Input value={data.subtitulo} maxLength={255} onChange={(e) => cambiar('subtitulo', e.target.value)} placeholder="La cámara más avanzada de la línea" />
+                    </Field>
+                  </div>
+                  <Field label="Dirección web" error={errors.slug} hint="Se arma sola con el nombre. Si ya compartiste el enlace, evita cambiarla.">
+                    <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 focus-within:border-[#585E9F] focus-within:ring-4 focus-within:ring-[#585E9F]/15">
+                      <span className="hidden items-center bg-slate-50 px-3 text-xs text-slate-500 sm:flex">/productos/</span>
+                      <input value={data.slug} onChange={(e) => cambiar('slug', slugDe(e.target.value.replace(/\s/g, '-')))} aria-label="Dirección web"
+                        className="min-w-0 flex-1 border-0 px-3 py-2 font-mono text-sm text-slate-900 focus:outline-none focus:ring-0" />
+                    </div>
+                  </Field>
+                  <Field label="Categoría" error={errors.categoria}>
+                    <Segmented cols="grid-cols-2 sm:grid-cols-5" options={CATEGORIAS} value={data.categoria} onChange={(v) => cambiar('categoria', v)} ariaLabel="Categoría" />
+                  </Field>
+                  <div className="grid gap-4 md:grid-cols-[1fr_2fr]">
+                    <Field label="Marca" error={errors.storefront}>
+                      <Segmented options={MARCAS} value={data.storefront} onChange={(v) => cambiar('storefront', v)} ariaLabel="Marca" />
+                      {myskinInvalido && <p className="text-xs font-semibold text-red-600">MYSKIN es solo para la categoría Fundas.</p>}
+                    </Field>
+                    <Field label="Condición" error={errors.condicion}
+                      hint={inventario?.condicion ? `En el inventario figura como ${inventario.condicion}. Nuevo o Seminuevo también se guardan allí.` : 'La eliges tú: nunca se asume.'}>
+                      <Segmented cols="grid-cols-2 sm:grid-cols-4" options={CONDICIONES_TIENDA.filter((c) => condiciones.includes(c.value))}
+                        value={data.condicion} onChange={(v) => cambiar('condicion', v)} ariaLabel="Condición" />
+                    </Field>
+                  </div>
+                </div>
+              </StepCard>
+            </div>
+
+            <div id="seccion-fotos" className="scroll-mt-32">
+              <Fotos publicacion={publicacion} imagenes={imagenes} setImagenes={setImagenes} titulo={data.titulo} avisar={avisar} />
+            </div>
+
+            <div id="seccion-descripcion" className="scroll-mt-32">
+              <StepCard step={3} icon={FileText} title="Descripción" subtitle="Lo que lee el cliente en la tarjeta y en la ficha del producto.">
+                <div className="grid gap-4">
+                  <Field label="Descripción corta" error={errors.resumen} value={data.resumen} max={1000} hint="Se ve en la tarjeta del catálogo: una o dos frases.">
+                    <Textarea rows={2} value={data.resumen} maxLength={1000} onChange={(e) => cambiar('resumen', e.target.value)} placeholder="Una o dos frases que resuman el producto." />
+                  </Field>
+                  <Field label="Descripción completa (opcional)" error={errors.descripcion}>
+                    <EditorDescripcion value={data.descripcion} onChange={(v) => cambiar('descripcion', v)} />
+                  </Field>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Qué incluye" error={errors.que_incluye} hint="Ej.: caja original y cable USB-C.">
+                      <Textarea rows={2} value={data.que_incluye} onChange={(e) => cambiar('que_incluye', e.target.value)} />
+                    </Field>
+                    <Field label="Observaciones" error={errors.observaciones} hint="Detalles de estado visibles al cliente (rayones, marcas…).">
+                      <Textarea rows={2} value={data.observaciones} onChange={(e) => cambiar('observaciones', e.target.value)} />
+                    </Field>
+                  </div>
+                  <Field label="Garantía" error={errors.garantia}>
+                    <Input value={data.garantia} maxLength={255} onChange={(e) => cambiar('garantia', e.target.value)} placeholder="Ej.: 3 meses por el negocio" />
+                    <Sugeridos opciones={GARANTIAS} onElegir={(g) => cambiar('garantia', g)} />
+                  </Field>
+                </div>
+              </StepCard>
+            </div>
+
+            {grupos.length > 0 && (
+              <div id="seccion-ficha" className="scroll-mt-32">
+                <StepCard step={4} icon={ClipboardList} title="Ficha técnica" subtitle="Toda la información técnica. En la tienda se muestra con íconos; deja vacío lo que no aplique.">
+                  {modelosReferencia.length > 0 && (
+                    <div className="mb-6 rounded-xl border border-[#585E9F]/20 bg-[#585E9F]/[0.05] p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="min-w-0 flex-1">
+                          <Field label="Modelo de referencia"
+                            hint={sinCopiar > 0
+                              ? `El ${modeloVinculado.nombre} tiene ${sinCopiar === 1 ? 'un dato que esta ficha todavía no tiene' : `${sinCopiar} datos que esta ficha todavía no tiene`}: «Llenar desde modelo» ${sinCopiar === 1 ? 'lo completa' : 'los completa'} sin tocar lo demás.`
+                              : modeloSugerido && !publicacion.modelo_referencia_id && String(modeloSugerido) === modeloElegido
+                                ? 'Detectado por el nombre del inventario. Completa solo los campos vacíos.'
+                                : 'Completa solo los campos vacíos con la ficha del modelo.'}>
+                            <Select value={modeloElegido} onChange={(e) => setModeloElegido(e.target.value)} aria-label="Modelo de referencia">
+                              <option value="">Elige el modelo</option>
+                              {modelosReferencia.map((m) => <option key={m.id} value={m.id}>{m.nombre}{m.anio ? ` (${m.anio})` : ''}</option>)}
+                            </Select>
+                          </Field>
+                        </div>
+                        <button type="button" onClick={llenarDesdeModelo} disabled={!modeloElegido} className={buttonCls('primary', 'h-10 shrink-0')}>
+                          Llenar desde modelo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-6">
+                    {grupos.map((g) => {
+                      const Icon = g.icon;
+                      const ausentes = aMano[g.id] ? [] : camposDe(g).filter(noLoTiene);
+                      return (
+                        <fieldset key={g.id}>
+                          <legend className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
+                            <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#585E9F]/10 text-[#585E9F]"><Icon className="h-[18px] w-[18px]" /></span>
+                            {g.label}
+                          </legend>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {camposDe(g).filter((campo) => (campo.key !== 'ciclos_bateria' || bateria.ciclos != null) && !ausentes.includes(campo)).map((campo) => (CAMPOS_AUTOMATICOS.includes(campo.key) && (campo.key !== 'salud_bateria' || bateria.salud) ? (
+                              <div key={campo.key} className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
+                                {campo.key === 'salud_bateria' && bateria.salud ? <BateriaNivel porcentaje={bateria.salud} className="h-5 w-9 text-slate-500" /> : null}
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{campo.label}</p>
+                                  <p className="text-sm font-bold text-slate-900">
+                                    {campo.key === 'salud_bateria'
+                                      ? `${bateria.salud} %${bateria.sellado ? ' · sellado' : ''}`
+                                      : `${bateria.ciclos} ciclos`}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500">Se toma sola del inventario.</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <Field key={campo.key} label={campo.key === 'salud_bateria' ? `${campo.label} (%)` : campo.label}
+                                hint={campo.key === 'salud_bateria' ? 'El inventario no tiene un porcentaje claro: escríbelo aquí. Si lo cargas en el inventario, se usa ese.' : campo.hint}>
+                                <Input value={data.atributos?.[campo.key] ?? ''} placeholder={campo.key === 'salud_bateria' ? 'Ej.: 87' : (campo.placeholder ? `Ej.: ${campo.placeholder}` : '')}
+                                  inputMode={campo.key === 'salud_bateria' ? 'numeric' : undefined}
+                                  onChange={(e) => cambiar('atributos', { ...data.atributos, [campo.key]: e.target.value })} />
+                              </Field>
+                            )))}
+                          </div>
+                          {ausentes.length > 0 && (
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl bg-slate-50 px-4 py-3">
+                              <p className="text-[13px] leading-snug text-slate-600">
+                                <span className="font-semibold text-slate-800">El {modeloVinculado.nombre} no tiene:</span> {ausentes.map((campo) => campo.label).join(', ')}.
+                                {' '}Quedan vacíos a propósito y no se muestran en la tienda.
+                              </p>
+                              <button type="button" onClick={() => setAMano((a) => ({ ...a, [g.id]: true }))}
+                                className="shrink-0 text-xs font-bold text-[#585E9F] hover:underline">Completar a mano</button>
                             </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                            <ReadinessPill missing={missing} />
-                            {publicacion.publicado && (
-                                <a
-                                    href={`/productos/${publicacion.slug}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hidden items-center gap-1 text-xs text-blue-600 hover:underline sm:inline-flex"
-                                >
-                                    <Globe className="h-3.5 w-3.5" /> Ver en tienda
-                                </a>
-                            )}
-                            {dirty && (
-                                <span className="hidden text-[11px] text-amber-600 sm:block">● Cambios sin guardar</span>
-                            )}
-                            <button
-                                type="button"
-                                onClick={submit}
-                                disabled={processing}
-                                className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                            >
-                                {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                Guardar
-                            </button>
-                        </div>
-                    </div>
+                          )}
+                        </fieldset>
+                      );
+                    })}
+                  </div>
+                  <Nota>El IMEI, el costo y la procedencia nunca se muestran en la tienda, aunque se escriban aquí.</Nota>
+                </StepCard>
+              </div>
+            )}
 
-                    {/* Tab nav */}
-                    <div className="mx-auto max-w-5xl px-4 sm:px-6">
-                        <TabNav active={activeTab} onChange={setActiveTab} errors={errors} />
+            <div id="seccion-precio" className="scroll-mt-32">
+              <StepCard step={5} icon={BadgePercent} title="Precio y promoción" subtitle="El precio de venta sale del inventario; aquí solo defines una promoción.">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Precio de venta del inventario</p>
+                    <p className="mt-0.5 text-xl font-extrabold tabular-nums text-slate-900">{precio ? bsFmt(precio) : 'Sin precio'}</p>
+                  </div>
+                  {inventario?.existe && inventarioUrl(inventario.tipo, inventario.id) && (
+                    <Link href={inventarioUrl(inventario.tipo, inventario.id)} className={buttonCls('secondary', 'h-9 px-3 text-xs')}>Cambiar en el inventario</Link>
+                  )}
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <Field label="Precio promocional (opcional)" error={errors.precio_promocional || (promoInvalida ? `Debe ser menor a ${bsFmt(precio)}.` : null)}>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">Bs</span>
+                      <Input type="number" min="0" step="0.01" inputMode="decimal" value={data.precio_promocional} onWheel={(e) => e.currentTarget.blur()}
+                        onChange={(e) => cambiar('precio_promocional', e.target.value)} placeholder="0,00" className="pl-11 font-bold tabular-nums" />
                     </div>
+                  </Field>
+                  <Field label="Etiqueta (opcional)" error={errors.badge} hint="Se ve sobre la foto en el catálogo.">
+                    <Input value={data.badge} maxLength={60} onChange={(e) => cambiar('badge', e.target.value.toUpperCase())} placeholder="OFERTA" />
+                    <Sugeridos opciones={ETIQUETAS} onElegir={(b) => cambiar('badge', b)} />
+                  </Field>
+                  <Field label="Promoción desde" error={errors.promocion_desde} hint="Vacío: empieza de inmediato.">
+                    <Input type="datetime-local" value={data.promocion_desde} onChange={(e) => cambiar('promocion_desde', e.target.value)} />
+                  </Field>
+                  <Field label="Promoción hasta" error={errors.promocion_hasta} hint="Vacío: sin fecha de fin.">
+                    <Input type="datetime-local" value={data.promocion_hasta} onChange={(e) => cambiar('promocion_hasta', e.target.value)} />
+                  </Field>
+                </div>
+                {promo > 0 && !promoInvalida && (
+                  <p className={`mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold ${promoActiva ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                    {promoActiva ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                    {promoActiva ? `Promoción activa: ahorran ${bsFmt(precio - promo)}.` : 'La promoción está fuera de sus fechas.'}
+                  </p>
+                )}
+              </StepCard>
+            </div>
+
+            <div id="seccion-compatibilidad" className="scroll-mt-32">
+              <StepCard step={6} icon={Smartphone} title="Compatibilidad" subtitle="Modelos con los que funciona: se muestran en la ficha y ayudan a recomendarlo.">
+                {esAccesorio || verCompat ? (
+                  <Compatibilidad publicacion={publicacion} iniciales={compatibilidades} targets={compatibility_targets} avisar={avisar} />
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-slate-500">Es útil sobre todo para fundas y accesorios.</p>
+                    <button type="button" onClick={() => setVerCompat(true)} className={buttonCls('secondary', 'h-9 px-3 text-xs')}>
+                      Elegir modelos{compatibilidades.length ? ` (${compatibilidades.length})` : ''}
+                    </button>
+                  </div>
+                )}
+              </StepCard>
+            </div>
+
+            <div id="seccion-google" className="scroll-mt-32">
+              <StepCard step={7} icon={Globe} title="Google" subtitle="Opcional. Si lo dejas vacío se usan el nombre y la descripción corta.">
+                <div className="grid gap-4">
+                  <Field label="Título en Google" error={errors.seo_title} value={data.seo_title} max={60}>
+                    <Input value={data.seo_title} maxLength={255} onChange={(e) => cambiar('seo_title', e.target.value)} placeholder={data.titulo} />
+                  </Field>
+                  <Field label="Descripción en Google" error={errors.seo_description} value={data.seo_description} max={160}>
+                    <Textarea rows={2} value={data.seo_description} maxLength={500} onChange={(e) => cambiar('seo_description', e.target.value)} placeholder={data.resumen} />
+                  </Field>
+                  <div className="rounded-xl border border-slate-200 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Así se vería en Google</p>
+                    <p className="mt-1.5 truncate text-[15px] text-[#1a0dab]">{data.seo_title || data.titulo || 'Sin título'} · Apple Boss</p>
+                    <p className="truncate text-xs text-emerald-700">{route('store.product', data.slug || 'producto')}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[13px] text-slate-600">{data.seo_description || data.resumen || 'Sin descripción.'}</p>
+                  </div>
+                </div>
+              </StepCard>
+            </div>
+          </div>
+
+          <aside className="space-y-5 xl:sticky xl:top-24">
+            <section className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-900"><Tag className="h-[18px] w-[18px] text-[#585E9F]" /> Publicación</h2>
+                <EstadoPublicacionBadge estado={estadoPublicacion} />
+              </div>
+              <div className="space-y-4 p-5">
+                <TarjetaTienda titulo={data.titulo} resumen={data.resumen} imagen={principal?.url_card ?? principal?.url_thumb}
+                  precio={precio} promo={promoActiva && !promoInvalida ? promo : 0} badge={data.badge} condicion={data.condicion} />
+
+                <div className={`rounded-xl px-4 py-3 text-sm ${faltan.length ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-900'}`}>
+                  <p className="flex items-center gap-2 font-bold">
+                    {faltan.length ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {faltan.length ? `Falta ${faltan.length === 1 ? '1 dato' : `${faltan.length} datos`} para mostrarlo` : 'Listo para mostrarse en la tienda'}
+                  </p>
+                  {faltan.length > 0 && <ul className="mt-1.5 list-disc space-y-0.5 pl-6 text-[13px]">{faltan.map((f) => <li key={f}>{f}</li>)}</ul>}
+                  {!faltan.length && !imagenes.length && <p className="mt-1 text-[13px]">Sugerido: agrega una foto.</p>}
                 </div>
 
-                {/* Contenido del tab */}
-                <form onSubmit={submit} className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
-                    <div className="min-h-[400px]">
-                        {activeTab === 'GENERAL' && (
-                            <GeneralTab
-                                data={data}
-                                setData={setData}
-                                errors={errors}
-                                condiciones={condiciones}
-                                storefronts={storefronts}
-                                inventario={inventario}
-                            />
-                        )}
-                        {activeTab === 'MEDIA' && (
-                            <MediaTab publicacion={publicacion} imagenes={publicacion.imagenes} />
-                        )}
-                        {activeTab === 'ATRIBUTOS' && (
-                            <AtributosTab
-                                tipo={publicacion.producto_tipo}
-                                value={data.atributos}
-                                onChange={(v) => setData('atributos', v)}
-                                inventario={inventario}
-                            />
-                        )}
-                        {activeTab === 'COMERCIAL' && (
-                            <ComercialTab data={data} setData={setData} errors={errors} inventario={inventario} />
-                        )}
-                        {activeTab === 'INVENTARIO' && (
-                            <InventarioTab inventario={inventario} publicacion={publicacion} />
-                        )}
-                        {activeTab === 'SEO' && (
-                            <SeoTab data={data} setData={setData} errors={errors} />
-                        )}
-                        {activeTab === 'PUBLICACIÓN' && (
-                            <PublicacionTab data={data} setData={setData} errors={errors} missing={missing} />
-                        )}
-                        {activeTab === 'PREVIEW' && (
-                            <PreviewTab publicacion={publicacion} data={data} inventario={inventario} />
-                        )}
+                <div className="space-y-3 rounded-xl border border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">En la tienda</p>
+                      <p className="text-xs text-slate-500">{data.publicado ? 'Visible para los clientes.' : 'Guardado como borrador.'}</p>
                     </div>
+                    <Switch checked={data.publicado} disabled={!data.publicado && faltan.length > 0} label="Mostrar en la tienda" onChange={(v) => cambiar('publicado', v)} />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Destacado en el inicio</p>
+                      <p className="text-xs text-slate-500">Sale en «Productos destacados».</p>
+                    </div>
+                    <Switch checked={data.destacado} label="Destacado en el inicio" onChange={(v) => cambiar('destacado', v)} />
+                  </div>
+                  {data.destacado && (
+                    <Field label="Posición" hint="El número más bajo aparece primero." error={errors.orden}>
+                      <Input type="number" min="0" value={data.orden} onChange={(e) => cambiar('orden', e.target.value)} className="w-28 tabular-nums" />
+                    </Field>
+                  )}
+                  <details className="group border-t border-slate-100 pt-3" open={Boolean(data.publicar_desde || data.publicar_hasta)}>
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-700">Mostrar solo entre fechas</summary>
+                    <div className="mt-3 grid gap-3">
+                      <Field label="Desde" error={errors.publicar_desde}>
+                        <Input type="datetime-local" value={data.publicar_desde} onChange={(e) => cambiar('publicar_desde', e.target.value)} />
+                      </Field>
+                      <Field label="Hasta" error={errors.publicar_hasta}>
+                        <Input type="datetime-local" value={data.publicar_hasta} onChange={(e) => cambiar('publicar_hasta', e.target.value)} />
+                      </Field>
+                    </div>
+                  </details>
+                </div>
 
-                    {/* Footer de acciones */}
-                    <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (window.confirm('¿Eliminar esta publicación? Las imágenes también serán eliminadas.')) {
-                                    router.delete(route('admin.catalogo.destroy', publicacion.id));
-                                }
-                            }}
-                            className="text-sm font-medium text-red-500 hover:text-red-700"
-                        >
-                            Eliminar publicación
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="flex items-center gap-2 rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-                        >
-                            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            {processing ? 'Guardando...' : 'Guardar cambios'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </AdminLayout>
-    );
+                <ErroresResumen errores={errors} />
+                {isDirty && <p className="text-center text-xs font-semibold text-amber-700">Tienes cambios sin guardar.</p>}
+                <button type="button" onClick={guardar} disabled={processing || !isDirty || myskinInvalido || promoInvalida} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                  {processing ? 'Guardando…' : 'Guardar cambios'}
+                </button>
+                {estadoPublicacion === 'Publicado' && urlTienda && (
+                  <a href={urlTienda} target="_blank" rel="noopener noreferrer" className={buttonCls('secondary', 'h-11 w-full')}>
+                    <Eye className="h-4 w-4" /> Ver en la tienda
+                  </a>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900"><ImageIcon className="h-4 w-4 text-[#585E9F]" /> Inventario</h2>
+              {inventario?.existe ? (
+                <>
+                  <dl className="mt-3 space-y-1.5 text-sm">
+                    <Linea label="Producto" valor={inventario.nombre_interno} />
+                    <Linea label="Estado" valor={inventario.estado} />
+                    <Linea label="Condición" valor={inventario.condicion} />
+                    <Linea label="Precio de venta" valor={precio ? bsFmt(precio) : ''} />
+                  </dl>
+                  {inventario.estado !== 'disponible' && <Nota tono="amber">No está disponible en el inventario: la tienda no lo muestra.</Nota>}
+                  {inventarioUrl(inventario.tipo, inventario.id) && (
+                    <Link href={inventarioUrl(inventario.tipo, inventario.id)} className={buttonCls('ghost', 'mt-3 h-9 w-full text-xs')}>Abrir en el inventario</Link>
+                  )}
+                </>
+              ) : (
+                <Nota tono="amber">El producto del inventario ya no existe. Esta publicación no se puede mostrar.</Nota>
+              )}
+              <button type="button" onClick={() => setBorrar(true)} className={buttonCls('danger', 'mt-4 h-10 w-full')}>
+                <Trash2 className="h-4 w-4" /> Eliminar publicación
+              </button>
+              <p className="mt-2 text-center text-xs text-slate-400">Solo la saca de la tienda: el inventario no cambia.</p>
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      {borrar && (
+        <Modal title="Eliminar publicación" onClose={() => !eliminando && setBorrar(false)}
+          footer={(
+            <>
+              <button type="button" onClick={() => setBorrar(false)} disabled={eliminando} className={buttonCls('secondary')}>Cancelar</button>
+              <button type="button" onClick={eliminar} disabled={eliminando} className={buttonCls('danger')}>{eliminando ? 'Eliminando…' : 'Sí, eliminar'}</button>
+            </>
+          )}>
+          <p className="text-sm text-slate-600">
+            <span className="font-bold text-slate-900">{publicacion.titulo}</span> deja de verse en la tienda y se borran sus {imagenes.length} fotos.
+            El producto sigue en el inventario y puedes volver a agregarlo.
+          </p>
+        </Modal>
+      )}
+    </AdminLayout>
+  );
 }

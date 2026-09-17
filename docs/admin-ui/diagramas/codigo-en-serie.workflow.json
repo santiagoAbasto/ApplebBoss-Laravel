@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": { "title": "Productos generales: registrar unidades en serie", "quality_profile": "showcase" },
+  "lanes": [
+    { "id": "admin", "label": "Administrador" },
+    { "id": "front", "label": "Formulario" },
+    { "id": "back", "label": "Laravel" },
+    { "id": "errores", "label": "Código ocupado", "variant": "exception" }
+  ],
+  "mainPath": ["cargar", "escribir", "revisar", "guardar", "siguiente"],
+  "nodes": [
+    { "id": "cargar", "lane": "admin", "col": 0, "type": "external", "label": "Primera unidad", "sublabel": "tipo, nombre, precio" },
+    { "id": "escribir", "lane": "front", "col": 1, "type": "frontend", "label": "Código", "sublabel": "FUNDA_1" },
+    { "id": "revisar", "lane": "back", "col": 2, "type": "security", "label": "Verificar", "sublabel": "verificar-codigo" },
+    { "id": "guardar", "lane": "back", "col": 3, "type": "database", "label": "Guardar", "sublabel": "return_to create" },
+    { "id": "siguiente", "lane": "front", "col": 4, "type": "frontend", "label": "Siguiente", "sublabel": "FUNDA_2 sugerido" },
+    { "id": "ocupado", "lane": "errores", "col": 2, "type": "security", "label": "Ocupado", "sublabel": "cambiar código" }
+  ],
+  "edges": [
+    { "from": "cargar", "to": "escribir" },
+    { "from": "escribir", "to": "revisar", "label": "300 ms" },
+    { "from": "revisar", "to": "guardar", "label": "libre", "variant": "emphasis" },
+    { "from": "guardar", "to": "siguiente", "label": "registrar otro", "variant": "emphasis" },
+    { "from": "revisar", "to": "ocupado", "label": "existe", "variant": "security", "role": "error" },
+    { "from": "ocupado", "to": "escribir", "label": "corregir", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Carga rápida", "items": ["Tipo, nombre, precios y procedencia se mantienen", "El código sube solo: FUNDACHAV_1 → FUNDACHAV_2"] },
+    { "dot": "rose", "title": "Protecciones", "items": ["Código en mayúsculas y único, revisado en vivo y en el servidor", "No se elimina lo que figura en ventas, reservas o la tienda"] }
+  ]
+}

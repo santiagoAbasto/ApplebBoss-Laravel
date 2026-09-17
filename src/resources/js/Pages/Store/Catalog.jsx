@@ -1,7 +1,7 @@
-import { Head, router } from '@inertiajs/react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Search, SlidersHorizontal, X } from '@/Components/Store/Icons';
 import { useEffect, useRef, useState } from 'react';
-import StoreLayout, { useStoreCart } from '@/Layouts/StoreLayout';
+import StoreLayout, { StoreContainer, useStoreCart } from '@/Layouts/StoreLayout';
 import ProductCard from '@/Components/Store/ProductCard';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ function FilterPanel({ categories, filters, onClose }) {
                     {[{ slug: 'todos', name: 'Todo el catálogo' }, ...categories].map((cat) => (
                         <button
                             key={cat.slug}
-                            onClick={() => { update({ categoria: cat.slug }); onClose?.(); }}
+                            onClick={() => { update({ categoria: cat.slug, tipo: undefined }); onClose?.(); }}
                             className="flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold text-left transition-colors"
                             style={{
                                 background: filters.category === cat.slug
@@ -142,11 +142,46 @@ function buildParams(filters) {
         condicion: filters.condition !== 'todos' ? filters.condition : undefined,
         precio_min: filters.priceMin > 0 ? filters.priceMin : undefined,
         precio_max: filters.priceMax > 0 ? filters.priceMax : undefined,
+        modelo: filters.modelo || undefined,
+        tipo: filters.tipo || undefined,
     };
 }
 
+// Botón de la portada de una categoría: una página de la tienda o una dirección externa
+function BotonPortada({ cta }) {
+    const cls = 'mt-5 inline-flex h-11 items-center gap-1.5 rounded-full px-5 text-sm font-bold transition-opacity hover:opacity-85';
+    const estilo = { background: 'var(--ab-navy)', color: '#FFFFFF' };
+    return cta.url.startsWith('/')
+        ? <Link href={cta.url} className={cls} style={estilo}>{cta.label}</Link>
+        : <a href={cta.url} target="_blank" rel="noopener noreferrer" className={cls} style={estilo}>{cta.label}</a>;
+}
+
+// Chips de tipo en la portada de Accesorios (cargadores, vidrios, fundas…), con cuántos hay de cada uno
+function TiposPortada({ tipos, activo, onChange }) {
+    const todos = { key: null, label: 'Todos', count: tipos.reduce((suma, t) => suma + t.count, 0) };
+    return (
+        <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Tipo de accesorio">
+            {[todos, ...tipos].map((t) => {
+                const sel = (activo ?? null) === t.key;
+                return (
+                    <button
+                        key={t.key ?? 'todos'}
+                        type="button"
+                        aria-pressed={sel}
+                        onClick={() => onChange(t.key ?? undefined)}
+                        className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-colors"
+                        style={{ background: sel ? 'var(--ab-navy)' : 'var(--surface-muted)', color: sel ? '#FFFFFF' : 'var(--text-secondary)' }}
+                    >
+                        {t.label} <span className="tabular-nums" style={{ opacity: 0.6 }}>{t.count}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 // ─── Catalog inner (inside CartContext) ────────────────────────────────────
-function CatalogInner({ products, categories, filters, pagination }) {
+function CatalogInner({ products, categories, categoria, filters, pagination }) {
     const { add } = useStoreCart();
     const [query, setQuery] = useState(filters.query || '');
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -158,7 +193,7 @@ function CatalogInner({ products, categories, filters, pagination }) {
     const submit = (e) => { e.preventDefault(); update({ q: query || undefined }); };
     const clearAll = () => { setQuery(''); router.get('/catalogo'); };
 
-    const hasActiveFilter = filters.query || filters.category !== 'todos'
+    const hasActiveFilter = filters.query || filters.modelo || filters.tipo || filters.category !== 'todos'
         || filters.condition !== 'todos' || filters.priceMin > 0 || filters.priceMax > 0;
 
     const conditionLabel = {
@@ -167,26 +202,20 @@ function CatalogInner({ products, categories, filters, pagination }) {
 
     return (
         <>
-            <Head>
-                <title>Catálogo — Apple Boss Cochabamba</title>
-                <meta
-                    name="description"
-                    content="Catálogo completo de equipos Apple disponibles en Apple Boss Cochabamba: iPhone, Mac, iPad, accesorios y fundas MYSKIN."
-                />
-            </Head>
 
-            <div className="mx-auto max-w-[1440px] px-6 lg:px-10">
-                {/* Header */}
+            <StoreContainer>
+                {/* Header: en la página de una categoría, su portada (Tienda online → Categorías) */}
                 <div className="border-b py-12" style={{ borderColor: 'var(--border-light)' }}>
                     <h1
                         className="text-[clamp(2rem,5vw,3.5rem)] font-black leading-[0.95] tracking-[-0.04em]"
                         style={{ color: 'var(--text-primary)' }}
                     >
-                        Catálogo
+                        {categoria?.titulo ?? 'Catálogo'}
                     </h1>
-                    <p className="mt-2 text-[1rem]" style={{ color: 'var(--text-secondary)' }}>
-                        Precios actualizados desde nuestro inventario real.
+                    <p className="mt-2 max-w-2xl text-[1rem]" style={{ color: 'var(--text-secondary)' }}>
+                        {categoria?.descripcion || 'Precios actualizados desde nuestro inventario real.'}
                     </p>
+                    {categoria?.cta && <BotonPortada cta={categoria.cta} />}
 
                     {/* Búsqueda */}
                     <form onSubmit={submit} className="relative mt-7 max-w-2xl">
@@ -218,6 +247,10 @@ function CatalogInner({ products, categories, filters, pagination }) {
                             Buscar
                         </button>
                     </form>
+
+                    {categoria?.tipos?.length > 1 && (
+                        <TiposPortada tipos={categoria.tipos} activo={filters.tipo} onChange={(tipo) => update({ tipo })} />
+                    )}
                 </div>
 
                 {/* Layout: sidebar + grid */}
@@ -251,6 +284,20 @@ function CatalogInner({ products, categories, filters, pagination }) {
                             </p>
 
                             {/* Active filter chips */}
+                            {filters.modelo && (
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
+                                    style={{ background: 'var(--surface-muted)', color: 'var(--text-secondary)' }}
+                                >
+                                    {filters.modeloNombre ?? filters.modelo}
+                                    <button
+                                        onClick={() => update({ modelo: undefined })}
+                                        aria-label="Quitar filtro de modelo"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </span>
+                            )}
                             {filters.condition !== 'todos' && (
                                 <span
                                     className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
@@ -309,8 +356,8 @@ function CatalogInner({ products, categories, filters, pagination }) {
                         {/* Grid */}
                         {products.length > 0 ? (
                             <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 xl:grid-cols-4">
-                                {products.map((p) => (
-                                    <ProductCard key={p.key} product={p} onAdd={add} />
+                                {products.map((p, i) => (
+                                    <ProductCard key={p.key} product={p} onAdd={add} priority={i === 0} />
                                 ))}
                             </div>
                         ) : (
@@ -322,7 +369,7 @@ function CatalogInner({ products, categories, filters, pagination }) {
                                     Sin resultados
                                 </h2>
                                 <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                    Probá con otra búsqueda o revisá todas las categorías.
+                                    Prueba con otra búsqueda o revisa todas las categorías.
                                 </p>
                                 <button
                                     onClick={clearAll}
@@ -366,7 +413,7 @@ function CatalogInner({ products, categories, filters, pagination }) {
                         )}
                     </div>
                 </div>
-            </div>
+            </StoreContainer>
 
             {/* Mobile filter drawer */}
             <MobileFilterDrawer
@@ -380,12 +427,13 @@ function CatalogInner({ products, categories, filters, pagination }) {
 }
 
 // ─── Catalog page ──────────────────────────────────────────────────────────
-export default function Catalog({ products, categories, filters, pagination }) {
+export default function Catalog({ products, categories, filters, pagination, categoria = null }) {
     return (
-        <StoreLayout title="Catálogo — Apple Boss">
+        <StoreLayout>
             <CatalogInner
                 products={products}
                 categories={categories}
+                categoria={categoria}
                 filters={filters}
                 pagination={pagination}
             />

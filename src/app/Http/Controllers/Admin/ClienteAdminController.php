@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Cliente;
-use App\Models\PromocionEnviada;
+use App\Support\ActividadDelCliente;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,32 +16,11 @@ class ClienteAdminController extends Controller
      */
     public function index()
     {
-        $clientes = Cliente::with('usuario')->latest()->get();
+        $clientes = Cliente::with('usuario:id,name')->latest()->get();
 
         return Inertia::render('Admin/Clientes/Index', [
             'clientes' => $clientes,
         ]);
-    }
-
-    /**
-     * Envía una promoción masiva por WhatsApp.
-     */
-    public function enviarPromocionMasiva()
-    {
-        $clientes = Cliente::all();
-
-        foreach ($clientes as $cliente) {
-            PromocionEnviada::create([
-                'cliente_id' => $cliente->id,
-                'mensaje' => '🎉 ¡Aprovecha nuestras nuevas promociones en Apple Boss!',
-                'canal' => 'whatsapp',
-                'enviado_en' => now(),
-            ]);
-
-            // 🔧 Aquí podrías encolar el mensaje o usar una API como UltraMsg, Chat API, etc.
-        }
-
-        return response()->json(['message' => 'Promoción enviada a todos los clientes.']);
     }
 
     /**
@@ -56,8 +35,8 @@ class ClienteAdminController extends Controller
         }
 
         return Cliente::where(function ($q) use ($term) {
-            $q->where('nombre', 'ilike', "%{$term}%")
-                ->orWhere('telefono', 'ilike', "%{$term}%");
+            $q->whereRaw('LOWER(nombre) LIKE ?', [\App\Support\Busqueda::contiene($term)])
+                ->orWhereRaw('LOWER(telefono) LIKE ?', [\App\Support\Busqueda::contiene($term)]);
         })
             ->select('id', 'nombre', 'telefono', 'correo')
             ->limit(8)
@@ -69,8 +48,11 @@ class ClienteAdminController extends Controller
      */
     public function edit(Cliente $cliente)
     {
+        $cliente->load('usuario:id,name');
+
         return Inertia::render('Admin/Clientes/Edit', [
             'cliente' => $cliente,
+            'actividad' => ActividadDelCliente::de($cliente),
         ]);
     }
 
@@ -80,9 +62,15 @@ class ClienteAdminController extends Controller
     public function update(Request $request, Cliente $cliente)
     {
         $validated = $request->validate([
-            'nombre'   => 'required|string|max:255',
-            'telefono' => 'required|string|min:7|max:20',
-            'correo'   => 'nullable|email|max:255',
+            'nombre'    => 'required|string|max:255',
+            'telefono'  => 'required|string|min:7|max:20',
+            'correo'    => 'nullable|email|max:255',
+            'documento' => 'nullable|string|max:30',
+        ], [
+            'nombre.required'   => 'Escribe el nombre del cliente.',
+            'telefono.required' => 'Escribe el teléfono del cliente.',
+            'telefono.min'      => 'El teléfono parece incompleto.',
+            'correo.email'      => 'Revisa el correo.',
         ]);
 
         $cliente->update($validated);

@@ -1,132 +1,95 @@
-import React from 'react';
-import styled from 'styled-components';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { usePage } from '@inertiajs/react';
+import { LogOut, ShieldCheck } from 'lucide-react';
+import { buttonCls } from '@/Components/Admin/ui';
 
+/**
+ * Confirmación antes de salir del panel. La usan el panel de administración y el del vendedor.
+ * Dice de qué panel sale y con qué cuenta, para que nadie cierre la sesión de otra persona sin darse cuenta.
+ */
 export default function ConfirmLogoutModal({ open, onClose, onConfirm }) {
-  if (!open) return null;
+    const reduce = useReducedMotion();
+    const { auth } = usePage().props;
+    const salir = useRef(null);
 
-  // 🔍 Detectar contexto por URL
-  const pathname =
-    typeof window !== 'undefined' ? window.location.pathname : '';
+    // Escape cierra y el foco arranca en «Salir»: se puede confirmar sin tocar el mouse
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        salir.current?.focus();
+        return () => window.removeEventListener('keydown', onKey);
+    }, [open, onClose]);
 
-  const isAdmin = pathname.startsWith('/admin');
-  const isVendedor = pathname.startsWith('/vendedor');
+    const ruta = typeof window !== 'undefined' ? window.location.pathname : '';
+    const panel = ruta.startsWith('/admin')
+        ? 'panel de administración'
+        : ruta.startsWith('/vendedor') ? 'panel del vendedor' : 'panel';
 
-  const panelName = isAdmin
-    ? 'panel de administración'
-    : isVendedor
-      ? 'panel del vendedor'
-      : 'panel';
+    const usuario = auth?.user;
+    const iniciales = (usuario?.name ?? 'A').split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase();
 
-  const titleColor = isAdmin ? '#1e3a8a' : '#064e3b'; // azul admin | verde vendedor
+    return (
+        <AnimatePresence>
+            {open && (
+                <motion.div
+                    className="ab-reset fixed inset-0 z-[1200] grid place-items-center px-4"
+                    style={{ background: 'rgba(1,20,70,0.45)', backdropFilter: 'blur(6px)' }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.16 }}
+                    onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+                >
+                    <motion.div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="ab-salir-titulo"
+                        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+                        initial={reduce ? false : { opacity: 0, y: 12, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.98 }}
+                        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                        <div className="flex items-start gap-3 px-6 pb-4 pt-6">
+                            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#585E9F]/10 text-[#585E9F]">
+                                <LogOut className="h-5 w-5" />
+                            </span>
+                            <div className="min-w-0">
+                                <h2 id="ab-salir-titulo" className="text-lg font-black leading-tight text-slate-900">¿Cerrar sesión?</h2>
+                                <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
+                                    Vas a salir del {panel}. Para volver a entrar tendrás que escribir tu correo y tu contraseña otra vez.
+                                </p>
+                            </div>
+                        </div>
 
-  return (
-    <Overlay>
-      <Modal $titleColor={titleColor}>
-        <h3>¿Cerrar sesión?</h3>
+                        {usuario?.name && (
+                            <div className="mx-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[13px] font-extrabold" style={{ background: '#011446', color: '#C6CB36' }}>
+                                    {iniciales}
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-bold text-slate-900">{usuario.name}</span>
+                                    <span className="block truncate text-[11px] font-medium capitalize text-slate-500">{usuario.rol ?? 'cuenta del equipo'}</span>
+                                </span>
+                            </div>
+                        )}
 
-        <p>
-          Estás a punto de salir del <strong>{panelName}</strong>.
-          <br />
-          ¿Deseas continuar?
-        </p>
+                        <p className="mx-6 mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-slate-500">
+                            <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                            Nada de lo que guardaste se pierde: todo queda registrado en el sistema.
+                        </p>
 
-        <div className="actions">
-          <button className="cancel" onClick={onClose}>
-            Cancelar
-          </button>
-
-          <button className="logout" onClick={onConfirm}>
-            Salir
-          </button>
-        </div>
-      </Modal>
-    </Overlay>
-  );
+                        <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                            <button type="button" onClick={onClose} className={buttonCls('secondary')}>Seguir trabajando</button>
+                            <button ref={salir} type="button" onClick={onConfirm} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(220,38,38,0.8)] transition-colors hover:bg-red-700">
+                                <LogOut className="h-4 w-4" /> Cerrar sesión
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
 }
-
-/* ================= ESTILOS ================= */
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  z-index: 9999;
-`;
-
-const Modal = styled.div`
-  width: 90%;
-  max-width: 380px;
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 24px;
-
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-  animation: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: ${({ $titleColor }) => $titleColor};
-    margin-bottom: 6px;
-  }
-
-  p {
-    font-size: 14px;
-    color: #475569;
-    line-height: 1.5;
-  }
-
-  .actions {
-    margin-top: 22px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-
-  button {
-    border-radius: 999px;
-    padding: 10px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.2s ease;
-  }
-
-  button:active {
-    transform: scale(0.95);
-  }
-
-  .cancel {
-    background: #f1f5f9;
-    color: #334155;
-  }
-
-  .cancel:hover {
-    background: #e2e8f0;
-  }
-
-  .logout {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-    box-shadow: 0 10px 22px rgba(239, 68, 68, 0.4);
-  }
-
-  .logout:hover {
-    box-shadow: 0 14px 28px rgba(239, 68, 68, 0.6);
-  }
-
-  @keyframes pop {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-`;

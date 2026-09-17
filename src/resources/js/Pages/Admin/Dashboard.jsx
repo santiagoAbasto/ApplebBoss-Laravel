@@ -1,17 +1,22 @@
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useMemo } from 'react';
+import AdminLayout, { AB, DISPLAY_FONT } from '@/Layouts/AdminLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 import { route } from 'ziggy-js';
-
-import EconomicCharts from '@/Components/EconomicCharts';
-import SalesChart from '@/Components/SalesChart';
-import DashboardActions from '@/Components/DashboardActions';
-import IosNotification from "@/Components/IosNotification";
-import { Bell, ChartColumnBig, DollarSign, Minus, PencilLine, TrendingDown, TrendingUp } from 'lucide-react';
-
-
 import axios from 'axios';
+
+import TrendChart from '@/Components/Admin/charts/TrendChart';
+import AllocationDonut from '@/Components/Admin/charts/AllocationDonut';
+import IosNotification from '@/Components/IosNotification';
+import {
+  ArrowRight, BadgePercent, Bell, BellOff, Boxes, CalendarRange, ChartLine, Check, CheckCheck, ChevronDown,
+  CircleDollarSign, DollarSign, Hammer, Laptop, Minus, Package, PencilLine, PiggyBank, Receipt, Repeat, ShoppingCart,
+  Smartphone, TrendingDown, TrendingUp, Wallet,
+} from 'lucide-react';
+
+dayjs.locale('es');
 
 /* =======================
    HELPERS MONEDA SEGUROS
@@ -19,117 +24,162 @@ import axios from 'axios';
 
 const safeNum = (x) => {
   if (x === null || x === undefined) return 0;
-
-  // Si ya es número válido
-  if (typeof x === 'number') {
-    return Number.isFinite(x) ? x : 0;
-  }
-
-  // Si es string
+  if (typeof x === 'number') return Number.isFinite(x) ? x : 0;
   if (typeof x === 'string') {
     let value = x.trim();
-
-    // Si contiene "Bs" lo limpiamos
-    if (value.includes('Bs')) {
-      value = value.replace(/Bs/gi, '').trim();
-    }
-
-    // Si viene en formato boliviano 1.100,00
-    if (value.includes(',') && value.includes('.')) {
-      value = value.replace(/\./g, '').replace(',', '.');
-    }
-
+    if (value.includes('Bs')) value = value.replace(/Bs/gi, '').trim();
+    // Formato boliviano 1.100,00
+    if (value.includes(',') && value.includes('.')) value = value.replace(/\./g, '').replace(',', '.');
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
   }
-
   return 0;
 };
 
 const fmtBs = (n) =>
-  `Bs ${safeNum(n).toLocaleString('es-BO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  `Bs ${safeNum(n).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const notificationTarget = (notification) => {
-  if (notification?.type === 'report' && notification?.report_id) {
-    return route('admin.automation.show', notification.report_id);
-  }
+// Montos negativos: se muestran como inversión, igual que antes
+const fmtResultado = (n) => (safeNum(n) < 0 ? `Se invirtió ${fmtBs(Math.abs(safeNum(n)))}` : fmtBs(n));
 
-  if (notification?.type === 'sale_edit' && notification?.sale_id) {
-    return route('admin.ventas.edit', notification.sale_id);
-  }
-
-  if (['sale', 'sale_edit'].includes(notification?.type)) {
-    return route('admin.ventas.index');
-  }
-
-  if (notification?.type === 'service') {
-    return route('admin.servicios.index');
-  }
-
-  if (notification?.type === 'stock') {
-    return route('admin.dashboard');
-  }
-
+const notificationTarget = (n) => {
+  if (n?.type === 'report' && n?.report_id) return route('admin.automation.show', n.report_id);
+  if (n?.type === 'sale_edit' && n?.sale_id) return route('admin.ventas.edit', n.sale_id);
+  if (['sale', 'sale_edit'].includes(n?.type)) return route('admin.ventas.index');
+  if (n?.type === 'service') return route('admin.servicios.index');
+  // Un servicio que registró un vendedor sin costo: la lista se abre con los pendientes
+  if (n?.type === 'servicio_sin_costo') return route('admin.servicios.index', { pendientes: 1 });
+  if (n?.type === 'trade_in') return n?.trade_in_id ? route('admin.trade-in.show', n.trade_in_id) : route('admin.trade-in.index');
   return route('admin.dashboard');
 };
 
-const notificationMeta = (notification) => {
-  const types = {
-    sale_edit: {
-      label: 'Venta editada',
-      badge: 'border-amber-200 bg-amber-50 text-amber-700',
-      unread: 'bg-amber-50 border-amber-200',
-      read: 'bg-white border-slate-200',
-      action: 'Ver venta',
-      icon: PencilLine,
-    },
-    sale: {
-      label: 'Venta nueva',
-      badge: 'border-sky-200 bg-sky-50 text-sky-700',
-      unread: 'bg-sky-50 border-sky-200',
-      read: 'bg-white border-slate-200',
-      action: 'Ver ventas',
-      icon: Bell,
-    },
-    report: {
-      label: 'Reporte',
-      badge: 'border-violet-200 bg-violet-50 text-violet-700',
-      unread: 'bg-violet-50 border-violet-200',
-      read: 'bg-white border-slate-200',
-      action: 'Ver reporte',
-      icon: Bell,
-    },
-    service: {
-      label: 'Servicio',
-      badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-      unread: 'bg-emerald-50 border-emerald-200',
-      read: 'bg-white border-slate-200',
-      action: 'Ver servicios',
-      icon: Bell,
-    },
-    stock: {
-      label: 'Stock',
-      badge: 'border-rose-200 bg-rose-50 text-rose-700',
-      unread: 'bg-rose-50 border-rose-200',
-      read: 'bg-white border-slate-200',
-      action: 'Ver dashboard',
-      icon: Bell,
-    },
-  };
+const NOTIF_META = {
+  sale_edit: { label: 'Venta editada', color: '#D97706', bg: '#FEF3C7', action: 'Ver venta', icon: PencilLine },
+  sale:      { label: 'Venta nueva',   color: '#0A7A4B', bg: '#DCFCE7', action: 'Ver ventas', icon: ShoppingCart },
+  report:    { label: 'Reporte',       color: AB.periwinkle, bg: '#E8E9F5', action: 'Ver reporte', icon: ChartLine },
+  service:   { label: 'Servicio',      color: '#0369A1', bg: '#E0F2FE', action: 'Ver servicios', icon: Hammer },
+  servicio_sin_costo: { label: 'Falta el costo', color: '#B45309', bg: '#FEF3C7', action: 'Cargar costo', icon: Hammer },
+  stock:     { label: 'Stock',         color: '#BE123C', bg: '#FFE4E6', action: 'Ver resumen', icon: Boxes },
+  trade_in:  { label: 'Trade-In',      color: '#3F4585', bg: '#E8E9F5', action: 'Ver solicitud', icon: Repeat },
+};
+const notificationMeta = (n) => NOTIF_META[n?.type] ?? { label: 'Sistema', color: '#475569', bg: '#F1F5F9', action: 'Ver', icon: Bell };
 
-  return types[notification?.type] || {
-    label: 'Sistema',
-    badge: 'border-slate-200 bg-slate-50 text-slate-700',
-    unread: 'bg-slate-50 border-slate-200',
-    read: 'bg-white border-slate-200',
-    action: 'Ver',
-    icon: Bell,
-  };
+// ─── Animaciones ─────────────────────────────────────────────────────────────
+const EASE = [0.22, 1, 0.36, 1];
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
+const rise = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } } };
+
+/* =======================
+   PIEZAS
+======================= */
+
+const TONES = {
+  navy:     { chip: 'bg-[#011446]/[0.07] text-[#011446]', value: 'text-[#011446]' },
+  positive: { chip: 'bg-emerald-50 text-emerald-700',     value: 'text-emerald-700' },
+  negative: { chip: 'bg-rose-50 text-rose-600',           value: 'text-rose-600' },
+  lila:     { chip: 'bg-[#585E9F]/10 text-[#585E9F]',     value: 'text-[#011446]' },
 };
 
+function Kpi({ icon: Icon, label, value, hint, tone = 'navy' }) {
+  const t = TONES[tone] ?? TONES.navy;
+  return (
+    <motion.div variants={rise} whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:shadow-[0_14px_30px_-18px_rgba(1,20,70,0.35)]">
+      <div className="flex items-center gap-3">
+        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${t.chip}`}><Icon className="h-5 w-5" /></span>
+        <p className="text-[13px] font-semibold leading-snug text-slate-500">{label}</p>
+      </div>
+      <p className={`mt-4 text-[26px] font-extrabold leading-none tracking-tight ${t.value}`}>{value}</p>
+      {hint && <p className="mt-2 text-xs text-slate-400">{hint}</p>}
+    </motion.div>
+  );
+}
+
+function SectionTitle({ children, extra }) {
+  return (
+    <div className="mb-3 flex items-end justify-between gap-3">
+      <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-slate-500">{children}</h2>
+      {extra}
+    </div>
+  );
+}
+
+function Panel({ title, icon: Icon, actions, children, className = '' }) {
+  return (
+    <section className={`rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className}`}>
+      {title && (
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
+            {Icon && <Icon className="h-[18px] w-[18px] text-[#585E9F]" />} {title}
+          </h2>
+          {actions}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function HeroAction({ href, onClick, icon: Icon, children, primary, as = 'link', ...rest }) {
+  const cls = `inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors ${
+    primary ? 'text-[#0D0D1A] shadow-[0_10px_24px_-12px_rgba(198,203,54,0.8)]' : 'border border-white/15 bg-white/[0.08] text-white hover:bg-white/[0.14]'
+  }`;
+  const style = primary ? { background: AB.lime } : undefined;
+  const inner = <><Icon className="h-[18px] w-[18px]" /> {children}</>;
+  return (
+    <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="relative">
+      {as === 'link'
+        ? <Link href={href} className={cls} style={style}>{inner}</Link>
+        : <button type="button" onClick={onClick} className={cls} style={style} {...rest}>{inner}</button>}
+    </motion.div>
+  );
+}
+
+function AgregarProducto() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  const opciones = [
+    { r: 'admin.celulares.create', label: 'Celular', icon: Smartphone },
+    { r: 'admin.computadoras.create', label: 'Computadora', icon: Laptop },
+    { r: 'admin.productos-generales.create', label: 'Producto general', icon: Package },
+  ];
+
+  return (
+    <div ref={ref} className="relative">
+      <HeroAction as="button" icon={Package} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        Agregar producto <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </HeroAction>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.16 }}
+            className="absolute left-0 top-full z-40 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl"
+          >
+            {opciones.map(({ r, label, icon: Icon }) => (
+              <Link key={r} href={route(r)} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                <Icon className="h-4 w-4 text-[#585E9F]" /> {label}
+              </Link>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* =======================
+   PÁGINA
+======================= */
 
 export default function Dashboard({
   user,
@@ -138,213 +188,352 @@ export default function Dashboard({
   vendedores = [],
   filtros = {},
   distribucion_economica = [],
+  serie = { granularidad: 'dia', puntos: [] },
 }) {
   const hoyStr = dayjs().format('YYYY-MM-DD');
 
   const [fechaInicio, setFechaInicio] = useState(filtros.fecha_inicio || hoyStr);
-  const [fechaFin, setFechaFin] = useState(filtros.fecha_fin || hoyStr);
+  // Si el período termina en el futuro (p. ej. «este mes»), se muestra hasta hoy: no hay datos por delante
+  const [fechaFin, setFechaFin] = useState(filtros.fecha_fin && filtros.fecha_fin < hoyStr ? filtros.fecha_fin : hoyStr);
   const [vendedorId, setVendedorId] = useState(filtros.vendedor_id || '');
 
-  const ultimasVentas = Array.isArray(resumen?.ultimas_ventas)
-    ? resumen.ultimas_ventas
-    : [];
+  const ultimasVentas = Array.isArray(resumen?.ultimas_ventas) ? resumen.ultimas_ventas : [];
 
-  /* =======================
-   NOTIFICACIONES
-======================= */
-
-  const [notifications, setNotifications] = useState([])
+  /* ── Notificaciones ── */
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     axios.get('/admin/notifications')
-      .then(res => setNotifications(res.data.notifications))
-      .catch(() => { })
-  }, [])
+      .then((res) => setNotifications(res.data.notifications ?? []))
+      .catch(() => {});
+  }, []);
 
+  const noLeidas = notifications.filter((n) => !n.read);
 
-  const handleFiltrar = (e) => {
-    e.preventDefault();
-    router.get(
-      route('admin.dashboard'),
-      {
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-        vendedor_id: vendedorId,
-      },
-      { preserveState: true, preserveScroll: true }
-    );
+  const marcarLeida = (id) => {
+    axios.post(`/admin/notifications/${id}/read`).catch(() => {});
+    setNotifications((prev) => prev.map((x) => (x.id === id ? { ...x, read: true } : x)));
   };
-  /* =======================
-     AUTOMATION ALERT (SEMANAL)
-  ======================= */
+  const marcarTodas = () => noLeidas.forEach((n) => marcarLeida(n.id));
 
+  /* ── Filtros ── */
+  const [cargando, setCargando] = useState(false);
+  const filtrar = (inicio = fechaInicio, fin = fechaFin) => {
+    router.get(route('admin.dashboard'), { fecha_inicio: inicio, fecha_fin: fin, vendedor_id: vendedorId }, {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => setCargando(true),
+      onFinish: () => setCargando(false),
+    });
+  };
+  const handleFiltrar = (e) => { e.preventDefault(); filtrar(); };
+  const RAPIDOS = [
+    { key: 'hoy', label: 'Hoy', inicio: hoyStr },
+    { key: '7d', label: '7 días', inicio: dayjs().subtract(6, 'day').format('YYYY-MM-DD') },
+    { key: 'mes', label: 'Este mes', inicio: dayjs().startOf('month').format('YYYY-MM-DD') },
+    { key: 'anio', label: 'Este año', inicio: dayjs().startOf('year').format('YYYY-MM-DD') },
+  ];
+  const rapido = (r) => { setFechaInicio(r.inicio); setFechaFin(hoyStr); filtrar(r.inicio, hoyStr); };
+  const presetPorClave = (k) => { const r = RAPIDOS.find((x) => x.key === k); if (r) rapido(r); };
+  const presetActivo = RAPIDOS.find((r) => fechaInicio === r.inicio && fechaFin === hoyStr)?.key ?? null;
+
+  /* ── Reporte semanal automático (n8n) ── */
   const [automationReport, setAutomationReport] = useState(null);
 
   useEffect(() => {
-    axios
-      .get(route('admin.automation.latestWeekly'))
+    axios.get(route('admin.automation.latestWeekly'))
       .then((res) => {
         if (res.data?.show && res.data?.report) {
-
           const periodKey = `automation_seen_${res.data.report.period}`;
-          const alreadySeen = localStorage.getItem(periodKey);
-
-          if (!alreadySeen) {
+          if (!localStorage.getItem(periodKey)) {
             setAutomationReport(res.data.report);
             localStorage.setItem(periodKey, '1');
           }
         }
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
-  /* =======================
-     PARSE IA CONTENT (SEGURO)
-  ======================= */
   const parsedAutomation = useMemo(() => {
     if (!automationReport?.content) return null;
-
     try {
-      return typeof automationReport.content === 'string'
-        ? JSON.parse(automationReport.content)
-        : automationReport.content;
+      return typeof automationReport.content === 'string' ? JSON.parse(automationReport.content) : automationReport.content;
     } catch {
       return null;
     }
   }, [automationReport]);
 
-  /* =======================
-     METRICAS INTELIGENTES
-  ======================= */
+  const utilidadSemana = parsedAutomation?.metricas?.utilidad_semana ?? 0;
+  const variacion = safeNum(parsedAutomation?.metricas?.variacion_porcentual);
+  const performanceColor = variacion > 0 ? 'green' : variacion < 0 ? 'rose' : 'sky';
+  const VariacionIcon = variacion > 0 ? TrendingUp : variacion < 0 ? TrendingDown : Minus;
 
-  const utilidadSemana =
-    parsedAutomation?.metricas?.utilidad_semana ?? 0;
+  const nombre = (user?.name || 'Administrador').split(' ')[0];
+  const ganancia = safeNum(resumen_total?.ganancia_neta);
+  const utilidad = safeNum(resumen_total?.utilidad_disponible);
+  const periodo = fechaInicio === fechaFin
+    ? dayjs(fechaInicio).format('D [de] MMMM')
+    : `${dayjs(fechaInicio).format('D MMM')} – ${dayjs(fechaFin).format('D MMM YYYY')}`;
 
-  const variacion = safeNum(
-    parsedAutomation?.metricas?.variacion_porcentual
-  );
-
-
-  const performanceColor =
-    variacion > 0
-      ? 'green'
-      : variacion < 0
-        ? 'rose'
-        : 'sky';
-
-  const variacionIcon =
-    variacion > 0 ? TrendingUp
-      : variacion < 0 ? TrendingDown
-        : Minus;
-
-  const VariacionIcon = variacionIcon;
-
-
+  const dateCls = 'h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-[#585E9F] focus:ring-4 focus:ring-[#585E9F]/15';
 
   return (
     <AdminLayout>
-      <Head title="Panel de Administración | Apple Boss" />
+      <Head title="Resumen | Apple Boss" />
 
-      {/* ================= HEADER ================= */}
-      <div className="px-4 mb-8">
-        <div className="bg-gradient-to-r from-sky-600 to-sky-800 text-white rounded-xl p-6 shadow-lg">
-          <h1 className="text-3xl font-bold">
-            Bienvenido, {user?.name || 'Administrador'}
-          </h1>
-          <p className="text-sm opacity-90 mt-1">
-            Resumen financiero y operativo del sistema
-          </p>
-        </div>
-      </div>
-
-      {/* ================= CENTRO NOTIFICACIONES ================= */}
-      <div className="px-4 mb-10">
-        <div className="bg-white rounded-2xl shadow-lg border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">
-              <span className="inline-flex items-center gap-2">
-                <Bell size={18} />
-                Centro de Notificaciones
-              </span>
-            </h2>
-            <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-              {notifications.filter(n => !n.read).length} nuevas
-            </span>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-6">
+        {/* ================= PORTADA ================= */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className="relative z-10 rounded-3xl p-6 lg:p-8"
+          style={{ background: `linear-gradient(135deg, ${AB.navy} 0%, ${AB.navy2} 100%)` }}
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+            <span className="absolute -right-16 -top-24 h-72 w-72 rounded-full" style={{ background: 'rgba(88,94,159,0.35)' }} />
+            <motion.span className="absolute -bottom-12 right-[30%] h-32 w-32 rounded-full" style={{ background: 'rgba(198,203,54,0.12)' }}
+              animate={{ y: [0, -10, 0] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }} />
           </div>
 
-          {notifications.length === 0 ? (
-            <p className="text-gray-500 text-sm">
-              No hay notificaciones recientes.
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {notifications.map((n) => {
-                const meta = notificationMeta(n);
-                const Icon = meta.icon;
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: AB.lime }}>
+                {dayjs().format('dddd D [de] MMMM')}
+              </p>
+              <h1 className="mt-2 text-[40px] font-extrabold leading-none tracking-tight text-white" style={{ fontFamily: DISPLAY_FONT }}>
+                Hola, {nombre}
+              </h1>
+              <p className="mt-2 text-[15px] text-white/70">Así va Apple Boss hoy.</p>
+            </div>
 
-                return (
-                  <div
-                    key={n.id}
-                    className={`p-4 rounded-xl border transition ${n.read ? meta.read : meta.unread}`}
-                  >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${meta.badge}`}>
-                            <Icon size={13} />
-                            {meta.label}
-                          </span>
-                          {!n.read && (
-                            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
-                              Nueva
-                            </span>
-                          )}
-                        </div>
-                        <p className="font-semibold text-sm text-gray-900">
-                          {n.title}
-                        </p>
-                        <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-gray-600">
-                          {n.message}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-3">
-                          {dayjs(n.created_at).format('DD/MM/YYYY HH:mm')}
-                        </p>
-                      </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 lg:min-w-[260px]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white/60">Vendido hoy</p>
+              <p className="mt-1 text-[32px] font-extrabold leading-none tracking-tight text-white">
+                {fmtBs(resumen?.ventas_hoy)}
+              </p>
+            </div>
+          </div>
 
-                      <div className="flex shrink-0 items-center gap-3">
-                        <button
-                          onClick={() => router.visit(notificationTarget(n))}
-                          className="text-xs bg-slate-900 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full transition"
-                        >
-                          {meta.action}
+          <div className="relative mt-6 flex flex-wrap gap-2.5">
+            <HeroAction href={route('admin.ventas.create')} icon={ShoppingCart} primary>Nueva venta</HeroAction>
+            <HeroAction href={route('admin.servicios.create')} icon={Hammer}>Nuevo servicio</HeroAction>
+            <AgregarProducto />
+            <HeroAction href={route('admin.reportes.index')} icon={ChartLine}>Reportes</HeroAction>
+          </div>
+        </motion.section>
+
+        {/* ================= CUERPO ================= */}
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-6">
+            {/* Período */}
+            <form onSubmit={handleFiltrar} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="mr-auto">
+                  <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <CalendarRange className="h-[18px] w-[18px] text-[#585E9F]" /> Período
+                  </p>
+                  <div className="mt-2 flex gap-1.5">
+                    {RAPIDOS.map((r) => {
+                      const activo = fechaInicio === r.inicio && fechaFin === hoyStr;
+                      return (
+                        <button key={r.key} type="button" onClick={() => rapido(r)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${activo ? 'text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                          style={activo ? { background: AB.navy } : undefined}>
+                          {r.label}
                         </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <label className="block w-[150px]">
+                  <span className="mb-1 block text-xs font-semibold text-slate-500">Desde</span>
+                  <input type="date" value={fechaInicio} max={fechaFin} onChange={(e) => setFechaInicio(e.target.value)} className={dateCls} />
+                </label>
+                <label className="block w-[150px]">
+                  <span className="mb-1 block text-xs font-semibold text-slate-500">Hasta</span>
+                  <input type="date" value={fechaFin} min={fechaInicio} max={hoyStr} onChange={(e) => setFechaFin(e.target.value)} className={dateCls} />
+                </label>
+                <label className="block w-[170px]">
+                  <span className="mb-1 block text-xs font-semibold text-slate-500">Vendedor</span>
+                  <select value={vendedorId} onChange={(e) => setVendedorId(e.target.value)} className={dateCls}>
+                    <option value="">Todos</option>
+                    {vendedores.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  </select>
+                </label>
+                <button type="submit" className="inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition hover:brightness-125" style={{ background: AB.navy }}>
+                  Aplicar <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </form>
 
-                        {!n.read && (
-                          <button
-                            onClick={() => {
-                              axios.post(`/admin/notifications/${n.id}/read`);
-                              setNotifications(prev =>
-                                prev.map(x =>
-                                  x.id === n.id ? { ...x, read: true } : x
-                                )
-                              );
-                            }}
-                            className="text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
-                          >
-                            Marcar como leída
-                          </button>
-                        )}
-                      </div>
+            {/* Resultados del período */}
+            <div>
+              <SectionTitle extra={<span className="text-xs font-semibold text-slate-400">{periodo}</span>}>Resultados del período</SectionTitle>
+
+              <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
+                {/* Utilidad disponible: la cifra más importante, destacada */}
+                <motion.div variants={rise}
+                  className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5 ${utilidad < 0 ? 'border-rose-200 bg-rose-50/60' : 'border-emerald-200 bg-emerald-50/60'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`grid h-11 w-11 place-items-center rounded-xl ${utilidad < 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <PiggyBank className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">Utilidad disponible</p>
+                      <p className="text-xs text-slate-500">Ganancia menos egresos del período</p>
                     </div>
                   </div>
-                );
-              })}
+                  <p className={`text-[34px] font-extrabold leading-none tracking-tight ${utilidad < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                    {fmtResultado(utilidad)}
+                  </p>
+                </motion.div>
+
+                <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+                  <Kpi icon={CircleDollarSign} label="Total vendido" hint="Precio final pagado" value={fmtBs(resumen_total?.total_ventas)} />
+                  <Kpi icon={ganancia < 0 ? TrendingDown : TrendingUp} label="Ganancia neta" hint="Antes de egresos" value={fmtResultado(ganancia)} tone={ganancia < 0 ? 'negative' : 'positive'} />
+                  <Kpi icon={Wallet} label="Inversión" hint="Costo + permutas" value={fmtBs(safeNum(resumen_total?.total_costo) + safeNum(resumen_total?.total_permuta))} tone="lila" />
+                  <Kpi icon={BadgePercent} label="Descuentos" hint="Total descontado" value={fmtBs(resumen_total?.total_descuento)} tone="negative" />
+                </div>
+              </motion.div>
             </div>
-          )}
+
+            {/* Operación y stock */}
+            <div>
+              <SectionTitle>Operación y stock</SectionTitle>
+              <motion.div variants={stagger} initial="hidden" animate="show" className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+                <Kpi icon={Hammer} label="Servicios técnicos" value={resumen?.servicios || 0} tone="lila" />
+                <Kpi icon={Receipt} label="Cotizaciones enviadas" value={resumen?.cotizaciones || 0} tone="lila" />
+                <Kpi icon={Package} label="Productos generales disponibles" value={(resumen?.stock_detalle?.productos_generales || 0).toLocaleString('es-BO')} />
+                <Kpi icon={Boxes} label="Del stock total" hint="Parte que son productos generales" value={`${resumen?.stock_detalle?.porcentaje_productos_generales || 0}%`} />
+              </motion.div>
+            </div>
+          </div>
+
+          {/* ================= NOTIFICACIONES ================= */}
+          <Panel
+            title="Novedades"
+            icon={Bell}
+            className="xl:sticky xl:top-24"
+            actions={
+              <div className="flex items-center gap-2">
+                {noLeidas.length > 0 && (
+                  <button type="button" onClick={marcarTodas} title="Marcar todas como leídas"
+                    className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
+                    <CheckCheck className="h-4 w-4" />
+                  </button>
+                )}
+                <span className="rounded-full px-2.5 py-0.5 text-xs font-bold" style={noLeidas.length ? { background: AB.lime, color: AB.ink } : { background: '#F1F5F9', color: '#64748B' }}>
+                  {noLeidas.length} {noLeidas.length === 1 ? 'nueva' : 'nuevas'}
+                </span>
+              </div>
+            }
+          >
+            {notifications.length === 0 ? (
+              <div className="flex flex-col items-center px-6 py-12 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400"><BellOff className="h-5 w-5" /></span>
+                <p className="mt-3 text-sm font-semibold text-slate-700">Todo al día</p>
+                <p className="mt-1 text-xs text-slate-500">Aquí verás las ventas, los servicios, los reportes y las solicitudes de Trade-In nuevas.</p>
+              </div>
+            ) : (
+              <ul className="max-h-[560px] divide-y divide-slate-100 overflow-y-auto">
+                <AnimatePresence initial={false}>
+                  {notifications.map((n, i) => {
+                    const meta = notificationMeta(n);
+                    const Icon = meta.icon;
+                    return (
+                      <motion.li key={n.id} layout
+                        initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.35, delay: Math.min(i, 8) * 0.04, ease: EASE }}
+                        className={`relative flex gap-3 px-5 py-4 transition-colors ${n.read ? '' : 'bg-[#585E9F]/[0.045]'}`}>
+                        {!n.read && <span className="absolute left-0 top-4 h-9 w-[3px] rounded-r-full" style={{ background: AB.lime }} />}
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl" style={{ background: meta.bg, color: meta.color }}>
+                          <Icon className="h-[18px] w-[18px]" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-bold leading-snug text-slate-900">{n.title}</p>
+                            <span className="shrink-0 text-[11px] text-slate-400">{dayjs(n.created_at).format('DD/MM HH:mm')}</span>
+                          </div>
+                          <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-[13px] leading-relaxed text-slate-600">{n.message}</p>
+                          <div className="mt-2 flex items-center gap-3">
+                            <button type="button" onClick={() => router.visit(notificationTarget(n))}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-[#585E9F] hover:text-[#011446]">
+                              {meta.action} <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                            {!n.read && (
+                              <button type="button" onClick={() => marcarLeida(n.id)}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-700">
+                                <Check className="h-3.5 w-3.5" /> Marcar leída
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.li>
+                    );
+                  })}
+                </AnimatePresence>
+              </ul>
+            )}
+          </Panel>
         </div>
+
+        {/* ================= GRÁFICOS ================= */}
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid items-stretch gap-6 xl:grid-cols-2">
+          <motion.div variants={rise} className="h-full min-w-0">
+            <TrendChart
+              serie={serie}
+              rango={periodo}
+              cargando={cargando}
+              onPreset={presetPorClave}
+              presetActivo={presetActivo}
+              totales={{
+                ingresos: safeNum(resumen_total?.total_ventas),
+                inversion: safeNum(resumen_total?.total_costo) + safeNum(resumen_total?.total_permuta),
+                utilidad: safeNum(resumen_total?.utilidad_disponible),
+              }}
+            />
+          </motion.div>
+          <motion.div variants={rise} className="h-full min-w-0">
+            <AllocationDonut distribucion={distribucion_economica} total={resumen_total?.ganancia_neta} serie={serie} cargando={cargando} />
+          </motion.div>
+        </motion.div>
+
+        {/* ================= ÚLTIMAS VENTAS ================= */}
+        <Panel title="Últimas ventas" icon={ShoppingCart}
+          actions={<Link href={route('admin.ventas.index')} className="inline-flex items-center gap-1 text-sm font-bold text-[#585E9F] hover:text-[#011446]">Ver todas <ArrowRight className="h-4 w-4" /></Link>}>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                  <th className="px-5 py-3">Producto</th>
+                  <th className="px-5 py-3">Tipo</th>
+                  <th className="px-5 py-3 text-right">Total</th>
+                  <th className="px-5 py-3 text-right">Fecha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {ultimasVentas.length === 0 ? (
+                  <tr>
+                    <td className="px-5 py-10 text-center text-slate-500" colSpan={4}>No hay ventas en este período.</td>
+                  </tr>
+                ) : ultimasVentas.map((v, i) => (
+                  <tr key={`${v?.fecha ?? 'x'}-${i}`} className="transition-colors hover:bg-slate-50/70">
+                    <td className="px-5 py-3 font-semibold text-slate-900">{v?.producto || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className="rounded-full bg-[#585E9F]/10 px-2.5 py-0.5 text-xs font-semibold capitalize text-[#28224F]">{String(v?.tipo || '—').replace(/_/g, ' ')}</span>
+                    </td>
+                    <td className="px-5 py-3 text-right font-bold tabular-nums text-emerald-700">{fmtBs(v?.total)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums text-slate-500">{v?.fecha ? dayjs(v.fecha).format('DD/MM/YYYY') : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       </div>
 
-      {/* ================= IOS NOTIFICATION n8n ================= */}
+      {/* ================= REPORTE SEMANAL (n8n) ================= */}
       {automationReport && (
         <IosNotification
           color={performanceColor}
@@ -354,267 +543,20 @@ export default function Dashboard({
             parsedAutomation ? (
               <>
                 {parsedAutomation.resumen_ejecutivo?.descripcion ?? ''}
-
+                <br /><br />
+                <span className="inline-flex items-center gap-1"><DollarSign size={14} /> Utilidad: {fmtBs(utilidadSemana)}</span>
                 <br />
-                <br />
-
-                <span className="inline-flex items-center gap-1">
-                  <DollarSign size={14} />
-                  Utilidad: {fmtBs(utilidadSemana)}
-                </span>
-                <br />
-                <span className="inline-flex items-center gap-1">
-                  <VariacionIcon size={14} />
-                  Variacion: {variacion}%
-                </span>
+                <span className="inline-flex items-center gap-1"><VariacionIcon size={14} /> Variación: {variacion}%</span>
               </>
             ) : 'Nuevo análisis inteligente disponible'
           }
           onView={async () => {
-            try {
-              await axios.post(
-                route('admin.automation.markViewed', automationReport.id)
-              );
-            } catch { }
-
-            router.visit(
-              route('admin.automation.show', automationReport.id)
-            );
+            try { await axios.post(route('admin.automation.markViewed', automationReport.id)); } catch { /* sigue */ }
+            router.visit(route('admin.automation.show', automationReport.id));
           }}
           onClose={() => setAutomationReport(null)}
         />
       )}
-
-
-      {/* ================= ACCIONES ================= */}
-      <div className="px-4 mb-10">
-        <DashboardActions />
-      </div>
-
-      {/* ================= BLOQUE 1 ================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 mb-10">
-        <Card titulo="Ventas Hoy" valor={fmtBs(resumen?.ventas_hoy)} color="sky" />
-
-        <Card
-          titulo="Ganancia Neta (pre egresos)"
-          valor={
-            safeNum(resumen_total?.ganancia_neta) < 0
-              ? `Se invirtió ${fmtBs(
-                Math.abs(safeNum(resumen_total?.ganancia_neta))
-              )}`
-              : fmtBs(resumen_total?.ganancia_neta)
-          }
-          color={safeNum(resumen_total?.ganancia_neta) < 0 ? 'rose' : 'green'}
-        />
-
-        <Card
-          titulo="Servicios Técnicos"
-          valor={resumen?.servicios || 0}
-          color="indigo"
-        />
-
-        <Card
-          titulo="Cotizaciones Enviadas"
-          valor={resumen?.cotizaciones || 0}
-          color="rose"
-        />
-      </div>
-
-      {/* ================= BLOQUE 2 ================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 mb-12">
-        <Card
-          titulo="Total Ventas (Precio final pagado)"
-          valor={fmtBs(resumen_total?.total_ventas)}
-          color="sky"
-        />
-
-        <Card
-          titulo="Inversión Total (Costo + Permuta)"
-          valor={fmtBs(
-            safeNum(resumen_total?.total_costo) +
-            safeNum(resumen_total?.total_permuta)
-          )}
-          color="indigo"
-        />
-
-        <Card
-          titulo="Total Descuento"
-          valor={fmtBs(resumen_total?.total_descuento)}
-          color="rose"
-        />
-
-        <Card
-          titulo="Utilidad Disponible (ganancia - egresos)"
-          valor={
-            safeNum(resumen_total?.utilidad_disponible) < 0
-              ? `Se invirtió ${fmtBs(
-                Math.abs(safeNum(resumen_total?.utilidad_disponible))
-              )}`
-              : fmtBs(resumen_total?.utilidad_disponible)
-          }
-          color={safeNum(resumen_total?.utilidad_disponible) < 0 ? 'rose' : 'green'}
-        />
-      </div>
-
-      {/* ================= BLOQUE 3 ================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 mb-10">
-        <Card
-          titulo="Productos Generales Disponibles"
-          valor={resumen?.stock_detalle?.productos_generales || 0}
-          color="indigo"
-        />
-
-        <Card
-          titulo="% del Stock Total"
-          valor={`${resumen?.stock_detalle?.porcentaje_productos_generales || 0}%`}
-          color="sky"
-        />
-      </div>
-
-      {/* ================= FILTROS ================= */}
-      <form
-        onSubmit={handleFiltrar}
-        className="px-4 mb-12 bg-white rounded-2xl shadow-sm border border-gray-100 p-5"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-          {/* FECHA INICIO */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">
-              Fecha inicio
-            </label>
-            <input
-              type="date"
-              value={fechaInicio}
-              max={fechaFin}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none"
-            />
-          </div>
-
-          {/* FECHA FIN */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Fecha fin</label>
-            <input
-              type="date"
-              value={fechaFin}
-              min={fechaInicio}
-              max={hoyStr}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none"
-            />
-          </div>
-
-          {/* VENDEDOR */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Vendedor</label>
-            <select
-              value={vendedorId}
-              onChange={(e) => setVendedorId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-100 outline-none"
-            >
-              <option value="">Todos</option>
-              {vendedores.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* BOTÓN */}
-          <div className="flex">
-            <button
-              type="submit"
-              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white px-6 py-2.5 text-sm font-semibold shadow-sm transition"
-            >
-              <i className="fas fa-filter text-xs"></i>
-              Filtrar
-            </button>
-          </div>
-        </div>
-      </form>
-      {/* ================= GRÁFICOS ================= */}
-      <div className="px-4 mb-14">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-stretch">
-
-          {/* CARD IZQUIERDO */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <EconomicCharts
-              resumen_total={resumen_total}
-              distribucion_economica={distribucion_economica}
-            />
-          </div>
-
-          {/* CARD DERECHO */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <SalesChart
-              distribucion_economica={distribucion_economica}
-              resumen_total={resumen_total}
-            />
-          </div>
-
-        </div>
-      </div>
-
-      {/* ================= ÚLTIMAS VENTAS ================= */}
-      <div className="px-4 mb-12">
-        <h2 className="text-lg font-semibold mb-3">Últimas 5 ventas</h2>
-
-        <div className="overflow-auto bg-white rounded-xl shadow border">
-          <table className="min-w-full text-sm">
-            <thead className="bg-sky-100 text-sky-800">
-              <tr>
-                <th className="px-4 py-3 text-left">Producto</th>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Total</th>
-                <th className="px-4 py-3 text-left">Fecha</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {ultimasVentas.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={4}>
-                    No hay ventas registradas en este rango.
-                  </td>
-                </tr>
-              ) : (
-                ultimasVentas.map((v, i) => (
-                  <tr key={`${v?.fecha ?? 'x'}-${i}`} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-2">{v?.producto || '—'}</td>
-                    <td className="px-4 py-2 capitalize">{v?.tipo || '—'}</td>
-                    <td className="px-4 py-2 font-semibold text-green-600">
-                      {fmtBs(v?.total)}
-                    </td>
-                    <td className="px-4 py-2">
-                      {v?.fecha ? dayjs(v.fecha).format('DD/MM/YYYY') : '—'}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </AdminLayout>
-  );
-}
-
-/* =======================
-   CARD AUX
-======================= */
-function Card({ titulo, valor, color }) {
-  const colors = {
-    sky: 'text-sky-700',
-    green: 'text-green-600',
-    indigo: 'text-indigo-600',
-    rose: 'text-rose-600',
-  };
-
-  return (
-    <div className="bg-white shadow-md rounded-xl p-5 text-center hover:shadow-lg transition">
-      <p className="text-sm text-gray-500 mb-1">{titulo}</p>
-      <h2 className={`text-xl font-bold ${colors[color]}`}>{valor}</h2>
-    </div>
   );
 }

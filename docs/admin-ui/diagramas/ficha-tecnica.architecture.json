@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": { "title": "Ficha técnica y batería: del inventario a la tienda y la API", "quality_profile": "showcase" },
+  "components": [
+    { "id": "inventario", "type": "database", "label": "Inventario", "sublabel": "bateria: 100 SELLADO", "pos": [40, 300], "size": [170, 64] },
+    { "id": "editor", "type": "frontend", "label": "Editor de la tienda", "sublabel": "Ficha técnica por grupos", "pos": [40, 140], "size": [190, 64] },
+    { "id": "publicacion", "type": "database", "label": "Publicación", "sublabel": "atributos (manual)", "pos": [300, 140], "size": [170, 64] },
+    { "id": "modelo", "type": "backend", "label": "atributosPublicos()", "sublabel": "bateriaDe + filtro privado", "pos": [300, 300], "size": [200, 64] },
+    { "id": "tienda", "type": "frontend", "label": "Ficha pública", "sublabel": "FichaTecnica + SVG", "pos": [580, 220], "size": [180, 64] },
+    { "id": "api", "type": "external", "label": "API v1", "sublabel": "/api/v1/products", "pos": [580, 380], "size": [180, 64] }
+  ],
+  "connections": [
+    { "id": "guarda", "from": "editor", "to": "publicacion", "label": "PATCH" },
+    { "id": "lee-inv", "from": "inventario", "to": "modelo", "label": "batería en vivo", "variant": "emphasis" },
+    { "id": "lee-pub", "from": "publicacion", "to": "modelo", "fromSide": "bottom", "toSide": "top" },
+    { "id": "a-tienda", "from": "modelo", "to": "tienda", "variant": "emphasis" },
+    { "id": "a-api", "from": "modelo", "to": "api" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Batería", "items": ["Manda el inventario si trae un porcentaje claro", "Si no, vale la cargada a mano en la ficha"] },
+    { "dot": "rose", "title": "Privacidad", "items": ["IMEI, costo y procedencia se filtran siempre", "Solo salud, ciclos y sellado salen a lo público"] }
+  ]
+}

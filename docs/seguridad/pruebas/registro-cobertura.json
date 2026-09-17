@@ -1,0 +1,1757 @@
+[
+  {
+    "coverage_id": "Dockerfile%23base%20images%2C%20composer%20and%20build%20context::Dockerfile%23image%20pinning%20and%20copied%20inputs::Dockerfile::SUPPLY-CHAIN-AND-RELEASE.md%23Mutable%20and%20unbound%20build%20inputs",
+    "canonical_refs": {
+      "surface": "Dockerfile#base images, composer and build context",
+      "boundary": "Dockerfile#image pinning and copied inputs",
+      "subsystem": "Dockerfile",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs"
+    },
+    "surface": "Container images, dependency locks and build scripts",
+    "boundary": "Image/tag pinning and build inputs",
+    "subsystem": "Build and supply chain",
+    "attack_class": "Mutable and unbound build inputs",
+    "starting_paths": [
+      "Dockerfile",
+      "docker-compose.yml",
+      "docker/n8n/Dockerfile",
+      "src/composer.lock",
+      "src/package-lock.json",
+      "src/scripts/build-vite-production.mjs",
+      ".gitignore"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Build-context inclusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Dependency source and namespace confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+        "reason": "No CI configuration exists in the repository."
+      },
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Release authorization and signing-policy gaps",
+        "reason": "No release or signing pipeline in source."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h11b-despliegue",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h11-despliegue: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "docker-compose.yml%23services%2C%20ports%20and%20tunnel::docker-compose.yml%23bind%20address%20and%20n8n%20environment::docker-compose.yml::CLOUD-AND-DEPLOYMENT.md%23Unexpected%20service%20or%20management-plane%20reachability",
+    "canonical_refs": {
+      "surface": "docker-compose.yml#services, ports and tunnel",
+      "boundary": "docker-compose.yml#bind address and n8n environment",
+      "subsystem": "docker-compose.yml",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Unexpected service or management-plane reachability"
+    },
+    "surface": "Docker Compose services, tunnels, Adminer and n8n",
+    "boundary": "Loopback binding, tunnel target, n8n env/node restrictions",
+    "subsystem": "Deployment",
+    "attack_class": "Unexpected service or management-plane reachability",
+    "starting_paths": [
+      "docker-compose.yml",
+      "docker/n8n/Dockerfile",
+      "n8n/workflows/database-backup-daily.json",
+      "n8n/workflows/intelligent-weekly-report.json",
+      "Dockerfile"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Unexpected service or management-plane reachability",
+      "CLOUD-AND-DEPLOYMENT.md#Secret exposure across workload boundaries",
+      "CLOUD-AND-DEPLOYMENT.md#Host or control-plane capability exposure",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach",
+        "reason": "No cloud IAM or workload identity in source."
+      },
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Admission and policy path inconsistency",
+        "reason": "No Kubernetes or admission policy."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h11b-despliegue",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h11-despliegue: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "repository%23all%20tracked%20and%20untracked%20source%20files::repository%23basic%20exposure%20checklist::repository::ATTACK-CLASSES.md%23Obvious%20things",
+    "canonical_refs": {
+      "surface": "repository#all tracked and untracked source files",
+      "boundary": "repository#basic exposure checklist",
+      "subsystem": "repository",
+      "attack_class": "ATTACK-CLASSES.md#Obvious things"
+    },
+    "surface": "Whole repository",
+    "boundary": "Secrets, debug gates, exposed endpoints, cookies, CORS, redirects, errors",
+    "subsystem": "Repository",
+    "attack_class": "Obvious things",
+    "starting_paths": [
+      "src/database/seeders",
+      "src/config",
+      "src/routes",
+      ".gitignore",
+      "src/.env.example",
+      "docker-compose.yml",
+      "src/public"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Obvious things",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h11b-despliegue",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h11-despliegue: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "repository%23application%20features%20outside%20the%20assigned%20classes::repository%23unassigned%20invariants::src::ATTACK-CLASSES.md%23Wildcard",
+    "canonical_refs": {
+      "surface": "repository#application features outside the assigned classes",
+      "boundary": "repository#unassigned invariants",
+      "subsystem": "src",
+      "attack_class": "ATTACK-CLASSES.md#Wildcard"
+    },
+    "surface": "Whole application",
+    "boundary": "Any invariant not covered by other units",
+    "subsystem": "Application",
+    "attack_class": "Wildcard",
+    "starting_paths": [
+      "src/app",
+      "src/routes",
+      "src/resources/js",
+      "src/database/migrations",
+      "src/app/Console/Commands"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Wildcard",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h12b-secretos-wildcard",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h12-secretos-wildcard: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "repository%23tokens%2C%20codes%20and%20secrets%20in%20application%20code::src%2Fapp%23randomness%20and%20secret%20comparison::src%2Fapp::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "repository#tokens, codes and secrets in application code",
+      "boundary": "src/app#randomness and secret comparison",
+      "subsystem": "src/app",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "Unsubscribe tokens, trade-in codes, automation token, note codes",
+    "boundary": "Random generation and constant-time comparison",
+    "subsystem": "Application code",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "src/app/Models/NewsletterSubscriber.php",
+      "src/app/Http/Middleware/AutomationTokenMiddleware.php",
+      "src/app/Models/TradeInSolicitud.php",
+      "src/app/Http/Controllers/TradeInController.php",
+      "src/app/Support",
+      "src/config/app.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h12b-secretos-wildcard",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h12-secretos-wildcard: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Fapp%2FHttp%2FControllers%2FAutomation%2FAutomationReportController.php%23stored%20model%20output::src%2Fresources%2Fjs%2FPages%2FAdmin%2FAutomation%2FShow.jsx%23report%20rendering::src%2Fresources%2Fjs%2FPages%2FAdmin%2FAutomation::AI-AND-LLM.md%23Insecure%20output%20rendering",
+    "canonical_refs": {
+      "surface": "src/app/Http/Controllers/Automation/AutomationReportController.php#stored model output",
+      "boundary": "src/resources/js/Pages/Admin/Automation/Show.jsx#report rendering",
+      "subsystem": "src/resources/js/Pages/Admin/Automation",
+      "attack_class": "AI-AND-LLM.md#Insecure output rendering"
+    },
+    "surface": "AI weekly report content",
+    "boundary": "Report storage and admin rendering",
+    "subsystem": "Admin automation views",
+    "attack_class": "Insecure output rendering",
+    "starting_paths": [
+      "src/app/Http/Controllers/Automation/AutomationReportController.php",
+      "src/resources/js/Pages/Admin/Automation/Show.jsx",
+      "src/resources/js/Pages/Admin/Dashboard.jsx",
+      "n8n/workflows/intelligent-weekly-report.json",
+      "src/app/Models/AutomationReport.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "AI-AND-LLM.md#Core discipline",
+      "AI-AND-LLM.md#Insecure output rendering",
+      "AI-AND-LLM.md#Indirect injection through retrieved or ingested content",
+      "AI-AND-LLM.md#Universal moves",
+      "AI-AND-LLM.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "AI-AND-LLM.md#Excessive agency and confused-deputy authority",
+        "reason": "The model has no tools or actions; n8n posts its text output only."
+      },
+      {
+        "block": "AI-AND-LLM.md#Sub-agent and MCP trust inheritance",
+        "reason": "No MCP or sub-agents."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h04b-integraciones",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h04-integraciones: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Fapp%2FHttp%2FMiddleware%2FSecurityHeadersMiddleware.php%23environment-dependent%20headers::src%2Fapp%2FProviders%2FAppServiceProvider.php%23APP_ENV-gated%20controls::src%2Fapp%2FHttp%2FMiddleware::CLOUD-AND-DEPLOYMENT.md%23Security-control%20precedence%20drift",
+    "canonical_refs": {
+      "surface": "src/app/Http/Middleware/SecurityHeadersMiddleware.php#environment-dependent headers",
+      "boundary": "src/app/Providers/AppServiceProvider.php#APP_ENV-gated controls",
+      "subsystem": "src/app/Http/Middleware",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift"
+    },
+    "surface": "Security headers, forced https and password rules by environment",
+    "boundary": "APP_ENV/APP_DEBUG selection of controls",
+    "subsystem": "Middleware and providers",
+    "attack_class": "Security-control precedence drift",
+    "starting_paths": [
+      "src/app/Http/Middleware/SecurityHeadersMiddleware.php",
+      "src/app/Providers/AppServiceProvider.php",
+      "src/config/app.php",
+      "src/config/session.php",
+      "src/bootstrap/app.php",
+      "src/.env.example"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h10-navegador-entorno",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Fapp%2FJobs%2FSendNewsletterBatch.php%23queued%20campaign%20delivery::src%2Fapp%2FJobs%2FDispatchNewsletterCampaign.php%23batch%20idempotency::src%2Fapp%2FJobs::PROTOCOLS-RPC-AND-MESSAGING.md%23Duplicate%20delivery%20and%20idempotency%20gaps",
+    "canonical_refs": {
+      "surface": "src/app/Jobs/SendNewsletterBatch.php#queued campaign delivery",
+      "boundary": "src/app/Jobs/DispatchNewsletterCampaign.php#batch idempotency",
+      "subsystem": "src/app/Jobs",
+      "attack_class": "PROTOCOLS-RPC-AND-MESSAGING.md#Duplicate delivery and idempotency gaps"
+    },
+    "surface": "Newsletter campaign queue jobs",
+    "boundary": "Recipient batching, retries and sent-state tracking",
+    "subsystem": "Queue jobs",
+    "attack_class": "Duplicate delivery and idempotency gaps",
+    "starting_paths": [
+      "src/app/Jobs",
+      "src/app/Http/Controllers/Admin/NewsletterCampaignController.php",
+      "src/app/Models/NewsletterCampaignRecipient.php",
+      "src/app/Support/NewsletterContent.php",
+      "src/resources/views/emails/newsletter.blade.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Duplicate delivery and idempotency gaps",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Universal moves",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Retry storm and fail-open amplification"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Topic, routing-key, and subscription scope gaps",
+        "reason": "Single database queue without topics or subscriptions."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h04b-integraciones",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h04-integraciones: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Fresources%2Fjs%23Inertia%20history%20state%20and%20shared%20props::src%2Fapp%2FHttp%2FMiddleware%2FHandleInertiaRequests.php%23shared%20props%20and%20history::src%2Fresources%2Fjs::CLIENT-SIDE.md%23Browser-storage%20disclosure%20and%20stale%20authorization",
+    "canonical_refs": {
+      "surface": "src/resources/js#Inertia history state and shared props",
+      "boundary": "src/app/Http/Middleware/HandleInertiaRequests.php#shared props and history",
+      "subsystem": "src/resources/js",
+      "attack_class": "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization"
+    },
+    "surface": "Browser history, local storage and redirect parameters",
+    "boundary": "Inertia shared props, history encryption and return_to handling",
+    "subsystem": "React frontend",
+    "attack_class": "Browser-storage disclosure and stale authorization",
+    "starting_paths": [
+      "src/app/Http/Middleware/HandleInertiaRequests.php",
+      "src/resources/js/app.jsx",
+      "src/resources/views/app.blade.php",
+      "src/resources/js/Layouts",
+      "src/resources/js/Components/Panel",
+      "src/resources/js/Pages/Store/TradeIn.jsx"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#Browser-storage disclosure and stale authorization",
+      "CLIENT-SIDE.md#Client-side navigation confusion",
+      "CLIENT-SIDE.md#Clickjacking",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Service-worker registration and scope takeover",
+        "reason": "No service worker registered."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Cross-site WebSocket request use",
+        "reason": "No WebSockets."
+      },
+      {
+        "block": "CLIENT-SIDE.md#`postMessage` origin and source trust",
+        "reason": "No postMessage listeners found in recon."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h10-navegador-entorno",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fapi.php%23%2Fapi%2Fautomation%2F%2A%20and%20src%2Froutes%2Fweb.php%23POST%20%2Fautomation%2Fstore::src%2Fapp%2FHttp%2FMiddleware%2FAutomationTokenMiddleware.php%23static%20token::src%2Fapp%2FHttp%2FControllers%2FAutomation::WEB-PROTOCOL-AND-AUTH.md%23API-key%20scope%20and%20resource%20binding",
+    "canonical_refs": {
+      "surface": "src/routes/api.php#/api/automation/* and src/routes/web.php#POST /automation/store",
+      "boundary": "src/app/Http/Middleware/AutomationTokenMiddleware.php#static token",
+      "subsystem": "src/app/Http/Controllers/Automation",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding"
+    },
+    "surface": "n8n automation endpoints",
+    "boundary": "Static X-AUTOMATION-TOKEN and per-endpoint scope",
+    "subsystem": "Automation controllers",
+    "attack_class": "API-key scope and resource binding",
+    "starting_paths": [
+      "src/app/Http/Middleware/AutomationTokenMiddleware.php",
+      "src/routes/api.php",
+      "src/routes/web.php",
+      "src/app/Http/Controllers/Automation/AutomationReportController.php",
+      "src/app/Http/Controllers/Automation/TopProductsController.php",
+      "src/app/Http/Controllers/ReporteController.php",
+      "src/config/automation.php",
+      "n8n/workflows/intelligent-weekly-report.json"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Untrusted producer treated as control plane",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Universal moves",
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      },
+      {
+        "block": "PROTOCOLS-RPC-AND-MESSAGING.md#Message boundary and canonicalization disagreement",
+        "reason": "JSON over HTTP only; no custom wire protocol."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h04b-integraciones",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h04-integraciones: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fapi.php%23GET%20%2Fapi%2Fv1%2F%2A::src%2Fapp%2FHttp%2FControllers%2FApi%2FV1%2FProductApiController.php%23public%20field%20allowlist::src%2Fapp%2FHttp%2FControllers%2FApi%2FV1::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "src/routes/api.php#GET /api/v1/*",
+      "boundary": "src/app/Http/Controllers/Api/V1/ProductApiController.php#public field allowlist",
+      "subsystem": "src/app/Http/Controllers/Api/V1",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "Public API v1 products and filters",
+    "boundary": "ProductApiController public allowlist",
+    "subsystem": "Public API v1",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "src/routes/api.php",
+      "src/app/Http/Controllers/Api/V1/ProductApiController.php",
+      "src/app/Models/CatalogoPublicacion.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Enumeration and aggregate oracles",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h01-publico-lectura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fapi.php%23GET%20%2Fapi%2Fv1%2F%2A::src%2Fapp%2FSupport%2FBusqueda.php%23LIKE%20escaping%20and%20bindings::src%2Fapp%2FHttp%2FControllers%2FApi%2FV1::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "src/routes/api.php#GET /api/v1/*",
+      "boundary": "src/app/Support/Busqueda.php#LIKE escaping and bindings",
+      "subsystem": "src/app/Http/Controllers/Api/V1",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "Public API v1, /api/buscar and catalog query parameters",
+    "boundary": "Busqueda escaping and query bindings",
+    "subsystem": "Public API v1",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "src/app/Http/Controllers/Api/V1/ProductApiController.php",
+      "src/app/Support/Busqueda.php",
+      "src/app/Http/Controllers/PublicSearchController.php",
+      "src/app/Http/Controllers/PublicCatalogController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h01-publico-lectura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fauth.php%23POST%20forgot-password%20and%20reset-password::src%2Fapp%2FHttp%2FControllers%2FAuth%2FPasswordResetLinkController.php%23reset%20link%20issuance::src%2Fapp%2FHttp%2FControllers%2FAuth::WEB-PROTOCOL-AND-AUTH.md%23Password%20reset%20and%20broader%20recovery",
+    "canonical_refs": {
+      "surface": "src/routes/auth.php#POST forgot-password and reset-password",
+      "boundary": "src/app/Http/Controllers/Auth/PasswordResetLinkController.php#reset link issuance",
+      "subsystem": "src/app/Http/Controllers/Auth",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery"
+    },
+    "surface": "Password reset request and completion",
+    "boundary": "Reset token issuance, link host, account disclosure",
+    "subsystem": "Laravel auth controllers",
+    "attack_class": "Password reset and broader recovery",
+    "starting_paths": [
+      "src/routes/auth.php",
+      "src/app/Http/Controllers/Auth/PasswordResetLinkController.php",
+      "src/app/Http/Controllers/Auth/NewPasswordController.php",
+      "src/app/Models/User.php",
+      "src/bootstrap/app.php",
+      "src/config/auth.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Password reset and broader recovery",
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Enumeration and aggregate oracles"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#MFA enrollment and assurance downgrade",
+        "reason": "No MFA in source."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h03-identidad",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fauth.php%23POST%20login%20and%20all%20requests%20with%20X-Forwarded-%2A::src%2Fbootstrap%2Fapp.php%23trustProxies%20at%20%2A::src%2Fapp%2FHttp%2FRequests%2FAuth%2FLoginRequest.php::WEB-PROTOCOL-AND-AUTH.md%23Host%20and%20forwarded-header%20trust",
+    "canonical_refs": {
+      "surface": "src/routes/auth.php#POST login and all requests with X-Forwarded-*",
+      "boundary": "src/bootstrap/app.php#trustProxies at *",
+      "subsystem": "src/app/Http/Requests/Auth/LoginRequest.php",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust"
+    },
+    "surface": "Login throttle, IP-keyed rate limits and host-derived URLs",
+    "boundary": "Trusted proxy configuration and request IP/host derivation",
+    "subsystem": "Laravel auth and routing",
+    "attack_class": "Host and forwarded-header trust",
+    "starting_paths": [
+      "src/bootstrap/app.php",
+      "src/app/Http/Requests/Auth/LoginRequest.php",
+      "src/routes/web.php",
+      "src/routes/api.php",
+      "src/app/Http/Middleware/SecurityHeadersMiddleware.php",
+      "src/app/Providers/AppServiceProvider.php",
+      "src/app/Support/Seo.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Quota-accounting scope and reset gaps",
+      "CLOUD-AND-DEPLOYMENT.md#Trusted-proxy and mesh identity bypass"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Web cache poisoning through unkeyed input",
+        "reason": "No application or proxy cache configuration in source; Cloudflare cache rules are not source-visible."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h03-identidad",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23%2Fadmin%2F%2A%20modules::src%2Fapp%2FHttp%2FMiddleware%2FPermisoMiddleware.php%23module%20map%20and%20role%20management::src%2Fapp%2FSupport%2FPermisos.php::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#/admin/* modules",
+      "boundary": "src/app/Http/Middleware/PermisoMiddleware.php#module map and role management",
+      "subsystem": "src/app/Support/Permisos.php",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Admin panel modules, users and roles",
+    "boundary": "Route-name module map, role CRUD and user CRUD",
+    "subsystem": "Permissions",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "src/app/Http/Middleware/PermisoMiddleware.php",
+      "src/app/Support/Permisos.php",
+      "src/app/Models/Role.php",
+      "src/app/Http/Controllers/Admin/UsuarioController.php",
+      "src/app/Http/Controllers/Admin/RolController.php",
+      "src/routes/web.php",
+      "src/routes/auth.php",
+      "src/app/Http/Controllers/Auth/RegisteredUserController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h07-roles",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23%2Fvendedor%2F%2A%20record%20routes::src%2Fapp%2FHttp%2FControllers%23vendedor%20ownership%20checks::src%2Fapp%2FHttp%2FControllers::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#/vendedor/* record routes",
+      "boundary": "src/app/Http/Controllers#vendedor ownership checks",
+      "subsystem": "src/app/Http/Controllers",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Vendedor sales, reservations, services, quotes and clients by id",
+    "boundary": "Per-controller ownership checks",
+    "subsystem": "Panel controllers",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "src/routes/web.php",
+      "src/app/Http/Controllers/VentaController.php",
+      "src/app/Http/Controllers/ReservaController.php",
+      "src/app/Http/Controllers/ServicioTecnicoController.php",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Http/Controllers/Vendedor",
+      "src/app/Http/Middleware/RolMiddleware.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Composite-key and namespace collision",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h05b-vendedor-aislamiento",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h05-vendedor-aislamiento: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23GET%20%2Fgoogle-auth%20and%20%2Foauth2callback::src%2Fapp%2FHttp%2FControllers%2FGoogleDriveController.php%23OAuth%20callback%20binding::src%2Fapp%2FHttp%2FControllers%2FGoogleDriveController.php::WEB-PROTOCOL-AND-AUTH.md%23OAuth%2FOIDC%20request%20and%20callback%20binding",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#GET /google-auth and /oauth2callback",
+      "boundary": "src/app/Http/Controllers/GoogleDriveController.php#OAuth callback binding",
+      "subsystem": "src/app/Http/Controllers/GoogleDriveController.php",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding"
+    },
+    "surface": "Google Drive OAuth connect and callback",
+    "boundary": "OAuth state/session binding and token storage",
+    "subsystem": "Google Drive integration",
+    "attack_class": "OAuth/OIDC request and callback binding",
+    "starting_paths": [
+      "src/app/Http/Controllers/GoogleDriveController.php",
+      "src/routes/web.php",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Providers/GoogleDriveServiceProvider.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#OAuth/OIDC request and callback binding",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h04b-integraciones",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md",
+      "reassigned_from": "h04-integraciones: API error before any result (model safeguard false positive)"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23GET%20%2Ftrade-in%2Fconfirmacion%2F%7Bcodigo%7D%20and%20admin%20trade-in%20photos::src%2Fapp%2FHttp%2FControllers%2FTradeInController.php%23session%20code%20list::src%2Fapp%2FHttp%2FControllers%2FTradeInController.php::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#GET /trade-in/confirmacion/{codigo} and admin trade-in photos",
+      "boundary": "src/app/Http/Controllers/TradeInController.php#session code list",
+      "subsystem": "src/app/Http/Controllers/TradeInController.php",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Trade-in confirmation page and stored photos",
+    "boundary": "Session-bound confirmation codes and admin-only photo streaming",
+    "subsystem": "Trade-in",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "src/app/Http/Controllers/TradeInController.php",
+      "src/app/Http/Controllers/Admin/TradeInAdminController.php",
+      "src/app/Models/TradeInSolicitud.php",
+      "src/config/filesystems.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h02-publico-escritura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23GET%20public%20catalog%20filters%20and%20%2Fapi%2Fv1%20pagination::src%2Froutes%2Fweb.php%23throttle%20and%20query%20limits::src%2Fapp%2FHttp%2FControllers%2FPublicCatalogController.php::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Database%20and%20downstream%20query%20amplification",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#GET public catalog filters and /api/v1 pagination",
+      "boundary": "src/routes/web.php#throttle and query limits",
+      "subsystem": "src/app/Http/Controllers/PublicCatalogController.php",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Database and downstream query amplification"
+    },
+    "surface": "Public catalog, sitemap, search and API pagination",
+    "boundary": "Route throttles and per-query limits",
+    "subsystem": "Public catalog controllers",
+    "attack_class": "Database and downstream query amplification",
+    "starting_paths": [
+      "src/app/Http/Controllers/PublicCatalogController.php",
+      "src/app/Http/Controllers/Api/V1/ProductApiController.php",
+      "src/app/Http/Controllers/PublicSearchController.php",
+      "src/app/Http/Controllers/SitemapController.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Database and downstream query amplification",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Superlinear parsing, matching, or evaluation",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Decompression and representation amplification",
+        "reason": "No archive/decompression input on public routes."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h01-publico-lectura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23GET%20public%20store%20pages::src%2Fapp%2FHttp%2FControllers%2FPublicCatalogController.php%23public%20field%20serialization::src%2Fapp%2FHttp%2FControllers%2FPublicCatalogController.php::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#GET public store pages",
+      "boundary": "src/app/Http/Controllers/PublicCatalogController.php#public field serialization",
+      "subsystem": "src/app/Http/Controllers/PublicCatalogController.php",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "Public store pages, comparator and /api/buscar",
+    "boundary": "Public-field serializers and published/available filters",
+    "subsystem": "Public catalog controllers",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "src/routes/web.php",
+      "src/app/Http/Controllers/PublicCatalogController.php",
+      "src/app/Http/Controllers/ComparadorModelosController.php",
+      "src/app/Http/Controllers/HubController.php",
+      "src/app/Http/Controllers/PublicSearchController.php",
+      "src/app/Models/CatalogoPublicacion.php",
+      "src/app/Http/Middleware/HandleInertiaRequests.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Enumeration and aggregate oracles",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Soft-delete and tombstone bypass",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+        "reason": "Public pages have no owner; single-tenant store."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h01-publico-lectura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23PDF%20generation%20%28quotes%2C%20receipts%2C%20reports%2C%20audits%29::src%2Fconfig%2Fdompdf.php%23enable_remote%20and%20chroot::src%2Fresources%2Fviews%2Fpdf::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#PDF generation (quotes, receipts, reports, audits)",
+      "boundary": "src/config/dompdf.php#enable_remote and chroot",
+      "subsystem": "src/resources/views/pdf",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "Server-side PDF rendering from stored and request data",
+    "boundary": "dompdf remote fetch and chroot settings",
+    "subsystem": "PDF views",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "src/config/dompdf.php",
+      "src/resources/views/pdf",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Http/Controllers/Admin/InventoryAuditController.php",
+      "src/app/Jobs",
+      "src/app/Http/Controllers/ReporteController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h09-archivos-exportes",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23POST%20%2Fapi%2Fcarrito%2Fsync::src%2Fapp%2FHttp%2FControllers%2FPublicCatalogController.php%23syncCart%20server%20price%20authority::src%2Fapp%2FHttp%2FControllers%2FPublicCatalogController.php::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#POST /api/carrito/sync",
+      "boundary": "src/app/Http/Controllers/PublicCatalogController.php#syncCart server price authority",
+      "subsystem": "src/app/Http/Controllers/PublicCatalogController.php",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Public cart sync",
+    "boundary": "Server-side price and availability authority",
+    "subsystem": "Public catalog controllers",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "src/routes/web.php",
+      "src/app/Http/Controllers/PublicCatalogController.php",
+      "src/resources/js/Layouts/StoreLayout.jsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h02-publico-escritura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23POST%20%2Fnewsletter%20and%20%2Fnewsletter%2Fbaja%2F%7Btoken%7D::src%2Fbootstrap%2Fapp.php%23CSRF%20exemption%20and%20unsubscribe%20token::src%2Fapp%2FHttp%2FControllers%2FNewsletterController.php::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#POST /newsletter and /newsletter/baja/{token}",
+      "boundary": "src/bootstrap/app.php#CSRF exemption and unsubscribe token",
+      "subsystem": "src/app/Http/Controllers/NewsletterController.php",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Newsletter subscribe and one-click unsubscribe",
+    "boundary": "CSRF exemption scope and random unsubscribe token",
+    "subsystem": "Newsletter public",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "src/bootstrap/app.php",
+      "src/app/Http/Controllers/NewsletterController.php",
+      "src/app/Models/NewsletterSubscriber.php",
+      "src/routes/web.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h02-publico-escritura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23POST%20%2Ftrade-in::src%2Fapp%2FServices%2FFotosTradeInService.php%23upload%20validation%20and%20private%20storage::src%2Fapp%2FHttp%2FControllers%2FTradeInController.php::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#POST /trade-in",
+      "boundary": "src/app/Services/FotosTradeInService.php#upload validation and private storage",
+      "subsystem": "src/app/Http/Controllers/TradeInController.php",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "Public trade-in form with photos",
+    "boundary": "Upload validation, count/size caps, private disk",
+    "subsystem": "Trade-in",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "src/app/Http/Controllers/TradeInController.php",
+      "src/app/Services/FotosTradeInService.php",
+      "src/app/Support/TradeIn/Cuestionario.php",
+      "src/app/Models/TradeInSolicitud.php",
+      "src/docker/php.ini"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#File descriptor, handle, and temporary-resource leaks",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h02-publico-escritura",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23admin%20image%20uploads%20%28catalog%2C%20SEO%2C%20newsletter%2C%20models%2C%20news%29::src%2Fapp%2FServices%2FImagenProductoService.php%23mime%20and%20name%20validation::src%2Fapp%2FServices::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#admin image uploads (catalog, SEO, newsletter, models, news)",
+      "boundary": "src/app/Services/ImagenProductoService.php#mime and name validation",
+      "subsystem": "src/app/Services",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "Admin image uploads to the public disk",
+    "boundary": "Upload validation, re-encoding and naming",
+    "subsystem": "Image services",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "src/app/Services",
+      "src/app/Http/Controllers/Admin/SeoController.php",
+      "src/app/Http/Controllers/Admin/NewsletterCampaignController.php",
+      "src/app/Http/Controllers/Admin/ModeloReferenciaController.php",
+      "src/config/filesystems.php",
+      "src/app/Services/Concerns/ProcesaImagenes.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h09-archivos-exportes",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23admin%20rich%20HTML%20%28catalog%2C%20pages%2C%20news%2C%20categories%2C%20newsletter%29::src%2Fapp%2FHttp%2FControllers%2FAdmin%2FCatalogoPublicacionController.php%23sanitizeRichText::src%2Fresources%2Fjs%2FPages%2FStore::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#admin rich HTML (catalog, pages, news, categories, newsletter)",
+      "boundary": "src/app/Http/Controllers/Admin/CatalogoPublicacionController.php#sanitizeRichText",
+      "subsystem": "src/resources/js/Pages/Store",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "Stored rich HTML rendered on public pages, admin editor, emails and PDFs",
+    "boundary": "Server-side HTML sanitizers and escaping",
+    "subsystem": "Storefront rendering",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "src/app/Http/Controllers/Admin/CatalogoPublicacionController.php",
+      "src/app/Http/Controllers/Admin/PageController.php",
+      "src/app/Http/Controllers/Admin/NovedadController.php",
+      "src/app/Models/Novedad.php",
+      "src/app/Support/NewsletterContent.php",
+      "src/resources/js/Pages/Store",
+      "src/resources/js/Pages/Admin/Catalogo/Edit.jsx",
+      "src/resources/views/pdf/cotizacion.blade.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "CLIENT-SIDE.md#Core discipline",
+      "CLIENT-SIDE.md#DOM-based XSS",
+      "CLIENT-SIDE.md#Universal moves",
+      "CLIENT-SIDE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "CLIENT-SIDE.md#Prototype pollution and gadget chain",
+        "reason": "No client-side deep merge of attacker-controlled JSON found in recon."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h08-inyeccion-xss",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23authenticated%20session%20lifecycle::src%2Fconfig%2Fsession.php%23session%20regeneration%20and%20revocation::src%2Fapp%2FHttp%2FControllers%2FAuth::WEB-PROTOCOL-AND-AUTH.md%23Session%20fixation%20and%20invalidation",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#authenticated session lifecycle",
+      "boundary": "src/config/session.php#session regeneration and revocation",
+      "subsystem": "src/app/Http/Controllers/Auth",
+      "attack_class": "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation"
+    },
+    "surface": "Login, logout, password change, profile email change, account deletion",
+    "boundary": "Session regeneration, remember-token rotation and revocation",
+    "subsystem": "Laravel auth controllers",
+    "attack_class": "Session fixation and invalidation",
+    "starting_paths": [
+      "src/config/session.php",
+      "src/app/Http/Controllers/Auth/AuthenticatedSessionController.php",
+      "src/app/Http/Controllers/Auth/PasswordController.php",
+      "src/app/Http/Controllers/Admin/UsuarioController.php",
+      "src/app/Http/Controllers/ProfileController.php",
+      "src/app/Models/User.php"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#Session fixation and invalidation",
+      "WEB-PROTOCOL-AND-AUTH.md#Cookie scope and transport",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Stale authorization and derived copy use"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Request framing and desynchronization",
+        "reason": "Single Apache+PHP origin behind cloudflared; no custom HTTP parser or proxy code in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#JWT verification and claim binding",
+        "reason": "No JWT issued or verified (session guard only, src/config/auth.php:38-43)."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#SAML signed-object and assertion binding",
+        "reason": "No SAML integration in source."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#WebAuthn and passkey verification",
+        "reason": "No WebAuthn/passkey code."
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#mTLS peer and application-identity confusion",
+        "reason": "No mTLS in source."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h03-identidad",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23exports%2C%20reports%2C%20subscriber%20CSV%20and%20quote%20Drive%20links::src%2Fapp%2FHttp%2FControllers%2FAdmin%2FExportController.php%23export%20scope::src%2Fapp%2FHttp%2FControllers::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#exports, reports, subscriber CSV and quote Drive links",
+      "boundary": "src/app/Http/Controllers/Admin/ExportController.php#export scope",
+      "subsystem": "src/app/Http/Controllers",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "Exports, PDF reports, subscriber CSV and public Drive links",
+    "boundary": "Export filters and link sharing scope",
+    "subsystem": "Panel controllers",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "src/app/Http/Controllers/Admin/ExportController.php",
+      "src/app/Http/Controllers/ReporteController.php",
+      "src/app/Http/Controllers/Admin/NewsletterSubscriberController.php",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Http/Controllers/EgresoController.php",
+      "src/app/Http/Controllers/ServicioTecnicoController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Export and backup scope expansion",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h09-archivos-exportes",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23multi-step%20panel%20and%20integration%20flows::src%2Fapp%2FHttp%2FMiddleware%2FPermisoMiddleware.php%23privilege%20composition::src%2Fapp::ATTACK-CLASSES.md%23Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#multi-step panel and integration flows",
+      "boundary": "src/app/Http/Middleware/PermisoMiddleware.php#privilege composition",
+      "subsystem": "src/app",
+      "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "Cross-feature chains (roles, profile, OAuth, Drive, host headers)",
+    "boundary": "Composition of individually intended authority",
+    "subsystem": "Whole application",
+    "attack_class": "Chained vulnerabilities and trust boundaries",
+    "starting_paths": [
+      "src/app/Http/Controllers/Admin/UsuarioController.php",
+      "src/app/Http/Controllers/GoogleDriveController.php",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Http/Controllers/ProfileController.php",
+      "src/bootstrap/app.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h07-roles",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23panel%20search%2C%20sort%2C%20filter%20and%20export%20parameters::src%2Fapp%2FSupport%2FBusqueda.php%23raw%20SQL%20fragments%20and%20bindings::src%2Fapp%2FHttp%2FControllers::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#panel search, sort, filter and export parameters",
+      "boundary": "src/app/Support/Busqueda.php#raw SQL fragments and bindings",
+      "subsystem": "src/app/Http/Controllers",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "Panel search, sort, filters and exports",
+    "boundary": "Parameterised raw SQL and allowlists",
+    "subsystem": "Panel controllers and models",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "src/app/Http/Controllers/VentaController.php",
+      "src/app/Http/Controllers/Admin/ExportController.php",
+      "src/app/Http/Controllers/ReporteController.php",
+      "src/app/Models/Celular.php",
+      "src/app/Models/CatalogoPublicacion.php",
+      "src/app/Support/CondicionInventario.php",
+      "src/app/Support/Busqueda.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h08-inyeccion-xss",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23vendedor%20Inertia%20pages%20and%20%2Fapi%2Fstock%2F%2A::src%2Fapp%2FSupport%2FSinCostos.php%23cost%20and%20profit%20hiding::src%2Fapp%2FHttp%2FControllers::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#vendedor Inertia pages and /api/stock/*",
+      "boundary": "src/app/Support/SinCostos.php#cost and profit hiding",
+      "subsystem": "src/app/Http/Controllers",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "Vendedor and custom-role responses containing inventory, sales, services",
+    "boundary": "SinCostos field removal",
+    "subsystem": "Panel controllers",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "src/app/Support/SinCostos.php",
+      "src/app/Http/Controllers/VentaController.php",
+      "src/app/Http/Controllers/ReservaController.php",
+      "src/app/Http/Controllers/Admin/CotizacionController.php",
+      "src/app/Http/Controllers/Api/StockController.php",
+      "src/app/Http/Controllers/ServicioTecnicoController.php",
+      "src/app/Http/Controllers/CelularController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Policy and query disagreement",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Search, cache, and index ACL drift",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h06-costos-negocio",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  },
+  {
+    "coverage_id": "src%2Froutes%2Fweb.php%23vendedor%20sale%20edit%20and%20%2Fapi%2Fpermuta%2F%2A::src%2Fapp%2FHttp%2FControllers%2FVentaController.php%23sale%20item%20price%20and%20cost%20updates::src%2Fapp%2FHttp%2FControllers::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "src/routes/web.php#vendedor sale edit and /api/permuta/*",
+      "boundary": "src/app/Http/Controllers/VentaController.php#sale item price and cost updates",
+      "subsystem": "src/app/Http/Controllers",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Sales, reservations and trade-in stock creation by vendedor",
+    "boundary": "Server-side price/cost/state rules",
+    "subsystem": "Panel controllers",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "src/app/Http/Controllers/VentaController.php",
+      "src/app/Http/Controllers/CelularController.php",
+      "src/app/Http/Controllers/ComputadoraController.php",
+      "src/app/Http/Controllers/ProductoGeneralController.php",
+      "src/app/Http/Controllers/ProductoAppleController.php",
+      "src/app/Http/Controllers/ReservaController.php"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "MEMORY-SAFETY-AND-BINARY.md#Core discipline",
+        "reason": "No native, FFI or binary parser code in scope; PHP/JS only (architecture.md §3)."
+      },
+      {
+        "block": "DESKTOP-MOBILE-AND-LOCAL-IPC.md#Core discipline",
+        "reason": "No desktop, mobile, webview bridge or local IPC surface in the repository."
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "in_progress",
+    "agent_id": "h06-costos-negocio",
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "bookkeeping": {
+      "priority_rationale": "wave 1 assigns every unit; unauthenticated public surfaces (h01, h02) and identity (h03) are ranked first per HUNTING.md"
+    }
+  }
+]

@@ -1,0 +1,222 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Fichas de Mac: de la ficha oficial a la tienda",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "fuente",
+      "label": "Fuentes"
+    },
+    {
+      "id": "datos",
+      "label": "Base de modelos"
+    },
+    {
+      "id": "laravel",
+      "label": "Inventario"
+    },
+    {
+      "id": "admin",
+      "label": "Editor"
+    },
+    {
+      "id": "publico",
+      "label": "Tienda"
+    },
+    {
+      "id": "sin",
+      "label": "Con dudas",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "apple",
+    "generar",
+    "verificar",
+    "cargar",
+    "detectar",
+    "publicar",
+    "ficha"
+  ],
+  "nodes": [
+    {
+      "id": "apple",
+      "lane": "fuente",
+      "col": 1,
+      "type": "external",
+      "label": "Ficha de Apple",
+      "sublabel": "primera fuente"
+    },
+    {
+      "id": "otras",
+      "lane": "fuente",
+      "col": 0,
+      "type": "external",
+      "label": "Otras fuentes",
+      "sublabel": "si Apple no lo publica"
+    },
+    {
+      "id": "generar",
+      "lane": "datos",
+      "col": 1,
+      "type": "backend",
+      "label": "Generar",
+      "sublabel": "generar_computadoras.py"
+    },
+    {
+      "id": "verificar",
+      "lane": "datos",
+      "col": 2,
+      "type": "security",
+      "label": "Verificar",
+      "sublabel": "EsquemaComputadora"
+    },
+    {
+      "id": "cargar",
+      "lane": "datos",
+      "col": 3,
+      "type": "database",
+      "label": "Cargar",
+      "sublabel": "seeder + textos"
+    },
+    {
+      "id": "detectar",
+      "lane": "laravel",
+      "col": 4,
+      "type": "backend",
+      "label": "Detectar",
+      "sublabel": "línea · chip · pulgadas"
+    },
+    {
+      "id": "elegir",
+      "lane": "sin",
+      "col": 5,
+      "type": "security",
+      "label": "Elige el admin",
+      "sublabel": "dos candidatos"
+    },
+    {
+      "id": "publicar",
+      "lane": "admin",
+      "col": 4,
+      "type": "frontend",
+      "label": "Publicar",
+      "sublabel": "nombres oficiales"
+    },
+    {
+      "id": "ficha",
+      "lane": "publico",
+      "col": 4,
+      "type": "external",
+      "label": "Ficha",
+      "sublabel": "se conserva al vender"
+    },
+    {
+      "id": "comparar",
+      "lane": "publico",
+      "col": 2,
+      "type": "frontend",
+      "label": "Comparar Mac",
+      "sublabel": "/comparar/mac"
+    }
+  ],
+  "edges": [
+    {
+      "from": "apple",
+      "to": "generar",
+      "label": "datos oficiales"
+    },
+    {
+      "from": "otras",
+      "to": "generar",
+      "label": "completa",
+      "variant": "dashed"
+    },
+    {
+      "from": "generar",
+      "to": "verificar"
+    },
+    {
+      "from": "verificar",
+      "to": "cargar",
+      "label": "0 errores",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "detectar"
+    },
+    {
+      "from": "detectar",
+      "to": "publicar",
+      "label": "un solo modelo",
+      "variant": "emphasis"
+    },
+    {
+      "from": "detectar",
+      "to": "elegir",
+      "label": "dos o ninguno",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "elegir",
+      "to": "publicar",
+      "label": "en el editor",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "publicar",
+      "to": "ficha",
+      "label": "copia de la ficha",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "comparar",
+      "label": "16 modelos"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Fuentes",
+      "items": [
+        "Primero la ficha técnica de Apple, cotejada en inglés",
+        "Último macOS e identificador: listas oficiales de Apple",
+        "Intel: el modelo exacto sale del número de serie"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Detección",
+      "items": [
+        "Cruza línea, chip, pulgadas y año del inventario",
+        "Confirma que la RAM y el almacenamiento existan",
+        "15 de 20 unidades solas; con dudas, elige el admin"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Tienda",
+      "items": [
+        "/comparar/mac: precio y stock salen del inventario",
+        "Ilustración a escala: portátil abierta o iMac",
+        "Si se vende, la ficha no se borra"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pendientes",
+      "items": [
+        "Identificador del MacBook Neo",
+        "#26: M5 Pro con 512 GB, revisar el inventario",
+        "La Lenovo gamer tiene su esquema aparte (PC)"
+      ]
+    }
+  ]
+}

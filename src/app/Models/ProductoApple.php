@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TieneCondicion;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductoApple extends Model
 {
+    use TieneCondicion;
+
     protected $table = 'productos_apple';
 
     protected $fillable = [
@@ -22,6 +25,7 @@ class ProductoApple extends Model
         'imei_2',
         'estado_imei',
         'estado',
+        'condicion',
     ];
 
     protected $casts = [

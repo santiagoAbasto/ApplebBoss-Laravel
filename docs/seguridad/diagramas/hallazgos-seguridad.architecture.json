@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Apple Boss: hallazgos de seguridad y su corrección",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1240,
+      600
+    ],
+    "views": [
+      {
+        "id": "sin-sesion",
+        "label": "Sin sesión",
+        "focus": [
+          "atacante",
+          "h1_proxy",
+          "h6_reset",
+          "cuentas"
+        ],
+        "note": "Lo que un atacante sin cuenta puede intentar desde afuera."
+      },
+      {
+        "id": "vendedor",
+        "label": "Con sesión de vendedor",
+        "focus": [
+          "vendedor",
+          "h2_panel",
+          "h3_pdf",
+          "db",
+          "interno"
+        ],
+        "note": "Lo que ve o alcanza un vendedor autenticado."
+      },
+      {
+        "id": "integraciones",
+        "label": "Integraciones",
+        "focus": [
+          "h4_oauth",
+          "h5_token",
+          "drive",
+          "db"
+        ],
+        "note": "OAuth de Drive y el token de n8n."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "atacante",
+      "type": "external",
+      "label": "Atacante",
+      "sublabel": "sin sesión",
+      "pos": [
+        40,
+        150
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "vendedor",
+      "type": "external",
+      "label": "Vendedor",
+      "sublabel": "con sesión",
+      "pos": [
+        40,
+        430
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "h1_proxy",
+      "type": "security",
+      "label": "H1 · Límites por IP burlables",
+      "sublabel": "trustProxies('*') + X-Forwarded-For",
+      "tag": "ALTA",
+      "pos": [
+        330,
+        40
+      ],
+      "size": [
+        250,
+        58
+      ]
+    },
+    {
+      "id": "h6_reset",
+      "type": "security",
+      "label": "H6 · Enumeración de cuentas",
+      "sublabel": "Olvidé mi contraseña",
+      "tag": "BAJA",
+      "pos": [
+        330,
+        130
+      ],
+      "size": [
+        250,
+        54
+      ]
+    },
+    {
+      "id": "h5_token",
+      "type": "security",
+      "label": "H5 · Token n8n de amplio alcance",
+      "sublabel": "reportes de costo y ganancia",
+      "tag": "MEDIA",
+      "pos": [
+        330,
+        310
+      ],
+      "size": [
+        250,
+        54
+      ]
+    },
+    {
+      "id": "h2_panel",
+      "type": "security",
+      "label": "H2 · Costo visible al vendedor",
+      "sublabel": "ventas/reservas: crear y editar",
+      "tag": "ALTA",
+      "pos": [
+        330,
+        410
+      ],
+      "size": [
+        250,
+        58
+      ]
+    },
+    {
+      "id": "h4_oauth",
+      "type": "security",
+      "label": "H4 · OAuth sin state",
+      "sublabel": "/oauth2callback",
+      "tag": "MEDIA",
+      "pos": [
+        330,
+        220
+      ],
+      "size": [
+        250,
+        54
+      ]
+    },
+    {
+      "id": "h3_pdf",
+      "type": "security",
+      "label": "H3 · SSRF ciego en el PDF",
+      "sublabel": "dompdf enable_remote",
+      "tag": "MEDIA",
+      "pos": [
+        330,
+        510
+      ],
+      "size": [
+        250,
+        54
+      ]
+    },
+    {
+      "id": "cuentas",
+      "type": "database",
+      "label": "Cuentas y sesiones",
+      "sublabel": "usuarios del panel",
+      "pos": [
+        830,
+        70
+      ],
+      "size": [
+        200,
+        58
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Inventario y ventas",
+      "sublabel": "costo, ganancia, IMEI, procedencia",
+      "pos": [
+        830,
+        320
+      ],
+      "size": [
+        220,
+        66
+      ]
+    },
+    {
+      "id": "drive",
+      "type": "external",
+      "label": "Google Drive",
+      "sublabel": "PDF de cotizaciones",
+      "pos": [
+        830,
+        210
+      ],
+      "size": [
+        200,
+        56
+      ]
+    },
+    {
+      "id": "interno",
+      "type": "cloud",
+      "label": "Red interna / metadatos",
+      "sublabel": "destino del GET ciego",
+      "pos": [
+        830,
+        510
+      ],
+      "size": [
+        200,
+        54
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "a-h1",
+      "from": "atacante",
+      "to": "h1_proxy",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "a-h6",
+      "from": "atacante",
+      "to": "h6_reset",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "a-h5",
+      "from": "atacante",
+      "to": "h5_token",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "a-h4",
+      "from": "atacante",
+      "to": "h4_oauth",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "v-h2",
+      "from": "vendedor",
+      "to": "h2_panel",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "v-h3",
+      "from": "vendedor",
+      "to": "h3_pdf",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h1-cuentas",
+      "from": "h1_proxy",
+      "to": "cuentas",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h6-cuentas",
+      "from": "h6_reset",
+      "to": "cuentas",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h5-db",
+      "from": "h5_token",
+      "to": "db",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h2-db",
+      "from": "h2_panel",
+      "to": "db",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h4-drive",
+      "from": "h4_oauth",
+      "to": "drive",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "h3-interno",
+      "from": "h3_pdf",
+      "to": "interno",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Alta · corregido",
+      "items": [
+        "H1 · Límites por IP: TRUSTED_PROXIES por env (ya no se burla con X-Forwarded-For)",
+        "H2 · El vendedor ya no recibe costo/procedencia (SinCostos::purgar en todos los niveles)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Media · corregido",
+      "items": [
+        "H3 · dompdf enable_remote=false (sin SSRF en el PDF)",
+        "H4 · OAuth de Drive con state anti-CSRF",
+        "H5 · Export financiero a token aparte (n8n intacto) + rotación"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Baja y controles nuevos",
+      "items": [
+        "H6 · «Olvidé mi contraseña» con mensaje neutro",
+        "H7 · Blindaje público: honeypots, throttle, strip_tags, no-store",
+        "H8 · Horario del vendedor: no inicia sesión fuera de 09–13 / 14–19"
+      ]
+    }
+  ]
+}

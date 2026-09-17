@@ -1,0 +1,184 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Colecciones: la vitrina que armas a mano y dónde se ve",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "catalogo",
+      "label": "Catálogo"
+    },
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "tienda",
+      "label": "Tienda"
+    },
+    {
+      "id": "otros",
+      "label": "Otras secciones"
+    },
+    {
+      "id": "oculta",
+      "label": "Oculta",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "publicaciones",
+    "coleccion",
+    "pagina"
+  ],
+  "nodes": [
+    {
+      "id": "publicaciones",
+      "lane": "catalogo",
+      "col": 0,
+      "type": "database",
+      "label": "Publicaciones",
+      "sublabel": "lo que ya está en la tienda",
+      "width": 150
+    },
+    {
+      "id": "coleccion",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "label": "Colección",
+      "sublabel": "qué entra y en qué orden",
+      "width": 150
+    },
+    {
+      "id": "menu",
+      "lane": "otros",
+      "col": 1,
+      "type": "frontend",
+      "label": "Menú",
+      "sublabel": "enlace a la vitrina",
+      "width": 140
+    },
+    {
+      "id": "pagina",
+      "lane": "tienda",
+      "col": 2,
+      "type": "external",
+      "label": "Su página",
+      "sublabel": "/coleccion/…",
+      "width": 150
+    },
+    {
+      "id": "portada",
+      "lane": "otros",
+      "col": 2,
+      "type": "frontend",
+      "label": "Portada",
+      "sublabel": "elige la vitrina",
+      "width": 150
+    },
+    {
+      "id": "vendido",
+      "lane": "oculta",
+      "col": 2,
+      "type": "security",
+      "label": "Vendido",
+      "sublabel": "no se muestra",
+      "width": 140
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "label": "Inicio",
+      "sublabel": "carrusel de la vitrina",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "from": "publicaciones",
+      "to": "coleccion",
+      "label": "eliges cuáles",
+      "variant": "emphasis"
+    },
+    {
+      "from": "coleccion",
+      "to": "pagina",
+      "label": "activa",
+      "variant": "emphasis"
+    },
+    {
+      "from": "coleccion",
+      "to": "vendido",
+      "label": "se vendió",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "vendido",
+      "to": "coleccion",
+      "label": "queda guardado",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "coleccion",
+      "to": "portada",
+      "label": "la eliges ahí",
+      "variant": "dashed"
+    },
+    {
+      "from": "portada",
+      "to": "inicio",
+      "label": "enciende el carrusel"
+    },
+    {
+      "from": "menu",
+      "to": "pagina",
+      "label": "lleva ahí",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué es",
+      "items": [
+        "Una vitrina que armas a mano",
+        "Eliges qué entra y en qué orden",
+        "Puede mezclar categorías"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "No es una categoría",
+      "items": [
+        "La categoría se llena sola del inventario",
+        "La categoría no se crea ni se borra",
+        "La colección la creas para una campaña"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Qué se muestra",
+      "items": [
+        "Solo lo que sigue a la venta",
+        "Lo vendido queda guardado, pero no se ve",
+        "Sin nada a la venta, la vitrina no aparece"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Al borrarla",
+      "items": [
+        "Las publicaciones no se tocan",
+        "Se apaga el carrusel de la portada",
+        "Se ocultan los enlaces del menú"
+      ]
+    }
+  ]
+}

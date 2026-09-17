@@ -4,6 +4,20 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Automation\AutomationReportController;
 use App\Http\Controllers\Automation\TopProductsController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\Api\V1\ProductApiController;
+
+// ========================
+// 📦 API PÚBLICA v1 — productos y catálogo
+// NUNCA exponer: precio_costo, ganancia, IMEI, serial, notas privadas.
+// ========================
+Route::prefix('v1')
+    ->name('api.v1.')
+    ->middleware(['throttle:120,1'])
+    ->group(function () {
+        Route::get('/products',        [ProductApiController::class, 'index'])->name('products.index');
+        Route::get('/filters',         [ProductApiController::class, 'filters'])->name('filters');
+        Route::get('/products/{slug}', [ProductApiController::class, 'show'])->name('products.show');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -48,13 +62,19 @@ Route::middleware(['automation', 'throttle:30,1'])
             AutomationReportController::class,
             'store'
         ]);
+    });
 
-        /*
-        |--------------------------------------------------
-        | n8n → Laravel: Exportar PDF de ventas
-        |--------------------------------------------------
-        | GET /api/automation/reportes/exportar
-        */
+/*
+|--------------------------------------------------
+| Export financiero (costo + ganancia de toda la tienda)
+|--------------------------------------------------
+| GET /api/automation/reportes/exportar
+| Ámbito 'export': token APARTE (AUTOMATION_EXPORT_TOKEN). n8n NO lo usa.
+| Vacío por defecto = cerrado. El admin exporta desde el panel (ruta web con sesión).
+*/
+Route::middleware(['automation:export', 'throttle:30,1'])
+    ->prefix('automation')
+    ->group(function () {
         Route::get('/reportes/exportar', [
             ReporteController::class,
             'exportar'

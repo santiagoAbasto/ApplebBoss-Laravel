@@ -1,143 +1,391 @@
-import { useMemo, useState } from "react";
-import { Head, Link, router } from "@inertiajs/react";
-import { route } from "ziggy-js";
-import AdminLayout from "@/Layouts/AdminLayout";
-import ToastContainer, { showError, showSuccess } from "@/Components/ToastNotification";
-import InventoryTable from "@/Components/InventoryTable";
-import { useAutoRefresh } from "@/Hooks/useAutoRefresh";
-import { Plus, Search, Smartphone } from "lucide-react";
+import AdminLayout from '@/Layouts/AdminLayout';
+import { Head, Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, FileDown, Plus, Search, ShoppingBag, Smartphone, Tag, TrendingUp, X } from 'lucide-react';
+import { notifyRecordsUpdated, useAutoRefresh } from '@/Hooks/useAutoRefresh';
+import { Badge, EmptyState, PageHeader, Paginador, Toast, bsFmt, buttonCls, inputCls, useToast } from '@/Components/Admin/ui';
+import { CONDICIONES } from '@/Components/Admin/condicion';
 import {
-  CrudButtonDanger,
-  CrudButtonPrimary,
-  CrudButtonSecondary,
-  CrudCard,
-  CrudHeader,
-  CrudSectionTitle,
-  CrudSubtitle,
-  CrudTitle,
-  CrudWrapper,
-} from "@/Components/CrudUI";
+  AccionesFila, Aviso, BarraSeleccion, ChipsEstado, CondicionFila, EstadoBadge, ModalEliminar, PrecioConGanancia, Stat, TiendaBadge,
+  bonito, checkCls, motivoEnListado, paginar, useSeleccion,
+} from '@/Components/Admin/inventario';
+import { BateriaBadge, ESTADOS_IMEI, detalleEquipo, imeiValido, nombreEquipo } from '@/Components/Admin/celulares';
 
-export default function CelularesIndex({ celulares = [] }) {
-  const [busqueda, setBusqueda] = useState("");
-  useAutoRefresh(["celulares"]);
+const normalizar = (v) => String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const digitos = (t) => String(t ?? '').replace(/\D/g, '');
 
-  const resumen = useMemo(() => {
-    const disponibles = celulares.filter((c) => c.estado === "disponible").length;
+export default function Index({ celulares = [], enTienda = {}, conHistorial = [] }) {
+  useAutoRefresh(['celulares', 'enTienda', 'conHistorial']);
+  const [toast] = useToast();
+  const [texto, setTexto] = useState('');
+  const [estado, setEstado] = useState('todos');
+  const [modelo, setModelo] = useState('todos');
+  const [condicion, setCondicion] = useState('todas');
+  const [orden, setOrden] = useState('inventario');
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(25);
+  const [aplicando, setAplicando] = useState(false);
+  const [borrar, setBorrar] = useState(null);
+  const [procesando, setProcesando] = useState(false);
+  const tablaRef = useRef(null);
+
+  const historial = useMemo(() => new Set(conHistorial), [conHistorial]);
+  const tienda = (id) => (enTienda ? enTienda[id] : undefined);
+
+  const filas = useMemo(() => celulares.map((c, i) => ({
+    ...c,
+    pos: i,
+    nombre: nombreEquipo(c),
+    detalle: detalleEquipo(c),
+    costo: Number(c.precio_costo) || 0,
+    venta: Number(c.precio_venta) || 0,
+    modeloClave: normalizar(c.modelo).replace(/\s+/g, ' ').trim(),
+    busqueda: normalizar([c.modelo, c.capacidad, c.color, c.procedencia, c.numero_serie, c.bateria, c.condicion].join(' ')),
+    imeis: `${c.imei_1 ?? ''} ${c.imei_2 ?? ''}`,
+  })), [celulares]);
+
+  const conteo = useMemo(() => {
+    const disponibles = filas.filter((c) => c.estado === 'disponible');
+    const costo = disponibles.reduce((s, c) => s + c.costo, 0);
+    const venta = disponibles.reduce((s, c) => s + c.venta, 0);
     return {
-      total: celulares.length,
-      disponibles,
-      noDisponibles: Math.max(0, celulares.length - disponibles),
+      todos: filas.length,
+      disponible: disponibles.length,
+      permuta: filas.filter((c) => c.estado === 'permuta').length,
+      vendido: filas.filter((c) => c.estado === 'vendido').length,
+      bajo_costo: disponibles.filter((c) => c.venta < c.costo).length,
+      Nuevo: filas.filter((c) => c.condicion === 'Nuevo').length,
+      Seminuevo: filas.filter((c) => c.condicion === 'Seminuevo').length,
+      sin: filas.filter((c) => !c.condicion).length,
+      disponibles_sin_condicion: disponibles.filter((c) => !c.condicion).length,
+      costo,
+      venta,
+      ganancia: venta - costo,
     };
-  }, [celulares]);
+  }, [filas]);
 
+  const modelos = useMemo(() => {
+    const grupos = new Map();
+    filas.forEach((c) => {
+      if (!c.modeloClave) return;
+      const g = grupos.get(c.modeloClave) ?? { clave: c.modeloClave, label: bonito(c.modelo), n: 0 };
+      g.n += 1;
+      grupos.set(c.modeloClave, g);
+    });
+    return [...grupos.values()].sort((a, b) => a.label.localeCompare(b.label, 'es', { numeric: true }));
+  }, [filas]);
+
+  const q = normalizar(texto.trim());
+  const qDigitos = digitos(texto);
   const filtrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return celulares;
-
-    return celulares.filter((c) =>
-      [
-        c.modelo,
-        c.capacidad,
-        c.color,
-        c.imei_1,
-        c.imei_2,
-        c.estado_imei,
-        c.estado,
-      ].some((value) => String(value || "").toLowerCase().includes(q))
+    const lista = filas.filter((c) =>
+      (estado === 'todos'
+        || (estado === 'bajo_costo' ? c.estado === 'disponible' && c.venta < c.costo : c.estado === estado))
+      && (modelo === 'todos' || c.modeloClave === modelo)
+      && (condicion === 'todas' || (condicion === 'sin' ? !c.condicion : c.condicion === condicion))
+      && (!q || c.busqueda.includes(q) || (qDigitos.length >= 4 && c.imeis.includes(qDigitos))),
     );
-  }, [busqueda, celulares]);
+    if (orden === 'recientes') return [...lista].sort((a, b) => b.id - a.id);
+    if (orden === 'precio_desc') return [...lista].sort((a, b) => b.venta - a.venta || a.pos - b.pos);
+    if (orden === 'precio_asc') return [...lista].sort((a, b) => a.venta - b.venta || a.pos - b.pos);
+    return lista;
+  }, [filas, estado, modelo, condicion, q, qDigitos, orden]);
 
-  const eliminar = (id) => {
-    if (confirm("¿Deseas eliminar este celular?")) {
-      router.delete(route("admin.celulares.destroy", id), {
-        onSuccess: () => showSuccess("Celular eliminado exitosamente"),
-        onError: () => showError("Hubo un error al eliminar el celular"),
-      });
-    }
+  useEffect(() => { setPagina(1); }, [q, estado, modelo, condicion, orden, porPagina]);
+
+  const { visibles, meta } = paginar(filtrados, pagina, porPagina);
+  const sel = useSeleccion(visibles, filtrados);
+  const irAPagina = (n) => {
+    setPagina(n);
+    tablaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const hayFiltros = Boolean(q) || estado !== 'todos' || modelo !== 'todos' || condicion !== 'todas';
+  const limpiar = () => { setTexto(''); setEstado('todos'); setModelo('todos'); setCondicion('todas'); };
+
+  const habilitar = (c) => {
+    router.patch(route('admin.celulares.habilitar', c.id), {}, { preserveScroll: true, onSuccess: () => notifyRecordsUpdated() });
+  };
+
+  const marcarCondicion = (valor) => {
+    if (!sel.seleccion.length || aplicando) return;
+    router.patch(route('admin.celulares.condicion'), { ids: sel.seleccion, condicion: valor }, {
+      preserveScroll: true,
+      onStart: () => setAplicando(true),
+      onSuccess: () => {
+        sel.setSeleccion([]);
+        notifyRecordsUpdated();
+      },
+      onFinish: () => setAplicando(false),
+    });
+  };
+
+  const confirmarBorrado = () => {
+    if (!borrar || procesando) return;
+    router.delete(route('admin.celulares.destroy', borrar.id), {
+      preserveScroll: true,
+      onStart: () => setProcesando(true),
+      onSuccess: () => {
+        sel.setSeleccion((s) => s.filter((id) => id !== borrar.id));
+        setBorrar(null);
+        notifyRecordsUpdated();
+      },
+      onFinish: () => setProcesando(false),
+    });
+  };
+
+  const FILTROS = [
+    { key: 'todos', label: 'Todos' },
+    { key: 'disponible', label: 'Disponibles' },
+    { key: 'permuta', label: 'En permuta', ocultarSinDatos: true },
+    { key: 'vendido', label: 'Vendidos' },
+    { key: 'bajo_costo', label: 'Bajo el costo', ocultarSinDatos: true, alerta: true },
+  ].filter((f) => !f.ocultarSinDatos || conteo[f.key] > 0 || estado === f.key);
+
+  const margen = conteo.venta > 0 ? Math.round((conteo.ganancia / conteo.venta) * 100) : null;
+  const sinCondicion = conteo.disponibles_sin_condicion;
 
   return (
     <AdminLayout>
       <Head title="Celulares" />
+      <Toast toast={toast} />
 
-      <CrudWrapper>
-        <CrudHeader>
-          <div>
-            <CrudTitle>
-              <Smartphone size={22} />
-              Celulares
-            </CrudTitle>
-            <CrudSubtitle>Disponibles primero, ordenados por familia de iPhone y detalle comercial.</CrudSubtitle>
-          </div>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <PageHeader
+          title="Celulares"
+          subtitle="Inventario de equipos: los disponibles van primero, ordenados por modelo. El IMEI y la procedencia son internos y no se muestran en la tienda."
+          actions={(
+            <>
+              <a href={route('admin.exportar.celulares')} target="_blank" rel="noopener noreferrer" className={buttonCls('secondary', 'h-11 px-4')}>
+                <FileDown className="h-4 w-4" /> Exportar disponibles
+              </a>
+              <Link href={route('admin.celulares.create')} className={buttonCls('primary', 'h-11 px-5')}>
+                <Plus className="h-4 w-4" /> Registrar celular
+              </Link>
+            </>
+          )}
+        />
 
-          <CrudButtonPrimary as={Link} href={route("admin.celulares.create")} className="w-full justify-center sm:w-auto">
-            <Plus size={18} />
-            Registrar celular
-          </CrudButtonPrimary>
-        </CrudHeader>
-
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Total</p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-950">{resumen.total}</p>
-          </div>
-          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 shadow-sm">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-600">Disponibles</p>
-            <p className="mt-1 text-2xl font-extrabold text-emerald-700">{resumen.disponibles}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">No disponibles</p>
-            <p className="mt-1 text-2xl font-extrabold text-slate-700">{resumen.noDisponibles}</p>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat icon={Smartphone} label="Disponibles" value={conteo.disponible.toLocaleString('es-BO')}
+            hint={`De ${conteo.todos.toLocaleString('es-BO')} registrados`} />
+          <Stat icon={Tag} label="Valor de venta" value={bsFmt(conteo.venta)} tone="emerald"
+            hint={`Costo de los disponibles: ${bsFmt(conteo.costo)}`} />
+          <Stat icon={TrendingUp} label="Ganancia esperada" value={bsFmt(conteo.ganancia)} tone="lila"
+            hint={margen != null ? `Margen de ${margen} % sobre la venta` : 'Sin equipos disponibles'} />
+          <Stat icon={ShoppingBag} label="Vendidos" value={conteo.vendido.toLocaleString('es-BO')} tone="slate"
+            hint={conteo.permuta ? `${conteo.permuta} en permuta por habilitar` : 'Equipos que ya salieron'} />
         </div>
 
-        <CrudCard style={{ marginBottom: 14, padding: 14 }}>
-          <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-slate-500">
-            Buscar inventario
-          </label>
-          <div className="relative">
-            <Search
-              size={18}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Modelo, IMEI, capacidad, color o estado"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
+        {sinCondicion > 0 && !(estado === 'disponible' && condicion === 'sin') && (
+          <Aviso onAccion={() => { setEstado('disponible'); setCondicion('sin'); }}>
+            <span className="font-bold">{sinCondicion} {sinCondicion === 1 ? 'celular disponible no tiene' : 'celulares disponibles no tienen'} condición</span>{' '}
+            (nuevo o seminuevo). Selecciónalos y márcalos de una vez: así se publican en la tienda sin pasos extra.
+          </Aviso>
+        )}
+
+        {conteo.bajo_costo > 0 && estado !== 'bajo_costo' && (
+          <Aviso tono="amber" icon={AlertTriangle} onAccion={() => setEstado('bajo_costo')}>
+            <span className="font-bold">{conteo.bajo_costo} {conteo.bajo_costo === 1 ? 'celular disponible tiene' : 'celulares disponibles tienen'}</span>{' '}
+            el precio de venta por debajo del costo.
+          </Aviso>
+        )}
+
+        {/* Búsqueda y filtros */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Buscar celulares"
+                placeholder="Buscar por modelo, IMEI, serie, color o procedencia"
+                className={`${inputCls} h-11 pl-10 pr-10`} />
+              {texto && (
+                <button type="button" onClick={() => setTexto('')} aria-label="Borrar búsqueda"
+                  className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <select value={modelo} onChange={(e) => setModelo(e.target.value)} aria-label="Modelo" className={`${inputCls} h-11 pr-9 lg:w-56`}>
+              <option value="todos">Todos los modelos</option>
+              {modelos.map((m) => <option key={m.clave} value={m.clave}>{m.label} ({m.n})</option>)}
+            </select>
+            <select value={condicion} onChange={(e) => setCondicion(e.target.value)} aria-label="Condición" className={`${inputCls} h-11 pr-9 lg:w-48`}>
+              <option value="todas">Toda condición</option>
+              {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label} ({conteo[c.value]})</option>)}
+              <option value="sin">Sin condición ({conteo.sin})</option>
+            </select>
+            <select value={orden} onChange={(e) => setOrden(e.target.value)} aria-label="Orden" className={`${inputCls} h-11 pr-9 lg:w-52`}>
+              <option value="inventario">Disponibles primero</option>
+              <option value="recientes">Registrados recientemente</option>
+              <option value="precio_desc">Precio: de mayor a menor</option>
+              <option value="precio_asc">Precio: de menor a mayor</option>
+            </select>
           </div>
-        </CrudCard>
+          <ChipsEstado filtros={FILTROS} activo={estado} conteo={conteo} onChange={setEstado} />
+        </section>
 
-        <CrudCard style={{ padding: 0, overflow: "hidden" }}>
-          <div className="flex flex-col gap-1 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <CrudSectionTitle style={{ margin: 0 }}>Listado de celulares</CrudSectionTitle>
-            <span className="text-xs font-semibold text-slate-500">
-              {filtrados.length} resultado{filtrados.length === 1 ? "" : "s"}
-            </span>
+        {/* Listado */}
+        <section ref={tablaRef} className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
+              <Smartphone className="h-[18px] w-[18px] text-[#585E9F]" /> Listado de celulares
+            </h2>
+            <div className="flex items-center gap-2">
+              {visibles.length > 0 && (
+                <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 lg:hidden">
+                  <input type="checkbox" checked={sel.paginaMarcada} onChange={sel.alternarPagina} className={checkCls} /> Esta página
+                </label>
+              )}
+              {hayFiltros && (
+                <button type="button" onClick={limpiar} className={buttonCls('ghost', 'h-8 px-2.5 text-xs')}>
+                  <X className="h-3.5 w-3.5" /> Quitar filtros
+                </button>
+              )}
+            </div>
           </div>
 
-          <InventoryTable
-            items={filtrados}
-            type="celulares"
-            emptyMessage="No se encontraron celulares con esa búsqueda."
-            actionsRenderer={(celular) => (
-              <>
-                <CrudButtonSecondary as={Link} href={route("admin.celulares.edit", celular.id)}>
-                  Editar
-                </CrudButtonSecondary>
+          {celulares.length === 0 ? (
+            <EmptyState icon={Smartphone} title="Todavía no hay celulares"
+              text="Registra el primer equipo para que se pueda vender y cotizar."
+              action={<Link href={route('admin.celulares.create')} className={buttonCls('primary')}><Plus className="h-4 w-4" /> Registrar celular</Link>} />
+          ) : meta.total === 0 ? (
+            <EmptyState icon={Search} title="Sin resultados" text="Prueba con otro modelo o IMEI, o quita los filtros."
+              action={<button type="button" onClick={limpiar} className={buttonCls('secondary')}>Quitar filtros</button>} />
+          ) : (
+            <>
+              {/* Escritorio */}
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-[1120px] text-[13px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="w-10 py-3 pl-5 pr-2">
+                        <input type="checkbox" checked={sel.paginaMarcada} onChange={sel.alternarPagina} aria-label="Seleccionar esta página" className={checkCls} />
+                      </th>
+                      <th className="px-3 py-3">Equipo</th>
+                      <th className="px-3 py-3">IMEI</th>
+                      <th className="px-3 py-3">Batería</th>
+                      <th className="px-3 py-3">Procedencia</th>
+                      <th className="px-3 py-3 text-right">Costo</th>
+                      <th className="px-3 py-3 text-right">Venta</th>
+                      <th className="px-3 py-3">Estado</th>
+                      <th className="py-3 pl-3 pr-5 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibles.map((c) => {
+                      const estadoImei = c.estado_imei && c.estado_imei !== 'libre' ? ESTADOS_IMEI.find((o) => o.value === c.estado_imei) : null;
+                      const marcado = sel.seleccion.includes(c.id);
+                      return (
+                        <tr key={c.id} className={`transition-colors ${marcado ? 'bg-[#585E9F]/[0.06]' : 'hover:bg-slate-50/70'}`}>
+                          <td className="py-3 pl-5 pr-2">
+                            <input type="checkbox" checked={marcado} onChange={() => sel.alternar(c.id)} aria-label={`Seleccionar ${c.nombre}`} className={checkCls} />
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-3">
+                              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${c.estado === 'vendido' ? 'bg-slate-100 text-slate-400' : 'bg-[#011446]/[0.07] text-[#011446]'}`}>
+                                <Smartphone className="h-4 w-4" />
+                              </span>
+                              <div className="min-w-0">
+                                <Link href={route('admin.celulares.edit', c.id)} className="block max-w-[260px] truncate font-semibold text-slate-900 hover:text-[#585E9F]">
+                                  {c.nombre}
+                                </Link>
+                                <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                  <span className="truncate text-xs text-slate-500">{c.detalle || 'Sin capacidad ni color'}</span>
+                                  <CondicionFila condicion={c.condicion} estado={c.estado} />
+                                  <TiendaBadge publicado={tienda(c.id)} />
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <p className="flex items-center gap-1.5 font-mono text-xs text-slate-800">
+                              {c.imei_1}
+                              {!imeiValido(c.imei_1) && (
+                                <span title="Revisa este IMEI: parece tener un dígito mal escrito."><AlertTriangle className="h-3.5 w-3.5 text-amber-500" /></span>
+                              )}
+                            </p>
+                            {c.imei_2 && <p className="font-mono text-xs text-slate-400">{c.imei_2}</p>}
+                            {estadoImei && <Badge tone="amber" className="mt-1">{estadoImei.corto}</Badge>}
+                          </td>
+                          <td className="px-3 py-3"><BateriaBadge valor={c.bateria} /></td>
+                          <td className="px-3 py-3">
+                            <p className="max-w-[170px] truncate text-slate-600" title={c.procedencia}>{c.procedencia || '—'}</p>
+                          </td>
+                          <td className="px-3 py-3 text-right tabular-nums text-slate-500">{bsFmt(c.costo)}</td>
+                          <td className="px-3 py-3"><PrecioConGanancia costo={c.costo} venta={c.venta} /></td>
+                          <td className="px-3 py-3"><EstadoBadge estado={c.estado} /></td>
+                          <td className="py-3 pl-3 pr-5">
+                            <AccionesFila editarUrl={route('admin.celulares.edit', c.id)} nombre={c.nombre} estado={c.estado}
+                              motivo={motivoEnListado(c.id, historial, enTienda)} onBorrar={() => setBorrar(c)} onHabilitar={() => habilitar(c)} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                <CrudButtonDanger type="button" onClick={() => eliminar(celular.id)}>
-                  Eliminar
-                </CrudButtonDanger>
-              </>
-            )}
-          />
-        </CrudCard>
-      </CrudWrapper>
+              {/* Celular y tablet */}
+              <ul className="divide-y divide-slate-100 lg:hidden">
+                {visibles.map((c) => {
+                  const marcado = sel.seleccion.includes(c.id);
+                  return (
+                    <li key={c.id} className={`px-4 py-4 ${marcado ? 'bg-[#585E9F]/[0.06]' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <input type="checkbox" checked={marcado} onChange={() => sel.alternar(c.id)} aria-label={`Seleccionar ${c.nombre}`} className={`${checkCls} mt-1`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <EstadoBadge estado={c.estado} />
+                                <CondicionFila condicion={c.condicion} estado={c.estado} />
+                                <TiendaBadge publicado={tienda(c.id)} />
+                              </div>
+                              <Link href={route('admin.celulares.edit', c.id)} className="mt-1.5 block truncate text-[15px] font-bold text-slate-900">{c.nombre}</Link>
+                              <p className="truncate text-xs text-slate-500">{c.detalle || 'Sin capacidad ni color'}</p>
+                            </div>
+                            <PrecioConGanancia costo={c.costo} venta={c.venta} />
+                          </div>
+                          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
+                            <span className="font-mono text-slate-700">{c.imei_1}</span>
+                            <BateriaBadge valor={c.bateria} />
+                            {c.procedencia && <span className="max-w-[200px] truncate">{c.procedencia}</span>}
+                          </div>
+                          <div className="mt-3">
+                            <AccionesFila editarUrl={route('admin.celulares.edit', c.id)} nombre={c.nombre} estado={c.estado}
+                              motivo={motivoEnListado(c.id, historial, enTienda)} onBorrar={() => setBorrar(c)} onHabilitar={() => habilitar(c)} />
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
 
-      <ToastContainer />
+          <Paginador meta={meta} onPagina={irAPagina} porPagina={porPagina} onPorPagina={setPorPagina} />
+        </section>
+
+        <BarraSeleccion
+          cantidad={sel.seleccion.length}
+          total={meta.total}
+          todosMarcados={sel.todosMarcados}
+          hayMas={meta.total > visibles.length}
+          onSeleccionarTodos={sel.seleccionarTodos}
+          onMarcar={marcarCondicion}
+          onQuitar={() => sel.setSeleccion([])}
+          aplicando={aplicando}
+        />
+      </div>
+
+      {borrar && (
+        <ModalEliminar titulo="Eliminar celular" icon={Smartphone} nombre={borrar.nombre}
+          detalle={[borrar.detalle, `IMEI ${borrar.imei_1}`].filter(Boolean).join(' · ')}
+          procesando={procesando} onConfirmar={confirmarBorrado} onCerrar={() => setBorrar(null)} />
+      )}
     </AdminLayout>
   );
 }

@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Plus, GitCompare } from '@/Components/Store/Icons';
 import ProductVisual from './ProductVisual';
+import { useCompare } from './CompareContext';
 
 const money = (value) =>
     new Intl.NumberFormat('es-BO', {
@@ -30,8 +31,11 @@ function ConditionBadge({ condition }) {
     );
 }
 
-export default function ProductCard({ product, onAdd }) {
+export default function ProductCard({ product, onAdd, priority = false }) {
     const isMyskin = product.is_myskin ?? false;
+    const { inCompare, toggle, items, max } = useCompare();
+    const compared = inCompare(product.slug);
+    const full = items.length >= max && !compared;
 
     return (
         <article className="group min-w-0">
@@ -46,6 +50,7 @@ export default function ProductCard({ product, onAdd }) {
                     product={product}
                     style={{ aspectRatio: '4 / 3' }}
                     className="transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                    priority={priority}
                 />
             </Link>
 
@@ -65,7 +70,7 @@ export default function ProductCard({ product, onAdd }) {
                             className="text-[11px] font-semibold"
                             style={{ color: 'var(--text-muted)' }}
                         >
-                            {product.category_label}
+                            {product.marca ?? product.category_label}
                         </span>
                     )}
                     <ConditionBadge condition={product.condition} />
@@ -100,28 +105,56 @@ export default function ProductCard({ product, onAdd }) {
                             </p>
                         )}
 
-                        <p
-                            className="mt-2 text-base font-black tabular-nums"
-                            style={{ color: 'var(--ab-navy)' }}
-                        >
-                            {money(product.price)}
-                        </p>
+                        {product.promo_price ? (
+                            <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+                                <span className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
+                                    {money(product.promo_price)}
+                                </span>
+                                <span className="text-[11px] font-semibold tabular-nums line-through" style={{ color: 'var(--text-muted)' }}>
+                                    {money(product.price)}
+                                </span>
+                            </p>
+                        ) : (
+                            <p
+                                className="mt-2 text-base font-black tabular-nums"
+                                style={{ color: 'var(--ab-navy)' }}
+                            >
+                                {money(product.price)}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Add to cart */}
-                    <button
-                        type="button"
-                        onClick={() => onAdd(product)}
-                        className="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all duration-150 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                        style={{
-                            background: 'var(--ab-lime)',
-                            color: 'var(--text-on-lime)',
-                            '--tw-ring-color': 'var(--ab-periwinkle)',
-                        }}
-                        aria-label={`Agregar ${product.name} al carrito`}
-                    >
-                        <Plus className="h-4 w-4" />
-                    </button>
+                    {/* Actions */}
+                    <div className="flex shrink-0 flex-col items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => onAdd(product)}
+                            className="grid h-10 w-10 place-items-center rounded-full transition-all duration-150 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                            style={{
+                                background: 'var(--ab-lime)',
+                                color: 'var(--text-on-lime)',
+                                '--tw-ring-color': 'var(--ab-periwinkle)',
+                            }}
+                            aria-label={`Agregar ${product.name} al carrito`}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => toggle(product)}
+                            disabled={full}
+                            className="grid h-7 w-7 place-items-center rounded-full transition-all duration-150 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-30"
+                            style={{
+                                background: compared ? 'var(--ab-periwinkle)' : 'var(--surface-muted)',
+                                color: compared ? '#FFFFFF' : 'var(--text-muted)',
+                                '--tw-ring-color': 'var(--ab-periwinkle)',
+                            }}
+                            title={compared ? 'Quitar de comparación' : full ? 'Máximo 3 productos' : 'Comparar'}
+                            aria-label={compared ? `Quitar ${product.name} de comparación` : `Comparar ${product.name}`}
+                        >
+                            <GitCompare className="h-3.5 w-3.5" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </article>

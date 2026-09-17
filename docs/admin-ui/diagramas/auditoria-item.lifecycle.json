@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Auditoría de inventario: estados de cada producto",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Conteo"
+    },
+    {
+      "id": "terminal",
+      "label": "Al cerrar o durante el conteo"
+    }
+  ],
+  "states": [
+    {
+      "id": "foto",
+      "type": "start",
+      "label": "Foto inicial",
+      "sublabel": "disponibles al iniciar",
+      "lane": "main",
+      "col": 0,
+      "step": "01"
+    },
+    {
+      "id": "pendiente",
+      "type": "waiting",
+      "label": "Por escanear",
+      "sublabel": "expected: disponible",
+      "lane": "main",
+      "col": 1,
+      "step": "02"
+    },
+    {
+      "id": "escaneo",
+      "type": "decision",
+      "label": "Escaneo",
+      "sublabel": "código, S, IMEI, prefijo",
+      "lane": "main",
+      "col": 2,
+      "step": "03"
+    },
+    {
+      "id": "encontrado",
+      "type": "success",
+      "label": "Encontrado",
+      "sublabel": "resolution: scanned",
+      "lane": "main",
+      "col": 3,
+      "step": "04"
+    },
+    {
+      "id": "cierre",
+      "type": "decision",
+      "label": "Cierre",
+      "sublabel": "lo no escaneado",
+      "lane": "main",
+      "col": 4,
+      "step": "05"
+    },
+    {
+      "id": "rechazo",
+      "type": "failure",
+      "label": "Rechazado",
+      "sublabel": "no existe o repetido",
+      "lane": "terminal",
+      "col": 0
+    },
+    {
+      "id": "vendido",
+      "type": "waiting",
+      "label": "Vendido",
+      "sublabel": "sold_after_audit",
+      "lane": "terminal",
+      "col": 1
+    },
+    {
+      "id": "faltante",
+      "type": "failure",
+      "label": "Faltante",
+      "sublabel": "resolution: missing",
+      "lane": "terminal",
+      "col": 2
+    }
+  ],
+  "transitions": [
+    {
+      "from": "escaneo",
+      "to": "rechazo",
+      "variant": "security",
+      "route": "straight",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "rechazo",
+      "to": "pendiente",
+      "label": "reintentar",
+      "variant": "dashed"
+    },
+    {
+      "from": "cierre",
+      "to": "faltante",
+      "variant": "security",
+      "route": "straight",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "cierre",
+      "to": "vendido",
+      "label": "vendido o reservado",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Conteo",
+      "items": [
+        "La foto no cambia el inventario",
+        "Lo registrado después entra como ingreso posterior y no cuenta"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Cierre",
+      "items": [
+        "Al cerrar, lo no escaneado queda faltante",
+        "Salvo lo vendido o reservado mientras se contaba",
+        "El informe PDF estima la pérdida de los faltantes"
+      ]
+    }
+  ]
+}

@@ -10,15 +10,34 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class EgresoController extends Controller
 {
+    /** Período pedido; por defecto, el mes en curso hasta hoy. */
+    private function periodo(Request $request): array
+    {
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+        ], [
+            'fecha_fin.after_or_equal' => 'La fecha final no puede ser anterior a la inicial.',
+        ]);
+
+        return [
+            $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString(),
+            $request->input('fecha_fin') ?? now()->toDateString(),
+        ];
+    }
+
+    private function consultaDelPeriodo(string $fechaInicio, string $fechaFin)
+    {
+        return Egreso::with('user:id,name')
+            ->whereBetween('created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
+            ->latest();
+    }
+
     public function index(Request $request)
     {
-        $fechaInicio = $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString();
-        $fechaFin = $request->input('fecha_fin') ?? now()->toDateString();
+        [$fechaInicio, $fechaFin] = $this->periodo($request);
 
-        $egresos = Egreso::with('user')
-            ->whereBetween('created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
-            ->latest()
-            ->get();
+        $egresos = $this->consultaDelPeriodo($fechaInicio, $fechaFin)->get();
 
         $totalGastado = $egresos->sum('precio_invertido');
 
@@ -52,12 +71,22 @@ class EgresoController extends Controller
     {
         $validated = $request->validate([
             'concepto' => 'required|string|max:255',
-            'precio_invertido' => 'required|numeric|min:0',
-            'tipo_gasto' => 'required|in:servicio_basico,cuota_bancaria,gasto_personal,sueldos',
+            'precio_invertido' => 'required|numeric|min:0.01|max:99999999.99',
+            'tipo_gasto' => 'required|in:' . implode(',', array_keys(Egreso::TIPOS)),
             'frecuencia' => 'nullable|string|max:50',
-            'cuotas_pendientes' => 'nullable|integer|min:0',
+            'cuotas_pendientes' => 'nullable|integer|min:0|max:255',
             'comentario' => 'nullable|string|max:255',
+        ], [
+            'concepto.required' => 'Escribe el concepto del egreso.',
+            'precio_invertido.required' => 'Escribe el monto del egreso.',
+            'precio_invertido.min' => 'El monto debe ser mayor a cero.',
+            'tipo_gasto.required' => 'Elige el tipo de gasto.',
         ]);
+
+        // Las cuotas pendientes solo tienen sentido en una cuota bancaria
+        if ($validated['tipo_gasto'] !== 'cuota_bancaria') {
+            $validated['cuotas_pendientes'] = null;
+        }
 
         $validated['user_id'] = Auth::id();
 
@@ -68,12 +97,13 @@ class EgresoController extends Controller
 
     public function exportarPDF(Request $request)
     {
-        $fechaInicio = $request->input('fecha_inicio') ?? now()->startOfMonth()->toDateString();
-        $fechaFin = $request->input('fecha_fin') ?? now()->toDateString();
+        [$fechaInicio, $fechaFin] = $this->periodo($request);
+        $request->validate([
+            'tipo_gasto' => 'nullable|in:' . implode(',', array_keys(Egreso::TIPOS)),
+        ]);
 
-        $egresos = Egreso::with('user')
-            ->whereBetween('created_at', [$fechaInicio . ' 00:00:00', $fechaFin . ' 23:59:59'])
-            ->latest()
+        $egresos = $this->consultaDelPeriodo($fechaInicio, $fechaFin)
+            ->when($request->filled('tipo_gasto'), fn ($q) => $q->where('tipo_gasto', $request->tipo_gasto))
             ->get();
 
         $totalGastado = $egresos->sum('precio_invertido');
@@ -83,6 +113,7 @@ class EgresoController extends Controller
             'total' => $totalGastado,
             'fechaInicio' => $fechaInicio,
             'fechaFin' => $fechaFin,
+            'tipo' => $request->filled('tipo_gasto') ? Egreso::TIPOS[$request->tipo_gasto] : null,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->stream('egresos_' . now()->format('Ymd_His') . '.pdf');

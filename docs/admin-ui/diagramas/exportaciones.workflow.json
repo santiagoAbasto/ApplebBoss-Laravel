@@ -1,0 +1,153 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Exportaciones: del inventario al PDF",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "pdf",
+      "label": "El PDF"
+    },
+    {
+      "id": "vacio",
+      "label": "Sin resultados",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "eleccion",
+    "cuenta",
+    "armado",
+    "documento"
+  ],
+  "nodes": [
+    {
+      "id": "eleccion",
+      "lane": "panel",
+      "col": 0,
+      "type": "frontend",
+      "width": 150,
+      "label": "Qué exportar",
+      "sublabel": "inventario o búsqueda"
+    },
+    {
+      "id": "cuenta",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "La cuenta",
+      "sublabel": "cuántos van a salir"
+    },
+    {
+      "id": "armado",
+      "lane": "pdf",
+      "col": 2,
+      "type": "backend",
+      "width": 150,
+      "label": "La plantilla",
+      "sublabel": "costo y ganancia"
+    },
+    {
+      "id": "datos",
+      "lane": "pdf",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Pie del PDF",
+      "sublabel": "Configuración y Ubicaciones"
+    },
+    {
+      "id": "documento",
+      "lane": "pdf",
+      "col": 3,
+      "type": "external",
+      "width": 150,
+      "label": "El documento",
+      "sublabel": "otra pestaña"
+    },
+    {
+      "id": "nada",
+      "lane": "vacio",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "No se genera",
+      "sublabel": "el botón queda apagado"
+    }
+  ],
+  "edges": [
+    {
+      "from": "eleccion",
+      "to": "cuenta",
+      "label": "mientras escribes",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cuenta",
+      "to": "armado",
+      "label": "hay resultados",
+      "variant": "emphasis"
+    },
+    {
+      "from": "armado",
+      "to": "documento",
+      "variant": "emphasis"
+    },
+    {
+      "from": "datos",
+      "to": "armado",
+      "label": "teléfono y dirección"
+    },
+    {
+      "from": "eleccion",
+      "to": "nada",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué sale",
+      "items": [
+        "Un PDF por inventario",
+        "Uno por tipo de producto",
+        "Uno con tu búsqueda"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Cómo busca",
+      "items": [
+        "Sin tildes ni mayúsculas",
+        "Todas las palabras",
+        "Con o sin los vendidos"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Antes de abrirlo",
+      "items": [
+        "Dice cuántos coinciden",
+        "Y muestra los primeros",
+        "Sin stock queda apagado"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo",
+      "items": [
+        "Trae el costo y la ganancia",
+        "Es para adentro",
+        "Al cliente va una cotización"
+      ]
+    }
+  ]
+}

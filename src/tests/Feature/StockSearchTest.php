@@ -13,7 +13,7 @@ class StockSearchTest extends TestCase
 
     public function test_exact_imei_finds_an_available_phone_even_with_surrounding_spaces(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['rol' => 'vendedor']); // la búsqueda de stock es solo para el equipo
         $phone = Celular::create([
             'modelo' => 'iPhone 17 Pro Max',
             'capacidad' => '256 GB',
@@ -36,7 +36,7 @@ class StockSearchTest extends TestCase
 
     public function test_sold_phone_is_not_returned_by_imei_search(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['rol' => 'vendedor']); // la búsqueda de stock es solo para el equipo
         Celular::create([
             'modelo' => 'iPhone vendido',
             'capacidad' => '128 GB',

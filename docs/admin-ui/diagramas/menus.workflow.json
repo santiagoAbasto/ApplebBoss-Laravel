@@ -1,0 +1,116 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Menú: los tres lugares donde el cliente ve tus enlaces",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "panel", "label": "Panel" },
+    { "id": "computadora", "label": "Computadora" },
+    { "id": "celular", "label": "Celular" },
+    { "id": "vacio", "label": "Menú vacío", "variant": "exception" }
+  ],
+  "mainPath": ["enlace", "arriba", "opciones"],
+  "nodes": [
+    {
+      "id": "enlace",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Enlace",
+      "sublabel": "texto y a dónde lleva"
+    },
+    {
+      "id": "arriba",
+      "lane": "computadora",
+      "col": 1,
+      "type": "frontend",
+      "width": 150,
+      "label": "Barra de arriba",
+      "sublabel": "en la computadora"
+    },
+    {
+      "id": "lista",
+      "lane": "celular",
+      "col": 1,
+      "type": "frontend",
+      "width": 150,
+      "label": "Lista del celular",
+      "sublabel": "sin opciones adentro"
+    },
+    {
+      "id": "pie",
+      "lane": "celular",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Pie de página",
+      "sublabel": "en columnas"
+    },
+    {
+      "id": "opciones",
+      "lane": "computadora",
+      "col": 2,
+      "type": "external",
+      "width": 150,
+      "label": "Sus opciones",
+      "sublabel": "se abren al pasar"
+    },
+    {
+      "id": "fabrica",
+      "lane": "vacio",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "Menú de fábrica",
+      "sublabel": "si no hay ninguno"
+    }
+  ],
+  "edges": [
+    { "from": "enlace", "to": "arriba", "label": "menú de arriba", "variant": "emphasis" },
+    { "from": "enlace", "to": "lista", "label": "menú del celular" },
+    { "from": "enlace", "to": "fabrica", "label": "sin enlaces visibles", "variant": "security", "role": "error" },
+    { "from": "arriba", "to": "opciones", "label": "si tiene opciones", "variant": "emphasis" },
+    { "from": "lista", "to": "pie", "label": "y en el pie, por columna", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Tres menús, no uno",
+      "items": [
+        "Arriba en la computadora",
+        "La lista que se abre en el celular",
+        "El pie de página, en columnas"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Se editan por separado",
+      "items": [
+        "Agregar arriba no lo pone en el celular",
+        "«Copiar los que faltan» trae lo que no está",
+        "No repite lo que ya tienes"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Qué admite cada uno",
+      "items": [
+        "Opciones adentro: solo el de arriba",
+        "Columnas: solo el pie de página",
+        "Verde MYSKIN: arriba y en el celular"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Sin enlaces sale el menú de fábrica",
+        "Un enlace de afuera conviene abrirlo aparte",
+        "Borrar el enlace no borra la página"
+      ]
+    }
+  ]
+}

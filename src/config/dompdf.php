@@ -267,7 +267,10 @@ return [
          *
          * @var bool
          */
-        'enable_remote' => true,
+        // Desactivado a propósito: todas las imágenes de los PDF usan public_path() (archivos locales),
+        // así que no se necesita traer nada remoto. Con esto en true, una nota de cotización con una
+        // imagen Markdown (![](http://interno/)) hacía que el servidor trajera esa URL (SSRF ciego).
+        'enable_remote' => env('DOMPDF_ENABLE_REMOTE', false),
 
         /**
          * List of allowed remote hosts

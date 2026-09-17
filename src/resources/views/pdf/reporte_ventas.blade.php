@@ -30,7 +30,7 @@ h1{
 
 .subtitulo{
     font-size:13px;
-    font-weight:500;
+    font-weight:normal;
     color:#555;
 }
 
@@ -56,7 +56,7 @@ th,td{
 
 th{
     background-color:#f8f9fa;
-    font-weight:600;
+    font-weight:bold;
 }
 
 .col-cantidad{
@@ -93,7 +93,7 @@ th{
 
 .resumen-final{
     font-size:12px;
-    font-weight:600;
+    font-weight:bold;
     text-align:right;
 }
 
@@ -135,6 +135,9 @@ th{
 
 <div class="fecha-reporte">
 Fecha del Reporte: {{ now()->format('d/m/Y') }}
+@if(!empty($filtros_texto))
+<br>{{ $filtros_texto }}
+@endif
 </div>
 
 <table>
@@ -161,6 +164,7 @@ Fecha del Reporte: {{ now()->format('d/m/Y') }}
 @php
 $total = 0;
 $gananciaTotal = 0;
+$sinCosto = 0;
 @endphp
 
 @foreach($ventas as $v)
@@ -181,6 +185,9 @@ $ganancia = $v->ganancia ?? ($subtotal - $precioCosto);
 
 $total += $subtotal;
 $gananciaTotal += $ganancia;
+// Servicio técnico sin costo cargado: su utilidad todavía no se conoce y no se suma
+$pendiente = !empty($v->costo_pendiente);
+$sinCosto += $pendiente ? 1 : 0;
 
 $tipo = $v->tipo ?? '—';
 $producto = $v->producto ?? '—';
@@ -200,7 +207,11 @@ $producto = $v->producto ?? '—';
 <td>{{ $v->cantidad ?? 1 }}</td>
 
 <td class="text-right">
+@if($pendiente)
+<span class="small-note">Costo pendiente</span>
+@else
 {{ number_format($precioCosto,2) }} Bs
+@endif
 </td>
 
 <td class="text-right">
@@ -221,7 +232,11 @@ $producto = $v->producto ?? '—';
 
 <td class="text-right">
 
-@if($ganancia < 0)
+@if($pendiente)
+
+<span class="small-note">Pendiente</span>
+
+@elseif($ganancia < 0)
 
 <span class="text-danger">
 -{{ number_format(abs($ganancia),2) }} Bs
@@ -267,6 +282,12 @@ $producto = $v->producto ?? '—';
 @endif
 
 </div>
+
+@if($sinCosto > 0)
+<div>
+<span class="small-note">{{ $sinCosto }} {{ $sinCosto === 1 ? 'servicio técnico no tiene' : 'servicios técnicos no tienen' }} el costo cargado: su utilidad no está sumada.</span>
+</div>
+@endif
 
 </div>
 

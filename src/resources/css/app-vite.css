@@ -1,13 +1,353 @@
+/* ── APPLE BOSS DESIGN TOKENS ────────────────────────────────────────── */
+:root {
+  --ab-navy:          #011446;
+  --ab-deep-violet:   #28224F;
+  --ab-periwinkle:    #585E9F;
+  --ab-lime:          #C6CB36;
+  --ms-lime:          #A3BD31;
+  --ms-navy:          #0C1B47;
+  --ms-gray:          #87868A;
+  --surface-page:     #FAFAF9;
+  --surface-white:    #FFFFFF;
+  --surface-muted:    #F2F2F7;
+  --surface-dark:     #011446;
+  --text-primary:     #0D0D1A;
+  --text-secondary:   #55556A;
+  --text-muted:       #8E8EA0;
+  --text-on-dark:     #FFFFFF;
+  --text-on-lime:     #0D0D1A;
+  --border-light:     rgba(13,13,26,0.10);
+  --border-medium:    rgba(13,13,26,0.18);
+  --shadow-card:      0 1px 3px rgba(1,20,70,0.07), 0 4px 12px rgba(1,20,70,0.05);
+  --shadow-raised:    0 4px 16px rgba(1,20,70,0.12), 0 1px 4px rgba(1,20,70,0.08);
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        16px;
+  --radius-xl:        24px;
+  --radius-full:      9999px;
+  --gutter:           clamp(1rem, 4vw, 2.5rem);
+  --dur-press:        120ms;
+  --dur-fast:         180ms;
+  --dur-ui:           240ms;
+  --dur-panel:        320ms;
+  --ease-out:         cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out:      cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer:      cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import './tokens.css';
 
 @layer components {
   .input {
     @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white;
   }
+}
+
+/* Movimiento ambiental del logo: sutil, continuo y sin alterar el layout. */
+.store-brand-logo {
+  animation: store-brand-breathe 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: 50% 55%;
+}
+
+@keyframes store-brand-breathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -1.5px, 0) scale(1.008);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-brand-logo {
+    animation: none;
+  }
+}
+
+/* Siluetas del hero de Trade-In: cada trazo (pathLength="1") se dibuja al entrar, con el retraso de su silueta. */
+.ab-trazo :is(rect, path, circle):not([stroke='none']) {
+  stroke-dasharray: 1.05 1.1;
+  stroke-dashoffset: 1.1;
+  animation: ab-trazo 2.2s cubic-bezier(0.65, 0, 0.35, 1) var(--ab-retraso, 0s) forwards;
+}
+
+@keyframes ab-trazo {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-trazo :is(rect, path, circle):not([stroke='none']) {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/* Carrusel «Lo más importante» de la ficha: la barra del punto activo se llena mientras dura cada tarjeta. */
+@keyframes ab-avance-carrusel {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ─── Botón de WhatsApp que flota en la tienda ─────────────────────────────────
+   La marca va en el JSX (Components/Store/WhatsAppFlotante.jsx); acá su movimiento.
+   Se frena en la línea del copyright con una traslación que calcula el componente. */
+
+.ab-wa {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(0.33, 1, 0.68, 1), opacity 320ms ease;
+}
+
+.ab-wa[data-entro] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ab-wa[data-entro] .ab-wa-boton {
+  animation: ab-wa-entrada 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ab-wa[data-guino] .ab-wa-boton {
+  animation: ab-wa-guino 900ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* La entrada arranca chica y termina en el tamaño normal: sin `fill-mode`, para que el botón nunca se quede
+   encogido si la animación no llega a correr (por ejemplo, con la pestaña en segundo plano). */
+@keyframes ab-wa-entrada {
+  0%   { transform: scale(0.3) translateY(28px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* El guiño: un saludo corto, no un temblor */
+@keyframes ab-wa-guino {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  15%      { transform: scale(1.09) rotate(-9deg); }
+  30%      { transform: scale(1.09) rotate(8deg); }
+  45%      { transform: scale(1.06) rotate(-6deg); }
+  60%      { transform: scale(1.03) rotate(3deg); }
+}
+
+.ab-wa-boton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  background: radial-gradient(120% 120% at 30% 18%, #57e08a 0%, #25d366 42%, #12a54c 100%);
+  box-shadow:
+    0 10px 30px rgba(18, 165, 76, 0.42),
+    0 3px 10px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.14);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ab-wa-boton:hover,
+.ab-wa-boton:focus-visible {
+  transform: scale(1.08);
+  box-shadow:
+    0 16px 38px rgba(18, 165, 76, 0.5),
+    0 4px 12px rgba(15, 23, 42, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.ab-wa-boton:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+.ab-wa-boton:active { transform: scale(0.96); }
+
+/* Brillo diagonal que cruza el botón cada tanto */
+.ab-wa-brillo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.ab-wa-brillo::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -120%;
+  width: 60%;
+  height: 220%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: rotate(18deg);
+  animation: ab-wa-brillo 5.5s ease-in-out 1.4s infinite;
+}
+
+@keyframes ab-wa-brillo {
+  0%, 62%  { left: -120%; }
+  78%, 100% { left: 170%; }
+}
+
+/* Las ondas: el botón respira, sin taparlo */
+.ab-wa-onda {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(37, 211, 102, 0.55);
+  animation: ab-wa-onda 3.2s cubic-bezier(0.25, 0.6, 0.35, 1) infinite;
+  pointer-events: none;
+}
+
+.ab-wa-onda-2 { animation-delay: 1.6s; }
+
+@keyframes ab-wa-onda {
+  0%   { transform: scale(1); opacity: 0.6; }
+  70%  { transform: scale(1.75); opacity: 0; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+
+/* El «1» de mensaje sin leer */
+.ab-wa-aviso {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #e8330a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  animation: ab-wa-aviso 620ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both;
+}
+
+@keyframes ab-wa-aviso {
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* El saludo: una burbuja de chat, no un tooltip */
+.ab-wa-saludo {
+  position: relative;
+  max-width: 250px;
+  margin-bottom: 6px;
+  padding: 14px 16px;
+  border-radius: 18px 18px 6px 18px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+  opacity: 0;
+  transform: translateX(14px) scale(0.94);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity 260ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ab-wa-saludo[data-abierto] {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.ab-wa-saludo-titulo {
+  margin: 0;
+  color: #0d0d1a;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.ab-wa-saludo-texto {
+  margin: 4px 0 0;
+  color: #5b6172;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ab-wa-saludo-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  color: #12a54c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ab-wa-saludo-estado i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #25d366;
+  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  animation: ab-wa-latido 2s ease-out infinite;
+}
+
+@keyframes ab-wa-latido {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+  70%  { box-shadow: 0 0 0 7px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+.ab-wa-cerrar {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: 0;
+  background: none;
+  color: #a7adbb;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ab-wa-cerrar:hover { color: #5b6172; }
+
+/* El pico de la burbuja, apuntando al botón */
+.ab-wa-pico {
+  position: absolute;
+  right: 16px;
+  bottom: -5px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+@media (max-width: 640px) {
+  .ab-wa { right: 16px; bottom: 16px; }
+  .ab-wa-boton { width: 56px; height: 56px; }
+  /* En el celular el saludo va arriba del botón, para no tapar la pantalla */
+  .ab-wa { flex-direction: column; align-items: flex-end; gap: 0; }
+  .ab-wa-saludo { max-width: min(250px, calc(100vw - 48px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-wa,
+  .ab-wa[data-entro] .ab-wa-boton,
+  .ab-wa[data-guino] .ab-wa-boton,
+  .ab-wa-aviso,
+  .ab-wa-saludo,
+  .ab-wa-saludo-estado i,
+  .ab-wa-brillo::after {
+    animation: none;
+    transition: none;
+  }
+
+  .ab-wa-onda { display: none; }
 }
 
 .apexcharts-pie-series path {
@@ -46,4 +386,46 @@ body {
 #content {
   height: calc(100vh - 70px);
   overflow-y: auto;
+}
+
+/* ─── Panel del vendedor: la tarjeta de la meta y los accesos rápidos ───────── */
+
+/* El fondo morado de la meta, con el color del panel (--ab-acento) */
+.ab-meta {
+    box-shadow: 0 26px 54px -30px rgb(var(--ab-acento-rgb) / 0.95);
+}
+
+.ab-meta-fondo {
+    background: linear-gradient(145deg, var(--ab-acento) 0%, #3B3D67 100%);
+}
+
+/* Una aurora muy suave que respira detrás del contenido */
+.ab-meta-aurora {
+    background:
+        radial-gradient(38% 42% at 30% 35%, rgba(198, 203, 54, 0.22), transparent 70%),
+        radial-gradient(34% 38% at 72% 62%, rgba(255, 255, 255, 0.18), transparent 70%);
+    filter: blur(10px);
+    animation: ab-aurora 18s ease-in-out infinite;
+}
+
+@keyframes ab-aurora {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+    33%      { transform: translate3d(4%, -3%, 0) scale(1.08); opacity: 1; }
+    66%      { transform: translate3d(-3%, 3%, 0) scale(1.04); opacity: 0.9; }
+}
+
+/* Barrido de luz al pasar el mouse por un acceso rápido */
+.ab-barrido {
+    background: linear-gradient(105deg, transparent 38%, rgb(var(--ab-acento-rgb) / 0.14) 50%, transparent 62%);
+    transform: translateX(-120%);
+    transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .ab-barrido {
+    transform: translateX(120%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ab-meta-aurora { animation: none; }
+    .ab-barrido { display: none; }
 }

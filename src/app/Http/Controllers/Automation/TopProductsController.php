@@ -233,7 +233,7 @@ class TopProductsController extends Controller
         foreach ($serviciosTecnicos as $servicio) {
 
             $subtotal = $servicio->precio_venta;
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
 
             $items->push([
                 'categoria' => 'servicio_tecnico',
@@ -247,10 +247,11 @@ class TopProductsController extends Controller
                 'almacenamiento' => null,
                 'cantidad'  => 1,
                 'subtotal'  => (float) $subtotal,
-                'capital'   => (float) $servicio->precio_costo,
+                'capital'   => $servicio->costoParaReportes(),
                 'permuta'   => 0,
                 'descuento' => 0,
                 'ganancia'  => (float) $ganancia,
+                'costo_pendiente' => (bool) $servicio->costo_pendiente,
                 'ticket'    => (float) $servicio->precio_venta,
             ]);
         }

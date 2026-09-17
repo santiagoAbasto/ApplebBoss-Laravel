@@ -12,7 +12,7 @@
     header { text-align: center; margin-bottom: 20px; }
     header img { width: 130px; margin-bottom: 5px; }
     h1 { font-size: 20px; color: #0b2c4d; margin: 0; }
-    .subtitulo { font-size: 13px; font-weight: 500; color: #555; }
+    .subtitulo { font-size: 13px; font-weight: normal; color: #555; }
     .fecha-reporte { text-align: right; font-size: 10px; margin-bottom: 10px; }
     table {
       width: 100%;
@@ -27,13 +27,13 @@
       vertical-align: middle;
       word-wrap: break-word;
     }
-    th { background-color: #f8f9fa; font-weight: 600; }
+    th { background-color: #f8f9fa; font-weight: bold; }
     .text-right { text-align: right; white-space: nowrap; }
     .text-muted { color: #6c757d; }
     .divider { border-top: 2px solid #0b2c4d; margin: 30px 0 20px; }
     .resumen-final {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: bold;
       text-align: right;
     }
     .resumen-final .label { color: #000; font-weight: bold; margin-right: 10px; }
@@ -64,6 +64,9 @@
 <div class="fecha-reporte">
   Fecha del Reporte: {{ now()->format('d/m/Y') }}<br>
   Rango: {{ \Carbon\Carbon::parse($fechaInicio)->format('d/m/Y') }} – {{ \Carbon\Carbon::parse($fechaFin)->format('d/m/Y') }}
+  @if(!empty($tipo))
+    <br>Tipo de gasto: {{ $tipo }}
+  @endif
 </div>
 
 <table>
@@ -88,7 +91,7 @@
         <td>{{ \Carbon\Carbon::parse($e->created_at)->format('d/m/Y') }}</td>
         <td>{{ $e->concepto }}</td>
         <td class="text-right">{{ number_format($e->precio_invertido, 2) }} Bs</td>
-        <td>{{ ucfirst(str_replace('_', ' ', $e->tipo_gasto)) }}</td>
+        <td>{{ \App\Models\Egreso::TIPOS[$e->tipo_gasto] ?? ucfirst(str_replace('_', ' ', $e->tipo_gasto)) }}</td>
         <td>{{ $e->frecuencia ?? '—' }}</td>
         <td>
           @if($e->tipo_gasto === 'cuota_bancaria')

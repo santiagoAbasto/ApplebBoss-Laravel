@@ -46,6 +46,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'meta_mensual'      => 'decimal:2',
         ];
     }
 
@@ -59,6 +60,12 @@ class User extends Authenticatable
     public function isVendedor(): bool
     {
         return $this->rol === 'vendedor';
+    }
+
+    /** Meta de ventas del mes que le cargó el administrador. 0 = todavía no le pusieron ninguna. */
+    public function metaMensual(): float
+    {
+        return max(0, (float) ($this->meta_mensual ?? 0));
     }
 
     /* ─── Relaciones ─── */

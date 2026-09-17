@@ -1,0 +1,650 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Apple Boss — API Pública v1",
+    "version": "1.2.0",
+    "description": "API pública del catálogo de productos Apple Boss Bolivia.\n\n**Reglas de seguridad:**\n- Nunca se expone: precio de costo, ganancia, IMEI 1 y 2 (ni el estado del IMEI), procedencia o proveedor, notas privadas ni datos financieros.\n- El número de serie de celulares y computadoras sí se muestra en el detalle del producto (nunca un IMEI).\n- El `precio` devuelto es siempre el precio de venta público vigente — determinado exclusivamente por el backend.\n- No se acepta ningún precio enviado desde el frontend como autoridad.\n- Rate limit: 120 solicitudes/minuto por IP.\n\n**Condición (novedad de la versión 1.1.0):** `Nuevo` o `Seminuevo` se elige al cargar cada producto al inventario. La publicación la toma sola y, si cambia en el inventario, la API la devuelve actualizada. `Open Box` y `Reacondicionado` se eligen en la publicación. La condición nunca se infiere.\n\n**Número de serie (novedad de la versión 1.2.0):** el detalle de celulares y computadoras incluye `numero_serie`. Si el dato cargado parece un IMEI (15 dígitos), no se envía.",
+    "contact": {
+      "name": "Apple Boss Bolivia",
+      "email": "info@appleboss.bo"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Producción"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Productos",
+      "description": "Catálogo público de productos disponibles"
+    }
+  ],
+  "paths": {
+    "/products": {
+      "get": {
+        "operationId": "listProducts",
+        "summary": "Listar productos publicados",
+        "description": "Catálogo público con filtros combinables. Por defecto solo devuelve productos **disponibles** (con stock en el inventario).\n\nEjemplo — todas las fundas para iPhone 14 Pro Max (diseño, silicona, MagSafe y MYSKIN):\n`GET /api/v1/products?categoria=fundas&modelo=iphone-14-pro-max`\n\nEjemplo — iPhone seminuevos disponibles:\n`GET /api/v1/products?categoria=iphone&condicion=Seminuevo`\n\n**Campos excluidos deliberadamente:** precio_costo, precio_compra, ganancia, margen, IMEI 1 y 2, estado del IMEI, procedencia, proveedor, notas_internas. Los `atributos` cargados a mano también se filtran. El número de serie solo va en el detalle de celulares y computadoras.",
+        "tags": [
+          "Productos"
+        ],
+        "parameters": [
+          {
+            "name": "categoria",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "iphone",
+                "mac",
+                "apple",
+                "ipad",
+                "watch",
+                "airpods",
+                "accesorios",
+                "fundas"
+              ]
+            },
+            "description": "Categoría. `fundas` incluye todas las fundas (MYSKIN y del inventario de accesorios).",
+            "example": "fundas"
+          },
+          {
+            "name": "modelo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "description": "Modelo compatible. Acepta el slug (`iphone-14-pro-max`), el nombre (`iPhone 14 Pro Max`) o solo `14 pro max`. La lista completa está en `/filters`.",
+            "example": "iphone-14-pro-max"
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "description": "Tipo de accesorio: `funda`, `vidrio templado`, `protector de cámara`, `cargador`…",
+            "example": "funda"
+          },
+          {
+            "name": "marca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "myskin",
+                "apple-boss"
+              ]
+            },
+            "description": "Solo fundas MYSKIN o solo productos Apple Boss."
+          },
+          {
+            "name": "condicion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Nuevo",
+                "Seminuevo",
+                "Open Box",
+                "Reacondicionado"
+              ]
+            },
+            "description": "Condición comercial explícita. `Nuevo` y `Seminuevo` vienen del inventario y se actualizan solos; `Open Box` y `Reacondicionado` se eligen en la publicación. No distingue mayúsculas (`seminuevo` también sirve).",
+            "example": "Seminuevo"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Texto libre. Deben aparecer todas las palabras (título, tipo o resumen).",
+            "example": "silicona"
+          },
+          {
+            "name": "precio_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            },
+            "description": "Precio mínimo en Bs (usa el precio promocional si está vigente)."
+          },
+          {
+            "name": "precio_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            },
+            "description": "Precio máximo en Bs."
+          },
+          {
+            "name": "destacado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Solo productos destacados."
+          },
+          {
+            "name": "disponible",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "todos"
+              ],
+              "default": "1"
+            },
+            "description": "`todos` incluye también los agotados."
+          },
+          {
+            "name": "orden",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "novedades",
+                "destacados",
+                "precio-menor",
+                "precio-mayor",
+                "nombre"
+              ],
+              "default": "novedades"
+            },
+            "description": "Orden del listado. El orden por precio usa el precio real del inventario."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 24
+            },
+            "description": "Productos por página."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Página."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Listado paginado de productos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProductoListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginaMeta"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 42,
+                      "slug": "iphone-15-pro-256gb-negro",
+                      "titulo": "iPhone 15 Pro 256GB",
+                      "subtitulo": "Negro titanio",
+                      "resumen": "Cámara 48MP · Dynamic Island · USB-C",
+                      "condicion": "Nuevo",
+                      "categoria": "iphone",
+                      "subcategoria": null,
+                      "tags": [
+                        "iphone",
+                        "pro"
+                      ],
+                      "atributos": {
+                        "color": "Negro titanio",
+                        "capacidad": "256GB",
+                        "chip": "A17 Pro"
+                      },
+                      "garantia": "12 meses",
+                      "badge": "Nuevo ingreso",
+                      "destacado": true,
+                      "disponible": true,
+                      "precio": 6800.0,
+                      "precio_promocional": null,
+                      "imagen_principal": {
+                        "url": "/storage/catalogo/iphone15pro.jpg",
+                        "alt": "iPhone 15 Pro 256GB Negro titanio"
+                      },
+                      "seo_title": null,
+                      "seo_description": null
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "last_page": 3,
+                    "per_page": 24,
+                    "total": 68
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Demasiadas solicitudes — rate limit excedido (120/min)"
+          }
+        }
+      }
+    },
+    "/filters": {
+      "get": {
+        "operationId": "listFilters",
+        "summary": "Opciones de filtro",
+        "tags": [
+          "Productos"
+        ],
+        "description": "Categorías, modelos compatibles, tipos, condiciones, marcas y rango de precios, con la cantidad de productos disponibles en cada uno. Útil para armar menús de filtro.",
+        "responses": {
+          "200": {
+            "description": "Opciones de filtro",
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "categorias": [
+                      {
+                        "slug": "fundas",
+                        "label": "Fundas",
+                        "total": 112
+                      }
+                    ],
+                    "modelos": [
+                      {
+                        "slug": "iphone-14-pro-max",
+                        "nombre": "iPhone 14 Pro Max",
+                        "familia": "iphone",
+                        "total": 9
+                      }
+                    ],
+                    "tipos": [
+                      {
+                        "valor": "Funda",
+                        "total": 112
+                      }
+                    ],
+                    "condiciones": [
+                      {
+                        "valor": "Nuevo",
+                        "total": 240
+                      },
+                      {
+                        "valor": "Seminuevo",
+                        "total": 10
+                      }
+                    ],
+                    "marcas": [
+                      {
+                        "valor": "Apple Boss",
+                        "total": 250
+                      }
+                    ],
+                    "precio": {
+                      "min": 30,
+                      "max": 12500
+                    },
+                    "ordenes": [
+                      "novedades",
+                      "destacados",
+                      "precio-menor",
+                      "precio-mayor",
+                      "nombre"
+                    ],
+                    "total": 250
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{slug}": {
+      "get": {
+        "operationId": "getProduct",
+        "summary": "Detalle de un producto",
+        "description": "Retorna el detalle completo de un producto publicado: galería, atributos técnicos, compatibilidades, descripción editorial y, en celulares y computadoras, el número de serie.\n\n**No incluye:** precio de costo, IMEI ni su estado, procedencia, proveedor ni datos internos.",
+        "tags": [
+          "Productos"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Slug único del producto",
+            "example": "iphone-15-pro-256gb-negro"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle del producto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProductoDetalle"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Producto no encontrado o no publicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "No query results for model [App\\Models\\CatalogoPublicacion]."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProductoListItem": {
+        "type": "object",
+        "description": "Producto en listado — campos públicos seguros",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 42
+          },
+          "slug": {
+            "type": "string",
+            "example": "iphone-15-pro-256gb-negro"
+          },
+          "titulo": {
+            "type": "string",
+            "example": "iPhone 15 Pro 256GB"
+          },
+          "subtitulo": {
+            "type": "string",
+            "nullable": true,
+            "example": "Negro titanio"
+          },
+          "resumen": {
+            "type": "string",
+            "nullable": true
+          },
+          "condicion": {
+            "type": "string",
+            "enum": [
+              "Nuevo",
+              "Seminuevo",
+              "Open Box",
+              "Reacondicionado"
+            ],
+            "description": "Condición comercial explícita, nunca inferida. `Nuevo` / `Seminuevo` vienen del inventario (se eligen al cargar el producto) y se actualizan solos; `Open Box` / `Reacondicionado` se eligen en la publicación.",
+            "example": "Seminuevo"
+          },
+          "categoria": {
+            "type": "string",
+            "example": "iphone"
+          },
+          "subcategoria": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipo": {
+            "type": "string",
+            "nullable": true,
+            "example": "Funda",
+            "description": "Tipo de accesorio"
+          },
+          "marca": {
+            "type": "string",
+            "enum": [
+              "Apple Boss",
+              "MYSKIN"
+            ]
+          },
+          "es_funda": {
+            "type": "boolean"
+          },
+          "modelos_compatibles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": "string",
+                  "example": "iPhone 14 Pro Max"
+                },
+                "slug": {
+                  "type": "string",
+                  "example": "iphone-14-pro-max"
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "atributos": {
+            "type": "object",
+            "description": "Atributos técnicos como color, capacidad, chip, pantalla, RAM, etc.",
+            "example": {
+              "color": "Negro titanio",
+              "capacidad": "256GB",
+              "chip": "A17 Pro"
+            }
+          },
+          "garantia": {
+            "type": "string",
+            "nullable": true,
+            "example": "12 meses"
+          },
+          "badge": {
+            "type": "string",
+            "nullable": true,
+            "example": "Nuevo ingreso"
+          },
+          "destacado": {
+            "type": "boolean",
+            "example": true
+          },
+          "disponible": {
+            "type": "boolean",
+            "example": true,
+            "description": "true = hay stock disponible según inventario"
+          },
+          "precio": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 6800.0,
+            "description": "Precio de venta público en BOB. Determinado por el backend. NUNCA aceptar precio enviado desde frontend."
+          },
+          "precio_promocional": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 5990.0,
+            "description": "Precio promocional vigente. null si no hay promoción activa en este momento."
+          },
+          "moneda": {
+            "type": "string",
+            "example": "BOB"
+          },
+          "url": {
+            "type": "string",
+            "description": "Página del producto en la tienda"
+          },
+          "imagen_principal": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "url": {
+                "type": "string",
+                "example": "/storage/catalogo/iphone15pro.jpg"
+              },
+              "alt": {
+                "type": "string",
+                "example": "iPhone 15 Pro 256GB Negro titanio"
+              }
+            }
+          },
+          "seo_title": {
+            "type": "string",
+            "nullable": true
+          },
+          "seo_description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ProductoDetalle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProductoListItem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "descripcion": {
+                "type": "string",
+                "nullable": true,
+                "description": "Descripción larga del producto (puede contener HTML sanitizado)"
+              },
+              "que_incluye": {
+                "type": "string",
+                "nullable": true,
+                "description": "Contenido incluido en el paquete. Ej: cable USB-C, adaptador, documentación"
+              },
+              "observaciones": {
+                "type": "string",
+                "nullable": true,
+                "description": "Observaciones públicas adicionales"
+              },
+              "imagenes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "alt": {
+                      "type": "string"
+                    },
+                    "es_principal": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              },
+              "compatibilidades": {
+                "type": "array",
+                "description": "Dispositivos con los que es compatible (relevante para accesorios/fundas)",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "nombre": {
+                      "type": "string",
+                      "example": "iPhone 15 Pro"
+                    },
+                    "slug": {
+                      "type": "string",
+                      "nullable": true,
+                      "example": "iphone-15-pro"
+                    }
+                  }
+                }
+              },
+              "numero_serie": {
+                "type": "string",
+                "nullable": true,
+                "example": "C02XYZ123ABC",
+                "description": "Número de serie del equipo. Solo celulares y computadoras; null en el resto o si no está cargado. Nunca es un IMEI."
+              }
+            }
+          }
+        ]
+      },
+      "PaginaMeta": {
+        "type": "object",
+        "properties": {
+          "current_page": {
+            "type": "integer",
+            "example": 1
+          },
+          "last_page": {
+            "type": "integer",
+            "example": 5
+          },
+          "per_page": {
+            "type": "integer",
+            "example": 24
+          },
+          "total": {
+            "type": "integer",
+            "example": 118
+          },
+          "orden": {
+            "type": "string",
+            "example": "novedades"
+          }
+        }
+      }
+    }
+  }
+}

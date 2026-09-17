@@ -1,212 +1,72 @@
-import { Link, Head, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-import { route } from 'ziggy-js';
-import ConfirmLogoutModal from '@/Components/ConfirmLogoutModal';
+import {
+  CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
+  Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
+  ShoppingCart, SlidersHorizontal, Smartphone, Store, Tablet, Tag, Users, Wallet, Wrench,
+} from 'lucide-react';
+import IconoUsuarios from '@/Components/Admin/IconoUsuarios';
+import PanelShell, { AB, DISPLAY_FONT } from '@/Layouts/PanelShell';
 
-export default function AdminLayout({ children }) {
-  const { post } = useForm();
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(() => (
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 992px)').matches : true
-  ));
+export { AB, DISPLAY_FONT };
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 992px)');
-    const onChange = (event) => setIsDesktop(event.matches);
+// Lo de todos los días arriba; la tienda online y el marketing después, como bloque.
+const NAV = [
+  { key: 'inicio', items: [{ r: 'admin.dashboard', icon: LayoutDashboard, label: 'Resumen', exact: true, modulo: 'resumen' }] },
+  { key: 'operacion', label: 'Ventas y operación', items: [
+    { r: 'admin.ventas.index', icon: ShoppingCart, label: 'Ventas', modulo: 'ventas' },
+    { r: 'admin.reservas.index', icon: CalendarCheck, label: 'Reservas', modulo: 'reservas' },
+    { r: 'admin.servicios.index', icon: Hammer, label: 'Servicio técnico', modulo: 'servicios' },
+    { r: 'admin.cotizaciones.index', icon: Receipt, label: 'Cotizaciones', modulo: 'cotizaciones' },
+    { r: 'admin.egresos.index', icon: Wallet, label: 'Egresos', modulo: 'egresos' },
+    { r: 'admin.reportes.index', icon: ChartLine, label: 'Reportes', modulo: 'reportes' },
+    { r: 'admin.clientes.index', icon: Users, label: 'Clientes', modulo: 'clientes' },
+  ] },
+  { key: 'inventario', label: 'Inventario', items: [
+    { r: 'admin.celulares.index', icon: Smartphone, label: 'Celulares', modulo: 'inventario' },
+    { r: 'admin.computadoras.index', icon: Laptop, label: 'Computadoras', modulo: 'inventario' },
+    { r: 'admin.productos-apple.index', icon: Tablet, label: 'Productos Apple', modulo: 'inventario' },
+    { r: 'admin.productos-generales.index', icon: Package, label: 'Productos generales', modulo: 'inventario' },
+    { r: 'admin.inventory-audits.index', icon: ClipboardCheck, label: 'Auditoría', modulo: 'auditoria' },
+  ] },
+  { key: 'tienda', label: 'Tienda online', items: [
+    { r: 'admin.catalogo.index', icon: Store, label: 'Productos en la tienda', modulo: 'tienda' },
+    { r: 'admin.modelos.index', icon: Images, label: 'Modelos y fotos', modulo: 'tienda' },
+    { r: 'admin.categories.index', icon: Tag, label: 'Categorías', modulo: 'tienda' },
+    { r: 'admin.collections.index', icon: Layers, label: 'Colecciones', modulo: 'tienda' },
+    { r: 'admin.home-builder.index', icon: House, label: 'Portada', modulo: 'tienda' },
+    { r: 'admin.menus.index', icon: List, label: 'Menú', modulo: 'tienda' },
+    { r: 'admin.pages.index', icon: FileText, label: 'Páginas', modulo: 'tienda' },
+    { r: 'admin.faqs.index', icon: CircleHelp, label: 'Preguntas frecuentes', modulo: 'tienda' },
+    { r: 'admin.services.index', icon: Wrench, label: 'Servicios', modulo: 'tienda' },
+    { r: 'admin.locations.index', icon: MapPin, label: 'Ubicaciones', modulo: 'tienda' },
+    { r: 'admin.novedades.index', icon: Newspaper, label: 'Novedades', modulo: 'tienda' },
+    { r: 'admin.trade-in.index', icon: Repeat, label: 'Trade-In', aviso: 'trade_in', modulo: 'tienda' },
+    { r: 'admin.configuracion.tienda.edit', icon: Settings, label: 'Configuración', modulo: 'tienda' },
+  ] },
+  { key: 'marketing', label: 'Marketing y Google', items: [
+    { r: 'admin.newsletter.campaigns.index', icon: Send, label: 'Campañas', modulo: 'marketing' },
+    { r: 'admin.newsletter.subscribers.index', icon: Contact, label: 'Suscriptores', modulo: 'marketing' },
+    { r: 'admin.newsletter.settings.edit', icon: MailOpen, label: 'Ajustes del newsletter', modulo: 'marketing' },
+    { r: 'admin.seo.index', icon: Search, label: 'Google y redes sociales', modulo: 'marketing' },
+  ] },
+  { key: 'datos', label: 'Exportar datos', items: [
+    { r: 'admin.exportaciones.index', icon: FileDown, label: 'Exportaciones', modulo: 'exportar' },
+    { r: 'admin.exportar.personalizado', icon: SlidersHorizontal, label: 'Exportador', modulo: 'exportar' },
+  ] },
+  { key: 'sistema', label: 'Sistema', items: [
+    { r: 'admin.usuarios.index', icon: IconoUsuarios, label: 'Usuarios y roles', modulo: 'usuarios' },
+  ] },
+];
 
-    setIsDesktop(mediaQuery.matches);
-    mediaQuery.addEventListener('change', onChange);
-
-    return () => mediaQuery.removeEventListener('change', onChange);
-  }, []);
-
-  const handleOpenSidebar = () => setSidebarOpen(true);
-  const handleCloseSidebar = () => setSidebarOpen(false);
-
+export default function AdminLayout({ children, title }) {
   return (
-    <>
-      <Head title="Panel Admin | Apple Boss" />
-
-      {/* ================= SB ADMIN CSS ================= */}
-      <link
-        rel="stylesheet"
-        href="/sbadmin/vendor/fontawesome-free/css/all.min.css"
-      />
-      <link
-        rel="stylesheet"
-        href="/sbadmin/css/sb-admin-2.min.css"
-      />
-
-      <div id="wrapper">
-        {!isDesktop && sidebarOpen && (
-          <button
-            type="button"
-            aria-label="Cerrar menú"
-            onClick={handleCloseSidebar}
-            className="d-lg-none"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(15, 23, 42, 0.45)',
-              border: 0,
-              zIndex: 1035,
-            }}
-          />
-        )}
-
-        {/* ================= SIDEBAR ================= */}
-        <ul
-          className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
-          id="accordionSidebar"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            height: '100vh',
-            zIndex: 1040,
-            width: 260,
-            transform: isDesktop || sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-            transition: 'transform 0.25s ease',
-          }}
-        >
-          {/* BRAND */}
-          <Link
-            className="sidebar-brand d-flex align-items-center justify-content-center"
-            href={route('admin.dashboard')}
-            prefetch="hover"
-          >
-            <div className="sidebar-brand-icon rotate-n-15">
-              <i className="fas fa-mobile-alt"></i>
-            </div>
-            <div className="sidebar-brand-text mx-3">
-              Apple Boss
-            </div>
-          </Link>
-
-          <hr className="sidebar-divider my-0" />
-
-          <SidebarItem
-            route="admin.dashboard"
-            icon="fa-tachometer-alt"
-            label="Dashboard"
-          />
-
-          <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Inventario</div>
-
-          <SidebarItem route="admin.celulares.index" icon="fa-mobile" label="Celulares" />
-          <SidebarItem route="admin.computadoras.index" icon="fa-laptop" label="Computadoras" />
-          <SidebarItem route="admin.productos-apple.index" icon="fa-apple-alt" label="Productos Apple" />
-          <SidebarItem route="admin.productos-generales.index" icon="fa-box" label="Productos Generales" />
-
-          <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Operaciones</div>
-
-          <SidebarItem route="admin.ventas.index" icon="fa-shopping-cart" label="Ventas" />
-          <SidebarItem route="admin.reservas.index" icon="fa-calendar-check" label="Reservas" />
-          <SidebarItem route="admin.servicios.index" icon="fa-tools" label="Servicio Técnico" />
-          <SidebarItem route="admin.reportes.index" icon="fa-chart-line" label="Reportes" />
-          <SidebarItem route="admin.cotizaciones.index" icon="fa-file-invoice-dollar" label="Cotizaciones" />
-          <SidebarItem route="admin.egresos.index" icon="fa-hand-holding-usd" label="Egresos" />
-
-          <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Exportaciones</div>
-
-          <SidebarItem
-            route="admin.exportaciones.index"
-            icon="fa-file-export"
-            label="Exportaciones"
-          />
-          <SidebarItem
-            route="admin.exportar.personalizado"
-            icon="fa-search"
-            label="Exportador por nombre"
-          />
-
-          <hr className="sidebar-divider" />
-          <div className="sidebar-heading">Clientes</div>
-
-          <SidebarItem
-            route="admin.clientes.index"
-            icon="fa-users"
-            label="Mis Clientes"
-          />
-
-          <hr className="sidebar-divider" />
-
-          {/* 🔴 LOGOUT — ICONO VISIBLE */}
-          <li className="nav-item mb-3">
-            <a
-              href="#"
-              className="nav-link"
-              onClick={(e) => {
-                e.preventDefault();
-                handleCloseSidebar();
-                setShowLogoutModal(true);
-              }}
-            >
-              <i className="fas fa-fw fa-sign-out-alt"></i>
-              <span>Cerrar sesión</span>
-            </a>
-          </li>
-        </ul>
-
-        {/* ================= CONTENT ================= */}
-        <div
-          id="content-wrapper"
-          className="d-flex flex-column"
-          style={{ width: '100%', minHeight: '100vh', marginLeft: isDesktop ? 260 : 0 }}
-        >
-          <div id="content">
-
-            {/* TOPBAR */}
-            <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-              <button
-                type="button"
-                className="btn btn-link d-lg-none text-decoration-none mr-2"
-                onClick={handleOpenSidebar}
-                aria-label="Abrir menú"
-              >
-                <i className="fas fa-bars"></i>
-              </button>
-              <span className="fw-bold ms-3">
-                Panel de Administración
-              </span>
-            </nav>
-
-            {/* MAIN CONTENT */}
-            <div
-              className="container-fluid pb-4"
-              style={{
-                paddingLeft: 'clamp(10px, 1.5vw, 24px)',
-                paddingRight: 'clamp(10px, 1.5vw, 24px)',
-              }}
-            >
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ================= LOGOUT MODAL ================= */}
-      <ConfirmLogoutModal
-        open={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
-        onConfirm={() => post(route('logout'))}
-      />
-    </>
-  );
-}
-
-/* ================= SIDEBAR ITEM ================= */
-function SidebarItem({ route: r, icon, label }) {
-  return (
-    <li className="nav-item">
-      <Link className="nav-link" href={route(r)} prefetch="hover">
-        <i className={`fas fa-fw ${icon}`}></i>
-        <span>{label}</span>
-      </Link>
-    </li>
+    <PanelShell
+      nav={NAV}
+      homeRoute="admin.dashboard"
+      headTitle={title ? `${title} | Apple Boss` : 'Panel de Administración | Apple Boss'}
+      migaPorDefecto="Panel de administración"
+      filtrarPorPermisos
+    >
+      {children}
+    </PanelShell>
   );
 }

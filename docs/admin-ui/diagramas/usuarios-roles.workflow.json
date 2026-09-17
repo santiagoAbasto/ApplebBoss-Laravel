@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": { "title": "Usuarios y roles: quién abre qué", "quality_profile": "showcase" },
+  "lanes": [
+    { "id": "panel", "label": "Panel" },
+    { "id": "servidor", "label": "Servidor" },
+    { "id": "sin", "label": "Sin permiso", "variant": "exception" }
+  ],
+  "mainPath": ["usuario", "rol", "permisos", "modulo"],
+  "nodes": [
+    { "id": "usuario", "lane": "panel", "col": 0, "type": "frontend", "width": 150, "label": "Usuario", "sublabel": "su correo y su clave" },
+    { "id": "rol", "lane": "panel", "col": 1, "type": "backend", "width": 150, "label": "Su rol", "sublabel": "users.rol" },
+    { "id": "menu", "lane": "panel", "col": 3, "type": "frontend", "width": 150, "label": "Su menú", "sublabel": "solo lo que abre" },
+    { "id": "permisos", "lane": "servidor", "col": 2, "type": "backend", "width": 150, "label": "Permisos", "sublabel": "módulos del rol" },
+    { "id": "modulo", "lane": "servidor", "col": 3, "type": "backend", "width": 150, "label": "El módulo", "sublabel": "se abre" },
+    { "id": "corte", "lane": "sin", "col": 3, "type": "security", "width": 150, "label": "403", "sublabel": "ni escribiendo la URL" }
+  ],
+  "edges": [
+    { "from": "usuario", "to": "rol", "label": "entra", "variant": "emphasis" },
+    { "from": "rol", "to": "permisos", "label": "tabla roles", "variant": "emphasis" },
+    { "from": "permisos", "to": "modulo", "label": "lo tiene marcado", "variant": "emphasis" },
+    { "from": "permisos", "to": "menu", "label": "el menú usa la misma regla" },
+    { "from": "permisos", "to": "corte", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Qué se administra", "items": [
+      "Crear usuarios y darles su rol",
+      "Crear roles propios",
+      "Marcar los módulos de cada rol"
+    ] },
+    { "dot": "violet", "title": "Una sola regla", "items": [
+      "El catálogo vive en Permisos",
+      "El servidor corta con 403",
+      "El menú esconde lo mismo"
+    ] },
+    { "dot": "emerald", "title": "Los del sistema", "items": [
+      "Administrador: todo, siempre",
+      "Vendedor: su panel, en /vendedor",
+      "Ninguno de los dos se borra"
+    ] },
+    { "dot": "amber", "title": "Barandas", "items": [
+      "Nadie se cambia el rol a sí mismo",
+      "Siempre queda un administrador",
+      "Un rol con gente no se borra"
+    ] }
+  ]
+}

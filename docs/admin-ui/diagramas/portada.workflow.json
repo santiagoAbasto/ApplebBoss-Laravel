@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Portada: qué dibuja el inicio y qué no",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "modulos", "label": "Módulos" },
+    { "id": "panel", "label": "Panel" },
+    { "id": "tienda", "label": "Tienda" },
+    { "id": "oculta", "label": "No se dibuja", "variant": "exception" }
+  ],
+  "mainPath": ["contenido", "seccion", "reparto", "inicio"],
+  "nodes": [
+    {
+      "id": "contenido",
+      "lane": "modulos",
+      "col": 0,
+      "type": "database",
+      "width": 150,
+      "label": "Contenido",
+      "sublabel": "catálogo y módulos"
+    },
+    {
+      "id": "seccion",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Sección",
+      "sublabel": "encendida y en fecha"
+    },
+    {
+      "id": "reparto",
+      "lane": "panel",
+      "col": 2,
+      "type": "backend",
+      "width": 150,
+      "label": "Reparto",
+      "sublabel": "cada producto, una vez"
+    },
+    {
+      "id": "vacia",
+      "lane": "oculta",
+      "col": 2,
+      "type": "security",
+      "width": 150,
+      "label": "Sin contenido",
+      "sublabel": "el panel dice por qué"
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "width": 150,
+      "label": "Inicio",
+      "sublabel": "lo que ve el cliente"
+    }
+  ],
+  "edges": [
+    { "from": "contenido", "to": "seccion", "label": "la llena", "variant": "emphasis" },
+    { "from": "seccion", "to": "reparto", "label": "con qué mostrar", "variant": "emphasis" },
+    { "from": "seccion", "to": "vacia", "label": "sin nada que mostrar", "variant": "security", "role": "error" },
+    { "from": "vacia", "to": "inicio", "label": "se saltea", "variant": "dashed", "role": "return" },
+    { "from": "reparto", "to": "inicio", "label": "en el orden que elegiste" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué se arma acá",
+      "items": [
+        "Las piezas no se crean ni se borran",
+        "Se encienden, se ordenan y se editan",
+        "Cada una se puede mostrar entre dos fechas"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "De dónde sale el contenido",
+      "items": [
+        "Productos en la tienda y Categorías",
+        "Colecciones, Servicios y Ubicaciones",
+        "Preguntas frecuentes"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Cada producto, una vez",
+      "items": [
+        "La vitrina se reserva los suyos",
+        "Los demás carruseles toman lo que queda",
+        "Así el inicio no se repite"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Nunca queda un hueco",
+      "items": [
+        "Sin productos, la sección no se dibuja",
+        "El panel dice qué muestra y qué no",
+        "Y por qué no lo muestra"
+      ]
+    }
+  ]
+}

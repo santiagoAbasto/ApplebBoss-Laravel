@@ -1,0 +1,165 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Configuración: el WhatsApp y el nombre",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "tienda",
+      "label": "Tienda y Google"
+    },
+    {
+      "id": "vacio",
+      "label": "Campo vacío",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "configuracion",
+    "compartidos",
+    "paginas",
+    "cliente"
+  ],
+  "nodes": [
+    {
+      "id": "configuracion",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Configuración",
+      "sublabel": "WhatsApp y nombre"
+    },
+    {
+      "id": "compartidos",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "paraLaTienda()",
+      "sublabel": "una sola consulta"
+    },
+    {
+      "id": "paginas",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Todas las páginas",
+      "sublabel": "barra, pie y botón"
+    },
+    {
+      "id": "mensajes",
+      "lane": "tienda",
+      "col": 3,
+      "type": "frontend",
+      "width": 150,
+      "label": "Mensajes",
+      "sublabel": "«Hola <nombre>,»"
+    },
+    {
+      "id": "cliente",
+      "lane": "tienda",
+      "col": 4,
+      "type": "external",
+      "width": 150,
+      "label": "El cliente",
+      "sublabel": "escribe por WhatsApp"
+    },
+    {
+      "id": "sinbarra",
+      "lane": "vacio",
+      "col": 2,
+      "type": "security",
+      "width": 150,
+      "label": "No se dibuja",
+      "sublabel": "la barra desaparece"
+    }
+  ],
+  "edges": [
+    {
+      "from": "configuracion",
+      "to": "compartidos",
+      "label": "guardado validado",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "compartidos",
+      "to": "paginas",
+      "label": "props compartidos",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "compartidos",
+      "to": "mensajes",
+      "label": "el nombre"
+    },
+    {
+      "from": "paginas",
+      "to": "cliente",
+      "label": "toca el botón"
+    },
+    {
+      "from": "configuracion",
+      "to": "sinbarra",
+      "variant": "security",
+      "role": "error",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "from": "mensajes",
+      "to": "cliente",
+      "fromSide": "right",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué se edita acá",
+      "items": [
+        "WhatsApp: botón, número y mensaje",
+        "El nombre de la tienda",
+        "La frase del pie y la barra"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "A dónde va el nombre",
+      "items": [
+        "Encabezado, pie y copyright",
+        "Todos los mensajes de WhatsApp",
+        "Los datos que lee Google"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Cómo cargarlo",
+      "items": [
+        "Número con código de país",
+        "El nombre igual que tu cartel",
+        "La barra corta: se corta en el celular"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Está en otra pantalla",
+      "items": [
+        "Dirección y horario: Ubicaciones",
+        "Título en Google: Google y redes",
+        "Texto del inicio: Portada"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Páginas: del texto que escribes a lo que ve el cliente",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "panel", "label": "Panel" },
+    { "id": "tienda", "label": "Tienda" },
+    { "id": "google", "label": "Google" },
+    { "id": "oculta", "label": "Apagada", "variant": "exception" }
+  ],
+  "mainPath": ["escribir", "pagina", "pie"],
+  "nodes": [
+    {
+      "id": "escribir",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Texto",
+      "sublabel": "títulos, listas, enlaces"
+    },
+    {
+      "id": "pagina",
+      "lane": "tienda",
+      "col": 1,
+      "type": "external",
+      "width": 150,
+      "label": "Su página",
+      "sublabel": "/paginas/…"
+    },
+    {
+      "id": "pie",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Pie de página",
+      "sublabel": "columna Información"
+    },
+    {
+      "id": "buscador",
+      "lane": "google",
+      "col": 2,
+      "type": "external",
+      "width": 150,
+      "label": "Google",
+      "sublabel": "título y sitemap"
+    },
+    {
+      "id": "apagada",
+      "lane": "oculta",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "Apagada",
+      "sublabel": "no se puede abrir"
+    }
+  ],
+  "edges": [
+    { "from": "escribir", "to": "pagina", "label": "al encenderla", "variant": "emphasis" },
+    { "from": "pagina", "to": "pie", "label": "se lista sola", "variant": "emphasis" },
+    { "from": "pagina", "to": "buscador", "label": "con su título propio" },
+    { "from": "pagina", "to": "apagada", "label": "si la apagas", "variant": "security", "role": "error" },
+    { "from": "apagada", "to": "pagina", "label": "el texto no se borra", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué es una página",
+      "items": [
+        "Solo texto para explicar algo",
+        "No lleva productos ni formularios",
+        "Se crea y se borra cuando quieras"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Dónde se ve",
+      "items": [
+        "En su dirección, para compartir",
+        "Sola en el pie, en «Información»",
+        "En un menú, si le pones un enlace"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "La dirección no cambia",
+      "items": [
+        "Se arma con el título al crearla",
+        "Es el enlace que compartes",
+        "Si quedó mal, se borra y se crea otra"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Encendida y sin texto se ve vacía",
+        "Apagada, quien entre ve «no encontrada»",
+        "Al borrarla se ocultan sus enlaces del menú"
+      ]
+    }
+  ]
+}

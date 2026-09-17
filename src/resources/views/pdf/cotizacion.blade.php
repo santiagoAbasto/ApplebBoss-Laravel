@@ -86,10 +86,71 @@
     th {
       background: #f1f5f9;
       text-align: center;
+      color: #334155;
+      font-size: 8.8px;
     }
 
     .right {
       text-align: right;
+    }
+
+    td.right {
+      white-space: nowrap;
+      font-size: 8.3px;
+    }
+
+    .product-name {
+      font-weight: bold;
+      color: #0f172a;
+    }
+
+    .product-details {
+      margin-top: 3px;
+      color: #475569;
+      font-size: 8.8px;
+      line-height: 1.45;
+    }
+
+    .notes-box {
+      background: #f8fafc;
+      border: 1px solid #dbe4ef;
+      border-radius: 6px;
+      padding: 8px 10px;
+      color: #334155;
+      font-size: 8.7px;
+      line-height: 1.38;
+    }
+
+    .notes-box p {
+      margin: 0 0 6px;
+      page-break-inside: avoid;
+    }
+
+    .notes-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .notes-box strong {
+      color: #0f172a;
+      font-weight: bold;
+    }
+
+    .notes-box ul,
+    .notes-box ol {
+      margin: 2px 0 6px 15px;
+      padding: 0;
+    }
+
+    .notes-box li {
+      margin-bottom: 2px;
+    }
+
+    .note-heading {
+      margin: 0 0 5px;
+      color: #0f172a;
+      font-size: 9.2px;
+      font-weight: bold;
+      page-break-after: avoid;
     }
 
     .total-final {
@@ -212,7 +273,7 @@
         COTIZACIÓN
       </p>
       <p style="margin:0;">
-        Fecha: {{ optional($cotizacion->created_at)->format('d/m/Y H:i') }}
+        Fecha: {{ optional($cotizacion->fecha_cotizacion ?? $cotizacion->created_at)->format('d/m/Y') }}
       </p>
       <p style="margin:0;">
         Nº #COT-{{ $cotizacion->id }}
@@ -239,7 +300,8 @@
         <th>#</th>
         <th>Descripción</th>
         <th>Cant.</th>
-        <th class="right">Precio Base</th>
+        <th class="right">P. unitario</th>
+        <th class="right">Subtotal</th>
         <th class="right">Descuento</th>
         <th class="right">IVA 13%</th>
         <th class="right">IT 3%</th>
@@ -253,6 +315,29 @@
       $itArr = is_array($it) ? $it : (array) $it;
 
       $nombre = $itArr['nombre'] ?? '—';
+      $detalles = [];
+
+      if (!empty($itArr['modelo']) && $itArr['modelo'] !== $nombre) {
+      $detalles[] = 'Modelo: ' . $itArr['modelo'];
+      }
+      if (!empty($itArr['procesador'])) {
+      $detalles[] = 'Procesador: ' . $itArr['procesador'];
+      }
+      if (!empty($itArr['ram'])) {
+      $detalles[] = 'RAM: ' . $itArr['ram'];
+      }
+      if (!empty($itArr['almacenamiento'])) {
+      $detalles[] = 'Almacenamiento: ' . $itArr['almacenamiento'];
+      }
+      if (!empty($itArr['capacidad'])) {
+      $detalles[] = 'Capacidad: ' . $itArr['capacidad'];
+      }
+      if (!empty($itArr['color'])) {
+      $detalles[] = 'Color: ' . $itArr['color'];
+      }
+      if (!empty($itArr['bateria'])) {
+      $detalles[] = 'Batería: ' . $itArr['bateria'];
+      }
       $cantidad = max(1, (int) $num($itArr['cantidad'] ?? 1));
       $precioSF = $num($itArr['precio_sin_factura'] ?? 0);
       $descRaw = $num($itArr['descuento'] ?? 0);
@@ -274,8 +359,14 @@
 
       <tr>
         <td>{{ $i + 1 }}</td>
-        <td>{{ $nombre }}</td>
+        <td>
+          <div class="product-name">{{ $nombre }}</div>
+          @if(count($detalles) > 0)
+          <div class="product-details">{{ implode(' · ', $detalles) }}</div>
+          @endif
+        </td>
         <td class="right">{{ $cantidad }}</td>
+        <td class="right">Bs {{ number_format($precioSF, 2) }}</td>
         <td class="right">Bs {{ number_format($base, 2) }}</td>
         <td class="right">- Bs {{ number_format($descuentoItem, 2) }}</td>
         <td class="right">Bs {{ number_format($iva, 2) }}</td>
@@ -284,7 +375,7 @@
       </tr>
       @empty
       <tr>
-        <td colspan="8" style="text-align:center; color:#64748b;">
+        <td colspan="9" style="text-align:center; color:#64748b;">
           No hay ítems agregados
         </td>
       </tr>
@@ -308,9 +399,23 @@
   </table>
 
   @if(!empty($cotizacion->notas_adicionales))
+  @php
+  $notesHtml = \Illuminate\Support\Str::markdown(
+  trim($cotizacion->notas_adicionales),
+  [
+  'html_input' => 'strip',
+  'allow_unsafe_links' => false,
+  ]
+  );
+  $notesHtml = preg_replace(
+  '/<p><strong>(.*?)<\/strong><\/p>/s',
+  '<div class="note-heading">$1</div>',
+  $notesHtml
+  );
+  @endphp
   <div class="section-title">Notas adicionales</div>
-  <div class="box">
-    {{ $cotizacion->notas_adicionales }}
+  <div class="notes-box">
+    {!! $notesHtml !!}
   </div>
   @endif
 

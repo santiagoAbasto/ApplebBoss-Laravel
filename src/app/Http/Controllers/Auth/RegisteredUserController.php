@@ -67,14 +67,14 @@ class RegisteredUserController extends Controller
             ],
         ], [
             'name.regex'             => 'El nombre solo puede contener letras, espacios, guiones y puntos.',
-            'email.email'            => 'Ingresá un correo electrónico válido.',
+            'email.email'            => 'Ingresa un correo electrónico válido.',
             'email.unique'           => 'Este correo ya está registrado.',
             'password.confirmed'     => 'Las contraseñas no coinciden.',
             'password.min'           => 'La contraseña debe tener al menos 8 caracteres.',
             'password.mixed_case'    => 'La contraseña debe incluir mayúsculas y minúsculas.',
             'password.numbers'       => 'La contraseña debe incluir al menos un número.',
             'password.symbols'       => 'La contraseña debe incluir al menos un símbolo especial.',
-            'password.uncompromised' => 'Esta contraseña fue detectada en filtraciones públicas. Elegí una diferente.',
+            'password.uncompromised' => 'Esta contraseña fue detectada en filtraciones públicas. Elige una diferente.',
         ]);
 
         $user = User::create([

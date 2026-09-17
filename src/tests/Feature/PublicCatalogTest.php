@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CatalogoPublicacion;
 use App\Models\Celular;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -11,37 +12,46 @@ class PublicCatalogTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function celular(array $overrides = []): Celular
+    private function celularConPublicacion(array $celularOverrides = [], array $pubOverrides = []): CatalogoPublicacion
     {
-        return Celular::create(array_merge([
-            'modelo' => 'iPhone de prueba',
-            'capacidad' => '128 GB',
-            'color' => 'Negro',
-            'imei_1' => fake()->unique()->numerify('###############'),
-            'estado_imei' => 'libre',
-            'procedencia' => 'Tienda',
+        static $slugCount = 0;
+        $slugCount++;
+
+        $celular = Celular::create(array_merge([
+            'modelo'       => 'iPhone de prueba',
+            'capacidad'    => '128 GB',
+            'color'        => 'Negro',
+            'imei_1'       => fake()->unique()->numerify('###############'),
+            'estado_imei'  => 'libre',
+            'procedencia'  => 'Tienda',
             'precio_costo' => 4000,
             'precio_venta' => 6000,
-            'estado' => 'disponible',
-        ], $overrides));
+            'estado'       => 'disponible',
+        ], $celularOverrides));
+
+        return CatalogoPublicacion::create(array_merge([
+            'producto_tipo' => 'celular',
+            'producto_id'   => $celular->id,
+            'storefront'    => 'APPLE_BOSS',
+            'publicado'     => true,
+            'titulo'        => $celular->modelo . ' ' . $celular->capacidad,
+            'slug'          => 'test-producto-' . $slugCount,
+            'resumen'       => 'Equipo disponible.',
+            'condicion'     => 'Nuevo',
+            'categoria'     => 'celulares',
+        ], $pubOverrides));
     }
 
     public function test_home_only_exposes_available_public_product_data(): void
     {
-        $this->celular([
-            'modelo' => 'iPhone 15 Pro',
-            'capacidad' => '256 GB',
-            'color' => 'Natural',
-            'imei_1' => 'SECRET-IMEI',
-            'precio_costo' => 5000,
-            'precio_venta' => 7500,
-            'estado' => 'disponible',
-        ]);
-        $this->celular([
-            'modelo' => 'iPhone vendido',
-            'precio_venta' => 100,
-            'estado' => 'vendido',
-        ]);
+        $this->celularConPublicacion(
+            ['modelo' => 'iPhone 15 Pro', 'capacidad' => '256 GB', 'color' => 'Natural', 'precio_costo' => 5000, 'precio_venta' => 7500],
+            ['titulo' => 'iPhone 15 Pro']
+        );
+        $this->celularConPublicacion(
+            ['modelo' => 'iPhone vendido', 'estado' => 'vendido'],
+            ['titulo' => 'iPhone vendido', 'publicado' => true]
+        );
 
         $response = $this->get('/');
 
@@ -56,29 +66,21 @@ class PublicCatalogTest extends TestCase
 
     public function test_catalog_can_filter_and_search_products(): void
     {
-        $this->celular([
-            'modelo' => 'iPhone 14 Pro Max',
-            'capacidad' => '512 GB',
-            'precio_venta' => 8200,
-            'estado' => 'disponible',
-        ]);
+        $this->celularConPublicacion(
+            ['modelo' => 'iPhone 14 Pro Max', 'capacidad' => '512 GB', 'precio_venta' => 8200],
+            ['titulo' => 'iPhone 14 Pro Max 512 GB']
+        );
 
         $this->get('/catalogo?q=512&categoria=celulares')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Store/Catalog')
                 ->has('products', 1)
-                ->where('products.0.name', 'iPhone 14 Pro Max'));
+                ->where('products.0.name', 'iPhone 14 Pro Max 512 GB'));
     }
 
-    public function test_product_detail_returns_404_for_unavailable_product(): void
+    public function test_product_detail_returns_404_for_slug_not_found(): void
     {
-        $product = $this->celular([
-            'modelo' => 'Equipo no disponible',
-            'precio_venta' => 1,
-            'estado' => 'vendido',
-        ]);
-
-        $this->get("/productos/celular/{$product->id}/equipo-no-disponible")->assertNotFound();
+        $this->get('/productos/slug-que-no-existe')->assertNotFound();
     }
 }

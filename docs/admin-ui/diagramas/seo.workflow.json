@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": { "title": "Google y redes: de tu texto al resultado", "quality_profile": "showcase" },
+  "lanes": [
+    { "id": "panel", "label": "Panel" },
+    { "id": "publico", "label": "Lo que se ve" },
+    { "id": "falta", "label": "Sin texto propio", "variant": "exception" }
+  ],
+  "mainPath": ["pagina", "seo", "html", "resultado"],
+  "nodes": [
+    { "id": "pagina", "lane": "panel", "col": 0, "type": "frontend", "width": 150, "label": "Cada página", "sublabel": "título y frase" },
+    { "id": "seo", "lane": "panel", "col": 1, "type": "backend", "width": 150, "label": "Support\\Seo", "sublabel": "resuelve el texto" },
+    { "id": "html", "lane": "publico", "col": 2, "type": "backend", "width": 150, "label": "El HTML", "sublabel": "lo escribe el servidor" },
+    { "id": "resultado", "lane": "publico", "col": 3, "type": "external", "width": 150, "label": "Google", "sublabel": "y la tarjeta de WhatsApp" },
+    { "id": "sitemap", "lane": "publico", "col": 1, "type": "backend", "width": 150, "label": "Sitemap", "sublabel": "sin las ocultas" },
+    { "id": "defecto", "lane": "falta", "col": 1, "type": "security", "width": 150, "label": "Texto automático", "sublabel": "el panel lo marca" }
+  ],
+  "edges": [
+    { "from": "pagina", "to": "seo", "label": "lo que escribiste", "variant": "emphasis" },
+    { "from": "seo", "to": "html", "label": "en el servidor", "variant": "emphasis" },
+    { "from": "html", "to": "resultado", "label": "sin JavaScript", "variant": "emphasis" },
+    { "from": "sitemap", "to": "resultado", "label": "las direcciones" },
+    { "from": "pagina", "to": "defecto", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Qué se edita", "items": [
+      "Las páginas fijas, una por una",
+      "Las plantillas: productos y novedades",
+      "El nombre y la imagen de toda la tienda"
+    ] },
+    { "dot": "violet", "title": "Las medidas", "items": [
+      "El título: hasta 60 caracteres",
+      "La frase: entre 70 y 160",
+      "La imagen: 1200 × 630 px"
+    ] },
+    { "dot": "emerald", "title": "Cómo se prueba", "items": [
+      "La tarjeta: pega el enlace en un chat",
+      "Google puede tardar días",
+      "El sitemap va a Search Console"
+    ] },
+    { "dot": "amber", "title": "Antes de publicar", "items": [
+      "APP_URL con el dominio real",
+      "De ahí salen las canónicas",
+      "Y las direcciones del sitemap"
+    ] }
+  ]
+}

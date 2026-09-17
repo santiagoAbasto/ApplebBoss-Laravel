@@ -154,8 +154,7 @@
         <th>Tipo</th>
         <th>Precio</th>
         <th>Descuento</th>
-        <th>Capital</th>
-        <th>Ganancia</th>
+        <th>Cobrado</th>
         <th>Fecha</th>
       </tr>
     </thead>
@@ -164,8 +163,7 @@
       @php
         $totalVenta = 0;
         $totalDescuento = 0;
-        $totalCapital = 0;
-        $totalGanancia = 0;
+        $totalCobrado = 0;
       @endphp
 
       @foreach($ventas as $venta)
@@ -179,13 +177,12 @@
               $item->productoApple?->modelo ??
               ($item->tipo === 'servicio' ? 'Servicio Técnico' : '—');
 
-            // 🔴 MISMA LÓGICA QUE EL ORIGINAL
-            $ganancia = $item->precio_venta - $item->descuento - $item->precio_invertido;
+            // Lo que quedó después del descuento que hizo el vendedor
+            $cobrado = $item->precio_venta - $item->descuento;
 
             $totalVenta += $item->precio_venta;
             $totalDescuento += $item->descuento;
-            $totalCapital += $item->precio_invertido;
-            $totalGanancia += $ganancia;
+            $totalCobrado += $cobrado;
           @endphp
 
           <tr>
@@ -194,15 +191,7 @@
             <td>{{ ucfirst($item->tipo) }}</td>
             <td>Bs {{ number_format($item->precio_venta, 2) }}</td>
             <td>Bs {{ number_format($item->descuento, 2) }}</td>
-            <td>Bs {{ number_format($item->precio_invertido, 2) }}</td>
-
-            <td class="{{ $ganancia < 0 ? 'negativo' : 'positivo' }}">
-              @if($ganancia < 0)
-                Se invirtió Bs {{ number_format(abs($ganancia), 2) }}
-              @else
-                Bs {{ number_format($ganancia, 2) }}
-              @endif
-            </td>
+            <td><strong>Bs {{ number_format($cobrado, 2) }}</strong></td>
 
             <td>{{ \Carbon\Carbon::parse($venta->created_at)->format('d/m/Y H:i') }}</td>
           </tr>
@@ -224,26 +213,25 @@
       <td>Bs {{ number_format($totalDescuento, 2) }}</td>
     </tr>
     <tr>
-      <td>Total Capital:</td>
-      <td>Bs {{ number_format($totalCapital, 2) }}</td>
-    </tr>
-    <tr>
-      <td><strong>Ganancia Total:</strong></td>
-      <td><strong>Bs {{ number_format($totalGanancia, 2) }}</strong></td>
+      <td><strong>Total Cobrado:</strong></td>
+      <td><strong>Bs {{ number_format($totalCobrado, 2) }}</strong></td>
     </tr>
   </table>
 
   <!-- FOOTER -->
   <footer>
     <div class="footer-left">
-      <p>📞 +591 75 904 313</p>
-      <p>📍 Av. Melchor Urquidi entre Calle Fidel Anze y Av. Julio Rodriguez</p>
-      <p>Cochabamba – Bolivia</p>
+      @if (! empty($tienda['telefono']))
+        <p>📞 {{ $tienda['telefono'] }}</p>
+      @endif
+      @if (! empty($tienda['direccion']))
+        <p>📍 {{ $tienda['direccion'] }}</p>
+      @endif
     </div>
 
     <div class="footer-right">
       <p>
-        <strong>Empresa:</strong> Apple Boss<br>
+        <strong>Empresa:</strong> {{ $tienda['nombre'] ?? 'Apple Boss' }}<br>
         Documento interno válido solo con firma autorizada
       </p>
     </div>

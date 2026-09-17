@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use App\Services\GeneradorCodigos;
 use App\Models\Cliente;
+use App\Support\SinCostos;
 
 
 class ServicioTecnicoController extends Controller
@@ -22,6 +23,18 @@ class ServicioTecnicoController extends Controller
         }
     }
 
+    /** Técnicos ya usados en servicios anteriores (para filtrar y elegir rápido). */
+    private function tecnicosConocidos()
+    {
+        return ServicioTecnico::query()
+            ->whereNotNull('tecnico')
+            ->where('tecnico', '<>', '')
+            ->distinct()
+            ->orderBy('tecnico')
+            ->pluck('tecnico')
+            ->values();
+    }
+
     /* ======================================================
      * INDEX
      * ====================================================== */
@@ -31,10 +44,18 @@ class ServicioTecnicoController extends Controller
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'vendedor_id' => 'nullable|exists:users,id',
+            'tecnico' => 'nullable|string|max:120',
             'buscar' => 'nullable|string',
+            'pendientes' => 'nullable|boolean',
         ]);
 
-        $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
+        $esAdmin = ! SinCostos::aplica(Auth::user());
+        $query = ServicioTecnico::with(['vendedor', 'quienCargoElCosto:id,name'])->orderByDesc('fecha')->orderByDesc('id');
+
+        // «Sin costo»: los servicios que el administrador todavía tiene que completar
+        if ($esAdmin && $request->boolean('pendientes')) {
+            $query->sinCosto();
+        }
 
         if (Auth::user()->rol === 'vendedor') {
             $query->where('user_id', Auth::id());
@@ -46,14 +67,19 @@ class ServicioTecnicoController extends Controller
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
 
+        if ($request->filled('tecnico')) {
+            $query->where('tecnico', $request->tecnico);
+        }
+
         if ($request->filled('buscar')) {
             $query->where(function ($q) use ($request) {
                 $q->where('cliente', 'like', '%' . $request->buscar . '%')
                     ->orWhere('codigo_nota', 'like', '%' . $request->buscar . '%');
             });
 
+            // Al vendedor tampoco le viaja el costo por la búsqueda rápida
             return response()->json([
-                'servicios' => $query->get(),
+                'servicios' => $esAdmin ? $query->get() : $this->sinCostos($query->get()),
             ]);
         }
 
@@ -62,11 +88,19 @@ class ServicioTecnicoController extends Controller
                 ? 'Admin/Servicios/Index'
                 : 'Vendedor/Servicios/Index',
             [
-                'servicios' => $query->get(),
-                'filtros' => $request->only(['fecha_inicio', 'fecha_fin', 'vendedor_id']),
-                'vendedores' => Auth::user()->rol === 'admin'
-                    ? \App\Models\User::where('rol', 'vendedor')->select('id', 'name')->get()
+                // Al vendedor no le viajan ni el costo del servicio ni el de cada trabajo
+                'servicios' => $esAdmin ? $query->get() : $this->sinCostos($query->get()),
+                'filtros' => $request->only(['fecha_inicio', 'fecha_fin', 'vendedor_id', 'tecnico', 'pendientes']),
+                // Cuántos servicios esperan su costo, sin importar el período que se esté mirando
+                'pendientesDeCosto' => $esAdmin ? ServicioTecnico::sinCosto()->count() : 0,
+                // Quienes registraron al menos un servicio (filtro «Registrado por»)
+                'vendedores' => $esAdmin
+                    ? \App\Models\User::whereIn('id', ServicioTecnico::query()->select('user_id'))
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
                     : [],
+                // Los técnicos conocidos sirven en los dos paneles para autocompletar y filtrar
+                'tecnicos' => $this->tecnicosConocidos(),
             ]
         );
     }
@@ -77,9 +111,8 @@ class ServicioTecnicoController extends Controller
     public function create()
     {
         return Inertia::render(
-            Auth::user()->rol === 'admin'
-                ? 'Admin/Servicios/Create'
-                : 'Vendedor/Servicios/Create'
+            Auth::user()->rol === 'admin' ? 'Admin/Servicios/Create' : 'Vendedor/Servicios/Create',
+            ['tecnicos' => $this->tecnicosConocidos()]
         );
     }
 
@@ -88,21 +121,23 @@ class ServicioTecnicoController extends Controller
      * ====================================================== */
     public function store(Request $request)
     {
-        \Log::info('REQUEST RAW', $request->all());
-
         $data = $request->validate([
-            'cliente'           => 'required|string',
-            'telefono'          => 'nullable|string',
-            'equipo'            => 'required|string',
+            'cliente'           => 'required|string|max:255',
+            'telefono'          => 'nullable|string|max:50',
+            'equipo'            => 'required|string|max:255',
             'detalle_servicio'  => 'required|string',
             'notas_adicionales' => 'nullable|string',
-            'precio_costo'      => 'required|numeric|min:0',
+            // El costo solo lo carga el administrador: al vendedor se le ignora aunque lo mande
+            'precio_costo'      => 'nullable|numeric|min:0',
             'precio_venta'      => 'required|numeric|min:0',
-            'tecnico'           => 'required|string',
+            'tecnico'           => 'required|string|max:120',
             'fecha'             => 'nullable|date',
         ]);
 
-        return DB::transaction(function () use ($data) {
+        $esAdmin = ! SinCostos::aplica(Auth::user());
+        $montos = $this->montosDelServicio($data, $esAdmin);
+
+        return DB::transaction(function () use ($data, $montos, $esAdmin) {
 
             $cliente = Cliente::firstOrCreate(
                 [
@@ -114,31 +149,173 @@ class ServicioTecnicoController extends Controller
                 ]
             );
 
-            GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigo) use ($cliente, $data) {
-                ServicioTecnico::create([
+            $servicio = null;
+
+            GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigo) use ($cliente, $data, $montos, &$servicio) {
+                $servicio = ServicioTecnico::create([
                     'codigo_nota'       => $codigo,
                     'cliente_id'        => $cliente->id,
                     'cliente'           => $cliente->nombre,
                     'telefono'          => $cliente->telefono,
                     'equipo'            => $data['equipo'],
-                    'detalle_servicio'  => $data['detalle_servicio'],
+                    'detalle_servicio'  => $montos['detalle'],
                     'notas_adicionales' => $data['notas_adicionales'] ?? null,
-                    'precio_costo'      => $data['precio_costo'],
-                    'precio_venta'      => $data['precio_venta'],
+                    'precio_costo'      => $montos['costo'],
+                    'precio_venta'      => $montos['venta'],
+                    'costo_pendiente'   => $montos['pendiente'],
+                    'costo_cargado_por' => $montos['pendiente'] ? null : auth()->id(),
+                    'costo_cargado_en'  => $montos['pendiente'] ? null : now(),
                     'tecnico'           => $data['tecnico'],
                     'fecha'             => $data['fecha'] ?? now('America/La_Paz'),
                     'user_id'           => auth()->id(),
                 ]);
             });
 
-            \Log::info('SERVICIO TECNICO GUARDADO', $data);
+            // Lo que registra el vendedor llega al administrador en el momento: tiene que cargar el costo
+            if ($servicio && $montos['pendiente'] && ! $esAdmin) {
+                $servicio->load('vendedor')->avisarCostoPendiente();
+            }
 
             return redirect()
-                ->route(auth()->user()->rol === 'admin'
-                    ? 'admin.servicios.index'
-                    : 'vendedor.servicios.index')
-                ->with('success', 'Servicio técnico registrado correctamente.');
+                ->route($esAdmin ? 'admin.servicios.index' : 'vendedor.servicios.index')
+                ->with('success', $montos['pendiente'] && ! $esAdmin
+                    ? 'Servicio técnico registrado. Ya puedes imprimir la nota.'
+                    : 'Servicio técnico registrado correctamente.');
         });
+    }
+
+    /* ======================================================
+     * COSTO DEL SERVICIO (solo el administrador)
+     * ====================================================== */
+    public function cargarCosto(Request $request, ServicioTecnico $servicio)
+    {
+        abort_if(SinCostos::aplica(Auth::user()), 403, 'Solo el administrador carga el costo de un servicio técnico.');
+
+        $trabajos = $servicio->trabajos();
+
+        if ($trabajos !== null && count($trabajos) > 0) {
+            $validated = $request->validate([
+                'costos'   => ['required', 'array', 'size:' . count($trabajos)],
+                'costos.*' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            ], [
+                'costos.size'       => 'Carga el costo de cada trabajo del servicio.',
+                'costos.*.required' => 'Carga el costo de cada trabajo del servicio.',
+                'costos.*.numeric'  => 'El costo tiene que ser un monto.',
+                'costos.*.min'      => 'El costo no puede ser negativo.',
+            ]);
+
+            // Solo se completa el costo: la descripción y lo que paga el cliente (lo que dice la nota) no cambian
+            foreach ($trabajos as $i => $trabajo) {
+                $trabajos[$i] = is_array($trabajo) ? $trabajo : ['descripcion' => (string) $trabajo];
+                $trabajos[$i]['costo'] = round((float) $validated['costos'][$i], 2);
+            }
+
+            $costo = round(array_sum(array_column($trabajos, 'costo')), 2);
+            $servicio->detalle_servicio = json_encode($trabajos, JSON_UNESCAPED_UNICODE);
+        } else {
+            // Registros antiguos con el detalle en texto libre: un solo costo total
+            $validated = $request->validate([
+                'costo_total' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            ], [
+                'costo_total.required' => 'Carga el costo del servicio.',
+            ]);
+            $costo = round((float) $validated['costo_total'], 2);
+        }
+
+        $servicio->fill([
+            'precio_costo'      => $costo,
+            'costo_pendiente'   => false,
+            'costo_cargado_por' => Auth::id(),
+            'costo_cargado_en'  => now(),
+        ])->save();
+
+        // El aviso del Resumen ya cumplió su tarea
+        if (\Illuminate\Support\Facades\Schema::hasColumn('system_notifications', 'servicio_tecnico_id')) {
+            \App\Models\SystemNotification::where('servicio_tecnico_id', $servicio->id)->update(['read' => true]);
+        }
+
+        $ganancia = (float) $servicio->precio_venta - $costo;
+
+        return back()->with('success', "Costo cargado en {$servicio->codigo_nota}: "
+            . ($ganancia < 0 ? 'se cobró Bs ' . number_format(abs($ganancia), 2) . ' menos de lo que costó.' : 'deja una utilidad de Bs ' . number_format($ganancia, 2) . '.'));
+    }
+
+    /**
+     * Los montos del servicio salen de sus trabajos, no del total que manda el navegador: así la nota, el total y la
+     * utilidad siempre cuadran. El vendedor registra solo lo que paga el cliente; si el administrador deja algún costo
+     * vacío, el servicio queda con el costo pendiente igual que uno del vendedor.
+     */
+    private function montosDelServicio(array $data, bool $esAdmin): array
+    {
+        $items = json_decode($data['detalle_servicio'], true);
+
+        if (! is_array($items)) {
+            $pendiente = ! $esAdmin || ! isset($data['precio_costo']);
+
+            return [
+                'detalle'   => $data['detalle_servicio'],
+                'venta'     => round((float) $data['precio_venta'], 2),
+                'costo'     => $pendiente ? 0 : round((float) $data['precio_costo'], 2),
+                'pendiente' => $pendiente,
+            ];
+        }
+
+        $trabajos = [];
+        $errores = [];
+
+        foreach (array_values($items) as $i => $item) {
+            $descripcion = trim(strip_tags((string) ($item['descripcion'] ?? '')));
+
+            if ($descripcion === '') {
+                continue;
+            }
+
+            $precio = $item['precio'] ?? null;
+            if (! is_numeric($precio) || (float) $precio < 0) {
+                $errores['detalle_servicio'] = "Revisa lo que paga el cliente por «{$descripcion}».";
+                continue;
+            }
+
+            $trabajo = ['descripcion' => $descripcion, 'precio' => round((float) $precio, 2)];
+
+            $costo = $item['costo'] ?? null;
+            if ($esAdmin && $costo !== null && $costo !== '') {
+                if (! is_numeric($costo) || (float) $costo < 0) {
+                    $errores['detalle_servicio'] = "Revisa el costo de «{$descripcion}».";
+                    continue;
+                }
+                $trabajo['costo'] = round((float) $costo, 2);
+            }
+
+            $trabajos[] = $trabajo;
+        }
+
+        if ($trabajos === [] && $errores === []) {
+            $errores['detalle_servicio'] = 'Agrega al menos un trabajo.';
+        }
+
+        if ($errores !== []) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errores);
+        }
+
+        $pendiente = ! $esAdmin || collect($trabajos)->contains(fn (array $t) => ! array_key_exists('costo', $t));
+
+        return [
+            'detalle'   => json_encode($trabajos, JSON_UNESCAPED_UNICODE),
+            'venta'     => round(array_sum(array_column($trabajos, 'precio')), 2),
+            'costo'     => round(array_sum(array_column($trabajos, 'costo')), 2),
+            'pendiente' => $pendiente,
+        ];
+    }
+
+    /** Servicios listos para el panel del vendedor: sin el costo del servicio ni el de cada trabajo. */
+    private function sinCostos($servicios)
+    {
+        return SinCostos::deColeccion($servicios)->map(function (array $s) {
+            $s['detalle_servicio'] = SinCostos::detalleDeServicio($s['detalle_servicio'] ?? null);
+
+            return $s;
+        })->values();
     }
 
     /* ======================================================
@@ -212,9 +389,10 @@ class ServicioTecnicoController extends Controller
 
             foreach ($items as $item) {
 
-                $costoReal = isset($item['costo'])
-                    ? (float) $item['costo']
-                    : (float) $servicio->precio_costo; // fallback SOLO si no existe
+                // Sin costo cargado no se inventa uno: el PDF dice «Pendiente» y no lo suma
+                $costoReal = $servicio->costo_pendiente
+                    ? null
+                    : (isset($item['costo']) ? (float) $item['costo'] : (float) $servicio->precio_costo);
 
                 $filas->push([
                     'codigo_nota' => $servicio->codigo_nota,
@@ -222,6 +400,7 @@ class ServicioTecnicoController extends Controller
                     'equipo'      => $servicio->equipo,
                     'servicio'    => $item['descripcion'] ?? '—',
                     'costo'       => $costoReal,
+                    'pendiente'   => (bool) $servicio->costo_pendiente,
                     'venta'       => (float) ($item['precio'] ?? 0),
                     'tecnico'     => $servicio->tecnico,
                     'vendedor'    => optional($servicio->vendedor)->name ?? '—',
@@ -239,7 +418,13 @@ class ServicioTecnicoController extends Controller
      * ====================================================== */
     public function exportarFiltrado(Request $request)
     {
-        $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha');
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date',
+            'tecnico' => 'nullable|string|max:120',
+        ]);
+
+        $query = ServicioTecnico::with('vendedor')->orderByDesc('fecha')->orderByDesc('id');
 
         if (Auth::user()->rol === 'vendedor') {
             $query->where('user_id', Auth::id());
@@ -253,24 +438,63 @@ class ServicioTecnicoController extends Controller
             $query->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin]);
         }
 
-        $filas = $this->normalizarServiciosParaExport($query->get());
+        if ($request->filled('tecnico')) {
+            $query->where('tecnico', $request->tecnico);
+        }
 
-        return Pdf::loadView('pdf.servicios_tecnicos_resumen', compact('filas'))
+        $filas = $this->normalizarServiciosParaExport($query->get());
+        $periodo = $this->descripcionFiltros($request);
+        $conCostos = ! SinCostos::aplica(Auth::user());
+
+        return Pdf::loadView('pdf.servicios_tecnicos_resumen', compact('filas', 'periodo', 'conCostos'))
             ->setPaper('A4', 'landscape')
             ->download('servicios_tecnicos_filtrado.pdf');
     }
 
+    /** Encabezado del PDF: qué período y filtros incluye el reporte. */
+    private function descripcionFiltros(Request $request): string
+    {
+        $partes = [
+            $request->filled('fecha_inicio') && $request->filled('fecha_fin')
+                ? 'Del ' . Carbon::parse($request->fecha_inicio)->format('d/m/Y') . ' al ' . Carbon::parse($request->fecha_fin)->format('d/m/Y')
+                : 'Todas las fechas',
+        ];
+
+        if ($request->filled('tecnico')) {
+            $partes[] = 'Técnico: ' . $request->tecnico;
+        }
+
+        if (Auth::user()->rol === 'admin' && $request->filled('vendedor_id')) {
+            $nombre = \App\Models\User::whereKey($request->vendedor_id)->value('name');
+            if ($nombre) {
+                $partes[] = 'Registrado por: ' . $nombre;
+            }
+        }
+
+        return implode(' · ', $partes);
+    }
+
     public function exportarResumen(Request $request)
     {
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
+        ]);
+
+        // Sin fechas se toma el mes en curso: así el PDF nunca sale vacío por un parámetro que falta
+        $desde = $request->input('fecha_inicio') ?: now()->startOfMonth()->toDateString();
+        $hasta = $request->input('fecha_fin') ?: now()->endOfMonth()->toDateString();
+
         $servicios = ServicioTecnico::with('vendedor')
             ->when(Auth::user()->rol === 'vendedor', fn($q) => $q->where('user_id', Auth::id()))
-            ->whereBetween('fecha', [$request->fecha_inicio, $request->fecha_fin])
+            ->whereBetween('fecha', [$desde, $hasta])
             ->orderByDesc('fecha')
             ->get();
 
         $filas = $this->normalizarServiciosParaExport($servicios);
+        $conCostos = ! SinCostos::aplica(Auth::user());
 
-        return Pdf::loadView('pdf.servicios_tecnicos_resumen', compact('filas'))
+        return Pdf::loadView('pdf.servicios_tecnicos_resumen', compact('filas', 'conCostos'))
             ->setPaper('A4', 'landscape')
             ->stream('servicios_tecnicos_resumen.pdf');
     }

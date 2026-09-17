@@ -1,8 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Plus, Save, Search, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft, Banknote, CheckCircle2, CreditCard, FileText, Package, Plus, QrCode, Save, Search,
+  SlidersHorizontal, Trash2, User, Wrench,
+} from 'lucide-react';
 import CardPaymentFields from '@/Components/CardPaymentFields';
+import { Badge, Field, Input, Segmented, Select, StepCard, Textarea, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
 
 const money = (value) => Number(value || 0);
 
@@ -11,6 +15,12 @@ const productTypes = [
   { value: 'computadora', label: 'Computadora' },
   { value: 'producto_general', label: 'Producto general' },
   { value: 'producto_apple', label: 'Producto Apple' },
+];
+
+const METODOS_PAGO = [
+  { value: 'efectivo', label: 'Efectivo', icon: Banknote },
+  { value: 'qr', label: 'QR', icon: QrCode },
+  { value: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
 ];
 
 const productoNombre = (item) => {
@@ -39,20 +49,20 @@ const productSubtitle = (product, tipo) => {
     productCode(product),
     product?.capacidad,
     product?.color,
-    product?.bateria ? `Bateria ${product.bateria}` : null,
+    product?.bateria ? `Batería ${product.bateria}` : null,
     product?.procesador,
     product?.ram,
     product?.almacenamiento,
     product?.estado && product.estado !== 'disponible' ? product.estado : null,
   ].filter(Boolean);
 
-  return `${productTypes.find((type) => type.value === tipo)?.label || 'Producto'}${parts.length ? ` - ${parts.join(' - ')}` : ''}`;
+  return `${productTypes.find((type) => type.value === tipo)?.label || 'Producto'}${parts.length ? ` · ${parts.join(' · ')}` : ''}`;
 };
 
 const normalizeText = (value) => String(value || '')
   .toLowerCase()
   .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '');
+  .replace(/[̀-ͯ]/g, '');
 
 const searchText = (product) => normalizeText([
   product?.codigo,
@@ -101,7 +111,7 @@ export default function VentaEditForm({
   productosGenerales = [],
   inventarioEdicion = {},
   routePrefix,
-  accent = 'emerald',
+  // eslint-disable-next-line no-unused-vars
 }) {
   const servicio = venta.servicio_tecnico || {};
   const esServicio = venta.tipo_venta === 'servicio_tecnico' && Boolean(servicio.id);
@@ -223,7 +233,7 @@ export default function VentaEditForm({
     const tipoReemplazo = item.replace_tipo || item.tipo;
 
     if (hasDuplicate(tipoReemplazo, product.id, index)) {
-      setSelectorError(`item-${index}`, 'Ese producto ya esta en otra linea de la venta.');
+      setSelectorError(`item-${index}`, 'Ese producto ya está en otra línea de la venta.');
       return;
     }
 
@@ -309,7 +319,7 @@ export default function VentaEditForm({
   const selectNewProduct = (product) => {
     if (!product) return;
     if (hasDuplicate(nuevoProducto.tipo, product.id)) {
-      setSelectorError('new', 'Ese producto ya esta en la venta.');
+      setSelectorError('new', 'Ese producto ya está en la venta.');
       return;
     }
 
@@ -330,7 +340,7 @@ export default function VentaEditForm({
     }
 
     if (hasDuplicate(nuevoProducto.tipo, product.id)) {
-      setSelectorError('new', 'Ese producto ya esta en la venta.');
+      setSelectorError('new', 'Ese producto ya está en la venta.');
       return;
     }
 
@@ -386,38 +396,22 @@ export default function VentaEditForm({
     });
   };
 
-  const accentClasses = {
-    blue: {
-      input: 'focus:border-blue-500 focus:ring-blue-500',
-      searchShell: 'focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500',
-      button: 'bg-blue-600 hover:bg-blue-700',
-      tint: 'bg-blue-50 text-blue-700 border-blue-100',
-    },
-    emerald: {
-      input: 'focus:border-emerald-500 focus:ring-emerald-500',
-      searchShell: 'focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500',
-      button: 'bg-emerald-600 hover:bg-emerald-700',
-      tint: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    },
-  };
-  const theme = accentClasses[accent] || accentClasses.emerald;
-  const inputClass = `w-full rounded-lg border border-slate-200 px-3 py-2 text-sm ${theme.input}`;
-  const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1';
+  const hrefNota = (() => {
+    try { return route(`${routePrefix}.ventas.boleta`, venta.id); } catch { return null; }
+  })();
+  const fechaVenta = venta.created_at
+    ? new Date(venta.created_at).toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
 
-  const renderSearchBox = ({
-    value,
-    placeholder,
-    onFocus,
-    onChange,
-    onKeyDown,
-    onBlur,
-  }) => (
-    <div className={`flex overflow-hidden rounded-lg border border-slate-200 bg-white ${theme.searchShell}`}>
-      <div className="flex w-10 shrink-0 items-center justify-center border-r border-slate-200 bg-slate-50 text-slate-400">
-        <Search size={16} />
-      </div>
+  const total = esServicio ? subtotalServicio : totalProductosACobrar;
+  const capital = esServicio ? money(data.servicio_tecnico.precio_costo) : capitalProductos;
+  const ganancia = esServicio ? gananciaServicio : gananciaProductos;
+
+  const renderSearchBox = ({ value, placeholder, onFocus, onChange, onKeyDown, onBlur }) => (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
       <input
-        className="min-w-0 flex-1 border-0 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+        className={`${inputCls} h-11 pl-10`}
         value={value}
         placeholder={placeholder}
         onFocus={onFocus}
@@ -434,7 +428,7 @@ export default function VentaEditForm({
     const suggestions = filteredProducts(tipo, query, 6);
 
     return (
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
         {suggestions.length ? suggestions.map((product) => (
           <button
             key={`${tipo}-${product.id}`}
@@ -443,21 +437,19 @@ export default function VentaEditForm({
               e.preventDefault();
               onPick(product);
             }}
-            className="block w-full border-b border-slate-100 px-3 py-2 text-left last:border-b-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+            className="block w-full border-b border-slate-100 px-3.5 py-2.5 text-left last:border-b-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="font-semibold text-slate-800">{productTitle(product)}</span>
-              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${product.estado === 'disponible' ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                {product.estado || 'disponible'}
-              </span>
+              <span className="truncate font-semibold text-slate-900">{productTitle(product)}</span>
+              <Badge tone={product.estado === 'disponible' || !product.estado ? 'emerald' : 'slate'}>{product.estado || 'disponible'}</Badge>
             </div>
-            <div className="mt-0.5 text-xs text-slate-500">{productSubtitle(product, tipo)}</div>
+            <div className="mt-0.5 truncate text-xs text-slate-500">{productSubtitle(product, tipo)}</div>
             <div className="mt-1 text-xs font-semibold text-slate-700">
-              Venta Bs {money(product.precio_venta).toFixed(2)} · Costo Bs {money(product.precio_costo).toFixed(2)}
+              Venta {bsFmt(product.precio_venta)} · Costo {bsFmt(product.precio_costo)}
             </div>
           </button>
         )) : (
-          <div className="px-3 py-3 text-sm text-slate-500">Sin resultados disponibles para esa busqueda.</div>
+          <div className="px-3.5 py-3 text-sm text-slate-500">No hay productos disponibles con esa búsqueda.</div>
         )}
       </div>
     );
@@ -467,134 +459,98 @@ export default function VentaEditForm({
     <>
       <Head title={`Editar venta ${venta.codigo_nota}`} />
 
-      <form onSubmit={submit} className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Editar venta</h1>
-            <p className="text-sm text-slate-500">
-              {venta.codigo_nota} · Cambia productos, montos y datos; la venta se recalcula al guardar.
-            </p>
+      <form onSubmit={submit} className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        {/* Encabezado */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href={route(`${routePrefix}.ventas.index`)} aria-label="Volver a ventas"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:text-slate-900">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-[32px] font-extrabold leading-tight tracking-tight text-[#011446]" style={{ fontFamily: "'Barlow Condensed', 'Barlow', sans-serif" }}>
+                  Editar venta
+                </h1>
+                <span className="rounded-lg bg-[#585E9F]/10 px-2 py-1 font-mono text-sm font-bold text-[#3F4585]">{venta.codigo_nota}</span>
+              </div>
+              <p className="text-sm text-slate-500">
+                {venta.vendedor?.name ? `Registrada por ${venta.vendedor.name}` : 'Venta registrada'}{fechaVenta ? ` el ${fechaVenta}` : ''} · los totales se recalculan al guardar.
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2">
-            <Link
-              href={route(`${routePrefix}.ventas.index`)}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <ArrowLeft size={16} />
-              Volver
-            </Link>
-            <button
-              type="submit"
-              disabled={processing}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 ${theme.button}`}
-            >
-              <Save size={16} />
-              Guardar
+            {hrefNota && (
+              <a href={hrefNota} target="_blank" rel="noopener noreferrer" className={buttonCls('secondary', 'h-11')}>
+                <FileText className="h-4 w-4" /> Ver nota
+              </a>
+            )}
+            <button type="submit" disabled={processing} className={buttonCls('primary', 'h-11 px-5')}>
+              <Save className="h-4 w-4" /> {processing ? 'Guardando…' : 'Guardar cambios'}
             </button>
           </div>
         </div>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-slate-800">Datos del cliente</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Nombre</label>
-              <input
-                className={inputClass}
-                value={data.nombre_cliente}
-                onChange={(e) => setData('nombre_cliente', e.target.value)}
-              />
-              {errors.nombre_cliente && <p className="mt-1 text-xs text-rose-600">{errors.nombre_cliente}</p>}
-            </div>
-            <div>
-              <label className={labelClass}>Telefono</label>
-              <input
-                className={inputClass}
-                value={data.telefono_cliente}
-                onChange={(e) => setData('telefono_cliente', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Metodo de pago</label>
-              <select
-                className={inputClass}
-                value={data.metodo_pago}
-                onChange={(e) => setData('metodo_pago', e.target.value)}
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-5">
+            {/* Cliente */}
+            <StepCard icon={User} title="Cliente y forma de pago">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Nombre" error={errors.nombre_cliente}>
+                  <Input value={data.nombre_cliente} onChange={(e) => setData('nombre_cliente', e.target.value)} />
+                </Field>
+                <Field label="Teléfono">
+                  <Input value={data.telefono_cliente} inputMode="tel" onChange={(e) => setData('telefono_cliente', e.target.value)} />
+                </Field>
+                <div className="md:col-span-2">
+                  <Field label="Forma de pago">
+                    <Segmented options={METODOS_PAGO} value={data.metodo_pago} onChange={(v) => setData('metodo_pago', v)} ariaLabel="Forma de pago" />
+                  </Field>
+                </div>
+                {data.metodo_pago === 'tarjeta' && (
+                  <CardPaymentFields
+                    titular={data.nombre_cliente}
+                    inicio={data.inicio_tarjeta}
+                    fin={data.fin_tarjeta}
+                    errors={errors}
+                    onChangeInicio={(value) => setData('inicio_tarjeta', value)}
+                    onChangeFin={(value) => setData('fin_tarjeta', value)}
+                  />
+                )}
+              </div>
+            </StepCard>
+
+            {esServicio ? (
+              <StepCard icon={Wrench} title="Servicio técnico">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Equipo">
+                    <Input value={data.servicio_tecnico.equipo} onChange={(e) => updateServicio('equipo', e.target.value)} />
+                  </Field>
+                  <Field label="Técnico">
+                    <Input value={data.servicio_tecnico.tecnico} onChange={(e) => updateServicio('tecnico', e.target.value)} />
+                  </Field>
+                  <Field label="Costo (Bs)">
+                    <Input type="number" min="0" step="0.01" value={data.servicio_tecnico.precio_costo} onChange={(e) => updateServicio('precio_costo', e.target.value)} />
+                  </Field>
+                  <Field label="Precio cobrado (Bs)">
+                    <Input type="number" min="0" step="0.01" value={data.servicio_tecnico.precio_venta} onChange={(e) => updateServicio('precio_venta', e.target.value)} />
+                  </Field>
+                  <div className="md:col-span-2">
+                    <Field label="Detalle del trabajo">
+                      <Textarea rows={3} value={data.servicio_tecnico.detalle_servicio} onChange={(e) => updateServicio('detalle_servicio', e.target.value)} />
+                    </Field>
+                  </div>
+                </div>
+              </StepCard>
+            ) : (
+              <StepCard
+                icon={Package}
+                title="Productos de la venta"
+                subtitle="Puedes cambiar un producto por otro del inventario o corregir sus montos."
+                actions={<Badge tone="lila"><CheckCircle2 className="h-3.5 w-3.5" /> Se recalcula al guardar</Badge>}
               >
-                <option value="efectivo">Efectivo</option>
-                <option value="qr">QR</option>
-                <option value="tarjeta">Tarjeta</option>
-              </select>
-            </div>
-            {data.metodo_pago === 'tarjeta' && (
-              <CardPaymentFields
-                inicio={data.inicio_tarjeta}
-                fin={data.fin_tarjeta}
-                errors={errors}
-                onChangeInicio={(value) => setData('inicio_tarjeta', value)}
-                onChangeFin={(value) => setData('fin_tarjeta', value)}
-              />
-            )}
-          </div>
-        </section>
-
-        {esServicio ? (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-slate-800">Servicio tecnico</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className={labelClass}>Equipo</label>
-                <input className={inputClass} value={data.servicio_tecnico.equipo} onChange={(e) => updateServicio('equipo', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Tecnico</label>
-                <input className={inputClass} value={data.servicio_tecnico.tecnico} onChange={(e) => updateServicio('tecnico', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Costo</label>
-                <input type="number" min="0" step="0.01" className={inputClass} value={data.servicio_tecnico.precio_costo} onChange={(e) => updateServicio('precio_costo', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Venta</label>
-                <input type="number" min="0" step="0.01" className={inputClass} value={data.servicio_tecnico.precio_venta} onChange={(e) => updateServicio('precio_venta', e.target.value)} />
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>Detalle</label>
-                <textarea className={inputClass} rows="3" value={data.servicio_tecnico.detalle_servicio} onChange={(e) => updateServicio('detalle_servicio', e.target.value)} />
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-800">Productos de la venta</h2>
-                <p className="text-sm text-slate-500">
-                  Busca por nombre, codigo, IMEI o serie en cada linea y reemplaza el producto correcto.
-                </p>
-              </div>
-              <div className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold ${theme.tint}`}>
-                <CheckCircle2 size={15} />
-                Recalculo automatico al guardar
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1320px] text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Actual vendido</th>
-                    <th className="px-3 py-2 text-left">Reemplazar por</th>
-                    <th className="px-3 py-2 text-right">Cantidad</th>
-                    <th className="px-3 py-2 text-right">Venta</th>
-                    <th className="px-3 py-2 text-right">Descuento</th>
-                    <th className="px-3 py-2 text-right">Capital</th>
-                    <th className="px-3 py-2 text-right">Subtotal</th>
-                    <th className="px-3 py-2 text-right"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
+                <div className="space-y-3">
                   {data.items.map((item, index) => {
                     const subtotal = Math.max(0, (money(item.precio_venta) - money(item.descuento)) * Number(item.cantidad || 1));
                     const selectorKey = `item-${index}`;
@@ -603,49 +559,33 @@ export default function VentaEditForm({
                       item.tipo !== item.original_tipo ||
                       productId(item.producto_id) !== productId(item.original_producto_id)
                     );
-                    return (
-                      <tr key={item.id || item.local_id}>
-                        <td className="px-3 py-3 align-top">
-                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                            <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                              Producto actual
-                            </div>
-                            <div className="font-semibold leading-snug text-slate-800">
-                              {item.original_nombre || item.nombre || 'Producto'}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500">
-                              {item.original_detalle || productTypes.find((type) => type.value === item.original_tipo)?.label}
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-                              <span>Linea #{item.id || 'nueva'}</span>
-                              {item.original_producto_id && <span>Producto #{item.original_producto_id}</span>}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <div className="min-w-[390px] space-y-3">
-                            <div>
-                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                                1. Tipo
-                              </label>
-                              <select
-                                className={inputClass}
-                                value={replacementType}
-                                onChange={(e) => updateItem(index, 'replace_tipo', e.target.value)}
-                              >
-                                {productTypes.map((type) => (
-                                  <option key={type.value} value={type.value}>{type.label}</option>
-                                ))}
-                              </select>
-                            </div>
 
-                            <div>
-                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                                2. Buscar por nombre, codigo, IMEI o serie
-                              </label>
+                    return (
+                      <article key={item.id || item.local_id}
+                        className={`rounded-xl border p-4 transition-colors ${isReplacing ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 bg-white'}`}>
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                          {/* Producto vendido */}
+                          <div className="rounded-lg bg-slate-50 p-3">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">{item.id ? 'Producto vendido' : 'Producto agregado'}</p>
+                            <p className="mt-1 font-semibold leading-snug text-slate-900">{item.original_nombre || item.nombre || 'Producto'}</p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {item.original_detalle || productTypes.find((type) => type.value === item.original_tipo)?.label}
+                            </p>
+                            <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                              Línea #{item.id || 'nueva'}{item.original_producto_id ? ` · Producto #${item.original_producto_id}` : ''}
+                            </p>
+                          </div>
+
+                          {/* Cambiar por */}
+                          <div className="min-w-0 space-y-2">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Cambiar por otro producto (opcional)</p>
+                            <div className="grid gap-2 sm:grid-cols-[170px_minmax(0,1fr)]">
+                              <Select value={replacementType} onChange={(e) => updateItem(index, 'replace_tipo', e.target.value)} aria-label="Tipo de producto">
+                                {productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+                              </Select>
                               {renderSearchBox({
                                 value: item.replace_busqueda,
-                                placeholder: 'Ej: IPHONE 17, 357679999, VIDRIO',
+                                placeholder: 'Nombre, código, IMEI o serie',
                                 onFocus: () => setSelectorActivo(selectorKey),
                                 onChange: (e) => updateItem(index, 'replace_busqueda', e.target.value),
                                 onKeyDown: (e) => {
@@ -663,195 +603,185 @@ export default function VentaEditForm({
                               })}
                             </div>
 
-                            <div>
-                              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                                3. Elegir resultado
-                              </label>
-                              {selectorActivo === selectorKey ? (
-                                renderSuggestions(selectorKey, replacementType, item.replace_busqueda, (product) => selectProductForItem(index, product))
-                              ) : isReplacing ? (
-                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                                  <div className="font-semibold">Reemplazo seleccionado</div>
-                                  <div>{item.nombre} · Producto #{item.producto_id}</div>
-                                  <button
-                                    type="button"
-                                    onClick={() => keepOriginalItem(index)}
-                                    className="mt-2 text-xs font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-2"
-                                  >
-                                    Mantener producto actual
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-                                  Sin reemplazo seleccionado. Se mantiene el producto actual.
-                                </div>
-                              )}
-                            </div>
+                            {selectorActivo === selectorKey ? (
+                              renderSuggestions(selectorKey, replacementType, item.replace_busqueda, (product) => selectProductForItem(index, product))
+                            ) : isReplacing ? (
+                              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                                <span><strong className="font-semibold">Se cambiará por:</strong> {item.nombre} · Producto #{item.producto_id}</span>
+                                <button type="button" onClick={() => keepOriginalItem(index)} className="font-semibold text-emerald-700 underline underline-offset-2">
+                                  Mantener el vendido
+                                </button>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400">Si no eliges otro, se mantiene el producto vendido.</p>
+                            )}
+
+                            {selectorErrores[selectorKey] && <p className="text-xs text-rose-600">{selectorErrores[selectorKey]}</p>}
+                            {(errors[`items.${index}.producto_id`] || errors[`items.${index}.tipo`]) && (
+                              <p className="text-xs text-rose-600">{errors[`items.${index}.producto_id`] || errors[`items.${index}.tipo`]}</p>
+                            )}
                           </div>
-                          {selectorErrores[selectorKey] && (
-                            <p className="mt-1 text-xs text-rose-600">{selectorErrores[selectorKey]}</p>
-                          )}
-                          {(errors[`items.${index}.producto_id`] || errors[`items.${index}.tipo`]) && (
-                            <p className="mt-1 text-xs text-rose-600">{errors[`items.${index}.producto_id`] || errors[`items.${index}.tipo`]}</p>
-                          )}
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <input
-                            type="number"
-                            min="1"
-                            className={`${inputClass} text-right`}
-                            value={item.cantidad}
-                            onChange={(e) => updateItem(index, 'cantidad', e.target.value)}
-                            disabled={item.tipo !== 'producto_general'}
-                          />
-                          {errors[`items.${index}.cantidad`] && <p className="mt-1 text-xs text-rose-600">{errors[`items.${index}.cantidad`]}</p>}
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <input type="number" min="0" step="0.01" className={`${inputClass} text-right`} value={item.precio_venta} onChange={(e) => updateItem(index, 'precio_venta', e.target.value)} />
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <input type="number" min="0" step="0.01" className={`${inputClass} text-right`} value={item.descuento} onChange={(e) => updateItem(index, 'descuento', e.target.value)} />
-                          {errors[`items.${index}.descuento`] && <p className="mt-1 text-xs text-rose-600">{errors[`items.${index}.descuento`]}</p>}
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <input type="number" min="0" step="0.01" className={`${inputClass} text-right`} value={item.precio_invertido} onChange={(e) => updateItem(index, 'precio_invertido', e.target.value)} />
-                        </td>
-                        <td className="px-3 py-3 text-right align-top font-semibold text-slate-700">
-                          {subtotal.toFixed(2)} Bs
-                        </td>
-                        <td className="px-3 py-3 text-right align-top">
-                          {!item.id && (
-                            <button
-                              type="button"
-                              onClick={() => removeNewItem(index)}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50"
-                              title="Quitar producto"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
+                        </div>
+
+                        {/* Montos */}
+                        <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:items-end">
+                          <Field label="Cantidad" error={errors[`items.${index}.cantidad`]}>
+                            <Input type="number" min="1" className="text-right" value={item.cantidad}
+                              onChange={(e) => updateItem(index, 'cantidad', e.target.value)} disabled={item.tipo !== 'producto_general'} />
+                          </Field>
+                          <Field label="Precio de venta">
+                            <Input type="number" min="0" step="0.01" className="text-right" value={item.precio_venta} onChange={(e) => updateItem(index, 'precio_venta', e.target.value)} />
+                          </Field>
+                          <Field label="Descuento" error={errors[`items.${index}.descuento`]}>
+                            <Input type="number" min="0" step="0.01" className="text-right" value={item.descuento} onChange={(e) => updateItem(index, 'descuento', e.target.value)} />
+                          </Field>
+                          <Field label="Costo">
+                            <Input type="number" min="0" step="0.01" className="text-right" value={item.precio_invertido} onChange={(e) => updateItem(index, 'precio_invertido', e.target.value)} />
+                          </Field>
+                          <div className="flex items-end justify-between gap-3 sm:col-span-2 lg:col-span-1 lg:flex-col lg:items-end">
+                            <div className="text-right">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Subtotal</p>
+                              <p className="text-lg font-extrabold tabular-nums text-slate-900">{bsFmt(subtotal)}</p>
+                            </div>
+                            {!item.id && (
+                              <button type="button" onClick={() => removeNewItem(index)} title="Quitar producto"
+                                className="grid h-9 w-9 place-items-center rounded-lg text-rose-600 transition-colors hover:bg-rose-50">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </article>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-            {errors.items && <p className="mt-3 text-sm text-rose-600">{errors.items}</p>}
+                </div>
+                {errors.items && <p className="mt-3 text-sm text-rose-600">{errors.items}</p>}
 
-            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800">Agregar otro producto</h3>
-                  <p className="text-xs text-slate-500">Selecciona tipo y busca sin depender de codigo exacto.</p>
+                {/* Agregar otro producto */}
+                <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-4">
+                  <p className="text-sm font-bold text-slate-900">Agregar otro producto</p>
+                  <p className="text-xs text-slate-500">Elige el tipo y busca; no hace falta el código exacto.</p>
+                  <div className="mt-3 grid gap-2 md:grid-cols-[180px_minmax(0,1fr)_auto]">
+                    <Select
+                      value={nuevoProducto.tipo}
+                      aria-label="Tipo de producto"
+                      onChange={(e) => {
+                        setNuevoProducto({ tipo: e.target.value, busqueda: '', producto: null });
+                        clearSelectorError('new');
+                      }}
+                    >
+                      {productTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+                    </Select>
+
+                    <div className="min-w-0 space-y-2">
+                      {renderSearchBox({
+                        value: nuevoProducto.busqueda,
+                        placeholder: 'Buscar por nombre, código, IMEI o serie',
+                        onFocus: () => setSelectorActivo('new'),
+                        onChange: (e) => {
+                          setNuevoProducto({ ...nuevoProducto, busqueda: e.target.value, producto: null });
+                          clearSelectorError('new');
+                          setSelectorActivo('new');
+                        },
+                        onKeyDown: (e) => {
+                          if (e.key !== 'Enter') return;
+                          const firstProduct = filteredProducts(nuevoProducto.tipo, nuevoProducto.busqueda, 1)[0];
+                          if (!firstProduct) return;
+                          e.preventDefault();
+                          selectNewProduct(firstProduct);
+                        },
+                        onBlur: () => {
+                          setTimeout(() => {
+                            setSelectorActivo((current) => (current === 'new' ? null : current));
+                          }, 120);
+                        },
+                      })}
+                      {renderSuggestions('new', nuevoProducto.tipo, nuevoProducto.busqueda, selectNewProduct)}
+                    </div>
+
+                    <button type="button" onClick={addSelectedProduct} disabled={!nuevoProducto.producto} className={buttonCls('primary', 'h-11 px-5')}>
+                      <Plus className="h-4 w-4" /> Agregar
+                    </button>
+                  </div>
+                  {nuevoProducto.producto && (
+                    <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                      {displaySearchValue(nuevoProducto.tipo, nuevoProducto.producto)} · {bsFmt(nuevoProducto.producto.precio_venta)}
+                    </p>
+                  )}
+                  {selectorErrores.new && <p className="mt-2 text-sm text-rose-600">{selectorErrores.new}</p>}
+                </div>
+              </StepCard>
+            )}
+
+            {/* Ajustes */}
+            <StepCard icon={SlidersHorizontal} title="Ajustes y notas">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Descuento general (Bs)">
+                  <Input type="number" min="0" step="0.01" value={data.descuento} onChange={(e) => setData('descuento', e.target.value)} />
+                </Field>
+                {!esServicio && venta.es_permuta && (
+                  <Field label="Valor de la permuta (Bs)">
+                    <Input type="number" min="0" step="0.01" value={data.valor_permuta} onChange={(e) => setData('valor_permuta', e.target.value)} />
+                  </Field>
+                )}
+                <div className="md:col-span-2">
+                  <Field label="Notas adicionales">
+                    <Textarea rows={3} value={data.notas_adicionales} onChange={(e) => setData('notas_adicionales', e.target.value)} />
+                  </Field>
                 </div>
               </div>
-              <div className="grid gap-3 md:grid-cols-[190px_1fr_auto]">
-                <select
-                  className={inputClass}
-                  value={nuevoProducto.tipo}
-                  onChange={(e) => {
-                    setNuevoProducto({ tipo: e.target.value, busqueda: '', producto: null });
-                    clearSelectorError('new');
-                  }}
-                >
-                  {productTypes.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
+            </StepCard>
+          </div>
 
-                <div>
-                  {renderSearchBox({
-                    value: nuevoProducto.busqueda,
-                    placeholder: 'Buscar por nombre, codigo, IMEI o serie',
-                    onFocus: () => setSelectorActivo('new'),
-                    onChange: (e) => {
-                      setNuevoProducto({ ...nuevoProducto, busqueda: e.target.value, producto: null });
-                      clearSelectorError('new');
-                      setSelectorActivo('new');
-                    },
-                    onKeyDown: (e) => {
-                      if (e.key !== 'Enter') return;
-                      const firstProduct = filteredProducts(nuevoProducto.tipo, nuevoProducto.busqueda, 1)[0];
-                      if (!firstProduct) return;
-                      e.preventDefault();
-                      selectNewProduct(firstProduct);
-                    },
-                    onBlur: () => {
-                      setTimeout(() => {
-                        setSelectorActivo((current) => (current === 'new' ? null : current));
-                      }, 120);
-                    },
-                  })}
-                  {renderSuggestions('new', nuevoProducto.tipo, nuevoProducto.busqueda, selectNewProduct)}
+          {/* Resumen */}
+          <aside className="xl:sticky xl:top-24">
+            <section className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h2 className="text-base font-bold text-slate-900">Resumen</h2>
+                <p className="text-[13px] text-slate-500">Así queda la venta con tus cambios.</p>
+              </div>
+              <div className="space-y-4 p-5">
+                <dl className="space-y-1.5 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-slate-500">{esServicio ? 'Precio del servicio' : 'Subtotal de productos'}</dt>
+                    <dd className="font-semibold tabular-nums text-slate-900">{bsFmt(esServicio ? data.servicio_tecnico.precio_venta : subtotalProductos)}</dd>
+                  </div>
+                  {money(data.descuento) > 0 && (
+                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Descuento general</dt><dd className="font-semibold tabular-nums text-rose-600">−{bsFmt(data.descuento)}</dd></div>
+                  )}
+                  {!esServicio && money(data.valor_permuta) > 0 && (
+                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Permuta</dt><dd className="font-semibold tabular-nums text-rose-600">−{bsFmt(data.valor_permuta)}</dd></div>
+                  )}
+                  {!esServicio && reservaAplicada > 0 && (
+                    <div className="flex justify-between gap-3"><dt className="text-slate-500">Abono de la reserva</dt><dd className="font-semibold tabular-nums text-rose-600">−{bsFmt(reservaAplicada)}</dd></div>
+                  )}
+                </dl>
+
+                <div className="rounded-xl bg-[#011446] px-4 py-3.5 text-white">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">Total a cobrar</p>
+                  <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight">{bsFmt(total)}</p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={addSelectedProduct}
-                  disabled={!nuevoProducto.producto}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${theme.button}`}
-                >
-                  <Plus size={16} />
-                  Agregar
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-slate-200 px-3 py-2.5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Costo</p>
+                    <p className="mt-1 text-[15px] font-bold tabular-nums text-slate-900">{bsFmt(capital)}</p>
+                  </div>
+                  <div className={`rounded-xl border px-3 py-2.5 ${ganancia < 0 ? 'border-rose-200 bg-rose-50' : 'border-emerald-200 bg-emerald-50'}`}>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Ganancia</p>
+                    <p className={`mt-1 text-[15px] font-bold tabular-nums ${ganancia < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                      {ganancia < 0 ? `−${bsFmt(Math.abs(ganancia))}` : bsFmt(ganancia)}
+                    </p>
+                  </div>
+                </div>
+
+                <button type="submit" disabled={processing} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                  <Save className="h-4 w-4" /> {processing ? 'Guardando…' : 'Guardar cambios'}
                 </button>
               </div>
-              {nuevoProducto.producto && (
-                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                  {displaySearchValue(nuevoProducto.tipo, nuevoProducto.producto)} · Bs {money(nuevoProducto.producto.precio_venta).toFixed(2)}
-                </div>
-              )}
-              {selectorErrores.new && (
-                <p className="mt-2 text-sm text-rose-600">{selectorErrores.new}</p>
-              )}
-            </div>
-          </section>
-        )}
-
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className={labelClass}>Descuento general</label>
-              <input type="number" min="0" step="0.01" className={inputClass} value={data.descuento} onChange={(e) => setData('descuento', e.target.value)} />
-            </div>
-            {!esServicio && venta.es_permuta && (
-              <div>
-                <label className={labelClass}>Valor permuta</label>
-                <input type="number" min="0" step="0.01" className={inputClass} value={data.valor_permuta} onChange={(e) => setData('valor_permuta', e.target.value)} />
-              </div>
-            )}
-            <div className="md:col-span-3">
-              <label className={labelClass}>Notas adicionales</label>
-              <textarea className={inputClass} rows="3" value={data.notas_adicionales} onChange={(e) => setData('notas_adicionales', e.target.value)} />
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 rounded-lg bg-slate-50 p-4 text-right md:grid-cols-3">
-            <div>
-              <div className="text-xs uppercase text-slate-500">Total a pagar</div>
-              <div className="text-xl font-bold text-slate-800">
-                {(esServicio ? subtotalServicio : totalProductosACobrar).toFixed(2)} Bs
-              </div>
-              {!esServicio && reservaAplicada > 0 && (
-                <div className="text-xs font-semibold text-blue-600">
-                  Reserva aplicada: -{reservaAplicada.toFixed(2)} Bs
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="text-xs uppercase text-slate-500">Capital</div>
-              <div className="text-xl font-bold text-blue-600">
-                {(esServicio ? money(data.servicio_tecnico.precio_costo) : capitalProductos).toFixed(2)} Bs
-              </div>
-            </div>
-            <div>
-              <div className="text-xs uppercase text-slate-500">Ganancia recalculada</div>
-              <div className={`text-xl font-bold ${(esServicio ? gananciaServicio : gananciaProductos) < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                {(esServicio ? gananciaServicio : gananciaProductos).toFixed(2)} Bs
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </aside>
+        </div>
       </form>
     </>
   );

@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": { "title": "Registrar y editar un producto de inventario", "quality_profile": "showcase" },
+  "lanes": [
+    { "id": "admin", "label": "Administrador" },
+    { "id": "front", "label": "Formulario (React)" },
+    { "id": "back", "label": "Laravel" },
+    { "id": "errores", "label": "Correcciones", "variant": "exception" }
+  ],
+  "mainPath": ["abrir", "llenar", "validar_front", "enviar", "validar_back", "guardar", "listado"],
+  "nodes": [
+    { "id": "abrir", "lane": "admin", "col": 0, "type": "external", "label": "Abrir registro", "sublabel": "/create o /edit" },
+    { "id": "llenar", "lane": "front", "col": 1, "type": "frontend", "label": "Pasos 1-2-3", "sublabel": "StepCard + resumen" },
+    { "id": "validar_front", "lane": "front", "col": 2, "type": "security", "label": "Validar", "sublabel": "validarProductoApple" },
+    { "id": "enviar", "lane": "front", "col": 3, "type": "frontend", "label": "Enviar", "sublabel": "payloadDe" },
+    { "id": "validar_back", "lane": "back", "col": 3, "type": "security", "label": "Validación", "sublabel": "serie e IMEI únicos" },
+    { "id": "guardar", "lane": "back", "col": 4, "type": "database", "label": "Guardar", "sublabel": "productos_apple" },
+    { "id": "listado", "lane": "admin", "col": 5, "type": "external", "label": "Listado u otro", "sublabel": "return_to seguro" },
+    { "id": "corregir", "lane": "errores", "col": 3, "type": "security", "label": "Marcar errores", "sublabel": "ErroresResumen" }
+  ],
+  "edges": [
+    { "from": "abrir", "to": "llenar" },
+    { "from": "llenar", "to": "validar_front" },
+    { "from": "validar_front", "to": "enviar", "label": "ok", "variant": "emphasis" },
+    { "from": "enviar", "to": "validar_back", "label": "Inertia" },
+    { "from": "validar_back", "to": "guardar" },
+    { "from": "guardar", "to": "listado", "label": "éxito", "variant": "emphasis" },
+    { "from": "validar_back", "to": "corregir", "label": "422", "variant": "security", "role": "error" },
+    { "from": "corregir", "to": "llenar", "label": "corregir", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Camino feliz", "items": ["Tres pasos con resumen lateral y caja azul de precio", "«Guardar y registrar otro» conserva modelo, precios y procedencia"] },
+    { "dot": "rose", "title": "Protecciones", "items": ["Serie en mayúsculas y sin repetir", "No se elimina lo que figura en ventas, reservas o la tienda"] }
+  ]
+}

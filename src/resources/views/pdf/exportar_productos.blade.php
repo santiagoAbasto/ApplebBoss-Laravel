@@ -137,7 +137,7 @@
 <body>
 
   <div class="brand">
-    <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+    <img src="{{ public_path('images/LOGO.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">
   </div>
 
   <h1 class="title-top">APPLE BOSS</h1>
@@ -159,17 +159,17 @@
 @endphp
 
 <h2 style="text-align: center; color:#003366;">
-  🗂 Inventario de {{ $tituloInventario }}{{ $nombreFiltrado }}
+  Inventario de {{ $tituloInventario }}{{ $nombreFiltrado }}
 </h2>
 
 
 <table>
   <thead>
-  <thead>
   <tr>
     <th>#</th>
     @if($tipo === 'celular')
       <th>Modelo</th>
+      <th>Condición</th>
       <th>Capacidad</th>
       <th>Color</th>
       <th>Batería</th>
@@ -181,6 +181,7 @@
       <th>Observaciones</th>
     @elseif($tipo === 'computadora')
       <th>Nombre</th>
+      <th>Condición</th>
       <th>Procesador</th>
       <th>N° Serie</th>
       <th>Color</th>
@@ -194,6 +195,7 @@
       <th>Observaciones</th>
     @elseif($tipo === 'producto_general')
       <th>Nombre</th>
+      <th>Condición</th>
       <th>Tipo</th>
       <th>Código</th>
       <th>Procedencia</th>
@@ -203,6 +205,7 @@
       <th>Observaciones</th>
       @elseif($tipo === 'producto_apple')
   <th>Modelo</th>
+  <th>Condición</th>
   <th>Capacidad</th>
   <th>Batería</th>
   <th>Color</th>
@@ -226,18 +229,20 @@
 
       @if($tipo === 'celular')
         <td>{{ $p->modelo }}</td>
+        <td>{{ $p->condicion ?: '—' }}</td>
         <td>{{ $p->capacidad }}</td>
         <td>{{ $p->color}}</td>
         <td>{{ $p->bateria}}</td>
         <td>{{ $p->imei_1 }}</td>
         <td>{{ $p->imei_2 }}</td>
-        <td>{{ $p->estado }}</td>
+        <td>{{ ucfirst($p->estado) }}</td>
         <td>Bs {{ number_format($p->precio_costo, 2) }}</td>
         <td>Bs {{ number_format($p->precio_venta, 2) }}</td>
         <td></td>
 
       @elseif($tipo === 'computadora')
         <td>{{ $p->nombre }}</td>
+        <td>{{ $p->condicion ?: '—' }}</td>
         <td>{{ $p->procesador }}</td>
         <td>{{ $p->numero_serie }}</td>
         <td>{{ $p->color }}</td>
@@ -252,6 +257,7 @@
 
       @elseif($tipo === 'producto_general')
         <td>{{ $p->nombre }}</td>
+        <td>{{ $p->condicion ?: '—' }}</td>
         <td>{{ $p->tipo }}</td>
         <td>{{ $p->codigo }}</td>
         <td>{{ $p->procedencia }}</td>
@@ -262,6 +268,7 @@
 
       @elseif($tipo === 'producto_apple')
         <td>{{ $p->modelo }}</td>
+        <td>{{ $p->condicion ?: '—' }}</td>
         <td>{{ $p->capacidad }}</td>
         <td>{{ $p->bateria }}</td>
         <td>{{ $p->color }}</td>
@@ -306,22 +313,26 @@
 
   <div class="firma">
     <div class="firma-box">
-      <img src="{{ public_path('images/firma.png') }}" alt="Firma Apple Boss">
+      <img src="{{ public_path('images/firma.png') }}" alt="Firma de {{ $tienda['nombre'] ?? 'Apple Boss' }}">
 
       <div style="height: 20px;"></div>
 
       <p style="font-size: 12px; color: #003366;">-------------------------------</p>
-      <p style="font-style: italic; font-size: 10.5px; font-weight: bold; color: #003366;">Firma autorizada - Apple Boss</p>
+      <p style="font-style: italic; font-size: 10.5px; font-weight: bold; color: #003366;">Firma autorizada - {{ $tienda['nombre'] ?? 'Apple Boss' }}</p>
     </div>
   </div>
 
   <footer>
     <div class="footer-left">
-      <p><img src="{{ public_path('images/icon-phone.png') }}" alt=""> +591 75904313</p>
+      @if (! empty($tienda['telefono']))
+        <p><img src="{{ public_path('images/icon-phone.png') }}" alt=""> {{ $tienda['telefono'] }}</p>
+      @endif
       <p><img src="{{ public_path('images/icon-instagram.png') }}" alt=""> @apple_boss_bol</p>
       <p><img src="{{ public_path('images/icon-facebook.png') }}" alt=""> Apple Boss</p>
       <p><img src="{{ public_path('images/icon-tiktok.png') }}" alt=""> @apple_boss_bo</p>
-      <p><img src="{{ public_path('images/icon-location.png') }}" alt=""> Av. Melchor Urquidi, entre Fidel Anze y Av. Julio Rodríguez</p>
+      @if (! empty($tienda['direccion']))
+        <p><img src="{{ public_path('images/icon-location.png') }}" alt=""> {{ $tienda['direccion'] }}</p>
+      @endif
     </div>
     <div class="footer-right">
       <p><strong>Validez:</strong><br>Este documento es informativo y válido solo con firma autorizada.</p>

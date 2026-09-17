@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": { "title": "Del inventario a la tienda", "quality_profile": "showcase" },
+  "lanes": [
+    { "id": "inventario", "label": "Inventario" },
+    { "id": "admin", "label": "Productos en la tienda" },
+    { "id": "laravel", "label": "Laravel" },
+    { "id": "tienda", "label": "Tienda pública" },
+    { "id": "bloqueos", "label": "Bloqueos", "variant": "exception" }
+  ],
+  "mainPath": ["disponible", "agregar", "crear", "editar", "guardar", "ficha"],
+  "nodes": [
+    { "id": "disponible", "lane": "inventario", "col": 0, "type": "database", "label": "Disponible", "sublabel": "sin publicar" },
+    { "id": "agregar", "lane": "admin", "col": 1, "type": "frontend", "label": "Agregar", "sublabel": "elige y condición" },
+    { "id": "crear", "lane": "laravel", "col": 2, "type": "backend", "label": "Crear", "sublabel": "InventarioCatalogo" },
+    { "id": "editar", "lane": "admin", "col": 3, "type": "frontend", "label": "Editor", "sublabel": "fotos y promoción" },
+    { "id": "guardar", "lane": "laravel", "col": 4, "type": "security", "label": "Validar", "sublabel": "faltantes y MYSKIN" },
+    { "id": "ficha", "lane": "tienda", "col": 5, "type": "external", "label": "Ficha", "sublabel": "/productos/slug" },
+    { "id": "falta", "lane": "bloqueos", "col": 4, "type": "security", "label": "Falta info", "sublabel": "queda borrador" }
+  ],
+  "edges": [
+    { "from": "disponible", "to": "agregar" },
+    { "from": "agregar", "to": "crear", "label": "importar", "variant": "emphasis" },
+    { "from": "crear", "to": "editar" },
+    { "from": "editar", "to": "guardar", "label": "PATCH" },
+    { "from": "guardar", "to": "ficha", "label": "publicado", "variant": "emphasis" },
+    { "from": "guardar", "to": "falta", "label": "422", "variant": "security", "role": "error" },
+    { "from": "falta", "to": "editar", "label": "completar", "variant": "dashed", "role": "return" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Precio y stock", "items": ["El precio siempre sale del inventario", "Lo vendido desaparece solo de la tienda"] },
+    { "dot": "rose", "title": "Nunca público", "items": ["IMEI, costo y procedencia no se copian", "La condición no se asume; MYSKIN solo para fundas"] }
+  ]
+}

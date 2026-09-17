@@ -167,9 +167,9 @@ class DashboardController extends Controller
          * 🔧 NUEVO: SERVICIOS TÉCNICOS REALES
          * ========================= */
         foreach ($serviciosTecnicos as $servicio) {
-            $ganancia = $servicio->precio_venta - $servicio->precio_costo;
+            $ganancia = $servicio->gananciaParaReportes();
             $ganancias['servicio_tecnico'] += $ganancia;
-            $inversionTotal += $servicio->precio_costo;
+            $inversionTotal += $servicio->costoParaReportes();
 
             $items->push([
                 'fecha'        => $servicio->fecha,
@@ -181,7 +181,9 @@ class DashboardController extends Controller
                 'permuta'      => 0,
 
                 'ganancia'     => $ganancia,
-                'capital'      => $servicio->precio_costo,
+
+                'costo_pendiente' => (bool) $servicio->costo_pendiente,
+                'capital'      => $servicio->costoParaReportes(),
                 'subtotal'     => $servicio->precio_venta,
 
                 'vendedor'     => $servicio->vendedor?->name ?? '—',
@@ -194,7 +196,7 @@ class DashboardController extends Controller
         $egresosCollection = Egreso::whereBetween('created_at', [
             $fechaInicio . ' 00:00:00',
             $fechaFin    . ' 23:59:59',
-        ])->get(['created_at', 'precio_invertido']);
+        ])->get(['created_at', 'precio_invertido', 'concepto']);
 
         // Por día (YYYY-MM-DD)
         $egresosPorDia = $egresosCollection
@@ -364,8 +366,118 @@ class DashboardController extends Controller
             ],
         ];
 
+        /* =====================================================
+         * 📈 SERIE DEL GRÁFICO "RESUMEN ECONÓMICO"
+         * - Un punto por día (rangos de hasta 62 días) o por mes (rangos más largos)
+         * - Días/meses sin movimiento van en 0 y no se incluyen fechas futuras
+         * - La suma de la serie coincide con las tarjetas del resumen:
+         *   ingresos = total vendido · inversión = costo + permutas · utilidad = ganancia − egresos
+         * ===================================================== */
+        $hoy         = now()->startOfDay();
+        $serieInicio = Carbon::parse($fechaInicio)->startOfDay();
+        $serieFin    = Carbon::parse($fechaFin)->startOfDay();
+        if ($serieFin->gt($hoy)) {
+            $serieFin = $hoy->copy();
+        }
+        if ($serieFin->lt($serieInicio)) {
+            $serieFin = $serieInicio->copy();
+        }
+
+        $granularidad = $serieInicio->diffInDays($serieFin) + 1 > 62 ? 'mes' : 'dia';
+        $formatoClave = $granularidad === 'mes' ? 'Y-m' : 'Y-m-d';
+
+        $itemsPorClave   = $items->groupBy(fn ($i) => Carbon::parse($i['fecha'])->format($formatoClave));
+        $egresosPorClave = $egresosCollection
+            ->groupBy(fn ($e) => $e->created_at->format($formatoClave))
+            ->map(fn ($grp) => (float) $grp->sum('precio_invertido'));
+
+        // Movimientos uno por uno (ventas, servicios y egresos) en orden: son los "ticks" del gráfico tipo trading
+        $categoriaDe = [
+            'celular'          => 'Celulares',
+            'computadora'      => 'Computadoras',
+            'producto_general' => 'Productos Generales',
+            'producto_apple'   => 'Productos Apple',
+            'servicio_tecnico' => 'Servicios Técnicos',
+        ];
+        $movimientos = $items->values()
+            ->map(fn ($i, $k) => [
+                'orden'     => $k,
+                'fecha'     => Carbon::parse($i['fecha'])->toDateString(),
+                'tipo'      => ($i['tipo'] ?? null) === 'servicio_tecnico' ? 'servicio' : 'venta',
+                'categoria' => $categoriaDe[$i['tipo'] ?? ''] ?? 'Otros',
+                'etiqueta'  => (string) ($i['producto'] ?? 'Venta'),
+                'ingresos'  => round((float) $i['subtotal'], 2),
+                'inversion' => round((float) $i['capital'] + (float) $i['permuta'], 2),
+                'utilidad'  => round((float) $i['ganancia'], 2),
+            ])
+            ->concat($egresosCollection->values()->map(fn ($e, $k) => [
+                'orden'     => 1000000 + $k,
+                'fecha'     => $e->created_at->toDateString(),
+                'tipo'      => 'egreso',
+                'categoria' => null,
+                'etiqueta'  => (string) ($e->concepto ?: 'Egreso'),
+                'ingresos'  => 0.0,
+                'inversion' => 0.0,
+                'utilidad'  => round(-(float) $e->precio_invertido, 2),
+            ]))
+            ->sortBy([['fecha', 'asc'], ['orden', 'asc']])
+            ->values();
+
+        $movimientosPorClave = $movimientos->groupBy(fn ($m) => Carbon::parse($m['fecha'])->format($formatoClave));
+
+        // Vela del día (o mes): apertura, máximo, mínimo y cierre de los movimientos de ese período
+        $vela = function ($lista, string $campo): ?array {
+            if ($lista->isEmpty()) {
+                return null;
+            }
+            $v = $lista->pluck($campo)->map(fn ($x) => (float) $x)->values();
+
+            return ['o' => $v->first(), 'h' => $v->max(), 'l' => $v->min(), 'c' => $v->last()];
+        };
+
+        $puntosSerie = [];
+        $cursor = $granularidad === 'mes' ? $serieInicio->copy()->startOfMonth() : $serieInicio->copy();
+        $limite = $granularidad === 'mes' ? $serieFin->copy()->startOfMonth() : $serieFin->copy();
+
+        while ($cursor->lte($limite)) {
+            $clave    = $cursor->format($formatoClave);
+            $grp      = $itemsPorClave[$clave] ?? collect();
+            $ganancia = (float) $grp->sum('ganancia');
+            $egresos  = (float) ($egresosPorClave[$clave] ?? 0);
+            $movs     = $movimientosPorClave[$clave] ?? collect();
+            $ventasMv = $movs->where('tipo', '!=', 'egreso');
+
+            $puntosSerie[] = [
+                'fecha'     => $clave,
+                'ingresos'  => round((float) $grp->sum('subtotal'), 2),
+                'inversion' => round((float) $grp->sum(fn ($i) => $i['capital'] + $i['permuta']), 2),
+                'ganancia'  => round($ganancia, 2),
+                'egresos'   => round($egresos, 2),
+                'utilidad'  => round($ganancia - $egresos, 2),
+                'ventas'    => $grp->count(),
+                'velas'     => [
+                    'ingresos'  => $vela($ventasMv, 'ingresos'),
+                    'inversion' => $vela($ventasMv, 'inversion'),
+                    'utilidad'  => $vela($movs, 'utilidad'),
+                ],
+                'categorias' => $grp
+                    ->groupBy(fn ($i) => $categoriaDe[$i['tipo'] ?? ''] ?? 'Otros')
+                    ->map(fn ($g) => round((float) $g->sum('ganancia'), 2)),
+            ];
+
+            $granularidad === 'mes' ? $cursor->addMonth() : $cursor->addDay();
+        }
+
         return Inertia::render('Admin/Dashboard', [
             'user' => Auth::user(),
+
+            'serie' => [
+                'granularidad' => $granularidad,
+                'puntos'       => $puntosSerie,
+                // Últimos 400 movimientos para el gráfico de línea (las velas usan todos)
+                'movimientos'       => $movimientos->take(-400)->values(),
+                'movimientos_total' => $movimientos->count(),
+            ],
 
             'resumen' => [
                 'ventas_hoy' => $ventasHoy,

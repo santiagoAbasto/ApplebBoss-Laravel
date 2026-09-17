@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Celular;
+use App\Models\ConfiguracionTienda;
+use App\Models\StoreLocation;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
 use App\Models\ProductoApple;
@@ -12,8 +14,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
+/**
+ * Exportar datos → «Exportaciones» (un PDF por inventario y por tipo) y «Exportador» (búsqueda por nombre).
+ *
+ * Todos los PDF salen de la misma plantilla (`pdf.exportar_productos`) y llevan el pie con los datos de la tienda,
+ * que se leen de Configuración y de Ubicaciones: no se escriben en la plantilla.
+ */
 class ExportController extends Controller
 {
+    /** Los cuatro inventarios que se pueden exportar, con el campo por el que se busca. */
+    public const INVENTARIOS = ['celulares', 'computadoras', 'productos_generales', 'productos_apple'];
+
+    /** El pie de todos los PDF: el nombre, el teléfono y la dirección de verdad de la tienda. */
+    private function datosTienda(): array
+    {
+        return \App\Support\DatosDeLaTienda::paraPdf();
+    }
+
     private function streamOrViewPdf($pdf, string $filename, string $title, string $routeName, array $routeParams = [])
     {
         if (! request()->boolean('raw')) {
@@ -127,15 +144,25 @@ class ExportController extends Controller
 
     public function index()
     {
-        // Subcategorías únicas (tipo) de productos generales
-        $subtipos = ProductoGeneral::select('tipo')
+        // Cada tipo de producto general, con cuántos hay disponibles: así el panel no ofrece un PDF vacío
+        $subtipos = ProductoGeneral::query()
             ->whereNotNull('tipo')
-            ->distinct()
+            ->selectRaw('tipo, count(*) as total, sum(case when estado = ? then 1 else 0 end) as disponibles', ['disponible'])
+            ->groupBy('tipo')
             ->orderBy('tipo')
-            ->pluck('tipo');
+            ->get()
+            ->map(fn ($f) => [
+                'tipo'        => $f->tipo,
+                'label'       => self::nombreDeTipo($f->tipo),
+                'total'       => (int) $f->total,
+                'disponibles' => (int) $f->disponibles,
+            ])
+            ->values();
 
         return Inertia::render('Admin/Exportaciones/Index', [
-            'subtipos' => $subtipos,
+            'subtipos'     => $subtipos,
+            'inventarios'  => $this->resumenInventarios(),
+            'tienda'       => $this->datosTienda(),
         ]);
     }
 
@@ -143,11 +170,76 @@ class ExportController extends Controller
     {
         return Inertia::render('Admin/Exportaciones/Personalizado', [
             'defaults' => [
-                'inventario' => 'productos_generales',
-                'nombre' => 'fundas magsafe de 14 pro max',
+                'inventario'       => 'productos_generales',
+                'nombre'           => '',
                 'solo_disponibles' => true,
             ],
+            'inventarios' => $this->resumenInventarios(),
         ]);
+    }
+
+    /**
+     * Cuántos productos saldrían con lo que hay escrito ahora, con una muestra.
+     * Lo llama el buscador del exportador mientras se escribe: así nadie genera un PDF vacío.
+     */
+    public function contar(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'inventario'       => ['required', 'string', 'in:' . implode(',', self::INVENTARIOS)],
+            'nombre'           => ['nullable', 'string', 'max:120'],
+            'solo_disponibles' => ['nullable'],
+        ]);
+
+        $nombre = trim((string) ($validated['nombre'] ?? ''));
+        if ($nombre === '') {
+            return response()->json(['total' => 0, 'muestra' => []]);
+        }
+
+        $config = $this->inventoryConfig($validated['inventario']);
+        $model  = $config['model'];
+        $column = $config['column'];
+
+        $query = $model::query();
+        if ($request->boolean('solo_disponibles', true)) {
+            $query->where('estado', 'disponible');
+        }
+
+        $encontrados = $query->get()->filter(fn ($p) => $this->matchesNameFilter($p->{$column}, $nombre));
+
+        return response()->json([
+            'total'   => $encontrados->count(),
+            'muestra' => $this->sortFilteredProducts($encontrados, $validated['inventario'])
+                ->take(6)
+                ->map(fn ($p) => [
+                    'nombre' => (string) $p->{$column},
+                    'estado' => $p->estado,
+                    'precio' => (float) $p->precio_venta,
+                ])
+                ->values(),
+        ]);
+    }
+
+    /** Cuántos hay en cada inventario, para que cada tarjeta diga qué va a traer. */
+    private function resumenInventarios(): array
+    {
+        return collect(self::INVENTARIOS)->map(function (string $inventario) {
+            $config = $this->inventoryConfig($inventario);
+            $model  = $config['model'];
+
+            return [
+                'value'       => $inventario,
+                'label'       => $config['label'],
+                'busca_por'   => $config['column'] === 'modelo' ? 'modelo' : 'nombre',
+                'total'       => $model::count(),
+                'disponibles' => $model::where('estado', 'disponible')->count(),
+            ];
+        })->all();
+    }
+
+    /** «vidrio_templado» → «Vidrio templado». */
+    private static function nombreDeTipo(string $tipo): string
+    {
+        return Str::ucfirst(str_replace('_', ' ', $tipo));
     }
 
     public function celulares()
@@ -160,6 +252,7 @@ class ExportController extends Controller
         $pdf = Pdf::loadView('pdf.exportar_productos', [
             'productos' => $productos,
             'tipo' => 'celular',
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(
@@ -180,6 +273,7 @@ class ExportController extends Controller
         $pdf = Pdf::loadView('pdf.exportar_productos', [
             'productos' => $productos,
             'tipo' => 'computadora',
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(
@@ -200,6 +294,7 @@ class ExportController extends Controller
         $pdf = Pdf::loadView('pdf.exportar_productos', [
             'productos' => $productos,
             'tipo' => 'producto_apple',
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(
@@ -225,6 +320,7 @@ class ExportController extends Controller
             'productos' => $productos,
             'tipo' => 'producto_general',
             'subtipo' => 'todos',
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(
@@ -255,6 +351,7 @@ class ExportController extends Controller
             'productos' => $productos,
             'tipo' => 'producto_general',
             'subtipo' => ucfirst($tipo),
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(
@@ -302,6 +399,7 @@ class ExportController extends Controller
             'subtipo' => $config['label'],
             'filtroNombre' => $name,
             'soloDisponibles' => $onlyAvailable,
+            'tienda' => $this->datosTienda(),
         ])->setPaper('a4', 'landscape');
 
         return $this->streamOrViewPdf(

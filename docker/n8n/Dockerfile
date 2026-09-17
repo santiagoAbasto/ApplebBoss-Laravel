@@ -1,4 +1,4 @@
-FROM postgres:15-alpine AS pg-client
+FROM postgres:18-alpine AS pg-client
 
 RUN set -eu; \
     mkdir -p /pg-client/bin /pg-client/lib; \

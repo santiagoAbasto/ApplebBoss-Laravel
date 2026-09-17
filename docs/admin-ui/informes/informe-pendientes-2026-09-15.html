@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoría Técnica & Catalogación Comercial de iPhone - Bolivia</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Embedded Custom Styling for Chart Containers & Utilities -->
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 380px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<!-- Chosen Palette: Warm Titanium & Slate (Neutral Stone, Slate Gray, Indigo Accent, Emerald, Amber, Rose) -->
+<!-- Application Structure Plan:
+    The application is structured into 5 logical modules designed for technical clarity and commercial cataloging:
+    1. Resumen Ejecutivo & Indicadores Clave (KPIs): Highlights core audit metrics like iOS 27 active models vs. EOS, eSIM adoption, and satellite emergency availability in Bolivia.
+    2. Buscador y Catálogo Técnico Interactivo: Searchable, filterable card gallery with quick audit status badges and a full detail drawer/modal.
+    3. Herramienta de Comparación de Especificaciones (Lado a Lado): Side-by-side comparison matrix for up to 3 selected models to spot exact differences in chipsets, thickness, SIM tray, and camera crop capabilities.
+    4. Módulos Visuales de Análisis (Charts & Infrastructure):
+       - Ciclo de Vida del Software (iOS Launch vs Max iOS)
+       - Perfil de Grosor (mm) & Evolución de Materiales
+       - Transición de SIM / eSIM por Región e Impacto en Bolivia
+    5. Registro de Correcciones y Datos No Encontrados: Dedicated audit table detailing discrepancies between Apple Compare tool vs Official Tech Specs.
+    Why this structure? It transitions the user from high-level commercial alerts (e.g., SIM tray removal, Bolivia SOS limits) into fine-grained technical verification and comparison, making high-density data easily consumable without clutter.
+-->
+<!-- Visualization & Content Choices:
+    - Target 1: Software Lifecycle -> Goal: Compare launch vs max iOS -> Bar Chart (Chart.js) -> Hover tooltip showing exact version and status -> Easy visual distinction of A13 drop vs A14 active support.
+    - Target 2: Physical Dimensions (Grosor en mm) -> Goal: Reveal engineering precision -> Bar Chart (Chart.js) -> Shows exact mm (e.g. 5.64mm Air vs 8.75mm Pro) avoiding Apple's rounded cm figures.
+    - Target 3: SIM/eSIM Regional Policy -> Goal: Guide Bolivia importers -> Visual Cards + Filterable Matrix -> Color-coded warning badges for eSIM-only imports from US/CA/MX/JP.
+    - Target 4: Model Head-to-Head -> Goal: Spot data discrepancies -> Dynamic Side-by-Side Table -> Highlights differences automatically.
+    - Confirming NO SVG graphics used. NO Mermaid JS used. Visual icons use pure text/unicode or Tailwind styled UI elements.
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<body class="bg-stone-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Header & Navigation Bar -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded tracking-wider uppercase">
+                    Auditoría 2026
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        <span>Fichas Técnicas iPhone</span>
+                        <span class="text-xs font-normal text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full">iOS 27 Standard</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Verificación de datos para catalogación comercial e importaciones en Bolivia</p>
+                </div>
+            </div>
+            
+            <!-- Global Module Navigation -->
+            <nav class="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm font-medium overflow-x-auto py-1">
+                <button onclick="switchTab('catalog')" id="tab-catalog" class="nav-btn px-3 py-1.5 rounded-md text-white bg-indigo-600 transition-colors">
+                    Catálogo de Modelos
+                </button>
+                <button onclick="switchTab('comparator')" id="tab-comparator" class="nav-btn px-3 py-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    Comparador
+                </button>
+                <button onclick="switchTab('analytics')" id="tab-analytics" class="nav-btn px-3 py-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    Análisis & Gráficos
+                </button>
+                <button onclick="switchTab('audit-log')" id="tab-audit-log" class="nav-btn px-3 py-1.5 rounded-md text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    Bitácora de Errores
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <!-- Banner Alerta Bolivia -->
+        <section class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="text-amber-600 font-bold text-xl leading-none">⚠️</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-amber-900">Advertencias Clave para Importación y Comercialización en Bolivia</h3>
+                        <p class="text-xs text-amber-800 mt-0.5">
+                            <strong>eSIM Obligatoria:</strong> iPhone Air, Duo y todos los modelos iPhone 17/18 importados de EE.UU., Canadá, México o Japón carecen de bandeja nano-SIM física. 
+                            <strong>Satélite SOS:</strong> La función Emergencia SOS vía satélite no tiene cobertura en Bolivia ni en Sudamérica.
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <span class="inline-block bg-amber-200 text-amber-900 text-xs font-semibold px-2.5 py-1 rounded">
+                        Criterio Técnico Oficial
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic KPIs Row -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Modelos Auditados</div>
+                <div class="text-2xl font-black text-slate-900 mt-1" id="kpi-total">38</div>
+                <div class="text-xs text-slate-500 mt-0.5">Generaciones XR a Duo</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Soporte Activo iOS 27</div>
+                <div class="text-2xl font-black text-emerald-600 mt-1" id="kpi-active">31</div>
+                <div class="text-xs text-emerald-700 mt-0.5">Chips A14 Bionic o posterior</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Ciclo Concluido (EOS)</div>
+                <div class="text-2xl font-black text-rose-600 mt-1" id="kpi-eos">7</div>
+                <div class="text-xs text-rose-700 mt-0.5">Detenidos en iOS 16, 18 o 26.5</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Exclusivos eSIM Global</div>
+                <div class="text-2xl font-black text-indigo-600 mt-1">2</div>
+                <div class="text-xs text-slate-500 mt-0.5">iPhone Air & iPhone Duo</div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: CATALOGO Y BUSCADOR -->
+        <section id="sec-catalog" class="space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Catálogo General de Modelos iPhone</h2>
+                        <p class="text-xs text-slate-500">Explore la especificación verificada de cada dispositivo. Haga clic en un modelo para ver la ficha completa.</p>
+                    </div>
+                    
+                    <!-- Search & Filters -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="search-input" onkeyup="filterModels()" placeholder="Buscar modelo (ej: 15 Pro, Air, Duo)..." 
+                            class="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-60">
+                        
+                        <select id="filter-status" onchange="filterModels()" class="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">Todos los estados iOS</option>
+                            <option value="active">Activo (iOS 27)</option>
+                            <option value="eos">Descontinuado (EOS)</option>
+                        </select>
+
+                        <select id="filter-sim" onchange="filterModels()" class="px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">Todas las SIM</option>
+                            <option value="nano">Bandeja Nano-SIM (Global)</option>
+                            <option value="us-esim">eSIM Regional (EEUU/CA/MX)</option>
+                            <option value="global-esim">eSIM Exclusivo Global</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Catalog Grid -->
+                <div id="catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+                    <!-- Cards dynamically injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: COMPARADOR LADO A LADO -->
+        <section id="sec-comparator" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Comparador Técnico Lado a Lado</h2>
+                        <p class="text-xs text-slate-500">Seleccione hasta 3 modelos para cotejar discrepancias de hardware, carga, dimensiones y zoom óptico.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearComparison()" class="px-3 py-1 text-xs border border-slate-300 rounded hover:bg-slate-100 text-slate-600">
+                            Limpiar Selección
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selectors Bar -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Modelo 1</label>
+                        <select id="comp-select-1" onchange="updateComparison()" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500">
+                            <!-- Injected by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Modelo 2</label>
+                        <select id="comp-select-2" onchange="updateComparison()" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500">
+                            <!-- Injected by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Modelo 3 (Opcional)</label>
+                        <select id="comp-select-3" onchange="updateComparison()" class="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500">
+                            <!-- Injected by JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white" id="comp-table-head">
+                                <th class="p-3 w-1/4 min-w-[140px] font-semibold border-b border-slate-700">Parámetro Técnico</th>
+                                <th class="p-3 w-1/4 font-semibold border-b border-slate-700" id="comp-head-1">-</th>
+                                <th class="p-3 w-1/4 font-semibold border-b border-slate-700" id="comp-head-2">-</th>
+                                <th class="p-3 w-1/4 font-semibold border-b border-slate-700" id="comp-head-3">-</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comp-table-body" class="divide-y divide-slate-200 bg-white">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: ANALISIS Y GRAFICOS -->
+        <section id="sec-analytics" class="hidden space-y-6">
+            <!-- Intro Paragraph -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900">Análisis Estructural y de Hardware</h2>
+                <p class="text-xs text-slate-600 mt-1">
+                    Esta sección visualiza los hallazgos críticos de la auditoría técnica. Permite examinar la discontinuidad de soporte en procesadores antiguos, la drástica reducción dimensional en el nuevo chasis Unibody (iPhone Air), así como la evolución en la tecnología de carga inalámbrica MagSafe/Qi2 frente a la antigua norma Qi de 7,5 W.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Software Lifecycle -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-900">Evolución de Versiones iOS (Lanzamiento vs Máximo)</h3>
+                            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-semibold">Ciclo de Vida</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">
+                            Los modelos con chip A13 Bionic o inferior quedaron congelados en iOS 16, 18 o iOS 26.5. Los modelos con A14 en adelante continúan vigentes con iOS 27.
+                        </p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-ios-lifecycle"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Profile Thickness -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-bold text-slate-900">Cotas Nominales de Grosor de Chasis (mm)</h3>
+                            <span class="text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded font-semibold">Ingeniería vs Redondeo</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">
+                            Muestra las dimensiones exactas en milímetros frente a las simplificaciones en centímetros publicadas en el comparador comercial de Apple.
+                        </p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-thickness"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution Cards SIM / Materiales -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-900 mb-3">Resumen de Materiales de Cubierta Posterior y Formulaciones Vítreas</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="font-bold text-slate-800 mb-1">Vidrio Tintado en Masa</div>
+                        <p class="text-slate-600 text-[11px]">
+                            Implementado en la línea estándar desde el iPhone 15. Infusión química de pigmentos de color a nivel molecular en la matriz vítrea.
+                        </p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="font-bold text-slate-800 mb-1">Vidrio Mate Texturizado</div>
+                        <p class="text-slate-600 text-[11px]">
+                            Exclusivo de las series Pro desde el iPhone 12 Pro. Sometido a grabado químico difusor antirreflejos sobre chasis de acero o titanio.
+                        </p>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <div class="font-bold text-slate-800 mb-1">Ceramic Shield 2</div>
+                        <p class="text-slate-600 text-[11px]">
+                            Formulación cristaloquímica avanzada certificada en las fichas oficiales del iPhone 17 Pro / Pro Max para incrementar resistencia superficial.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: BITACORA DE ERRORES Y OMISIONES -->
+        <section id="sec-audit-log" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="border-b border-slate-100 pb-3 mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Bitácora de Auditoría: Correcciones y Datos No Encontrados</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Registro verificado de las discrepancias detectadas entre la herramienta web comparativa (`apple.com/es/iphone/compare`) y las fichas técnicas oficiales de soporte técnico (`support.apple.com`).
+                    </p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Table 1: OS & Max Version corrections -->
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">1. Correcciones de Sistema Operativo Máximo (`sistema.ios_maximo`)</h3>
+                        <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-2.5 font-semibold">Gama de Modelos</th>
+                                        <th class="p-2.5 font-semibold">Valor Corrregido / Confirmado</th>
+                                        <th class="p-2.5 font-semibold">Justificación Técnica & Fuente</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 bg-white">
+                                    <tr>
+                                        <td class="p-2.5 font-bold text-slate-800">iPhone 11, 11 Pro, 11 Pro Max, SE (2.ª gen)</td>
+                                        <td class="p-2.5 text-rose-700 font-semibold bg-rose-50">iOS 26.5 (EOS)</td>
+                                        <td class="p-2.5 text-slate-600">
+                                            Procesador A13 Bionic. Culminaron ciclo de soporte oficial en iOS 26.5; no recibieron actualización a iOS 27.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2.5 font-bold text-slate-800">iPhone 12 hasta iPhone 17 Pro Max</td>
+                                        <td class="p-2.5 text-emerald-700 font-semibold bg-emerald-50">iOS 27 (actual)</td>
+                                        <td class="p-2.5 text-slate-600">
+                                            Procesadores A14 Bionic en adelante. Mantienen compatibilidad activa dentro del ecosistema iOS 27 desplegado en 2026.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Table 2: Omitted Fields & Unfound Data -->
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">2. Registro de Parámetros No Encontrados u Omitidos por Apple</h3>
+                        <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-2.5 font-semibold">Campo / Parámetro</th>
+                                        <th class="p-2.5 font-semibold">Modelos Afectados</th>
+                                        <th class="p-2.5 font-semibold">Estado & Explicación Documental</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 bg-white">
+                                    <tr>
+                                        <td class="p-2.5 font-bold text-slate-800">Números de Modelo A####</td>
+                                        <td class="p-2.5 text-slate-700">iPhone 18 Pro, 18 Pro Max, iPhone Duo</td>
+                                        <td class="p-2.5 text-amber-800 bg-amber-50">
+                                            <strong>No encontrado:</strong> A fecha de auditoría (septiembre 2026), los identificadores de modelo con prefijo A#### clasificados por región geográfica no han sido desglosados aún en el portal de soporte.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-2.5 font-bold text-slate-800">Carga Qi Básica (7.5 W)</td>
+                                        <td class="p-2.5 text-slate-700">Generaciones iPhone 17, Air, 17e, 17 Pro, 18 Pro, Duo</td>
+                                        <td class="p-2.5 text-amber-800 bg-amber-50">
+                                            <strong>Omitido textualmente:</strong> Apple eliminó de las fichas oficiales la mención explícita a la norma Qi de 7,5 W, certificando únicamente estándares unificados Qi2 y MagSafe (15 W a 25 W).
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Detail View -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+                <div>
+                    <h3 id="modal-title" class="text-base font-bold">Detalle Técnico del Modelo</h3>
+                    <p id="modal-subtitle" class="text-xs text-slate-400">Ficha de ingeniería verificada</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold p-1">
+                    &times;
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div id="modal-body" class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-xs">
+                <!-- Dynamically populated -->
+            </div>
+            <!-- Modal Footer -->
+            <div class="bg-slate-100 p-3 flex justify-between items-center text-xs border-t border-slate-200">
+                <span class="text-slate-500">Fuente: support.apple.com / Apple Newsroom</span>
+                <button onclick="closeModal()" class="bg-slate-800 text-white px-4 py-1.5 rounded hover:bg-slate-700 transition">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-1">
+            <p>© 2026 Auditoría de Especificaciones de iPhone para Catalogación Comercial en Bolivia.</p>
+            <p class="text-slate-500">Información extraída y validada a partir de las fichas oficiales de ingeniería de Apple Inc.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Data Logic & Interactivity -->
+    <script>
+        // Full verified raw dataset for 38 models
+        const iphoneData = [
+            {
+                id: "xr",
+                name: "iPhone XR",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 12",
+                iosMax: "iOS 18",
+                activeOS: false,
+                modelsA: "A1984 (EEUU/CA), A2105 (Global), A2106 (JP), A2107/A2108 (CN/HK)",
+                uwb: "No disponible",
+                backMaterial: "Vidrio (brillante)",
+                thickness: "8.3 mm",
+                qiW: "7.5 W",
+                zoom: "1x (Digital hasta 5x)",
+                simType: "Nano-SIM + eSIM (A2108 Doble SIM física)",
+                storage: "64, 128, 256 GB",
+                notes: "Excluido de actualización a iOS 26 y 27."
+            },
+            {
+                id: "xs",
+                name: "iPhone XS",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 12",
+                iosMax: "iOS 18",
+                activeOS: false,
+                modelsA: "A1920 (EEUU/CA), A2097 (Global), A2098 (JP), A2099/A2100 (CN)",
+                uwb: "No disponible",
+                backMaterial: "Vidrio (brillante)",
+                thickness: "7.7 mm",
+                qiW: "7.5 W",
+                zoom: "1x, 2x óptico",
+                simType: "Nano-SIM + eSIM (Variante CN sin eSIM)",
+                storage: "64, 256, 512 GB",
+                notes: "Chasis de acero inoxidable."
+            },
+            {
+                id: "xs-max",
+                name: "iPhone XS Max",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 12",
+                iosMax: "iOS 18",
+                activeOS: false,
+                modelsA: "A1921 (EEUU/CA), A2101 (Global), A2102 (JP), A2103/A2104 (CN/HK)",
+                uwb: "No disponible",
+                backMaterial: "Vidrio (brillante)",
+                thickness: "7.7 mm",
+                qiW: "7.5 W",
+                zoom: "1x, 2x óptico",
+                simType: "Nano-SIM + eSIM (A2104 Doble SIM física)",
+                storage: "64, 256, 512 GB",
+                notes: "Excluido de iOS 26/27."
+            },
+            {
+                id: "11",
+                name: "iPhone 11",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 13",
+                iosMax: "iOS 26.5",
+                activeOS: false,
+                modelsA: "A2111 (EEUU/CA), A2221 (Global), A2223 (CN/HK)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio (brillante)",
+                thickness: "8.3 mm",
+                qiW: "7.5 W",
+                zoom: "0.5x, 1x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 128, 256 GB",
+                notes: "Culmina soporte oficial en iOS 26.5 (A13 Bionic)."
+            },
+            {
+                id: "11-pro",
+                name: "iPhone 11 Pro",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 13",
+                iosMax: "iOS 26.5",
+                activeOS: false,
+                modelsA: "A2160 (EEUU/CA), A2215 (Global), A2217 (CN/HK)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.1 mm",
+                qiW: "7.5 W",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 256, 512 GB",
+                notes: "Primera generación Pro con vidrio mate texturizado."
+            },
+            {
+                id: "11-pro-max",
+                name: "iPhone 11 Pro Max",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 13",
+                iosMax: "iOS 26.5",
+                activeOS: false,
+                modelsA: "A2161 (EEUU/CA), A2218 (Global), A2220 (CN/HK)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.1 mm",
+                qiW: "7.5 W",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 256, 512 GB",
+                notes: "Culmina soporte en iOS 26.5."
+            },
+            {
+                id: "se-2",
+                name: "iPhone SE (2.ª gen)",
+                genGroup: "xr-11",
+                iosLaunch: "iOS 13",
+                iosMax: "iOS 26.5",
+                activeOS: false,
+                modelsA: "A2275 (EEUU/CA), A2296 (Global), A2298 (CN)",
+                uwb: "No disponible",
+                backMaterial: "Vidrio",
+                thickness: "7.3 mm",
+                qiW: "7.5 W",
+                zoom: "1x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 128, 256 GB",
+                notes: "Basado en chasis de iPhone 8 con A13 Bionic."
+            },
+            {
+                id: "12-mini",
+                name: "iPhone 12 mini",
+                genGroup: "12-13",
+                iosLaunch: "iOS 14",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2176 (EEUU), A2398 (CA/JP), A2399 (Global), A2400 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.4 mm",
+                qiW: "7.5 W (MagSafe 12W)",
+                zoom: "0.5x, 1x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 128, 256 GB",
+                notes: "Primer mini con soporte 5G y MagSafe."
+            },
+            {
+                id: "12",
+                name: "iPhone 12",
+                genGroup: "12-13",
+                iosLaunch: "iOS 14",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2172 (EEUU), A2402 (CA/JP), A2403 (Global), A2404 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.4 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x",
+                simType: "Nano-SIM + eSIM",
+                storage: "64, 128, 256 GB",
+                notes: "Chasis de aluminio con Ceramic Shield frontal."
+            },
+            {
+                id: "12-pro",
+                name: "iPhone 12 Pro",
+                genGroup: "12-13",
+                iosLaunch: "iOS 14",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2341 (EEUU), A2406 (CA/JP), A2407 (Global), A2408 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.4 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB",
+                notes: "Incorpora escáner LiDAR para LiDAR AF."
+            },
+            {
+                id: "12-pro-max",
+                name: "iPhone 12 Pro Max",
+                genGroup: "12-13",
+                iosLaunch: "iOS 14",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2342 (EEUU), A2410 (CA/JP), A2411 (Global), A2412 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.4 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2.5x",
+                simType: "Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB",
+                notes: "Teleobjetivo de 2.5x con estabilización por desplazamiento de sensor."
+            },
+            {
+                id: "13-mini",
+                name: "iPhone 13 mini",
+                genGroup: "12-13",
+                iosLaunch: "iOS 15",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2481 (EEUU), A2626 (CA/MX/JP), A2628 (Global), A2629 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.65 mm",
+                qiW: "7.5 W (MagSafe 12W)",
+                zoom: "0.5x, 1x",
+                simType: "Doble eSIM activa o Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB",
+                notes: "Soporte para doble eSIM activa."
+            },
+            {
+                id: "13",
+                name: "iPhone 13",
+                genGroup: "12-13",
+                iosLaunch: "iOS 15",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2482 (EEUU), A2631 (CA/MX/JP), A2633 (Global), A2634 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.65 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x",
+                simType: "Doble eSIM activa o Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB",
+                notes: "Disposición diagonal de cámaras dobles."
+            },
+            {
+                id: "13-pro",
+                name: "iPhone 13 Pro",
+                genGroup: "12-13",
+                iosLaunch: "iOS 15",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2483 (EEUU), A2636 (CA/MX/JP), A2638 (Global), A2639 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.65 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 3x",
+                simType: "Doble eSIM activa o Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Pantalla ProMotion de 120 Hz."
+            },
+            {
+                id: "13-pro-max",
+                name: "iPhone 13 Pro Max",
+                genGroup: "12-13",
+                iosLaunch: "iOS 15",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2484 (EEUU), A2641 (CA/MX/JP), A2643 (Global), A2644 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.65 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 3x",
+                simType: "Doble eSIM activa o Nano-SIM + eSIM",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Mayor duración de batería de la generación 13."
+            },
+            {
+                id: "se-3",
+                name: "iPhone SE (3.ª gen)",
+                genGroup: "12-13",
+                iosLaunch: "iOS 15.4",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2595 (EEUU/CA/MX), A2782 (JP), A2783 (Global), A2785 (CN)",
+                uwb: "No disponible",
+                backMaterial: "Vidrio",
+                thickness: "7.3 mm",
+                qiW: "7.5 W",
+                zoom: "1x",
+                simType: "Doble eSIM activa o Nano-SIM + eSIM",
+                storage: "64, 128, 256 GB",
+                notes: "Procesador A15 Bionic con conectividad 5G."
+            },
+            {
+                id: "14",
+                name: "iPhone 14",
+                genGroup: "14-15",
+                iosLaunch: "iOS 16",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2649 (EEUU eSIM), A2881 (CA/MX/JP), A2882 (Global), A2884 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Primer modelo sin bandeja SIM en variantes de EEUU."
+            },
+            {
+                id: "14-plus",
+                name: "iPhone 14 Plus",
+                genGroup: "14-15",
+                iosLaunch: "iOS 16",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2632 (EEUU eSIM), A2885 (CA/MX/JP), A2886 (Global), A2888 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Formato de 6.7 pulgadas no Pro."
+            },
+            {
+                id: "14-pro",
+                name: "iPhone 14 Pro",
+                genGroup: "14-15",
+                iosLaunch: "iOS 16",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2650 (EEUU eSIM), A2889 (CA/MX/JP), A2890 (Global), A2892 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.85 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x (recorte 48MP), 3x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Introducción de Dynamic Island y cámara de 48 MP."
+            },
+            {
+                id: "14-pro-max",
+                name: "iPhone 14 Pro Max",
+                genGroup: "14-15",
+                iosLaunch: "iOS 16",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2651 (EEUU eSIM), A2893 (CA/MX/JP), A2894 (Global), A2896 (CN)",
+                uwb: "Chip U1 (Banda Ultraancha)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "7.85 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x (recorte 48MP), 3x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Último Pro Max con chasis de acero inoxidable."
+            },
+            {
+                id: "15",
+                name: "iPhone 15",
+                genGroup: "14-15",
+                iosLaunch: "iOS 17",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2846 (EEUU eSIM), A3089 (CA/MX/JP), A3090 (Global), A3092 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio tintado en masa",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x (calidad óptica 12MP)",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Transición oficial a conector USB-C."
+            },
+            {
+                id: "15-plus",
+                name: "iPhone 15 Plus",
+                genGroup: "14-15",
+                iosLaunch: "iOS 17",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2847 (EEUU eSIM), A3093 (CA/MX/JP), A3094 (Global), A3096 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio tintado en masa",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x (calidad óptica 12MP)",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Vidrio tintado en masa con bordes redondeados."
+            },
+            {
+                id: "15-pro",
+                name: "iPhone 15 Pro",
+                genGroup: "14-15",
+                iosLaunch: "iOS 17",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2848 (EEUU eSIM), A3101 (CA/MX/JP), A3102 (Global), A3104 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.25 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x, 3x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Chasis de Titanio Grado 5 y puerto USB-C a 10 Gb/s."
+            },
+            {
+                id: "15-pro-max",
+                name: "iPhone 15 Pro Max",
+                genGroup: "14-15",
+                iosLaunch: "iOS 17",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A2849 (EEUU eSIM), A3105 (CA/MX/JP), A3106 (Global), A3108 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.25 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "0.5x, 1x, 2x, 5x (Tetraprisma 120mm)",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "256, 512 GB, 1 TB",
+                notes: "Primer teleobjetivo con diseño tetraprisma 5x."
+            },
+            {
+                id: "16",
+                name: "iPhone 16",
+                genGroup: "16-17",
+                iosLaunch: "iOS 18",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3081 (EEUU eSIM), A3286 (CA/MX/JP), A3287 (Global), A3288 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio tintado en masa",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 25W con adaptador 30W+)",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Incorpora botón físico Control de Cámara."
+            },
+            {
+                id: "16-plus",
+                name: "iPhone 16 Plus",
+                genGroup: "16-17",
+                iosLaunch: "iOS 18",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3082 (EEUU eSIM), A3289 (CA/MX/JP), A3290 (Global), A3291 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio tintado en masa",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 25W)",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Disposición vertical de cámara para foto espacial."
+            },
+            {
+                id: "16-pro",
+                name: "iPhone 16 Pro",
+                genGroup: "16-17",
+                iosLaunch: "iOS 18",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3083 (EEUU eSIM), A3292 (CA/MX/JP), A3293 (Global), A3295 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.25 mm",
+                qiW: "7.5 W (MagSafe 25W)",
+                zoom: "0.5x, 1x, 2x, 5x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB, 1 TB",
+                notes: "Estandarización de tetraprisma 5x en el modelo Pro base."
+            },
+            {
+                id: "16-pro-max",
+                name: "iPhone 16 Pro Max",
+                genGroup: "16-17",
+                iosLaunch: "iOS 18",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3084 (EEUU eSIM), A3294 (CA/MX/JP), A3296 (Global), A3297 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.25 mm",
+                qiW: "7.5 W (MagSafe 25W)",
+                zoom: "0.5x, 1x, 2x, 5x",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "256, 512 GB, 1 TB",
+                notes: "Pantalla de 6.9 pulgadas con bordes ultrafinos."
+            },
+            {
+                id: "16e",
+                name: "iPhone 16e",
+                genGroup: "16-17",
+                iosLaunch: "iOS 18.3",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3263 (EEUU eSIM), A3408 (CA/MX/JP), A3409 (Global), A3410 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio",
+                thickness: "7.80 mm",
+                qiW: "7.5 W (MagSafe 15W)",
+                zoom: "1x, 2x (Cámara Fusion 48MP)",
+                simType: "Solo eSIM (EEUU) / Nano-SIM + eSIM (Global)",
+                storage: "128, 256, 512 GB",
+                notes: "Carece de cámara Ultra Gran Angular (sin 0.5x)."
+            },
+            {
+                id: "17",
+                name: "iPhone 17",
+                genGroup: "16-17",
+                iosLaunch: "iOS 26",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3254 (EEUU), A3519 (12 países eSIM), A3520 (Global), A3521 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio tintado en masa",
+                thickness: "7.95 mm",
+                qiW: "Omitido en specs (MagSafe/Qi2 hasta 25W)",
+                zoom: "0.5x, 1x, 2x",
+                simType: "Solo eSIM en 13 países (EEUU, CA, MX, JP, etc.)",
+                storage: "128, 256, 512 GB",
+                notes: "Erradicación de bandeja SIM extendida a 12 países adicionales."
+            },
+            {
+                id: "air",
+                name: "iPhone Air",
+                genGroup: "16-17",
+                iosLaunch: "iOS 26",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3256 (EEUU), A3516 (12 países), A3517 (Global), A3518 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio / Titanio Ultra-Slim",
+                thickness: "5.64 mm",
+                qiW: "Omitido en specs (MagSafe/Qi2 20W)",
+                zoom: "1x, 2x (Cámara única Fusion 48MP)",
+                simType: "Exclusivo eSIM a nivel mundial",
+                storage: "256, 512 GB, 1 TB",
+                notes: "Perfil ultrafino de 5.64 mm. Carece de bandeja SIM en todo el mundo."
+            },
+            {
+                id: "17e",
+                name: "iPhone 17e",
+                genGroup: "16-17",
+                iosLaunch: "iOS 26",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3575 (13 países eSIM), A3634 (Global), A3635 (CN)",
+                uwb: "Chip Banda Ultraancha (2.ª gen)",
+                backMaterial: "Vidrio",
+                thickness: "7.80 mm",
+                qiW: "Omitido en specs (MagSafe/Qi2 15W)",
+                zoom: "1x, 2x",
+                simType: "Solo eSIM en 13 países / Nano-SIM + eSIM Global",
+                storage: "128, 256 GB",
+                notes: "Modelo de entrada con A19 y cámara única Fusion."
+            },
+            {
+                id: "17-pro",
+                name: "iPhone 17 Pro",
+                genGroup: "16-17",
+                iosLaunch: "iOS 26",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3255 (EEUU), A3522 (12 países), A3523 (Global), A3524 (CN)",
+                uwb: "Chip N1 Conectividad UWB",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.75 mm",
+                qiW: "Omitido en specs (MagSafe/Qi2 hasta 25W)",
+                zoom: "0.5x, 1x, 2x, 4x, 8x (Recorte 48MP)",
+                simType: "Solo eSIM en 13 países / Nano-SIM + eSIM Global",
+                storage: "256, 512 GB, 1 TB",
+                notes: "Ceramic Shield 2 frontal. Módulo de zoom 4x nativo con recorte 8x."
+            },
+            {
+                id: "17-pro-max",
+                name: "iPhone 17 Pro Max",
+                genGroup: "16-17",
+                iosLaunch: "iOS 26",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "A3257 (EEUU), A3525 (12 países), A3526 (Global), A3527 (CN)",
+                uwb: "Chip N1 Conectividad UWB",
+                backMaterial: "Vidrio mate texturizado",
+                thickness: "8.75 mm",
+                qiW: "Omitido en specs (MagSafe/Qi2 hasta 25W)",
+                zoom: "0.5x, 1x, 2x, 4x, 8x (Recorte 48MP)",
+                simType: "Solo eSIM en 13 países / Nano-SIM + eSIM Global",
+                storage: "256, 512 GB, 1 TB, 2 TB",
+                notes: "Ceramic Shield 2 frontal. Cámara Fusion de triple sensor 48MP."
+            },
+            {
+                id: "18-pro",
+                name: "iPhone 18 Pro",
+                genGroup: "18-duo",
+                iosLaunch: "iOS 27",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "No publicado en soporte (Sept 2026)",
+                uwb: "Chip UWB Avanzado",
+                backMaterial: "Vidrio mate texturizado / Titanio",
+                thickness: "8.75 mm",
+                qiW: "Omitido en specs (MagSafe 25W)",
+                zoom: "0.5x, 1x, 2x, 4x, 8x",
+                simType: "Solo eSIM en 13 países / Nano-SIM Global",
+                storage: "256, 512 GB, 1 TB",
+                notes: "Nativo iOS 27. Identificadores A#### aún no listados por Apple."
+            },
+            {
+                id: "18-pro-max",
+                name: "iPhone 18 Pro Max",
+                genGroup: "18-duo",
+                iosLaunch: "iOS 27",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "No publicado en soporte (Sept 2026)",
+                uwb: "Chip UWB Avanzado",
+                backMaterial: "Vidrio mate texturizado / Titanio",
+                thickness: "8.75 mm",
+                qiW: "Omitido en specs (MagSafe 25W)",
+                zoom: "0.5x, 1x, 2x, 4x, 8x",
+                simType: "Solo eSIM en 13 países / Nano-SIM Global",
+                storage: "256, 512 GB, 1 TB, 2 TB",
+                notes: "Nativo iOS 27. Identificadores A#### pendientes en soporte técnico."
+            },
+            {
+                id: "duo",
+                name: "iPhone Duo",
+                genGroup: "18-duo",
+                iosLaunch: "iOS 27",
+                iosMax: "iOS 27 (actual)",
+                activeOS: true,
+                modelsA: "No publicado en soporte (Sept 2026)",
+                uwb: "Chip UWB Avanzado",
+                backMaterial: "Vidrio plegable / Titanio Unibody",
+                thickness: "5.4 mm (desplegado)",
+                qiW: "Omitido en specs (MagSafe 20W)",
+                zoom: "0.5x, 1x, 2x (calidad óptica 12MP)",
+                simType: "Exclusivo eSIM a nivel mundial",
+                storage: "512 GB, 1 TB",
+                notes: "Pantalla doble/plegable. Compatible con Apple Pencil (USB-C)."
+            }
+        ];
+
+        // Global Application State
+        let currentTab = 'catalog';
+        let selectedForComp = ['16-pro', '17-pro', 'air'];
+
+        // DOM Loaded Init
+        document.addEventListener('DOMContentLoaded', () => {
+            renderKPIs();
+            renderCatalogGrid(iphoneData);
+            populateCompSelectors();
+            updateComparison();
+            initCharts();
+        });
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+                activeBtn.classList.remove('text-slate-300');
+            }
+
+            // Hide all sections
+            document.getElementById('sec-catalog').classList.add('hidden');
+            document.getElementById('sec-comparator').classList.add('hidden');
+            document.getElementById('sec-analytics').classList.add('hidden');
+            document.getElementById('sec-audit-log').classList.add('hidden');
+
+            // Show current section
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+        }
+
+        // Render KPIs
+        function renderKPIs() {
+            const total = iphoneData.length;
+            const active = iphoneData.filter(d => d.activeOS).length;
+            const eos = total - active;
+
+            document.getElementById('kpi-total').innerText = total;
+            document.getElementById('kpi-active').innerText = active;
+            document.getElementById('kpi-eos').innerText = eos;
+        }
+
+        // Render Catalog Grid
+        function renderCatalogGrid(data) {
+            const container = document.getElementById('catalog-grid');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-xs">No se encontraron modelos con los filtros seleccionados.</div>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200 rounded-lg p-3.5 hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-2 group";
+                card.onclick = () => openModal(item.id);
+
+                const osBadge = item.activeOS 
+                    ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">iOS 27 Activo</span>`
+                    : `<span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded">EOS (${item.iosMax})</span>`;
+
+                const esimWarning = (item.id === 'air' || item.id === 'duo')
+                    ? `<span class="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">eSIM Global</span>`
+                    : (item.simType.includes('Solo eSIM'))
+                        ? `<span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">eSIM EEUU/13 Países</span>`
+                        : `<span class="text-[10px] text-slate-500">Nano-SIM + eSIM</span>`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-1.5">
+                            <h3 class="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">${item.name}</h3>
+                            ${osBadge}
+                        </div>
+                        <div class="text-[11px] text-slate-500 space-y-1">
+                            <div><strong class="text-slate-700">Grosor:</strong> ${item.thickness}</div>
+                            <div><strong class="text-slate-700">Respaldo:</strong> ${item.backMaterial}</div>
+                            <div><strong class="text-slate-700">Zoom:</strong> ${item.zoom}</div>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                        ${esimWarning}
+                        <span class="text-indigo-600 font-semibold group-hover:underline">Ver Ficha &rarr;</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Filter Catalog Logic
+        function filterModels() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('filter-status').value;
+            const sim = document.getElementById('filter-sim').value;
+
+            const filtered = iphoneData.filter(item => {
+                const matchesQuery = item.name.toLowerCase().includes(query) || item.modelsA.toLowerCase().includes(query);
+                
+                let matchesStatus = true;
+                if (status === 'active') matchesStatus = item.activeOS;
+                if (status === 'eos') matchesStatus = !item.activeOS;
+
+                let matchesSim = true;
+                if (sim === 'nano') matchesSim = item.simType.includes('Nano-SIM');
+                if (sim === 'us-esim') matchesSim = item.simType.includes('Solo eSIM');
+                if (sim === 'global-esim') matchesSim = item.simType.includes('Exclusivo eSIM');
+
+                return matchesQuery && matchesStatus && matchesSim;
+            });
+
+            renderCatalogGrid(filtered);
+        }
+
+        // Populate Comparator Dropdowns
+        function populateCompSelectors() {
+            const sel1 = document.getElementById('comp-select-1');
+            const sel2 = document.getElementById('comp-select-2');
+            const sel3 = document.getElementById('comp-select-3');
+
+            const optionsHTML = iphoneData.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
+
+            sel1.innerHTML = optionsHTML;
+            sel2.innerHTML = optionsHTML;
+            sel3.innerHTML = `<option value="">-- Ninguno --</option>` + optionsHTML;
+
+            sel1.value = selectedForComp[0] || '16-pro';
+            sel2.value = selectedForComp[1] || '17-pro';
+            sel3.value = selectedForComp[2] || 'air';
+        }
+
+        // Update Comparison Table
+        function updateComparison() {
+            const id1 = document.getElementById('comp-select-1').value;
+            const id2 = document.getElementById('comp-select-2').value;
+            const id3 = document.getElementById('comp-select-3').value;
+
+            const m1 = iphoneData.find(d => d.id === id1);
+            const m2 = iphoneData.find(d => d.id === id2);
+            const m3 = id3 ? iphoneData.find(d => d.id === id3) : null;
+
+            document.getElementById('comp-head-1').innerText = m1 ? m1.name : '-';
+            document.getElementById('comp-head-2').innerText = m2 ? m2.name : '-';
+            document.getElementById('comp-head-3').innerText = m3 ? m3.name : '(Sin selección)';
+
+            const fields = [
+                { title: 'Soporte OS Actual', key: 'activeOS', format: v => v ? '<span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">iOS 27 Activo</span>' : '<span class="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded">Descontinuado (EOS)</span>' },
+                { title: 'iOS Lanzamiento', key: 'iosLaunch' },
+                { title: 'iOS Máximo Admisible', key: 'iosMax' },
+                { title: 'Números de Modelo A####', key: 'modelsA' },
+                { title: 'Banda Ultraancha (UWB)', key: 'uwb' },
+                { title: 'Cubierta Posterior (Material)', key: 'backMaterial' },
+                { title: 'Grosor Nominal (mm)', key: 'thickness' },
+                { title: 'Carga Inalámbrica Qi / MagSafe', key: 'qiW' },
+                { title: 'Opciones de Zoom Óptico', key: 'zoom' },
+                { title: 'Configuración SIM / eSIM', key: 'simType' },
+                { title: 'Capacidades de Almacenamiento', key: 'storage' },
+                { title: 'Notas de Auditoría', key: 'notes' }
+            ];
+
+            const tbody = document.getElementById('comp-table-body');
+            tbody.innerHTML = '';
+
+            fields.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+
+                const val1 = m1 ? (f.format ? f.format(m1[f.key]) : m1[f.key]) : '-';
+                const val2 = m2 ? (f.format ? f.format(m2[f.key]) : m2[f.key]) : '-';
+                const val3 = m3 ? (f.format ? f.format(m3[f.key]) : m3[f.key]) : '-';
+
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-800 bg-slate-50 border-r border-slate-200">${f.title}</td>
+                    <td class="p-3 text-slate-700">${val1}</td>
+                    <td class="p-3 text-slate-700">${val2}</td>
+                    <td class="p-3 text-slate-700">${val3}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function clearComparison() {
+            document.getElementById('comp-select-3').value = "";
+            updateComparison();
+        }
+
+        // Modal View
+        function openModal(modelId) {
+            const item = iphoneData.find(d => d.id === modelId);
+            if(!item) return;
+
+            document.getElementById('modal-title').innerText = item.name;
+            document.getElementById('modal-subtitle').innerText = `Procesador / Generación: ${item.genGroup.toUpperCase()}`;
+
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                        <span class="text-slate-500 font-semibold block text-[10px] uppercase">Estado de Software</span>
+                        <div class="text-sm font-bold mt-0.5">${item.activeOS ? '✅ Vigente en iOS 27' : '❌ Ciclo Concluido'}</div>
+                        <p class="text-[11px] text-slate-600 mt-1">Lanzamiento: ${item.iosLaunch} | Máximo: ${item.iosMax}</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                        <span class="text-slate-500 font-semibold block text-[10px] uppercase">Grosor de Chasis</span>
+                        <div class="text-sm font-bold mt-0.5 text-slate-800">${item.thickness}</div>
+                        <p class="text-[11px] text-slate-600 mt-1">Acabado: ${item.backMaterial}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2 border-t border-slate-200 pt-3">
+                    <div>
+                        <strong class="text-slate-800">Números de Modelo Regionales (A####):</strong>
+                        <p class="text-slate-600">${item.modelsA}</p>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800">Banda Ultraancha (UWB):</strong>
+                        <p class="text-slate-600">${item.uwb}</p>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800">Políticas de Tarjeta SIM & eSIM:</strong>
+                        <p class="text-slate-600">${item.simType}</p>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800">Potencia de Carga Inalámbrica:</strong>
+                        <p class="text-slate-600">${item.qiW}</p>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800">Escalonamiento de Zoom Óptico:</strong>
+                        <p class="text-slate-600">${item.zoom}</p>
+                    </div>
+                    <div>
+                        <strong class="text-slate-800">Capacidades de Almacenamiento Comercializadas:</strong>
+                        <p class="text-slate-600">${item.storage}</p>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border-l-2 border-amber-500 p-2.5 rounded-r text-[11px] text-amber-900 mt-2">
+                    <strong>Nota Técnica de Auditoría:</strong> ${item.notes}
+                </div>
+            `;
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        // Initialize Chart.js Data Visualizations
+        function initCharts() {
+            // Chart 1: Software Lifecycle (iOS Launch vs Max)
+            const sampleModels = ['iPhone XR', 'iPhone 11', 'iPhone 12', 'iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone 16', 'iPhone 17', 'iPhone Air', 'iPhone 18 Pro'];
+            const launchVersions = [12, 13, 14, 15, 16, 17, 18, 26, 26, 27];
+            const maxVersions = [18, 26.5, 27, 27, 27, 27, 27, 27, 27, 27];
+
+            const ctx1 = document.getElementById('chart-ios-lifecycle').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: sampleModels,
+                    datasets: [
+                        {
+                            label: 'iOS de Lanzamiento',
+                            data: launchVersions,
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'iOS Máximo (Soporte 2026)',
+                            data: maxVersions,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: iOS ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 10,
+                            max: 30,
+                            title: { display: true, text: 'Versión Major de iOS', font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { font: { size: 9 }, maxRotation: 45 }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Profile Thickness (mm)
+            const thicknessData = [
+                { model: '12/13/14 Pro', mm: 7.85 },
+                { model: '15/16 Pro', mm: 8.25 },
+                { model: '17 Pro Max', mm: 8.75 },
+                { model: 'iPhone Air', mm: 5.64 },
+                { model: 'iPhone Duo', mm: 5.40 },
+                { model: 'iPhone 13', mm: 7.65 },
+                { model: 'iPhone 11', mm: 8.30 }
+            ];
+
+            const ctx2 = document.getElementById('chart-thickness').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: thicknessData.map(d => d.model),
+                    datasets: [{
+                        label: 'Grosor Nominal (mm)',
+                        data: thicknessData.map(d => d.mm),
+                        backgroundColor: [
+                            '#64748b', '#64748b', '#475569', '#6366f1', '#4f46e5', '#94a3b8', '#cbd5e1'
+                        ],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Grosor: ${context.parsed.y} mm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: { display: true, text: 'Milímetros (mm)', font: { size: 10 } }
+                        },
+                        x: {
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

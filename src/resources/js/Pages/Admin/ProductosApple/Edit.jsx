@@ -1,201 +1,114 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import { route } from 'ziggy-js';
 import { Apple } from 'lucide-react';
-
-/* =======================
-   CRUD UI (OFICIAL)
-======================= */
+import PremiumNotice from '@/Components/PremiumNotice';
+import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
+import { Toast, buttonCls, useToast } from '@/Components/Admin/ui';
 import {
-  CrudWrapper,
-  CrudHeader,
-  CrudTitle,
-  CrudSubtitle,
-  CrudBackLink,
-  CrudInfoBox,
-  CrudCard,
-  CrudSectionTitle,
-  CrudGrid,
-  CrudLabel,
-  CrudInput,
-  CrudSelect,
-  CrudActions,
-  CrudButtonPrimary,
-  CrudButtonSecondary,
-} from '@/Components/CrudUI';
+  EncabezadoFormulario, ErroresResumen, HistorialEquipo, ModalEliminar, Nota, TiendaYEliminar, fmtFecha,
+} from '@/Components/Admin/inventario';
+import {
+  CamposProductoApple, ResumenProductoApple, datosDesde, detalleEquipo, nombreEquipo, payloadDe, useFormularioProductoApple, validarProductoApple,
+} from '@/Components/Admin/productos-apple';
 
-export default function Edit({ productoApple }) {
-  const { data, setData, put, processing, errors } = useForm({
-    modelo: productoApple.modelo || '',
-    capacidad: productoApple.capacidad || '',
-    bateria: productoApple.bateria || '',
-    color: productoApple.color || '',
-    numero_serie: productoApple.numero_serie || '',
-    procedencia: productoApple.procedencia || '',
-    precio_costo: productoApple.precio_costo || '',
-    precio_venta: productoApple.precio_venta || '',
-    tiene_imei: productoApple.tiene_imei || false,
-    imei_1: productoApple.imei_1 || '',
-    imei_2: productoApple.imei_2 || '',
-    estado_imei: productoApple.estado_imei || '',
-  });
+export default function Edit({ productoApple, historial = [], publicacion = null, bloqueo = null, sugerencias = {} }) {
+  const original = datosDesde(productoApple);
+  const form = useFormularioProductoApple(original);
+  const { data, errores, setErrores } = form;
+  const [guardando, setGuardando] = useState(false);
+  const [borrar, setBorrar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [toast] = useToast();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    put(route('admin.productos-apple.update', productoApple.id));
+  const avisar = (title, message = '', type = 'error') => setNotice({ id: Date.now(), title, message, type });
+  const hayCambios = Object.keys(original).some((k) => data[k] !== original[k]);
+  const ventas = historial.filter((m) => m.tipo === 'venta');
+  const nombre = nombreEquipo(productoApple);
+  const detalle = detalleEquipo(productoApple);
+
+  const avisoEstado = ventas.length > 0 && data.estado !== 'vendido' ? (
+    <Nota tono="amber">Figura en la venta {ventas[0].codigo}. Cambiar el estado aquí no modifica esa venta.</Nota>
+  ) : null;
+
+  const guardar = () => {
+    if (guardando || !hayCambios) return;
+    const e = validarProductoApple(data);
+    setErrores(e);
+    if (Object.keys(e).length > 0) {
+      avisar('Revisa los datos', 'Hay campos por corregir.');
+      return;
+    }
+    router.put(route('admin.productos-apple.update', productoApple.id), payloadDe(data), {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => setGuardando(true),
+      onSuccess: () => notifyRecordsUpdated(),
+      onError: (errs) => {
+        setErrores(errs);
+        avisar('No se pudo guardar', 'Revisa los datos marcados.');
+      },
+      onFinish: () => setGuardando(false),
+    });
+  };
+
+  const eliminar = () => {
+    if (eliminando) return;
+    router.delete(route('admin.productos-apple.destroy', productoApple.id), {
+      onStart: () => setEliminando(true),
+      onSuccess: () => {
+        setBorrar(false);
+        notifyRecordsUpdated();
+      },
+      onFinish: () => setEliminando(false),
+    });
   };
 
   return (
     <AdminLayout>
-      <Head title="Editar Producto Apple" />
+      <Head title={`Editar producto Apple · ${nombre}`} />
+      <PremiumNotice notice={notice} onClose={() => setNotice(null)} />
+      <Toast toast={toast} />
 
-      <CrudWrapper>
-        {/* ================= HEADER ================= */}
-        <CrudHeader>
-          <div>
-            <CrudTitle>
-              <Apple size={22} />
-              Editar Producto Apple
-            </CrudTitle>
-            <CrudSubtitle>
-              Modificando: <strong>{productoApple.modelo}</strong>
-            </CrudSubtitle>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <EncabezadoFormulario volverUrl={route('admin.productos-apple.index')} volverLabel="Volver a productos Apple" titulo="Editar producto Apple"
+          subtitulo={[nombre, detalle, `Registrado el ${fmtFecha(productoApple.created_at, true)}`].filter(Boolean).join(' · ')} />
+
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5">
+            <CamposProductoApple form={form} sugerencias={sugerencias} avisoEstado={avisoEstado} />
+            <HistorialEquipo historial={historial} />
+            <TiendaYEliminar
+              publicacion={publicacion}
+              disponible={productoApple.estado === 'disponible'}
+              publicarUrl={route('admin.catalogo.create', { tipo: 'producto_apple', id: productoApple.id })}
+              bloqueo={bloqueo}
+              sustantivo="producto"
+              onEliminar={() => setBorrar(true)}
+            />
           </div>
 
-          <CrudBackLink as="button" onClick={() => window.history.back()}>
-            ← Volver
-          </CrudBackLink>
-        </CrudHeader>
+          <aside className="xl:sticky xl:top-24">
+            <ResumenProductoApple data={data}>
+              <ErroresResumen errores={errores} />
+              {hayCambios && <p className="text-center text-xs font-semibold text-amber-700">Tienes cambios sin guardar.</p>}
+              <button type="button" onClick={guardar} disabled={guardando || !hayCambios} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                {guardando ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+              <Link href={route('admin.productos-apple.index')} className={buttonCls('secondary', 'h-11 w-full')}>Cancelar</Link>
+              <p className="text-center text-xs text-slate-400">Última actualización: {fmtFecha(productoApple.updated_at, true)}</p>
+            </ResumenProductoApple>
+          </aside>
+        </div>
+      </div>
 
-        {/* ================= INFO ================= */}
-        <CrudInfoBox>
-          Estás editando un producto Apple existente. Los cambios se reflejarán
-          inmediatamente en inventario, ventas y reportes.
-        </CrudInfoBox>
-
-        {/* ================= FORM ================= */}
-        <CrudCard>
-          <form onSubmit={handleSubmit}>
-            <CrudSectionTitle>Información del producto</CrudSectionTitle>
-
-            <CrudGrid>
-              {[
-                { name: 'modelo', label: 'Modelo' },
-                { name: 'capacidad', label: 'Capacidad' },
-                { name: 'bateria', label: 'Batería' },
-                { name: 'color', label: 'Color' },
-                { name: 'numero_serie', label: 'Número de serie / IMEI general' },
-                { name: 'procedencia', label: 'Procedencia' },
-                { name: 'precio_costo', label: 'Precio costo (Bs)', type: 'number' },
-                { name: 'precio_venta', label: 'Precio venta (Bs)', type: 'number' },
-              ].map(({ name, label, type = 'text' }) => (
-                <div key={name}>
-                  <CrudLabel>{label}</CrudLabel>
-                  <CrudInput
-                    type={type}
-                    value={data[name]}
-                    onChange={(e) => setData(name, e.target.value)}
-                  />
-                  {errors[name] && (
-                    <small style={{ color: '#dc2626' }}>
-                      {errors[name]}
-                    </small>
-                  )}
-                </div>
-              ))}
-
-              {/* TIENE IMEI */}
-              <div>
-                <CrudLabel>¿Tiene IMEI?</CrudLabel>
-                <CrudSelect
-                  value={data.tiene_imei ? 'true' : 'false'}
-                  onChange={(e) =>
-                    setData('tiene_imei', e.target.value === 'true')
-                  }
-                >
-                  <option value="false">No</option>
-                  <option value="true">Sí</option>
-                </CrudSelect>
-                {errors.tiene_imei && (
-                  <small style={{ color: '#dc2626' }}>
-                    {errors.tiene_imei}
-                  </small>
-                )}
-              </div>
-            </CrudGrid>
-
-            {/* ================= IMEI ================= */}
-            {data.tiene_imei && (
-              <>
-                <CrudSectionTitle>Información IMEI</CrudSectionTitle>
-
-                <CrudGrid>
-                  <div>
-                    <CrudLabel>IMEI 1</CrudLabel>
-                    <CrudInput
-                      value={data.imei_1}
-                      onChange={(e) => setData('imei_1', e.target.value)}
-                    />
-                    {errors.imei_1 && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.imei_1}
-                      </small>
-                    )}
-                  </div>
-
-                  <div>
-                    <CrudLabel>IMEI 2</CrudLabel>
-                    <CrudInput
-                      value={data.imei_2}
-                      onChange={(e) => setData('imei_2', e.target.value)}
-                    />
-                    {errors.imei_2 && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.imei_2}
-                      </small>
-                    )}
-                  </div>
-
-                  <div>
-                    <CrudLabel>Estado del IMEI</CrudLabel>
-                    <CrudSelect
-                      value={data.estado_imei}
-                      onChange={(e) =>
-                        setData('estado_imei', e.target.value)
-                      }
-                    >
-                      <option value="">Seleccionar</option>
-                      <option>Libre</option>
-                      <option>Registro seguro</option>
-                      <option>IMEI 1 libre y IMEI 2 registrado</option>
-                      <option>IMEI 2 libre y IMEI 1 registrado</option>
-                    </CrudSelect>
-                    {errors.estado_imei && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.estado_imei}
-                      </small>
-                    )}
-                  </div>
-                </CrudGrid>
-              </>
-            )}
-
-            {/* ================= ACTIONS ================= */}
-            <CrudActions>
-              <CrudButtonSecondary
-                type="button"
-                onClick={() => window.history.back()}
-              >
-                Cancelar
-              </CrudButtonSecondary>
-
-              <CrudButtonPrimary type="submit" disabled={processing}>
-                Guardar cambios
-              </CrudButtonPrimary>
-            </CrudActions>
-          </form>
-        </CrudCard>
-      </CrudWrapper>
+      {borrar && (
+        <ModalEliminar titulo="Eliminar producto Apple" icon={Apple} nombre={nombre}
+          detalle={[detalle, productoApple.numero_serie && `Serie ${productoApple.numero_serie}`].filter(Boolean).join(' · ')}
+          procesando={eliminando} onConfirmar={eliminar} onCerrar={() => setBorrar(false)} />
+      )}
     </AdminLayout>
   );
 }

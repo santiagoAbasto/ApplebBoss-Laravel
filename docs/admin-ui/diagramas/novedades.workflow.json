@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Novedades en la tienda",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "tienda",
+      "label": "Tienda y Google"
+    },
+    {
+      "id": "espera",
+      "label": "Sin publicar",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "borrador",
+    "publicar",
+    "pagina",
+    "inicio"
+  ],
+  "nodes": [
+    {
+      "id": "borrador",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Borrador",
+      "sublabel": "texto y foto"
+    },
+    {
+      "id": "publicar",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Publicar",
+      "sublabel": "con su fecha"
+    },
+    {
+      "id": "google",
+      "lane": "tienda",
+      "col": 1,
+      "type": "external",
+      "width": 150,
+      "label": "Google",
+      "sublabel": "BlogPosting"
+    },
+    {
+      "id": "pagina",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "/novedades",
+      "sublabel": "la más nueva arriba"
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 3,
+      "type": "frontend",
+      "width": 150,
+      "label": "El inicio",
+      "sublabel": "las más nuevas"
+    },
+    {
+      "id": "espera",
+      "lane": "espera",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "No se ve",
+      "sublabel": "ni se enlaza"
+    }
+  ],
+  "edges": [
+    {
+      "from": "borrador",
+      "to": "publicar",
+      "label": "con texto",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "publicar",
+      "to": "pagina",
+      "label": "llegó su fecha",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "from": "publicar",
+      "to": "google",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "pagina",
+      "to": "inicio",
+      "label": "Portada",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "borrador",
+      "to": "espera",
+      "variant": "security",
+      "role": "error",
+      "fromSide": "bottom",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué se carga",
+      "items": [
+        "Título y un resumen corto",
+        "Foto horizontal de 1200 px",
+        "El texto, como un documento"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Cuándo se ve",
+      "items": [
+        "Publicada y con su fecha cumplida",
+        "Con fecha futura, programada",
+        "En borrador, nadie la ve"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Cómo escribirla",
+      "items": [
+        "Un título que diga la noticia",
+        "El dato importante en el resumen",
+        "Solo lo que se cumple"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Publicada, su dirección no cambia",
+        "Sin publicadas, ni enlace ni sitemap",
+        "Cuántas salen en el inicio: Portada"
+      ]
+    }
+  ]
+}

@@ -3,8 +3,8 @@ import VentaEditForm from '@/Components/VentaEditForm';
 
 export default function Edit({ venta, productosGenerales = [], inventarioEdicion = {} }) {
   return (
-    <AdminLayout>
-      <VentaEditForm venta={venta} productosGenerales={productosGenerales} inventarioEdicion={inventarioEdicion} routePrefix="admin" accent="blue" />
+    <AdminLayout title="Editar venta">
+      <VentaEditForm venta={venta} productosGenerales={productosGenerales} inventarioEdicion={inventarioEdicion} routePrefix="admin" />
     </AdminLayout>
   );
 }

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TieneCondicion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductoGeneral extends Model
 {
-    use HasFactory;
+    use HasFactory, TieneCondicion;
 
     /**
      * Nombre explícito de la tabla.
@@ -25,6 +26,12 @@ class ProductoGeneral extends Model
         'precio_costo',
         'precio_venta',
         'estado',
+        'condicion',
+    ];
+
+    // Los productos generales (accesorios) entran como nuevos, salvo que se indique otra condición
+    protected $attributes = [
+        'condicion' => 'Nuevo',
     ];
 
     // (Opcional) Puedes definir constantes si deseas usar estados por código

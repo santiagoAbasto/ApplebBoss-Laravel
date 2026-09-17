@@ -1,0 +1,164 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Trade-In paso a paso",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "tienda",
+      "label": "Cliente en la tienda"
+    },
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "revisar",
+      "label": "Revisar antes",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "formulario",
+    "solicitud",
+    "whatsapp",
+    "completada"
+  ],
+  "nodes": [
+    {
+      "id": "formulario",
+      "lane": "tienda",
+      "col": 0,
+      "type": "frontend",
+      "width": 150,
+      "label": "Formulario",
+      "sublabel": "6 pasos, toda marca"
+    },
+    {
+      "id": "confirmacion",
+      "lane": "tienda",
+      "col": 1,
+      "type": "frontend",
+      "width": 150,
+      "label": "Confirmación",
+      "sublabel": "solo quien la envió"
+    },
+    {
+      "id": "solicitud",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Solicitud",
+      "sublabel": "grado y alertas"
+    },
+    {
+      "id": "whatsapp",
+      "lane": "panel",
+      "col": 2,
+      "type": "external",
+      "width": 150,
+      "label": "WhatsApp",
+      "sublabel": "valor estimado"
+    },
+    {
+      "id": "completada",
+      "lane": "panel",
+      "col": 3,
+      "type": "backend",
+      "width": 150,
+      "label": "Completada",
+      "sublabel": "al inventario"
+    },
+    {
+      "id": "critico",
+      "lane": "revisar",
+      "col": 2,
+      "type": "security",
+      "width": 150,
+      "label": "Bloqueo o bypass",
+      "sublabel": "puede no recibirse"
+    }
+  ],
+  "edges": [
+    {
+      "from": "formulario",
+      "to": "confirmacion",
+      "label": "envía",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "formulario",
+      "to": "solicitud",
+      "label": "aviso",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "left"
+    },
+    {
+      "from": "solicitud",
+      "to": "whatsapp",
+      "label": "responde",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "whatsapp",
+      "to": "completada",
+      "label": "acepta",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "from": "solicitud",
+      "to": "critico",
+      "variant": "security",
+      "role": "error",
+      "fromSide": "bottom",
+      "toSide": "left"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué pregunta",
+      "items": [
+        "Apple, Android, PC y consolas",
+        "Cuenta, bypass, IMEI o baneo",
+        "Cada pieza: funciona o falla"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "En el panel",
+      "items": [
+        "Grado sugerido y alertas",
+        "WhatsApp con el mensaje listo",
+        "Etapas con su historial"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Al recibirlo",
+      "items": [
+        "Modelo, batería y piezas",
+        "Que cierre sesión y lo borre",
+        "Se registra en el inventario"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "El valor no sale en la tienda",
+        "Las fotos son privadas",
+        "La confirmación pide la sesión"
+      ]
+    }
+  ]
+}

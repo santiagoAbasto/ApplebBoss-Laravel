@@ -1,0 +1,139 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Categorías: de dónde sale cada producto y dónde se ve",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "inventario", "label": "Inventario" },
+    { "id": "panel", "label": "Panel" },
+    { "id": "tienda", "label": "Tienda" },
+    { "id": "otros", "label": "Otras secciones" },
+    { "id": "oculta", "label": "Oculta", "variant": "exception" }
+  ],
+  "mainPath": ["inventario", "publicar", "categoria", "catalogo", "pagina"],
+  "nodes": [
+    {
+      "id": "inventario",
+      "lane": "inventario",
+      "col": 0,
+      "type": "database",
+      "label": "Inventario",
+      "sublabel": "4 inventarios"
+    },
+    {
+      "id": "portada",
+      "lane": "otros",
+      "col": 1,
+      "type": "frontend",
+      "label": "Portada",
+      "sublabel": "bloque y carruseles"
+    },
+    {
+      "id": "publicar",
+      "lane": "panel",
+      "col": 1,
+      "type": "frontend",
+      "label": "Publicar",
+      "sublabel": "productos en la tienda"
+    },
+    {
+      "id": "categoria",
+      "lane": "panel",
+      "col": 2,
+      "type": "backend",
+      "label": "Categoría",
+      "sublabel": "nombre, orden, portada"
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 2,
+      "type": "external",
+      "label": "Inicio",
+      "sublabel": "¿Qué estás buscando?"
+    },
+    {
+      "id": "apagada",
+      "lane": "oculta",
+      "col": 2,
+      "type": "security",
+      "label": "Apagada",
+      "sublabel": "sin acceso ni filtro"
+    },
+    {
+      "id": "catalogo",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "label": "Catálogo",
+      "sublabel": "filtro por categoría"
+    },
+    {
+      "id": "menu",
+      "lane": "otros",
+      "col": 3,
+      "type": "frontend",
+      "label": "Menú",
+      "sublabel": "enlaces a la categoría"
+    },
+    {
+      "id": "pagina",
+      "lane": "tienda",
+      "col": 4,
+      "type": "external",
+      "label": "Su página",
+      "sublabel": "portada y Google"
+    }
+  ],
+  "edges": [
+    { "from": "inventario", "to": "publicar", "label": "unidad disponible" },
+    { "from": "publicar", "to": "categoria", "label": "cae en su estante", "variant": "emphasis" },
+    { "from": "categoria", "to": "inicio", "label": "marcada, con productos" },
+    { "from": "categoria", "to": "catalogo", "label": "activa", "variant": "emphasis" },
+    { "from": "categoria", "to": "apagada", "label": "sin marcar", "variant": "security", "role": "error" },
+    { "from": "apagada", "to": "catalogo", "label": "siguen a la venta", "variant": "dashed", "role": "return" },
+    { "from": "catalogo", "to": "pagina", "label": "elige la categoría" },
+    { "from": "menu", "to": "pagina", "label": "llevan ahí", "variant": "dashed" },
+    { "from": "portada", "to": "inicio", "label": "enciende el bloque", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "De dónde sale",
+      "items": [
+        "Celulares a iPhone y computadoras a Mac",
+        "Productos generales a Accesorios",
+        "Fundas marcadas MYSKIN, a la suya"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Qué controla el panel",
+      "items": [
+        "Nombre, descripción y orden",
+        "Si va en el catálogo y en el inicio",
+        "La portada de su página y Google"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Accesorios por tipo",
+      "items": [
+        "El tipo sale de la ficha del accesorio",
+        "Los chips de la portada filtran",
+        "Sin ficha, va en otros accesorios"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Fuera de este módulo",
+      "items": [
+        "Los menús se arman en Menú",
+        "Los carruseles, en Portada",
+        "La dirección web no se cambia"
+      ]
+    }
+  ]
+}

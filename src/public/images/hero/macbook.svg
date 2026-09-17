@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="360" height="480">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1b47"/>
+      <stop offset="100%" stop-color="#07102a"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a2a2a"/>
+      <stop offset="50%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#111"/>
+    </linearGradient>
+    <linearGradient id="base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2e2e2e"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="mac-screen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050518"/>
+      <stop offset="60%" stop-color="#0a1030"/>
+      <stop offset="100%" stop-color="#050518"/>
+    </linearGradient>
+    <radialGradient id="lime-glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#A3BD31" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0c1b47" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="mac-shadow">
+      <feDropShadow dx="0" dy="16" stdDeviation="28" flood-color="#000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <rect width="360" height="480" fill="url(#bg2)"/>
+  <ellipse cx="180" cy="220" rx="180" ry="140" fill="url(#lime-glow)"/>
+
+  <!-- MacBook lid shadow -->
+  <rect x="42" y="82" width="276" height="196" rx="12" fill="#000" opacity="0.5" filter="url(#mac-shadow)"/>
+
+  <!-- MacBook lid -->
+  <rect x="40" y="80" width="280" height="196" rx="12" fill="url(#lid)"/>
+
+  <!-- Lid edge highlight -->
+  <rect x="40" y="80" width="280" height="4" rx="2" fill="#3a3a3a" opacity="0.8"/>
+  <rect x="40" y="80" width="4" height="196" rx="2" fill="#3a3a3a" opacity="0.6"/>
+
+  <!-- Screen bezel inside lid -->
+  <rect x="52" y="90" width="256" height="176" rx="8" fill="#080810"/>
+
+  <!-- Screen content -->
+  <rect x="54" y="92" width="252" height="172" rx="7" fill="url(#mac-screen)"/>
+
+  <!-- macOS wallpaper abstract -->
+  <defs>
+    <radialGradient id="wall1" cx="30%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#585E9F" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#011446" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="wall2" cx="75%" cy="70%" r="50%">
+      <stop offset="0%" stop-color="#A3BD31" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0c1b47" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="54" y="92" width="252" height="172" rx="7" fill="url(#wall1)"/>
+  <rect x="54" y="92" width="252" height="172" rx="7" fill="url(#wall2)"/>
+
+  <!-- Menu bar -->
+  <rect x="54" y="92" width="252" height="18" rx="0" fill="#000" opacity="0.5"/>
+  <circle cx="68" cy="101" r="4" fill="#585E9F" opacity="0.8"/>
+  <rect x="80" y="97" width="22" height="6" rx="3" fill="white" opacity="0.25"/>
+  <rect x="108" y="97" width="18" height="6" rx="3" fill="white" opacity="0.2"/>
+  <rect x="132" y="97" width="16" height="6" rx="3" fill="white" opacity="0.2"/>
+  <rect x="220" y="97" width="24" height="6" rx="3" fill="white" opacity="0.2"/>
+  <rect x="248" y="97" width="14" height="6" rx="3" fill="white" opacity="0.2"/>
+  <rect x="267" y="97" width="10" height="6" rx="3" fill="white" opacity="0.2"/>
+  <rect x="281" y="97" width="18" height="6" rx="3" fill="white" opacity="0.25"/>
+
+  <!-- App windows -->
+  <rect x="62" y="116" width="148" height="100" rx="6" fill="#0a0a20" opacity="0.9"/>
+  <rect x="62" y="116" width="148" height="14" rx="0" fill="#111128"/>
+  <circle cx="70" cy="123" r="3" fill="#ff5f57" opacity="0.8"/>
+  <circle cx="80" cy="123" r="3" fill="#ffbd2e" opacity="0.8"/>
+  <circle cx="90" cy="123" r="3" fill="#28c840" opacity="0.8"/>
+
+  <!-- Code lines in window -->
+  <rect x="68" y="136" width="70" height="3" rx="1.5" fill="#585E9F" opacity="0.7"/>
+  <rect x="68" y="144" width="90" height="3" rx="1.5" fill="#A3BD31" opacity="0.6"/>
+  <rect x="68" y="152" width="55" height="3" rx="1.5" fill="white" opacity="0.3"/>
+  <rect x="68" y="160" width="80" height="3" rx="1.5" fill="#585E9F" opacity="0.5"/>
+  <rect x="68" y="168" width="65" height="3" rx="1.5" fill="#A3BD31" opacity="0.5"/>
+  <rect x="68" y="176" width="40" height="3" rx="1.5" fill="white" opacity="0.25"/>
+  <rect x="68" y="184" width="75" height="3" rx="1.5" fill="#585E9F" opacity="0.5"/>
+  <rect x="68" y="192" width="50" height="3" rx="1.5" fill="#A3BD31" opacity="0.4"/>
+  <rect x="68" y="200" width="60" height="3" rx="1.5" fill="white" opacity="0.2"/>
+
+  <!-- Side panel -->
+  <rect x="216" y="116" width="80" height="100" rx="6" fill="#060616" opacity="0.85"/>
+  <rect x="222" y="128" width="54" height="18" rx="5" fill="#585E9F" opacity="0.3"/>
+  <rect x="222" y="152" width="40" height="4" rx="2" fill="white" opacity="0.2"/>
+  <rect x="222" y="160" width="54" height="4" rx="2" fill="white" opacity="0.15"/>
+  <rect x="222" y="168" width="48" height="4" rx="2" fill="white" opacity="0.15"/>
+  <rect x="222" y="180" width="30" height="16" rx="4" fill="#A3BD31" opacity="0.6"/>
+
+  <!-- Dock -->
+  <rect x="120" y="226" width="114" height="28" rx="10" fill="white" opacity="0.06"/>
+  <rect x="126" y="230" width="20" height="20" rx="5" fill="#585E9F" opacity="0.7"/>
+  <rect x="150" y="230" width="20" height="20" rx="5" fill="#011446" opacity="0.9"/>
+  <rect x="174" y="230" width="20" height="20" rx="5" fill="#A3BD31" opacity="0.7"/>
+  <rect x="198" y="230" width="20" height="20" rx="5" fill="#28224F" opacity="0.8"/>
+  <circle cx="163" cy="258" r="1.5" fill="white" opacity="0.4"/>
+  <circle cx="184" cy="258" r="1.5" fill="white" opacity="0.4"/>
+
+  <!-- Apple logo on lid back -->
+  <circle cx="180" cy="175" r="8" fill="white" opacity="0.06"/>
+
+  <!-- Hinge -->
+  <rect x="40" y="276" width="280" height="6" rx="2" fill="#1a1a1a"/>
+
+  <!-- Base shadow -->
+  <rect x="26" y="283" width="308" height="76" rx="6" fill="#000" opacity="0.35"/>
+
+  <!-- Base -->
+  <rect x="28" y="282" width="304" height="74" rx="6" fill="url(#base)"/>
+
+  <!-- Trackpad -->
+  <rect x="130" y="298" width="100" height="46" rx="8" fill="#222" opacity="0.8"/>
+  <rect x="132" y="300" width="96" height="42" rx="7" fill="#2a2a2a"/>
+
+  <!-- Keyboard rows -->
+  <g opacity="0.5">
+    <rect x="40" y="288" width="280" height="4" rx="2" fill="#3a3a3a"/>
+    <!-- Key rows -->
+    <g fill="#333" opacity="0.8">
+      <rect x="48" y="294" width="18" height="8" rx="2"/>
+      <rect x="70" y="294" width="18" height="8" rx="2"/>
+      <rect x="92" y="294" width="18" height="8" rx="2"/>
+      <rect x="114" y="294" width="18" height="8" rx="2"/>
+      <rect x="248" y="294" width="18" height="8" rx="2"/>
+      <rect x="270" y="294" width="18" height="8" rx="2"/>
+      <rect x="292" y="294" width="18" height="8" rx="2"/>
+    </g>
+  </g>
+
+  <!-- Base front edge -->
+  <rect x="28" y="354" width="304" height="2" rx="1" fill="#111"/>
+
+  <!-- Bottom ground glow -->
+  <ellipse cx="180" cy="380" rx="120" ry="18" fill="#A3BD31" opacity="0.1"/>
+  <ellipse cx="180" cy="460" rx="100" ry="14" fill="#585E9F" opacity="0.08"/>
+</svg>

@@ -1,189 +1,93 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import { route } from 'ziggy-js';
-import { Apple } from 'lucide-react';
-
-/* =======================
-   CRUD UI (OFICIAL)
-======================= */
+import { CopyPlus } from 'lucide-react';
+import PremiumNotice from '@/Components/PremiumNotice';
+import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
+import { Toast, buttonCls, useToast } from '@/Components/Admin/ui';
+import { EncabezadoFormulario, ErroresResumen } from '@/Components/Admin/inventario';
 import {
-  CrudWrapper,
-  CrudHeader,
-  CrudTitle,
-  CrudSubtitle,
-  CrudCard,
-  CrudSectionTitle,
-  CrudGrid,
-  CrudLabel,
-  CrudInput,
-  CrudSelect,
-  CrudActions,
-  CrudButtonPrimary,
-  CrudButtonSecondary,
-} from '@/Components/CrudUI';
+  CamposProductoApple, ResumenProductoApple, datosDesde, payloadDe, useFormularioProductoApple, validarProductoApple,
+} from '@/Components/Admin/productos-apple';
 
-export default function Create() {
-  const { data, setData, post, processing, errors } = useForm({
-    modelo: '',
-    capacidad: '',
-    bateria: '',
-    color: '',
-    numero_serie: '',
-    procedencia: '',
-    precio_costo: '',
-    precio_venta: '',
-    tiene_imei: false,
-    imei_1: '',
-    imei_2: '',
-    estado_imei: '',
-  });
+export default function Create({ sugerencias = {} }) {
+  const form = useFormularioProductoApple(datosDesde(null));
+  const { data, setData, errores, setErrores } = form;
+  const [guardando, setGuardando] = useState(null);
+  const [registrados, setRegistrados] = useState(0);
+  const [notice, setNotice] = useState(null);
+  const [toast] = useToast();
+  const refs = { modelo: useRef(null), color: useRef(null), serie: useRef(null), imei: useRef(null) };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    post(route('admin.productos-apple.store'));
+  const avisar = (title, message = '', type = 'error') => setNotice({ id: Date.now(), title, message, type });
+
+  // «Registrar otro» vuelve a esta página con el mismo modelo, capacidad, color, precios y procedencia
+  const guardar = (otro = false) => {
+    if (guardando) return;
+    const e = validarProductoApple(data);
+    setErrores(e);
+    if (Object.keys(e).length > 0) {
+      avisar('Revisa los datos', 'Hay campos por completar.');
+      return;
+    }
+
+    router.post(route('admin.productos-apple.store'), {
+      ...payloadDe(data),
+      ...(otro ? { return_to: route('admin.productos-apple.create', undefined, false) } : {}),
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => setGuardando(otro ? 'otro' : 'listado'),
+      onSuccess: () => {
+        notifyRecordsUpdated();
+        if (!otro) return;
+        setRegistrados((n) => n + 1);
+        setData((d) => ({ ...d, numero_serie: '', imei_1: '', imei_2: '' }));
+        setErrores({});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => refs.serie.current?.focus(), 300);
+      },
+      onError: (errs) => {
+        setErrores(errs);
+        avisar('No se pudo registrar el producto', 'Revisa los datos marcados.');
+      },
+      onFinish: () => setGuardando(null),
+    });
   };
 
   return (
     <AdminLayout>
-      <Head title="Crear Producto Apple" />
+      <Head title="Registrar producto Apple" />
+      <PremiumNotice notice={notice} onClose={() => setNotice(null)} />
+      <Toast toast={toast} />
 
-      <CrudWrapper>
-        {/* ================= HEADER ================= */}
-        <CrudHeader>
-          <div>
-            <CrudTitle>
-              <Apple size={22} />
-              Registrar Producto Apple
-            </CrudTitle>
-            <CrudSubtitle>
-              Completa la información del producto antes de guardarlo
-            </CrudSubtitle>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <EncabezadoFormulario volverUrl={route('admin.productos-apple.index')} volverLabel="Volver a productos Apple"
+          titulo="Registrar producto Apple" subtitulo="iPad, AirPods, Apple Watch, Pencil o accesorios: cárgalo para poder venderlo y cotizarlo." />
+
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5">
+            <CamposProductoApple form={form} sugerencias={sugerencias} pasos refs={refs} />
           </div>
-        </CrudHeader>
 
-        {/* ================= FORM ================= */}
-        <CrudCard>
-          <form onSubmit={handleSubmit}>
-            <CrudSectionTitle>Información del producto</CrudSectionTitle>
-
-            <CrudGrid>
-              {[
-                { label: 'Modelo', key: 'modelo' },
-                { label: 'Capacidad', key: 'capacidad' },
-                { label: 'Batería', key: 'bateria' },
-                { label: 'Color', key: 'color' },
-                { label: 'Número de serie / IMEI general', key: 'numero_serie' },
-                { label: 'Procedencia', key: 'procedencia' },
-                { label: 'Precio costo (Bs)', key: 'precio_costo', type: 'number' },
-                { label: 'Precio venta (Bs)', key: 'precio_venta', type: 'number' },
-              ].map(({ label, key, type = 'text' }) => (
-                <div key={key}>
-                  <CrudLabel>{label}</CrudLabel>
-                  <CrudInput
-                    type={type}
-                    value={data[key]}
-                    onChange={(e) => setData(key, e.target.value)}
-                  />
-                  {errors[key] && (
-                    <small style={{ color: '#dc2626' }}>
-                      {errors[key]}
-                    </small>
-                  )}
-                </div>
-              ))}
-
-              {/* TIENE IMEI */}
-              <div>
-                <CrudLabel>¿Tiene IMEI?</CrudLabel>
-                <CrudSelect
-                  value={data.tiene_imei}
-                  onChange={(e) =>
-                    setData('tiene_imei', e.target.value === 'true')
-                  }
-                >
-                  <option value="false">No</option>
-                  <option value="true">Sí</option>
-                </CrudSelect>
-                {errors.tiene_imei && (
-                  <small style={{ color: '#dc2626' }}>
-                    {errors.tiene_imei}
-                  </small>
-                )}
-              </div>
-            </CrudGrid>
-
-            {/* ================= IMEI ================= */}
-            {data.tiene_imei && (
-              <>
-                <CrudSectionTitle>Información IMEI</CrudSectionTitle>
-
-                <CrudGrid>
-                  <div>
-                    <CrudLabel>IMEI 1</CrudLabel>
-                    <CrudInput
-                      value={data.imei_1}
-                      onChange={(e) => setData('imei_1', e.target.value)}
-                    />
-                    {errors.imei_1 && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.imei_1}
-                      </small>
-                    )}
-                  </div>
-
-                  <div>
-                    <CrudLabel>IMEI 2</CrudLabel>
-                    <CrudInput
-                      value={data.imei_2}
-                      onChange={(e) => setData('imei_2', e.target.value)}
-                    />
-                    {errors.imei_2 && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.imei_2}
-                      </small>
-                    )}
-                  </div>
-
-                  <div>
-                    <CrudLabel>Estado del IMEI</CrudLabel>
-                    <CrudSelect
-                      value={data.estado_imei}
-                      onChange={(e) =>
-                        setData('estado_imei', e.target.value)
-                      }
-                    >
-                      <option value="">Seleccionar</option>
-                      <option>Libre</option>
-                      <option>Registro seguro</option>
-                      <option>IMEI 1 libre y IMEI 2 registrado</option>
-                      <option>IMEI 2 libre y IMEI 1 registrado</option>
-                    </CrudSelect>
-                    {errors.estado_imei && (
-                      <small style={{ color: '#dc2626' }}>
-                        {errors.estado_imei}
-                      </small>
-                    )}
-                  </div>
-                </CrudGrid>
-              </>
-            )}
-
-            {/* ================= ACTIONS ================= */}
-            <CrudActions>
-              <CrudButtonSecondary
-                type="button"
-                onClick={() => window.history.back()}
-              >
-                Cancelar
-              </CrudButtonSecondary>
-
-              <CrudButtonPrimary type="submit" disabled={processing}>
-                Guardar producto
-              </CrudButtonPrimary>
-            </CrudActions>
-          </form>
-        </CrudCard>
-      </CrudWrapper>
+          <aside className="xl:sticky xl:top-24">
+            <ResumenProductoApple data={data}>
+              <ErroresResumen errores={errores} />
+              <button type="button" onClick={() => guardar(false)} disabled={Boolean(guardando)} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                {guardando === 'listado' ? 'Guardando…' : 'Guardar producto'}
+              </button>
+              <button type="button" onClick={() => guardar(true)} disabled={Boolean(guardando)} className={buttonCls('secondary', 'h-11 w-full')}>
+                <CopyPlus className="h-4 w-4" /> {guardando === 'otro' ? 'Guardando…' : 'Guardar y registrar otro'}
+              </button>
+              <p className="text-center text-xs leading-relaxed text-slate-400">
+                «Registrar otro» mantiene el modelo, la capacidad, el color, los precios y la procedencia; solo cambias la serie.
+                {registrados > 0 && <span className="mt-1 block font-semibold text-emerald-700">Llevas {registrados} {registrados === 1 ? 'producto registrado' : 'productos registrados'} seguidos.</span>}
+              </p>
+            </ResumenProductoApple>
+          </aside>
+        </div>
+      </div>
     </AdminLayout>
   );
 }

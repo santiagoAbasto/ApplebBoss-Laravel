@@ -30,13 +30,18 @@ class ServicioTecnico extends Model
         'user_id',
         'cliente_id',
         'venta_id',
+        'costo_pendiente',
+        'costo_cargado_por',
+        'costo_cargado_en',
     ];
 
     /**
      * Casts automáticos
      */
     protected $casts = [
-        'fecha' => 'date',
+        'fecha'            => 'date',
+        'costo_pendiente'  => 'boolean',
+        'costo_cargado_en' => 'datetime',
     ];
 
     /**
@@ -75,5 +80,63 @@ class ServicioTecnico extends Model
     public function venta()
     {
         return $this->belongsTo(Venta::class);
+    }
+
+    /** Quién cargó el costo del servicio (el administrador). */
+    public function quienCargoElCosto()
+    {
+        return $this->belongsTo(User::class, 'costo_cargado_por');
+    }
+
+    /* =========================
+     |  COSTO Y UTILIDAD
+     ========================= */
+
+    /** Los servicios que todavía no tienen costo: el administrador tiene que cargarlo para saber la utilidad. */
+    public function scopeSinCosto($query)
+    {
+        return $query->where('costo_pendiente', true);
+    }
+
+    /** Lo que cuesta el servicio para los reportes: sin costo cargado no se inventa uno. */
+    public function costoParaReportes(): float
+    {
+        return $this->costo_pendiente ? 0.0 : (float) $this->precio_costo;
+    }
+
+    /**
+     * La utilidad del servicio para los reportes. Mientras falta el costo no se suma nada: sumar el cobro entero como
+     * ganancia la inflaría, y el reporte avisa que hay servicios pendientes.
+     */
+    public function gananciaParaReportes(): float
+    {
+        return $this->costo_pendiente ? 0.0 : (float) $this->precio_venta - (float) $this->precio_costo;
+    }
+
+    /** Los trabajos del servicio (el JSON del detalle), o null si es un registro antiguo con texto libre. */
+    public function trabajos(): ?array
+    {
+        $items = json_decode((string) $this->detalle_servicio, true);
+
+        return is_array($items) ? array_values($items) : null;
+    }
+
+    /** Avisa en el Resumen del administrador que a este servicio le falta el costo. */
+    public function avisarCostoPendiente(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('system_notifications', 'servicio_tecnico_id')) {
+            return;
+        }
+
+        $registro = $this->vendedor?->name ?? 'Un vendedor';
+
+        SystemNotification::create([
+            'type'                => 'servicio_sin_costo',
+            'title'               => 'Falta el costo de un servicio técnico',
+            'message'             => "{$registro} registró el servicio {$this->codigo_nota}: {$this->equipo} de {$this->cliente}, "
+                . 'cobro de Bs ' . number_format((float) $this->precio_venta, 2) . '. '
+                . 'Carga el costo para calcular la utilidad.',
+            'servicio_tecnico_id' => $this->id,
+        ]);
     }
 }

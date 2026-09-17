@@ -1,440 +1,97 @@
-import { Head, useForm, Link, router } from "@inertiajs/react";
-import { route } from "ziggy-js";
-import { useState, useEffect } from "react";
-import axios from "axios";
-import AdminLayout from "@/Layouts/AdminLayout";
-import { Package } from "lucide-react";
-
+import AdminLayout from '@/Layouts/AdminLayout';
+import { Head, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import { route } from 'ziggy-js';
+import { CopyPlus } from 'lucide-react';
+import PremiumNotice from '@/Components/PremiumNotice';
+import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
+import { Toast, buttonCls, useToast } from '@/Components/Admin/ui';
+import { EncabezadoFormulario, ErroresResumen } from '@/Components/Admin/inventario';
 import {
-    CrudWrapper,
-    CrudHeader,
-    CrudTitle,
-    CrudSubtitle,
-    CrudBackLink,
-    CrudCard,
-    CrudSectionTitle,
-    CrudGrid,
-    CrudLabel,
-    CrudInput,
-    CrudSelect,
-    CrudActions,
-    CrudButtonPrimary,
-    CrudButtonSecondary,
-} from "@/Components/CrudUI";
+  CamposProductoGeneral, ResumenProductoGeneral, datosDesde, payloadDe, siguienteCodigo, useCodigoDisponible,
+  useFormularioProductoGeneral, validarProductoGeneral,
+} from '@/Components/Admin/productos-generales';
 
-export default function CreateProductoGeneral() {
-    const [showModal, setShowModal] = useState(false);
-    const [codigoExiste, setCodigoExiste] = useState(false);
-    const [checkingCodigo, setCheckingCodigo] = useState(false);
+export default function Create({ sugerencias = {} }) {
+  const form = useFormularioProductoGeneral(datosDesde(null));
+  const { data, setData, errores, setErrores } = form;
+  const estadoCodigo = useCodigoDisponible(data.codigo);
+  const [guardando, setGuardando] = useState(null);
+  const [registrados, setRegistrados] = useState(0);
+  const [notice, setNotice] = useState(null);
+  const [toast] = useToast();
+  const refs = { nombre: useRef(null), codigo: useRef(null) };
 
-    const { data, setData, post, processing } = useForm({
-        codigo: "",
-        tipo: "",
-        nombre: "",
-        procedencia: "",
-        precio_costo: "",
-        precio_venta: "",
-        estado: "disponible",
+  const avisar = (title, message = '', type = 'error') => setNotice({ id: Date.now(), title, message, type });
+
+  // «Registrar otro» vuelve a esta página con todo igual y el siguiente código de la serie
+  const guardar = (otro = false) => {
+    if (guardando) return;
+    const e = validarProductoGeneral(data);
+    if (!e.codigo && estadoCodigo === 'ocupado') e.codigo = 'Ya hay un producto con este código.';
+    setErrores(e);
+    if (Object.keys(e).length > 0) {
+      avisar('Revisa los datos', 'Hay campos por completar.');
+      return;
+    }
+
+    const enviado = payloadDe(data);
+    router.post(route('admin.productos-generales.store'), {
+      ...enviado,
+      ...(otro ? { return_to: route('admin.productos-generales.create', undefined, false) } : {}),
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => setGuardando(otro ? 'otro' : 'listado'),
+      onSuccess: () => {
+        notifyRecordsUpdated();
+        if (!otro) return;
+        setRegistrados((n) => n + 1);
+        setData((d) => ({ ...d, codigo: siguienteCodigo(enviado.codigo) }));
+        setErrores({});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => refs.codigo.current?.select(), 300);
+      },
+      onError: (errs) => {
+        setErrores(errs);
+        avisar('No se pudo registrar el producto', 'Revisa los datos marcados.');
+      },
+      onFinish: () => setGuardando(null),
     });
+  };
 
-    const codigoPreview = data.codigo
-        ? data.codigo.toUpperCase()
-        : "SIN CÓDIGO";
+  return (
+    <AdminLayout>
+      <Head title="Registrar producto general" />
+      <PremiumNotice notice={notice} onClose={() => setNotice(null)} />
+      <Toast toast={toast} />
 
-    /* =========================================
-       VERIFICACIÓN EN TIEMPO REAL
-    ========================================= */
-    useEffect(() => {
-        if (!data.codigo.trim()) {
-            setCodigoExiste(false);
-            return;
-        }
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <EncabezadoFormulario volverUrl={route('admin.productos-generales.index')} volverLabel="Volver a productos generales"
+          titulo="Registrar producto general" subtitulo="Fundas, vidrios, cargadores y accesorios: cada unidad con su código." />
 
-        const controller = new AbortController();
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5">
+            <CamposProductoGeneral form={form} sugerencias={sugerencias} pasos refs={refs} estadoCodigo={estadoCodigo} />
+          </div>
 
-        const debounce = setTimeout(async () => {
-            try {
-                setCheckingCodigo(true);
-
-                const response = await axios.get(
-                    route("admin.productos-generales.verificar-codigo"),
-                    {
-                        params: { codigo: data.codigo.trim() },
-                        signal: controller.signal,
-                        headers: { Accept: "application/json" },
-                        cache: "no-store",
-                    },
-                );
-
-                setCodigoExiste(response.data.existe);
-            } catch (error) {
-                if (error.name !== "CanceledError") {
-                    console.error(error);
-                }
-            } finally {
-                setCheckingCodigo(false);
-            }
-        }, 300);
-
-        return () => {
-            clearTimeout(debounce);
-            controller.abort();
-        };
-    }, [data.codigo]);
-
-    /* =========================================
-       SUBMIT CONTROLADO (SIN TRABARSE)
-    ========================================= */
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (processing || checkingCodigo) return;
-
-        // 🔴 SI EXISTE → NO MOSTRAR MODAL
-        if (codigoExiste) {
-            return;
-        }
-
-        // 🔥 DOBLE VERIFICACIÓN BACKEND JUSTO ANTES
-        try {
-            const response = await axios.get(
-                route("admin.productos-generales.verificar-codigo"),
-                {
-                    params: { codigo: data.codigo.trim() },
-                    headers: { Accept: "application/json" },
-                    cache: "no-store",
-                },
-            );
-
-            if (response.data.existe) {
-                setCodigoExiste(true);
-                return; // NO modal
-            }
-        } catch (error) {
-            console.error(error);
-            return;
-        }
-
-        // 🟢 SOLO SI TODO ESTÁ OK
-        setShowModal(true);
-    };
-
-    /* =========================================
-       GUARDAR
-    ========================================= */
-    const guardarProducto = (duplicar) => {
-        post(route("admin.productos-generales.store"), {
-            preserveScroll: true,
-
-            onSuccess: () => {
-                if (duplicar) {
-                    setData("codigo", "");
-                    setShowModal(false);
-                } else {
-                    router.visit(route("admin.productos-generales.index"));
-                }
-            },
-
-            onError: () => {
-                setCodigoExiste(true);
-                setShowModal(false);
-            },
-        });
-    };
-
-    return (
-        <AdminLayout>
-            <Head title="Registrar Producto General" />
-
-            <CrudWrapper>
-                <CrudHeader>
-                    <div>
-                        <CrudTitle>
-                            <Package size={22} />
-                            Registrar Producto General
-                        </CrudTitle>
-                        <CrudSubtitle>
-                            Registro de accesorios y productos generales
-                        </CrudSubtitle>
-                    </div>
-
-                    <CrudBackLink
-                        as={Link}
-                        href={route("admin.productos-generales.index")}
-                    >
-                        ← Volver
-                    </CrudBackLink>
-                </CrudHeader>
-
-                <CrudCard>
-                    <form onSubmit={handleSubmit}>
-                        <CrudSectionTitle>
-                            Información del producto
-                        </CrudSectionTitle>
-
-                        <CrudGrid>
-                            <div>
-                                <CrudLabel>Código</CrudLabel>
-
-                                <CrudInput
-                                    value={data.codigo}
-                                    onChange={(e) =>
-                                        setData(
-                                            "codigo",
-                                            e.target.value.toUpperCase(),
-                                        )
-                                    }
-                                    disabled={processing}
-                                    placeholder="Ej: FUNDA-XR-001"
-                                    style={{
-                                        border: codigoExiste
-                                            ? "2px solid #dc2626"
-                                            : data.codigo && !checkingCodigo
-                                              ? "2px solid #16a34a"
-                                              : undefined,
-                                        background: codigoExiste
-                                            ? "#fef2f2"
-                                            : undefined,
-                                    }}
-                                />
-
-                                {checkingCodigo && (
-                                    <small style={{ color: "#64748b" }}>
-                                        Verificando código...
-                                    </small>
-                                )}
-
-                                {codigoExiste && (
-                                    <div style={errorBox}>
-                                        Este codigo ya esta registrado.
-                                        Corrige el código para continuar.
-                                    </div>
-                                )}
-
-                                {!codigoExiste &&
-                                    data.codigo &&
-                                    !checkingCodigo && (
-                                        <small
-                                            style={{
-                                                color: "#16a34a",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            ✓ Código disponible
-                                        </small>
-                                    )}
-
-                                <div style={previewBox}>
-                                    Código final:{" "}
-                                    <span style={{ color: "#2563eb" }}>
-                                        {codigoPreview}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <CrudLabel>Tipo</CrudLabel>
-                                <CrudSelect
-                                    value={data.tipo}
-                                    onChange={(e) =>
-                                        setData("tipo", e.target.value)
-                                    }
-                                >
-                                    <option value="">-- Selecciona --</option>
-                                    <option value="vidrio_templado">
-                                        Vidrio Templado
-                                    </option>
-                                    <option value="vidrio_camara">
-                                        Vidrio de Cámara
-                                    </option>
-                                    <option value="funda">Funda</option>
-                                    <option value="accesorio">Accesorio</option>
-                                    <option value="cargador_5w">
-                                        Cargador 5W
-                                    </option>
-                                    <option value="cargador_20w">
-                                        Cargador 20W
-                                    </option>
-                                    <option value="otro">Otros</option>
-                                </CrudSelect>
-                            </div>
-
-                            <div>
-                                <CrudLabel>Nombre</CrudLabel>
-                                <CrudInput
-                                    value={data.nombre}
-                                    onChange={(e) =>
-                                        setData("nombre", e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            <div>
-                                <CrudLabel>Procedencia</CrudLabel>
-                                <CrudInput
-                                    value={data.procedencia}
-                                    onChange={(e) =>
-                                        setData("procedencia", e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            <div>
-                                <CrudLabel>Precio de costo</CrudLabel>
-                                <CrudInput
-                                    type="number"
-                                    value={data.precio_costo}
-                                    onChange={(e) =>
-                                        setData("precio_costo", e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            <div>
-                                <CrudLabel>Precio de venta</CrudLabel>
-                                <CrudInput
-                                    type="number"
-                                    value={data.precio_venta}
-                                    onChange={(e) =>
-                                        setData("precio_venta", e.target.value)
-                                    }
-                                />
-                            </div>
-                        </CrudGrid>
-
-                        <CrudActions>
-                            <CrudButtonSecondary
-                                as={Link}
-                                href={route("admin.productos-generales.index")}
-                                type="button"
-                                disabled={codigoExiste}
-                                style={{
-                                    opacity: codigoExiste ? 0.4 : 1,
-                                    pointerEvents: codigoExiste
-                                        ? "none"
-                                        : "auto",
-                                    cursor: codigoExiste
-                                        ? "not-allowed"
-                                        : "pointer",
-                                }}
-                            >
-                                Cancelar
-                            </CrudButtonSecondary>
-
-                            <CrudButtonPrimary
-                                type="submit"
-                                disabled={
-                                    processing || checkingCodigo || codigoExiste
-                                }
-                                style={{
-                                    opacity: codigoExiste ? 0.4 : 1,
-                                    pointerEvents: codigoExiste
-                                        ? "none"
-                                        : "auto",
-                                    cursor: codigoExiste
-                                        ? "not-allowed"
-                                        : "pointer",
-                                }}
-                            >
-                                Guardar producto
-                            </CrudButtonPrimary>
-                        </CrudActions>
-                    </form>
-                </CrudCard>
-            </CrudWrapper>
-
-            {showModal && (
-                <div style={modalOverlay}>
-                    <div style={modalBox}>
-                        <h3>
-                            ¿Deseas registrar el mismo producto con otro código?
-                        </h3>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                gap: 12,
-                                marginTop: 20,
-                            }}
-                        >
-                            <button
-                                onClick={() => guardarProducto(false)}
-                                style={btnSecondary}
-                            >
-                                Guardar y salir
-                            </button>
-
-                            <button
-                                onClick={() => guardarProducto(true)}
-                                style={btnPrimary}
-                            >
-                                Guardar y duplicar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </AdminLayout>
-    );
+          <aside className="xl:sticky xl:top-24">
+            <ResumenProductoGeneral data={data}>
+              <ErroresResumen errores={errores} />
+              <button type="button" onClick={() => guardar(false)} disabled={Boolean(guardando)} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                {guardando === 'listado' ? 'Guardando…' : 'Guardar producto'}
+              </button>
+              <button type="button" onClick={() => guardar(true)} disabled={Boolean(guardando)} className={buttonCls('secondary', 'h-11 w-full')}>
+                <CopyPlus className="h-4 w-4" /> {guardando === 'otro' ? 'Guardando…' : 'Guardar y registrar otro'}
+              </button>
+              <p className="text-center text-xs leading-relaxed text-slate-400">
+                «Registrar otro» mantiene el tipo, el nombre, los precios y la procedencia, y propone el siguiente código (FUNDA_1 → FUNDA_2).
+                {registrados > 0 && <span className="mt-1 block font-semibold text-emerald-700">Llevas {registrados} {registrados === 1 ? 'producto registrado' : 'productos registrados'} seguidos.</span>}
+              </p>
+            </ResumenProductoGeneral>
+          </aside>
+        </div>
+      </div>
+    </AdminLayout>
+  );
 }
-
-/* ESTILOS */
-
-const errorBox = {
-    marginTop: 8,
-    padding: "8px 12px",
-    background: "#fee2e2",
-    border: "1px solid #fecaca",
-    borderRadius: 8,
-    color: "#991b1b",
-    fontWeight: 600,
-    fontSize: 13,
-};
-
-const previewBox = {
-    marginTop: 10,
-    padding: "8px 12px",
-    background: "#f1f5f9",
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 600,
-    border: "1px solid #e2e8f0",
-};
-
-const modalOverlay = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-};
-
-const modalBox = {
-    background: "#fff",
-    padding: 24,
-    borderRadius: 12,
-    width: 420,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-};
-
-const btnPrimary = {
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    padding: "8px 14px",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: 600,
-};
-
-const btnSecondary = {
-    background: "#f1f5f9",
-    border: "1px solid #e2e8f0",
-    padding: "8px 14px",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: 600,
-};

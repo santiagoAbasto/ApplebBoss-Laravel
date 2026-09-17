@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="360" height="480">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07102a"/>
+      <stop offset="100%" stop-color="#0a0a1e"/>
+    </linearGradient>
+    <radialGradient id="glow3" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#7B82C8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#07102a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="case-body" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0f0f0"/>
+      <stop offset="40%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#c0c0c8"/>
+    </linearGradient>
+    <linearGradient id="case-lid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f5f5"/>
+      <stop offset="100%" stop-color="#d8d8d8"/>
+    </linearGradient>
+    <linearGradient id="case-inner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8e8e8"/>
+      <stop offset="100%" stop-color="#d0d0d0"/>
+    </linearGradient>
+    <filter id="airpods-shadow">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#000" flood-opacity="0.8"/>
+    </filter>
+    <filter id="earbud-shadow">
+      <feDropShadow dx="4" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <rect width="360" height="480" fill="url(#bg3)"/>
+  <ellipse cx="180" cy="220" rx="170" ry="150" fill="url(#glow3)"/>
+
+  <!-- Case shadow -->
+  <rect x="112" y="222" width="136" height="156" rx="30" fill="#000" opacity="0.5" filter="url(#airpods-shadow)"/>
+
+  <!-- Case body -->
+  <rect x="110" y="218" width="140" height="158" rx="30" fill="url(#case-body)"/>
+
+  <!-- Case body highlight left -->
+  <rect x="110" y="218" width="5" height="158" rx="3" fill="white" opacity="0.5"/>
+  <!-- Case body edge bottom -->
+  <rect x="110" y="368" width="140" height="8" rx="4" fill="#b0b0b8"/>
+
+  <!-- Lid (open, tilted back) -->
+  <g transform="translate(110, 218) rotate(-52, 70, 0)">
+    <rect x="0" y="-80" width="140" height="84" rx="30" fill="url(#case-lid)"/>
+    <rect x="0" y="-80" width="140" height="5" rx="3" fill="white" opacity="0.6"/>
+    <!-- Lid interior shadow -->
+    <rect x="8" y="-72" width="124" height="66" rx="22" fill="#d0d0d0"/>
+    <rect x="8" y="-72" width="124" height="12" rx="0" fill="#c0c0c0" opacity="0.5"/>
+  </g>
+
+  <!-- Case interior -->
+  <rect x="118" y="228" width="124" height="104" rx="22" fill="url(#case-inner)"/>
+
+  <!-- Earbud slots -->
+  <ellipse cx="152" cy="280" rx="20" ry="34" fill="#c8c8d0" opacity="0.7"/>
+  <ellipse cx="208" cy="280" rx="20" ry="34" fill="#c8c8d0" opacity="0.7"/>
+
+  <!-- LED indicator -->
+  <circle cx="180" cy="348" r="4" fill="#7B82C8" opacity="0.9"/>
+  <circle cx="180" cy="348" r="2" fill="white" opacity="0.8"/>
+
+  <!-- Left AirPod Pro -->
+  <g transform="translate(85, 60) rotate(-15)" filter="url(#earbud-shadow)">
+    <!-- Stem -->
+    <rect x="28" y="54" width="14" height="60" rx="7" fill="#f0f0f2"/>
+    <rect x="29" y="54" width="5" height="60" rx="2.5" fill="white" opacity="0.5"/>
+    <!-- Touch area on stem -->
+    <rect x="28" y="74" width="14" height="20" rx="4" fill="#e0e0e5"/>
+    <!-- Earbud body -->
+    <ellipse cx="35" cy="50" rx="28" ry="30" fill="#f0f0f2"/>
+    <ellipse cx="35" cy="50" rx="28" ry="30" fill="white" opacity="0.2"/>
+    <!-- Speaker mesh -->
+    <circle cx="35" cy="52" r="10" fill="#d8d8e0"/>
+    <circle cx="35" cy="52" r="7" fill="#c8c8d0"/>
+    <circle cx="35" cy="52" r="4" fill="#b8b8c0"/>
+    <!-- Tip -->
+    <ellipse cx="35" cy="75" rx="8" ry="5" fill="#e8e8f0"/>
+  </g>
+
+  <!-- Right AirPod Pro -->
+  <g transform="translate(195, 52) rotate(12)" filter="url(#earbud-shadow)">
+    <rect x="18" y="54" width="14" height="60" rx="7" fill="#f0f0f2"/>
+    <rect x="19" y="54" width="5" height="60" rx="2.5" fill="white" opacity="0.5"/>
+    <rect x="18" y="74" width="14" height="20" rx="4" fill="#e0e0e5"/>
+    <ellipse cx="25" cy="50" rx="28" ry="30" fill="#f0f0f2"/>
+    <ellipse cx="25" cy="50" rx="28" ry="30" fill="white" opacity="0.2"/>
+    <circle cx="25" cy="52" r="10" fill="#d8d8e0"/>
+    <circle cx="25" cy="52" r="7" fill="#c8c8d0"/>
+    <circle cx="25" cy="52" r="4" fill="#b8b8c0"/>
+    <ellipse cx="25" cy="75" rx="8" ry="5" fill="#e8e8f0"/>
+  </g>
+
+  <!-- Ground glow -->
+  <ellipse cx="180" cy="430" rx="90" ry="14" fill="#7B82C8" opacity="0.12"/>
+</svg>

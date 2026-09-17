@@ -1,0 +1,500 @@
+[
+ {
+  "grupo": "encabezados",
+  "prueba": "x-frame-options",
+  "resultado": "pasa",
+  "detalle": "SAMEORIGIN"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "x-content-type-options",
+  "resultado": "pasa",
+  "detalle": "nosniff"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "referrer-policy",
+  "resultado": "pasa",
+  "detalle": "strict-origin-when-cross-origin"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "content-security-policy",
+  "resultado": "pasa",
+  "detalle": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174; style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174; font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data: http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174; img-src 'self' data: blob:; connect-src 'self' http://localhost:5173 ws://localhost:5173 http://127.0.0.1:5173 ws://127.0.0.1:5173 http://localhost:5174 ws://localhost:5174 http://127.0.0.1:5174 ws://127.0.0.1:5174; worker-src 'self' blob:; object-src 'none'; frame-src 'self' https://www.google.com https://maps.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "strict-transport-security",
+  "resultado": "observación",
+  "detalle": "ausente"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "permissions-policy",
+  "resultado": "pasa",
+  "detalle": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "X-Powered-By oculto",
+  "resultado": "observación",
+  "detalle": "PHP/8.5.10"
+ },
+ {
+  "grupo": "encabezados",
+  "prueba": "Server sin versión",
+  "resultado": "observación",
+  "detalle": "Apache/2.4.68 (Debian)"
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "XSRF-TOKEN HttpOnly",
+  "resultado": "pasa",
+  "detalle": "expires=Thu, 17 Sep 2026 04:49:47 GMT; Max-Age=7200; path=/; samesite=lax"
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "XSRF-TOKEN SameSite",
+  "resultado": "pasa",
+  "detalle": true
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "XSRF-TOKEN Secure (en local es normal que falte)",
+  "resultado": "observación",
+  "detalle": false
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "apple_boss_session HttpOnly",
+  "resultado": "pasa",
+  "detalle": "expires=Thu, 17 Sep 2026 04:49:47 GMT; Max-Age=7200; path=/; httponly; samesite=lax"
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "apple_boss_session SameSite",
+  "resultado": "pasa",
+  "detalle": true
+ },
+ {
+  "grupo": "cookies",
+  "prueba": "apple_boss_session Secure (en local es normal que falte)",
+  "resultado": "observación",
+  "detalle": false
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/dashboard",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/dashboard",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/ventas",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/ventas",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/usuarios",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/usuarios",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/exportar/celulares",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/exportar/celulares",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/reportes/exportar",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/reportes/exportar",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/vendedor/dashboard",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/vendedor/dashboard",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/api/stock/celulares",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/api/stock/celulares",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/profile",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/profile",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/register",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/register",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/dashboard",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/dashboard",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/trade-in",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/trade-in",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "sin sesión",
+  "prueba": "/admin/auditoria-inventario",
+  "resultado": "pasa",
+  "detalle": "302 → http://127.0.0.1:8010/login"
+ },
+ {
+  "grupo": "sin sesión (JSON)",
+  "prueba": "/admin/auditoria-inventario",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthenticated.\"}'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/.env",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/.git/config",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/storage/logs/laravel.log",
+  "resultado": "pasa",
+  "detalle": "403 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/_debugbar/open",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/telescope",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/horizon",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/phpinfo.php",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/composer.json",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/composer.lock",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/package.json",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/vendor/autoload.php",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/api/docs",
+  "resultado": "pasa",
+  "detalle": "200 1465 bytes '<!DOCTYPE html>\\n<html lang=\"es\">\\n<head>\\n    <meta charset=\"U'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/api/documentation",
+  "resultado": "pasa",
+  "detalle": "200 2293 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n<head>\\n    <meta charset=\"U'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/docs",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/public/.htaccess",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/adminer.php",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/server-status",
+  "resultado": "pasa",
+  "detalle": "403 316 bytes '<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://ww'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/up",
+  "resultado": "pasa",
+  "detalle": "200 1830 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n<head>\\n    <meta charset=\"u'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/storage/",
+  "resultado": "pasa",
+  "detalle": "403 316 bytes '<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://ww'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/build/manifest.json",
+  "resultado": "pasa",
+  "detalle": "200 211252 bytes '{\\n  \"../../var/www/html/node_modules/bootstrap-icons/font/fo'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/api-docs/openapi.json",
+  "resultado": "pasa",
+  "detalle": "200 21441 bytes '{\\n  \"openapi\": \"3.0.3\",\\n  \"info\": {\\n    \"title\": \"Apple Boss'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/mix-manifest.json",
+  "resultado": "pasa",
+  "detalle": "404 6659 bytes '<!DOCTYPE html>\\n<html lang=\"en\">\\n    <head>\\n        <meta ch'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/robots.txt",
+  "resultado": "pasa",
+  "detalle": "200 24 bytes 'User-agent: *\\nDisallow:\\n'"
+ },
+ {
+  "grupo": "rutas expuestas",
+  "prueba": "/sitemap.xml",
+  "resultado": "pasa",
+  "detalle": "200 5073 bytes '<?xml version=\"1.0\" encoding=\"UTF-8\"?>\\n<urlset xmlns=\"http:/'"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "GET /no-existe-1789613388",
+  "resultado": "pasa",
+  "detalle": "404 sin detalles internos"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "DELETE /",
+  "resultado": "pasa",
+  "detalle": "405 sin detalles internos"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "GET /productos/%00%27%22<x>",
+  "resultado": "pasa",
+  "detalle": "404 sin detalles internos"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "GET /api/v1/products?page=-1&per_page=99999999",
+  "resultado": "pasa",
+  "detalle": "200 sin detalles internos"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "GET /api/buscar?q=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "resultado": "pasa",
+  "detalle": "200 sin detalles internos"
+ },
+ {
+  "grupo": "errores",
+  "prueba": "GET /catalogo?orden=precio;drop&categoria[]=x",
+  "resultado": "pasa",
+  "detalle": "500 sin detalles internos"
+ },
+ {
+  "grupo": "host",
+  "prueba": "X-Forwarded-Host reflejado en canonical/og:url",
+  "resultado": "observación",
+  "detalle": "reflejado"
+ },
+ {
+  "grupo": "host",
+  "prueba": "Host arbitrario reflejado",
+  "resultado": "observación",
+  "detalle": "reflejado"
+ },
+ {
+  "grupo": "cors",
+  "prueba": "API pública OPTIONS desde origen ajeno",
+  "resultado": "pasa",
+  "detalle": "204 ACAO=* ACAC=None"
+ },
+ {
+  "grupo": "cors",
+  "prueba": "API privada con origen ajeno",
+  "resultado": "pasa",
+  "detalle": "401 ACAO=* ACAC=None"
+ },
+ {
+  "grupo": "csrf",
+  "prueba": "POST /newsletter desde otro sitio sin token",
+  "resultado": "pasa",
+  "detalle": "419"
+ },
+ {
+  "grupo": "csrf",
+  "prueba": "POST /api/carrito/sync desde otro sitio sin token",
+  "resultado": "pasa",
+  "detalle": "419"
+ },
+ {
+  "grupo": "automatización",
+  "prueba": "/api/automation/top-products sin token",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthorized automation request.\"}'"
+ },
+ {
+  "grupo": "automatización",
+  "prueba": "/api/automation/top-products token falso",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthorized automation request.\"}'"
+ },
+ {
+  "grupo": "automatización",
+  "prueba": "/api/automation/top-products token en query",
+  "resultado": "pasa",
+  "detalle": "401 '{\"message\":\"Unauthorized automation request.\"}'"
+ },
+ {
+  "grupo": "automatización",
+  "prueba": "POST /automation/store sin token",
+  "resultado": "pasa",
+  "detalle": "419 '{\\n    \"message\": \"CSRF token mismatch.\"\\n}'"
+ },
+ {
+  "grupo": "trade-in",
+  "prueba": "confirmación con código inventado '1'",
+  "resultado": "pasa",
+  "detalle": "404"
+ },
+ {
+  "grupo": "trade-in",
+  "prueba": "confirmación con código inventado 'TI-0001'",
+  "resultado": "pasa",
+  "detalle": "404"
+ },
+ {
+  "grupo": "trade-in",
+  "prueba": "confirmación con código inventado 'AAAAAA'",
+  "resultado": "pasa",
+  "detalle": "404"
+ },
+ {
+  "grupo": "trade-in",
+  "prueba": "confirmación con código inventado '../../etc/passwd'",
+  "resultado": "pasa",
+  "detalle": "404"
+ },
+ {
+  "grupo": "newsletter",
+  "prueba": "baja con token inventado",
+  "resultado": "pasa",
+  "detalle": "200"
+ }
+]

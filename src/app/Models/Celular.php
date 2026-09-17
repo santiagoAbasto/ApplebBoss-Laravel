@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\TieneCondicion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Celular extends Model
 {
-    use HasFactory;
+    use HasFactory, TieneCondicion;
 
     /**
      * Nombre explícito de la tabla en la base de datos.
@@ -24,11 +25,13 @@ class Celular extends Model
         'bateria',
         'imei_1',
         'imei_2',
+        'numero_serie',
         'estado_imei',
         'procedencia',
         'precio_costo',
         'precio_venta',
         'estado',
+        'condicion',
     ];
 
     // 🔖 Constantes de estado del IMEI
@@ -44,7 +47,10 @@ class Celular extends Model
 
     public function scopeOrdenInventarioIphone($query)
     {
-        $modeloNormalizado = "LOWER(REGEXP_REPLACE(COALESCE(modelo, ''), '[^a-zA-Z0-9]', '', 'g'))";
+        // PostgreSQL quita todo lo que no sea letra o número; otros motores (el SQLite de los tests), espacios, guiones y puntos
+        $modeloNormalizado = $query->getModel()->getConnection()->getDriverName() === 'pgsql'
+            ? "LOWER(REGEXP_REPLACE(COALESCE(modelo, ''), '[^a-zA-Z0-9]', '', 'g'))"
+            : "LOWER(REPLACE(REPLACE(REPLACE(COALESCE(modelo, ''), ' ', ''), '-', ''), '.', ''))";
         $ordenModelo = [
             ["({$modeloNormalizado} = 'x' OR {$modeloNormalizado} LIKE '%iphonex%') AND {$modeloNormalizado} NOT LIKE '%xs%' AND {$modeloNormalizado} NOT LIKE '%xr%'", 100],
             ["({$modeloNormalizado} LIKE '%iphonexs%' OR {$modeloNormalizado} LIKE '%xs%') AND {$modeloNormalizado} NOT LIKE '%xsmax%'", 110],

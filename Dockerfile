@@ -1,10 +1,15 @@
 # Imagen base con Apache y PHP compatible con Laravel 13
-FROM php:8.3-apache
+FROM php:8.5-apache
 
 # Instalación de extensiones y utilidades necesarias
 RUN apt-get update && apt-get install -y \
     zip unzip git curl libpq-dev libzip-dev libpng-dev libonig-dev \
-    && docker-php-ext-install pdo pdo_pgsql zip gd \
+    libjpeg62-turbo-dev libwebp-dev libfreetype6-dev libexif-dev \
+    && docker-php-ext-configure gd \
+        --with-jpeg \
+        --with-webp \
+        --with-freetype \
+    && docker-php-ext-install pdo pdo_pgsql zip gd exif \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar Composer

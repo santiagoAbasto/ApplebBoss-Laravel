@@ -1,0 +1,271 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Modelos de referencia: de la página de Apple a la ficha y la comparativa",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "fuente",
+      "label": "Página y herramientas"
+    },
+    {
+      "id": "datos",
+      "label": "Base de modelos"
+    },
+    {
+      "id": "laravel",
+      "label": "Laravel"
+    },
+    {
+      "id": "admin",
+      "label": "Editor"
+    },
+    {
+      "id": "publico",
+      "label": "Tienda y API"
+    },
+    {
+      "id": "sin",
+      "label": "Excepciones",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "pagina",
+    "generar",
+    "auditar",
+    "verificar",
+    "cargar",
+    "detectar",
+    "revisar",
+    "ficha"
+  ],
+  "nodes": [
+    {
+      "id": "pagina",
+      "lane": "fuente",
+      "col": 0,
+      "type": "external",
+      "label": "Página Apple",
+      "sublabel": "comparación pegada"
+    },
+    {
+      "id": "generar",
+      "lane": "fuente",
+      "col": 1,
+      "type": "backend",
+      "label": "Generar",
+      "sublabel": "generar_iphone.py"
+    },
+    {
+      "id": "auditar",
+      "lane": "fuente",
+      "col": 2,
+      "type": "security",
+      "label": "Auditar",
+      "sublabel": "auditar_iphone.py"
+    },
+    {
+      "id": "pendientes",
+      "lane": "datos",
+      "col": 2,
+      "type": "database",
+      "label": "Pendientes",
+      "sublabel": "falta · verificar"
+    },
+    {
+      "id": "informe",
+      "lane": "fuente",
+      "col": 3,
+      "type": "external",
+      "label": "Informes",
+      "sublabel": "Apple y externas"
+    },
+    {
+      "id": "verificar",
+      "lane": "datos",
+      "col": 3,
+      "type": "security",
+      "label": "Verificar",
+      "sublabel": "esquema por tipo"
+    },
+    {
+      "id": "cargar",
+      "lane": "datos",
+      "col": 4,
+      "type": "database",
+      "label": "Cargar",
+      "sublabel": "seeder + textos"
+    },
+    {
+      "id": "detectar",
+      "lane": "laravel",
+      "col": 5,
+      "type": "backend",
+      "label": "Detectar",
+      "sublabel": "nombre del inventario"
+    },
+    {
+      "id": "revisar",
+      "lane": "admin",
+      "col": 5,
+      "type": "frontend",
+      "label": "Revisar",
+      "sublabel": "Llenar desde modelo"
+    },
+    {
+      "id": "ficha",
+      "lane": "publico",
+      "col": 5,
+      "type": "external",
+      "label": "Ficha",
+      "sublabel": "autonomía estimada"
+    },
+    {
+      "id": "manual",
+      "lane": "sin",
+      "col": 4,
+      "type": "security",
+      "label": "Manual",
+      "sublabel": "elegir o escribir"
+    },
+    {
+      "id": "comparar",
+      "lane": "publico",
+      "col": 4,
+      "type": "frontend",
+      "label": "Comparar",
+      "sublabel": "hasta 4 modelos"
+    },
+    {
+      "id": "fotos",
+      "lane": "admin",
+      "col": 3,
+      "type": "frontend",
+      "label": "Fotos",
+      "sublabel": "Modelos y fotos"
+    }
+  ],
+  "edges": [
+    {
+      "from": "pagina",
+      "to": "generar",
+      "label": "resumir"
+    },
+    {
+      "from": "generar",
+      "to": "auditar",
+      "label": "contra la página"
+    },
+    {
+      "from": "auditar",
+      "to": "pendientes",
+      "label": "sin fuente",
+      "variant": "dashed"
+    },
+    {
+      "from": "pendientes",
+      "to": "informe",
+      "label": "prompt",
+      "variant": "dashed"
+    },
+    {
+      "from": "informe",
+      "to": "generar",
+      "label": "corregir y cerrar",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "auditar",
+      "to": "verificar"
+    },
+    {
+      "from": "verificar",
+      "to": "cargar",
+      "label": "0 errores",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "detectar"
+    },
+    {
+      "from": "detectar",
+      "to": "revisar",
+      "label": "coincide",
+      "variant": "emphasis"
+    },
+    {
+      "from": "detectar",
+      "to": "manual",
+      "label": "no está",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "manual",
+      "to": "revisar",
+      "label": "completar",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "revisar",
+      "to": "ficha",
+      "label": "guardar",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "comparar",
+      "label": "specs de cada modelo"
+    },
+    {
+      "from": "fotos",
+      "to": "comparar",
+      "label": "una por modelo",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Del modelo",
+      "items": [
+        "Validados por su esquema (iPhone, Mac o PC): con errores no se carga",
+        "RAM y mAh: Apple no los publica; entran si dos fuentes externas coinciden",
+        "Lo que no tiene no se copia; Apple Intelligence sí: «No compatible»"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Del equipo",
+      "items": [
+        "Capacidad, color, batería, condición e iOS instalado",
+        "Seminuevo: autonomía = horas × salud",
+        "El editor resume lo que el modelo no tiene y avisa lo nuevo sin copiar"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pendientes",
+      "items": [
+        "auditar_iphone.py marca lo que no sale de la página",
+        "modelos:pendientes --markdown los documenta",
+        "Hoy 5 «falta»: 4 de iPhone y el identificador del MacBook Neo"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Comparativa pública",
+      "items": [
+        "/comparar/iphone y /comparar/mac: precio y stock del inventario",
+        "Foto de cada modelo desde el admin; sin foto, ilustración a escala",
+        "En el header, el footer, el hub y la ficha; nunca costo, IMEI ni procedencia"
+      ]
+    }
+  ]
+}

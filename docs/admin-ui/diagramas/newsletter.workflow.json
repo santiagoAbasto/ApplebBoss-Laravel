@@ -1,0 +1,174 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Newsletter: del correo del cliente a su bandeja",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "tienda",
+      "label": "Tienda"
+    },
+    {
+      "id": "panel",
+      "label": "Panel y envío"
+    },
+    {
+      "id": "falta",
+      "label": "Falta la clave",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "formulario",
+    "lista",
+    "campana",
+    "cola",
+    "bandeja"
+  ],
+  "nodes": [
+    {
+      "id": "formulario",
+      "lane": "tienda",
+      "col": 0,
+      "type": "frontend",
+      "width": 150,
+      "label": "Formulario",
+      "sublabel": "al final de la tienda"
+    },
+    {
+      "id": "baja",
+      "lane": "tienda",
+      "col": 4,
+      "type": "external",
+      "width": 150,
+      "label": "Darse de baja",
+      "sublabel": "enlace de cada correo"
+    },
+    {
+      "id": "lista",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Suscriptores",
+      "sublabel": "la lista"
+    },
+    {
+      "id": "campana",
+      "lane": "panel",
+      "col": 2,
+      "type": "backend",
+      "width": 150,
+      "label": "Campaña",
+      "sublabel": "bloques y prueba"
+    },
+    {
+      "id": "cola",
+      "lane": "panel",
+      "col": 3,
+      "type": "backend",
+      "width": 150,
+      "label": "Cola",
+      "sublabel": "un lote por minuto"
+    },
+    {
+      "id": "bandeja",
+      "lane": "panel",
+      "col": 4,
+      "type": "external",
+      "width": 150,
+      "label": "Su bandeja",
+      "sublabel": "con el pie y la baja"
+    },
+    {
+      "id": "sinclave",
+      "lane": "falta",
+      "col": 3,
+      "type": "security",
+      "width": 150,
+      "label": "No sale",
+      "sublabel": "el panel lo avisa antes"
+    }
+  ],
+  "edges": [
+    {
+      "from": "formulario",
+      "to": "lista",
+      "label": "deja su correo",
+      "variant": "emphasis"
+    },
+    {
+      "from": "lista",
+      "to": "campana",
+      "label": "a quién le llega",
+      "variant": "emphasis"
+    },
+    {
+      "from": "campana",
+      "to": "cola",
+      "label": "enviar",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cola",
+      "to": "bandeja",
+      "label": "lote por minuto",
+      "variant": "emphasis"
+    },
+    {
+      "from": "bandeja",
+      "to": "baja"
+    },
+    {
+      "from": "baja",
+      "to": "lista",
+      "label": "no recibe más"
+    },
+    {
+      "from": "campana",
+      "to": "sinclave",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Las tres pantallas",
+      "items": [
+        "Campañas: se escribe y se envía",
+        "Suscriptores: la lista",
+        "Ajustes: formulario y remitente"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Cómo sale",
+      "items": [
+        "La pantalla no manda: manda la cola",
+        "Un lote por minuto, sin repetir",
+        "Se puede detener a mitad"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Antes de enviar",
+      "items": [
+        "Asunto corto y una sola cosa",
+        "Prueba y abrirla en el celular",
+        "La lista, solo de quien lo pidió"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Falta en producción",
+      "items": [
+        "La clave del correo del servidor",
+        "Comprobarla con «Enviar prueba»",
+        "Dejar corriendo queue:work"
+      ]
+    }
+  ]
+}

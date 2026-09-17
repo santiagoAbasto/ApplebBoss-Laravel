@@ -1,169 +1,214 @@
 import VendedorLayout from '@/Layouts/VendedorLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Boxes, CalendarCheck, Hammer, PlusCircle, Receipt, ShoppingCart, Tag, TrendingUp, Wallet,
+} from 'lucide-react';
+import { PageHeader, Toast, bsFmt, buttonCls, useToast } from '@/Components/Admin/ui';
+import AdminGuide from '@/Components/Admin/AdminGuide';
+import {
+  AccesoRapido, CONSEJOS_VENDEDOR, Entrada, ListaReciente, Numero, TarjetaMeta, animoDelDia, useEntrada,
+} from '@/Components/Vendedor/dia';
 
-import Ui3DCard from '@/Components/Ui3DCard';
-import AnimatedButton from '@/Components/AnimatedButton';
-import QuickActionCards from '@/Components/QuickActionCards';
-import UiversePanelCard from '@/Components/UiversePanelCard';
-import ConfirmLogoutModal from '@/Components/ConfirmLogoutModal';
+// Mi día: lo primero que ve el vendedor. Todos los números son suyos. Acá no hay costo ni
+// ganancia: ve el precio, el descuento que hizo y lo que cobró
+// (App\Http\Controllers\Vendedor\DashboardVendedorController).
 
-export default function Dashboard({
-  auth,
-  resumen = {},
-  ultimasVentas = [],
-  ultimasCotizaciones = [],
-  ultimosServicios = [],
-}) {
-  /* =======================
-     STATE
-  ======================= */
-  const [showLogout, setShowLogout] = useState(false);
+const fechaCorta = (iso) => (iso
+  ? new Date(`${iso}T00:00:00`).toLocaleDateString('es-BO', { day: '2-digit', month: 'short' })
+  : '—');
 
-  /* =======================
-     COMPONENTES
-  ======================= */
-  const Row = ({ label, value }) => (
-    <div className="flex justify-between py-2 border-b border-gray-100 last:border-b-0 text-sm">
-      <span className="text-gray-500">{label}</span>
-      <strong className="text-gray-800">{value}</strong>
+function Fila({ label, valor, tono = 'slate' }) {
+  const tonos = {
+    slate: 'text-slate-900',
+    emerald: 'text-emerald-700',
+    lila: 'text-[color:var(--ab-acento)]',
+  };
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-2.5 last:border-b-0">
+      <span className="text-[13px] text-slate-500">{label}</span>
+      <span className={`text-[15px] font-bold tabular-nums ${tonos[tono]}`}>{valor}</span>
     </div>
   );
+}
 
-  const ActivityRow = ({ children }) => (
-    <li className="flex justify-between items-center py-2 text-gray-700 text-sm">
-      {children}
-    </li>
-  );
+export default function Dashboard({ resumen = {}, ultimasVentas = [], ultimasCotizaciones = [], ultimosServicios = [] }) {
+  const { auth } = usePage().props;
+  const [toast] = useToast();
+  const entra = useEntrada();
 
-  const Empty = () => (
-    <li className="py-4 text-center text-gray-400 text-sm">
-      Sin registros
-    </li>
-  );
-
-  /* =======================
-     HELPERS
-  ======================= */
-  const fmt = (n) =>
-    Number(n || 0).toLocaleString('es-BO', {
-      minimumFractionDigits: 2,
-    });
-
-  const totalMes = Number(resumen?.total_mes || 0);
-  const metaMensual = Number(resumen?.meta_mensual || 0);
-  const porcentajeMeta = Math.min(
-    (totalMes / (metaMensual || 1)) * 100,
-    100
-  );
+  const nombre = (auth?.user?.name ?? '').split(' ')[0] || 'vendedor';
+  const sinMovimiento = !resumen.ventas_dia && !resumen.servicios_dia;
+  const meta = Number(resumen.meta_mensual) || 0;
+  const pct = meta > 0 ? Math.min(100, ((Number(resumen.total_mes) || 0) / meta) * 100) : null;
+  const animo = animoDelDia({ ventas: resumen.ventas_dia, servicios: resumen.servicios_dia, pct });
+  const IconoAnimo = animo.icon;
 
   return (
-    <VendedorLayout>
-      <Head title="Dashboard Vendedor | Apple Boss" />
+    <VendedorLayout title="Mi día">
+      <Head title="Mi día | Apple Boss" />
 
-      {/* =======================
-          HEADER
-      ======================= */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-10">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-green-700">
-            Bienvenido, {auth?.user?.name}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Resumen de tu rendimiento y actividades recientes
-          </p>
+      <div className="ab-reset space-y-5">
+        <Entrada>
+          <PageHeader
+            title={`Hola, ${nombre}`}
+            subtitle="Esto es lo tuyo de hoy: lo que vendiste, lo que cobraste y cuánto te falta para la meta del mes."
+            actions={(
+              <>
+                <Link href={route('vendedor.productos.index')} className={buttonCls('secondary', 'h-11')}>
+                  <Boxes className="h-4 w-4" /> Ver stock
+                </Link>
+                <Link href={route('vendedor.ventas.create')} className={buttonCls('primary', 'h-11')}>
+                  <PlusCircle className="h-4 w-4" /> Registrar venta
+                </Link>
+              </>
+            )}
+          />
+
+          {/* Cómo viene el día, en una línea */}
+          <motion.p
+            initial={entra ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[rgb(var(--ab-acento-rgb)_/_0.08)] px-3.5 py-2 text-[13px] font-semibold text-[color:var(--ab-acento)]"
+          >
+            <IconoAnimo className="h-4 w-4 shrink-0" /> {animo.texto}
+          </motion.p>
+        </Entrada>
+
+        <Entrada i={1}>
+          <AdminGuide
+            id="vendedor-dia"
+            title="¿Cómo funciona tu panel?"
+            steps={[
+              'Arriba están tus números de hoy: cuántas ventas hiciste, cuánto entró en caja y cuánto rebajaste.',
+              'La tarjeta morada es tu meta del mes. La carga el administrador y se actualiza sola con cada venta y cada servicio.',
+              'Abajo tienes lo último que registraste, para volver a una nota sin tener que buscarla.',
+            ]}
+            tip="Los números del día se cuentan por la fecha de la venta, no por la hora en que la cargaste."
+          >
+            Todo lo que ves acá es tuyo
+          </AdminGuide>
+        </Entrada>
+
+        {/* Números del día */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Numero i={0} icon={ShoppingCart} tone="navy" label="Ventas de hoy" valor={resumen.ventas_dia ?? 0}
+            hint={`${resumen.servicios_dia ?? 0} servicio${resumen.servicios_dia === 1 ? '' : 's'} técnico${resumen.servicios_dia === 1 ? '' : 's'}`} />
+          <Numero i={1} icon={Wallet} tone="emerald" label="Cobrado hoy" valor={resumen.cobrado_dia} moneda
+            hint="Lo que el cliente pagó hoy" />
+          <Numero i={2} icon={Tag} tone="lila" label="Descuentos que hiciste" valor={resumen.descuentos_dia} moneda
+            hint="Lo que rebajaste del precio de lista" />
+          <Numero i={3} icon={CalendarCheck} tone="slate" label="Reservas activas" valor={resumen.reservas_activas ?? 0}
+            hint="Clientes que dejaron seña" />
         </div>
 
-        <AnimatedButton onClick={() => setShowLogout(true)} />
-      </div>
+        {/* El día y la meta */}
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Entrada i={4} className="lg:col-span-2">
+            <section className="h-full rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-[rgb(var(--ab-acento-rgb)_/_0.1)] text-[color:var(--ab-acento)]">
+                  <TrendingUp className="h-4 w-4" />
+                </span>
+                <h2 className="text-base font-bold text-slate-900">Resumen del día</h2>
+              </div>
+              <p className="mt-1 text-[13px] text-slate-500">
+                «Vendido» es el precio con tu descuento ya aplicado; «cobrado» es lo que el cliente pagó hoy, sin permutas ni señas de antes.
+              </p>
 
-      {/* =======================
-          ACCIONES RÁPIDAS
-      ======================= */}
-      <QuickActionCards
-        actions={[
-          { label: 'Productos', icon: 'fa-box-open', href: route('vendedor.productos.index') },
-          { label: 'Venta', icon: 'fa-receipt', href: route('vendedor.ventas.create') },
-          { label: 'Servicio', icon: 'fa-tools', href: route('vendedor.servicios.create') },
-          { label: 'Cotizar', icon: 'fa-file-alt', href: route('vendedor.cotizaciones.create') },
-        ]}
-      />
+              <div className="mt-3">
+                <Fila label="Vendido hoy" valor={bsFmt(resumen.bruto_dia)} />
+                <Fila label="Cobrado hoy" valor={bsFmt(resumen.cobrado_dia)} tono="emerald" />
+                <Fila label="Descuentos que hiciste" valor={bsFmt(resumen.descuentos_dia)} tono="lila" />
+                <Fila label="Cotizaciones de hoy" valor={resumen.cotizaciones_dia ?? 0} />
+                <Fila label="Acumulado del mes" valor={bsFmt(resumen.total_mes)} />
+              </div>
 
-      {/* =======================
-          RESUMEN + META
-      ======================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-14">
-        <UiversePanelCard title="Resumen del día">
-          <Row label="Total bruto del día" value={`Bs ${fmt(resumen?.total_bruto_dia)}`} />
-          <Row label="Total pagado por clientes" value={`Bs ${fmt(resumen?.total_pagado_dia)}`} />
-          <Row label="Ganancia neta" value={`Bs ${fmt(resumen?.ganancia_neta_dia)}`} />
-          <Row label="Egresos del día" value={`- Bs ${fmt(resumen?.egresos_dia)}`} />
-          <Row
-            label="Disponible después de egresos"
-            value={`Bs ${fmt(resumen?.disponible_dia)}`}
+              {sinMovimiento && (
+                <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 text-[13px] text-slate-600">
+                  Todavía no registraste nada hoy. En cuanto cargues la primera venta o el primer servicio, estos números se mueven solos.
+                </p>
+              )}
+            </section>
+          </Entrada>
+
+          <TarjetaMeta total={resumen.total_mes ?? 0} meta={meta} mes={resumen.mes ?? ''} />
+        </div>
+
+        {/* Accesos rápidos */}
+        <section>
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Lo que más usas</h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <AccesoRapido i={0} href={route('vendedor.ventas.create')} icon={PlusCircle} label="Registrar venta" hint="Con permuta, seña o descuento" />
+            <AccesoRapido i={1} href={route('vendedor.servicios.create')} icon={Hammer} label="Nuevo servicio" hint="Deja la nota lista para imprimir" />
+            <AccesoRapido i={2} href={route('vendedor.cotizaciones.create')} icon={Receipt} label="Cotizar" hint="Se envía por WhatsApp o correo" />
+            <AccesoRapido i={3} href={route('vendedor.reservas.create')} icon={CalendarCheck} label="Tomar una reserva" hint="Guarda la seña del cliente" />
+          </div>
+        </section>
+
+        {/* Lo último que registraste */}
+        <div className="grid gap-5 lg:grid-cols-3">
+          <ListaReciente
+            i={0} icon={ShoppingCart} titulo="Tus últimas ventas" verTodo={route('vendedor.ventas.index')}
+            items={ultimasVentas} vacio="Todavía no registraste ninguna venta."
+            render={(v) => (
+              <>
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-semibold text-slate-800">{v.cliente || 'Sin nombre'}</span>
+                  <span className="block truncate font-mono text-[11px] text-slate-400">{v.codigo || '—'} · {fechaCorta(v.fecha)}</span>
+                </span>
+                <span className="shrink-0 text-[14px] font-bold tabular-nums text-slate-900">{bsFmt(v.total)}</span>
+              </>
+            )}
           />
-        </UiversePanelCard>
 
-        <Ui3DCard
-          title="Meta mensual"
-          description={`Bs ${fmt(totalMes)} / Bs ${fmt(metaMensual)}`}
-          progress={Math.round(porcentajeMeta)}
-        />
+          <ListaReciente
+            i={1} icon={Receipt} titulo="Tus últimas cotizaciones" verTodo={route('vendedor.cotizaciones.index')}
+            items={ultimasCotizaciones} vacio="Todavía no hiciste ninguna cotización."
+            render={(c) => (
+              <>
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-semibold text-slate-800">{c.cliente || 'Sin nombre'}</span>
+                  <span className="block text-[11px] text-slate-400">{fechaCorta(c.fecha)}</span>
+                </span>
+                <span className="shrink-0 text-[14px] font-bold tabular-nums text-slate-900">{bsFmt(c.total)}</span>
+              </>
+            )}
+          />
+
+          <ListaReciente
+            i={2} icon={Hammer} titulo="Tus últimos servicios" verTodo={route('vendedor.servicios.index')}
+            items={ultimosServicios} vacio="Todavía no registraste ningún servicio."
+            render={(s) => (
+              <>
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-semibold text-slate-800">{s.equipo || 'Equipo'}</span>
+                  <span className="block truncate text-[11px] text-slate-400">{s.cliente || 'Sin nombre'} · {fechaCorta(s.fecha)}</span>
+                </span>
+                <span className="shrink-0 text-[14px] font-bold tabular-nums text-slate-900">{bsFmt(s.total)}</span>
+              </>
+            )}
+          />
+        </div>
+
+        <Entrada i={3}>
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <h2 className="text-base font-bold text-slate-900">Para que el día salga redondo</h2>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {CONSEJOS_VENDEDOR.map((c, i) => (
+                <li key={i} className="flex items-start gap-2.5 rounded-xl bg-slate-50 px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 transition-colors hover:bg-[rgb(var(--ab-acento-rgb)_/_0.06)]">
+                  <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#011446] text-[11px] font-bold text-white">{i + 1}</span>
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </Entrada>
       </div>
 
-      {/* =======================
-          ACTIVIDAD RECIENTE
-      ======================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <UiversePanelCard title="Últimas Ventas">
-          {ultimasVentas.length ? (
-            ultimasVentas.map((v, i) => (
-              <ActivityRow key={i}>
-                <span className="truncate">{v.nombre_cliente}</span>
-                <span>Bs {fmt(v.total)}</span>
-              </ActivityRow>
-            ))
-          ) : (
-            <Empty />
-          )}
-        </UiversePanelCard>
-
-        <UiversePanelCard title="Cotizaciones">
-          {ultimasCotizaciones.length ? (
-            ultimasCotizaciones.map((c, i) => (
-              <ActivityRow key={i}>
-                <span className="truncate">{c.nombre_cliente}</span>
-                <span>Bs {fmt(c.total)}</span>
-              </ActivityRow>
-            ))
-          ) : (
-            <Empty />
-          )}
-        </UiversePanelCard>
-
-        <UiversePanelCard title="Servicios Técnicos">
-          {ultimosServicios.length ? (
-            ultimosServicios.map((s, i) => (
-              <ActivityRow key={i}>
-                <span className="truncate">{s.equipo}</span>
-                <span>Bs {fmt(s.precio_venta)}</span>
-              </ActivityRow>
-            ))
-          ) : (
-            <Empty />
-          )}
-        </UiversePanelCard>
-      </div>
-
-      {/* =======================
-          LOGOUT
-      ======================= */}
-      <ConfirmLogoutModal
-        open={showLogout}
-        onClose={() => setShowLogout(false)}
-        onConfirm={() => router.post(route('logout'))}
-      />
+      <Toast toast={toast} />
     </VendedorLayout>
   );
 }

@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Patrón de módulos de inventario del panel admin",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "admin",
+      "type": "external",
+      "label": "Administrador",
+      "sublabel": "AdminLayout",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "paginas",
+      "type": "frontend",
+      "label": "Páginas del módulo",
+      "sublabel": "Index · Create · Edit",
+      "pos": [
+        260,
+        300
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "modulo",
+      "type": "frontend",
+      "label": "Piezas del tipo",
+      "sublabel": "celulares / apple / generales",
+      "pos": [
+        260,
+        140
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "inventario",
+      "type": "frontend",
+      "label": "inventario.jsx",
+      "sublabel": "listado, formulario, historial",
+      "pos": [
+        510,
+        140
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "ui.jsx",
+      "sublabel": "PageHeader, StepCard, Paginador",
+      "pos": [
+        780,
+        140
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "controlador",
+      "type": "backend",
+      "label": "Controlador",
+      "sublabel": "4 controladores",
+      "pos": [
+        510,
+        300
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "trait",
+      "type": "backend",
+      "label": "EquipoDeInventario",
+      "sublabel": "historial, tienda, bloqueo",
+      "pos": [
+        780,
+        300
+      ],
+      "size": [
+        200,
+        64
+      ]
+    },
+    {
+      "id": "tablas",
+      "type": "database",
+      "label": "Inventario",
+      "sublabel": "4 tablas de inventario",
+      "pos": [
+        510,
+        460
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "historial",
+      "type": "database",
+      "label": "Ventas y tienda",
+      "sublabel": "venta_items · catalogo",
+      "pos": [
+        780,
+        460
+      ],
+      "size": [
+        200,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Frontend Inertia + React",
+      "wraps": [
+        "paginas",
+        "modulo",
+        "inventario",
+        "ui"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Laravel",
+      "wraps": [
+        "controlador",
+        "trait",
+        "tablas",
+        "historial"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "abre",
+      "from": "admin",
+      "to": "paginas",
+      "variant": "emphasis"
+    },
+    {
+      "id": "usa-modulo",
+      "from": "paginas",
+      "to": "modulo",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "usa-comun",
+      "from": "modulo",
+      "to": "inventario"
+    },
+    {
+      "id": "usa-ui",
+      "from": "inventario",
+      "to": "ui"
+    },
+    {
+      "id": "inertia",
+      "from": "paginas",
+      "to": "controlador",
+      "label": "Inertia",
+      "variant": "emphasis"
+    },
+    {
+      "id": "comparte",
+      "from": "controlador",
+      "to": "trait",
+      "label": "use"
+    },
+    {
+      "id": "guarda",
+      "from": "controlador",
+      "to": "tablas",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "consulta",
+      "from": "trait",
+      "to": "historial",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontend",
+      "items": [
+        "Cada tipo suma solo su módulo de campos y resumen",
+        "Lo común vive en inventario.jsx y ui.jsx"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend",
+      "items": [
+        "El trait da historial, publicación, bloqueo al eliminar y condición en lote",
+        "Validación con mensajes claros en español"
+      ]
+    }
+  ]
+}

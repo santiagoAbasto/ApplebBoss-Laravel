@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Apple Boss: arquitectura y límites de confianza",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "publico",
+        "label": "Tráfico público",
+        "focus": [
+          "visitante",
+          "tunel",
+          "guardias",
+          "laravel",
+          "db"
+        ],
+        "note": "Del visitante anónimo a la base, pasando por los controles de Laravel."
+      },
+      {
+        "id": "personal",
+        "label": "Panel del personal",
+        "focus": [
+          "personal",
+          "tunel",
+          "guardias",
+          "laravel",
+          "db",
+          "cola"
+        ],
+        "note": "Admin y vendedor: sesión, rol y permiso por módulo."
+      },
+      {
+        "id": "automatizacion",
+        "label": "Automatización",
+        "focus": [
+          "n8n",
+          "laravel",
+          "openai",
+          "db"
+        ],
+        "note": "n8n llama a Laravel con token, usa OpenAI y respalda la base."
+      },
+      {
+        "id": "externos",
+        "label": "Servicios externos",
+        "focus": [
+          "laravel",
+          "cola",
+          "correo",
+          "drive",
+          "openai"
+        ],
+        "note": "Lo que sale del sistema: correo, Google Drive y OpenAI."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "visitante",
+      "type": "external",
+      "label": "Visitante",
+      "sublabel": "tienda y API pública",
+      "pos": [
+        30,
+        100
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "personal",
+      "type": "external",
+      "label": "Admin y vendedor",
+      "sublabel": "panel con sesión",
+      "pos": [
+        30,
+        240
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "tunel",
+      "type": "cloud",
+      "label": "Cloudflare Tunnel",
+      "sublabel": "cloudflared",
+      "pos": [
+        230,
+        170
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "guardias",
+      "type": "security",
+      "label": "Controles Laravel",
+      "sublabel": "CSRF, throttle, auth",
+      "tag": "rol y permiso",
+      "pos": [
+        430,
+        170
+      ],
+      "size": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "laravel",
+      "type": "backend",
+      "label": "Laravel 13",
+      "sublabel": "Apache + PHP 8.5",
+      "pos": [
+        640,
+        170
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL 18",
+      "sublabel": "inventario, ventas",
+      "pos": [
+        850,
+        170
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "cola",
+      "type": "messagebus",
+      "label": "Cola de trabajos",
+      "sublabel": "queue:work",
+      "pos": [
+        640,
+        310
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "n8n",
+      "type": "backend",
+      "label": "n8n 2.39",
+      "sublabel": "reportes y respaldos",
+      "pos": [
+        850,
+        310
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "correo",
+      "type": "external",
+      "label": "Servidor SMTP",
+      "sublabel": "newsletter, cotizaciones",
+      "pos": [
+        640,
+        440
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "drive",
+      "type": "external",
+      "label": "Google Drive",
+      "sublabel": "PDF de cotizaciones",
+      "pos": [
+        430,
+        30
+      ],
+      "size": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "openai",
+      "type": "external",
+      "label": "OpenAI",
+      "sublabel": "reporte semanal",
+      "pos": [
+        850,
+        440
+      ],
+      "size": [
+        150,
+        56
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Docker Compose en el servidor",
+      "wraps": [
+        "guardias",
+        "laravel",
+        "db",
+        "cola",
+        "n8n"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitante-tunel",
+      "from": "visitante",
+      "to": "tunel",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "personal-tunel",
+      "from": "personal",
+      "to": "tunel",
+      "label": "sesión",
+      "labelAt": [
+        205,
+        228
+      ]
+    },
+    {
+      "id": "tunel-guardias",
+      "from": "tunel",
+      "to": "guardias",
+      "label": "HTTP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "guardias-laravel",
+      "from": "guardias",
+      "to": "laravel",
+      "variant": "security"
+    },
+    {
+      "id": "laravel-db",
+      "from": "laravel",
+      "to": "db",
+      "label": "SQL"
+    },
+    {
+      "id": "laravel-cola",
+      "from": "laravel",
+      "to": "cola",
+      "label": "encola",
+      "variant": "dashed",
+      "labelAt": [
+        750,
+        266
+      ]
+    },
+    {
+      "id": "cola-correo",
+      "from": "cola",
+      "to": "correo",
+      "label": "SMTP",
+      "labelAt": [
+        750,
+        402
+      ]
+    },
+    {
+      "id": "laravel-drive",
+      "from": "laravel",
+      "to": "drive",
+      "label": "OAuth",
+      "variant": "dashed"
+    },
+    {
+      "id": "n8n-laravel",
+      "from": "n8n",
+      "to": "laravel",
+      "label": "token",
+      "variant": "security"
+    },
+    {
+      "id": "n8n-openai",
+      "from": "n8n",
+      "to": "openai",
+      "label": "API key",
+      "labelAt": [
+        965,
+        402
+      ]
+    },
+    {
+      "id": "n8n-db",
+      "from": "n8n",
+      "to": "db",
+      "label": "pg_dump"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Entradas",
+      "items": [
+        "Tienda, trade-in, newsletter y API v1 sin sesión",
+        "Panel admin y vendedor con permisos por módulo"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Controles",
+      "items": [
+        "CSRF, límites de uso, encabezados y token de n8n",
+        "Puertos del host solo en 127.0.0.1 por defecto"
+      ]
+    }
+  ]
+}

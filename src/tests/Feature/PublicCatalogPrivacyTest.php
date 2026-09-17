@@ -14,10 +14,10 @@ use Tests\TestCase;
  *
  * Verifican que NINGÚN endpoint público exponga:
  *   - precio_costo, ganancia, margen
- *   - imei_1, imei_2
- *   - numero_serie
+ *   - imei_1, imei_2 (ni el estado del IMEI)
  *   - procedencia interna
  *   - notas privadas
+ * El número de serie del equipo sí puede mostrarse en la ficha (nunca si parece un IMEI).
  */
 class PublicCatalogPrivacyTest extends TestCase
 {
@@ -201,6 +201,29 @@ class PublicCatalogPrivacyTest extends TestCase
         $response->assertStatus(422);
     }
 
+    // ─── Número de serie: puede mostrarse, el IMEI nunca ──────────────────────
+
+    public function test_product_page_shows_serial_number_but_never_imei(): void
+    {
+        $pub = $this->crearCelularConPublicacion(['numero_serie' => 'F2LXK1ABCD']);
+
+        $content = $this->get("/productos/{$pub->slug}")->assertStatus(200)->getContent();
+
+        $this->assertStringContainsString('F2LXK1ABCD', $content);
+        $this->assertSensitiveFieldsAbsent($content);
+    }
+
+    public function test_serial_that_looks_like_an_imei_is_not_shown(): void
+    {
+        // Si alguien escribió un IMEI en el campo de número de serie, no sale a la tienda
+        $pub = $this->crearCelularConPublicacion(['numero_serie' => '358051325422971']);
+
+        $content = $this->get("/productos/{$pub->slug}")->assertStatus(200)->getContent();
+
+        $this->assertStringNotContainsString('358051325422971', $content);
+        $this->assertSensitiveFieldsAbsent($content);
+    }
+
     // ─── Helper ───────────────────────────────────────────────────────────────
 
     private function assertSensitiveFieldsAbsent(string $content): void
@@ -209,7 +232,7 @@ class PublicCatalogPrivacyTest extends TestCase
             'precio_costo',
             'imei_1',
             'imei_2',
-            'numero_serie',
+            'estado_imei',
             'IMPORTADORA SECRETA',
             '358051325422989',  // IMEI real del test
             '358051325422990',

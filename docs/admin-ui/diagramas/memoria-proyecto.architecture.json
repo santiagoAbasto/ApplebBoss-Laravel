@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Memoria y documentación del proyecto",
+    "quality_profile": "showcase"
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 4,
+    "cellW": 150,
+    "cellH": 64,
+    "gapX": 130,
+    "gapY": 96
+  },
+  "components": [
+    { "id": "hooks", "type": "security", "label": "Hooks", "sublabel": "inicio y compactación", "row": 0, "col": 0 },
+    { "id": "memoria", "type": "database", "label": "MEMORY.md", "sublabel": "raíz del proyecto", "row": 0, "col": 1 },
+    { "id": "sesion", "type": "frontend", "label": "Claude Code", "sublabel": "sesión del proyecto", "row": 1, "col": 0 },
+    { "id": "cli", "type": "backend", "label": "memanto", "sublabel": "CLI con pipx", "row": 1, "col": 1 },
+    { "id": "servidor", "type": "database", "label": "Moorcheh local", "sublabel": "127.0.0.1:8095", "tag": "Docker", "row": 1, "col": 2 },
+    { "id": "ollama", "type": "backend", "label": "Ollama", "sublabel": "modelos locales", "row": 1, "col": 3 },
+    { "id": "archify", "type": "frontend", "label": "archify", "sublabel": "diagramas HTML", "row": 2, "col": 0 },
+    { "id": "docs", "type": "external", "label": "docs/admin-ui", "sublabel": "README e informes", "row": 2, "col": 1 },
+    { "id": "graphify", "type": "frontend", "label": "graphify", "sublabel": "grafo del código", "row": 2, "col": 2 }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Tu Mac: nada sale de la máquina", "wraps": ["hooks", "memoria", "sesion", "cli", "servidor", "ollama", "archify", "docs", "graphify"] },
+    { "kind": "security-group", "label": "solo 127.0.0.1", "wraps": ["servidor"] }
+  ],
+  "connections": [
+    { "id": "recordar", "from": "sesion", "to": "cli", "label": "remember · recall", "variant": "emphasis" },
+    { "id": "guardar", "from": "cli", "to": "servidor", "label": "HTTP local", "variant": "emphasis" },
+    { "id": "modelos", "from": "servidor", "to": "ollama", "label": "embeddings" },
+    { "id": "eventos", "from": "sesion", "to": "hooks", "label": "al iniciar", "variant": "dashed" },
+    { "id": "sincronizar", "from": "hooks", "to": "memoria", "label": "memory sync", "variant": "dashed" },
+    { "id": "exportar", "from": "cli", "to": "memoria", "label": "exporta" },
+    { "id": "documentar", "from": "sesion", "to": "docs", "label": "documenta", "fromSide": "bottom", "toSide": "top" },
+    { "id": "diagramas", "from": "archify", "to": "docs", "label": "diagramas" },
+    { "id": "grafo", "from": "graphify", "to": "docs", "label": "grafo" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Memoria (memanto)", "items": [
+      "Agente apple-boss: reglas, decisiones y entorno del proyecto",
+      "recall antes de una tarea grande; remember al fijar una regla",
+      "MEMORY.md se regenera al iniciar cada sesión"
+    ] },
+    { "dot": "cyan", "title": "Local y privado", "items": [
+      "Moorcheh en Docker, solo en 127.0.0.1:8095 (el 8080 lo usa otro proyecto)",
+      "Ollama del host: nomic-embed-text y qwen2.5-coder:7b",
+      "Memorias en ~/.moorcheh/data"
+    ] },
+    { "dot": "violet", "title": "Documentación", "items": [
+      "docs/admin-ui: README, TRASPASO, prompt-retomar e informes",
+      "archify: validate y deliver de diagramas/*.json",
+      "graphify update: grafo/graphify-out sin gastar tokens"
+    ] }
+  ]
+}

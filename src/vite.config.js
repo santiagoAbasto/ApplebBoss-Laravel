@@ -25,6 +25,15 @@ export default defineConfig({
     },
   },
 
+  // Vite 8 apunta por defecto a navegadores de 2023 (Safari 16.4). Se mantiene la compatibilidad que tenía con
+  // Vite 6 ('modules'): iPhone con iOS 14 o posterior, Chrome 87, Firefox 78 y Edge 88.
+  build: {
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+    // Lightning CSS (el minificador por defecto de Vite 8) reescribe listas de fuentes y degradados para esos
+    // navegadores; esbuild deja el CSS igual que con Vite 6.
+    cssMinify: 'esbuild',
+  },
+
   server: {
     host: '0.0.0.0',      // Docker escucha en todos
     port: containerPort,

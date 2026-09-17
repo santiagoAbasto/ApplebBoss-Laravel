@@ -1,0 +1,151 @@
+{
+    "metrics": {
+        "data_received": {
+            "count": 863766,
+            "rate": 174493.35240620613
+        },
+        "http_reqs": {
+            "count": 230,
+            "rate": 46.463360509012176
+        },
+        "http_req_blocked": {
+            "avg": 0.015782608695652157,
+            "min": 0.001,
+            "med": 0.004,
+            "max": 1.211,
+            "p(90)": 0.007,
+            "p(95)": 0.009
+        },
+        "checks": {
+            "passes": 1,
+            "fails": 3,
+            "thresholds": {
+                "rate==1": true
+            },
+            "value": 0.25
+        },
+        "http_req_sending": {
+            "max": 0.519,
+            "p(90)": 0.029,
+            "p(95)": 0.036,
+            "avg": 0.01976521739130432,
+            "min": 0.007,
+            "med": 0.014
+        },
+        "http_req_waiting": {
+            "avg": 20.966660869565228,
+            "min": 10.815,
+            "med": 17.1635,
+            "max": 142.695,
+            "p(90)": 34.0251,
+            "p(95)": 39.8556
+        },
+        "data_sent": {
+            "count": 195666,
+            "rate": 39527.3908580712
+        },
+        "http_req_duration": {
+            "p(90)": 34.6786,
+            "p(95)": 40.144,
+            "avg": 21.328486956521747,
+            "min": 10.985,
+            "med": 17.3095,
+            "max": 146.396
+        },
+        "iterations": {
+            "rate": 0.2020146109087486,
+            "count": 1
+        },
+        "http_req_receiving": {
+            "avg": 0.3420608695652171,
+            "min": 0.077,
+            "med": 0.2215,
+            "max": 5.724,
+            "p(90)": 0.5044000000000003,
+            "p(95)": 0.9436999999999989
+        },
+        "http_req_failed": {
+            "passes": 109,
+            "fails": 121,
+            "value": 0.47391304347826085
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "vus_max": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 49.791,
+            "avg": 29.153710743801643,
+            "min": 16.859,
+            "med": 30.069,
+            "max": 146.396,
+            "p(90)": 39.935
+        },
+        "http_req_connecting": {
+            "max": 0.47,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.004543478260869565,
+            "min": 0,
+            "med": 0
+        },
+        "iteration_duration": {
+            "max": 4949.335625,
+            "p(90)": 4949.335625,
+            "p(95)": 4949.335625,
+            "avg": 4949.335625,
+            "min": 4949.335625,
+            "med": 4949.335625
+        }
+    },
+    "root_group": {
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "api/buscar limita (429 después de 60)": {
+                    "name": "api/buscar limita (429 después de 60)",
+                    "path": "::api/buscar limita (429 después de 60)",
+                    "id": "8b747efc023704c66415bbe51cb6c2e1",
+                    "passes": 1,
+                    "fails": 0
+                },
+                "api/v1/products limita (429 después de 120)": {
+                    "name": "api/v1/products limita (429 después de 120)",
+                    "path": "::api/v1/products limita (429 después de 120)",
+                    "id": "a4b5339ddd4d847ee13feebf481cafe7",
+                    "passes": 0,
+                    "fails": 1
+                },
+                "newsletter (trampa) limita (429 después de 5)": {
+                    "name": "newsletter (trampa) limita (429 después de 5)",
+                    "path": "::newsletter (trampa) limita (429 después de 5)",
+                    "id": "423e52084d917da3ac188352304bf965",
+                    "passes": 0,
+                    "fails": 1
+                },
+                "api/automation sin token limita (429 después de 30)": {
+                    "passes": 0,
+                    "fails": 1,
+                    "name": "api/automation sin token limita (429 después de 30)",
+                    "path": "::api/automation sin token limita (429 después de 30)",
+                    "id": "39261f0b1f451dc804c7520594fa3378"
+                }
+            },
+        "name": "",
+        "path": ""
+    }
+}

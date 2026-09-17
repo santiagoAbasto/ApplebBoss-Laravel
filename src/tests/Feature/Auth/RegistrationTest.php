@@ -5,27 +5,32 @@ namespace Tests\Feature\Auth;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * El registro público está DESHABILITADO en Apple Boss.
+ * Solo administradores autenticados pueden crear cuentas vía /admin/register.
+ * Estos tests verifican que la restricción funciona correctamente.
+ */
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_public_register_route_is_unavailable_for_guests(): void
     {
-        $response = $this->get('/register');
-
-        $response->assertStatus(200);
+        $this->get('/register')->assertStatus(404);
     }
 
-    public function test_new_users_can_register(): void
+    public function test_public_register_post_is_unavailable_for_guests(): void
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
+        $this->post('/register', [
+            'name'                  => 'Test User',
+            'email'                 => 'test@example.com',
+            'password'              => 'Password1!',
+            'password_confirmation' => 'Password1!',
+        ])->assertStatus(404);
+    }
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+    public function test_admin_register_requires_authentication(): void
+    {
+        $this->get('/admin/register')->assertRedirect('/login');
     }
 }

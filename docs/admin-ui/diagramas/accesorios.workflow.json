@@ -1,0 +1,222 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Accesorios: de la ficha oficial a la tienda",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "fuente",
+      "label": "Fuentes"
+    },
+    {
+      "id": "datos",
+      "label": "Base de accesorios"
+    },
+    {
+      "id": "inventario",
+      "label": "Inventario"
+    },
+    {
+      "id": "admin",
+      "label": "Panel"
+    },
+    {
+      "id": "publico",
+      "label": "Tienda"
+    },
+    {
+      "id": "sin",
+      "label": "Sin ficha",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "oficial",
+    "generar",
+    "verificar",
+    "cargar",
+    "reconocer",
+    "publicar",
+    "ficha"
+  ],
+  "nodes": [
+    {
+      "id": "oficial",
+      "lane": "fuente",
+      "col": 1,
+      "type": "external",
+      "label": "Página oficial",
+      "sublabel": "Apple, Amazon, Sony"
+    },
+    {
+      "id": "terceros",
+      "lane": "fuente",
+      "col": 0,
+      "type": "external",
+      "label": "Otras fuentes",
+      "sublabel": "quedan por verificar"
+    },
+    {
+      "id": "generar",
+      "lane": "datos",
+      "col": 1,
+      "type": "backend",
+      "label": "Generar",
+      "sublabel": "generar_accesorios.py"
+    },
+    {
+      "id": "verificar",
+      "lane": "datos",
+      "col": 2,
+      "type": "security",
+      "label": "Verificar",
+      "sublabel": "EsquemaAccesorio"
+    },
+    {
+      "id": "cargar",
+      "lane": "datos",
+      "col": 3,
+      "type": "database",
+      "label": "Cargar",
+      "sublabel": "58 fichas"
+    },
+    {
+      "id": "reconocer",
+      "lane": "inventario",
+      "col": 4,
+      "type": "backend",
+      "label": "Reconocer",
+      "sublabel": "por el nombre"
+    },
+    {
+      "id": "sinficha",
+      "lane": "sin",
+      "col": 5,
+      "type": "security",
+      "label": "Solo el nombre",
+      "sublabel": "sin datos comprobables"
+    },
+    {
+      "id": "publicar",
+      "lane": "admin",
+      "col": 4,
+      "type": "frontend",
+      "label": "Publicar",
+      "sublabel": "ficha y descripción"
+    },
+    {
+      "id": "ficha",
+      "lane": "publico",
+      "col": 4,
+      "type": "external",
+      "label": "Ficha",
+      "sublabel": "íconos e ilustración"
+    },
+    {
+      "id": "comparar",
+      "lane": "publico",
+      "col": 2,
+      "type": "frontend",
+      "label": "Comparar",
+      "sublabel": "cargadores y vidrios"
+    }
+  ],
+  "edges": [
+    {
+      "from": "oficial",
+      "to": "generar",
+      "label": "datos oficiales"
+    },
+    {
+      "from": "terceros",
+      "to": "generar",
+      "label": "completa",
+      "variant": "dashed"
+    },
+    {
+      "from": "generar",
+      "to": "verificar"
+    },
+    {
+      "from": "verificar",
+      "to": "cargar",
+      "label": "0 errores",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "reconocer"
+    },
+    {
+      "from": "reconocer",
+      "to": "publicar",
+      "label": "coincide",
+      "variant": "emphasis"
+    },
+    {
+      "from": "reconocer",
+      "to": "sinficha",
+      "label": "no coincide",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "sinficha",
+      "to": "publicar",
+      "label": "se elige en el editor",
+      "variant": "dashed",
+      "role": "return"
+    },
+    {
+      "from": "publicar",
+      "to": "ficha",
+      "label": "copia de la ficha",
+      "variant": "emphasis"
+    },
+    {
+      "from": "cargar",
+      "to": "comparar",
+      "label": "original y certificado"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Fuentes",
+      "items": [
+        "Originales: la página oficial de la marca",
+        "Lo que la marca no publica queda por verificar",
+        "Genéricos: solo lo que dice su nombre"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Reconocimiento",
+      "items": [
+        "Expresiones sobre el nombre del inventario",
+        "De lo más específico a lo más general",
+        "El iPhone del nombre completa la descripción"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Tienda",
+      "items": [
+        "Descripción, ficha con íconos y compatibilidad",
+        "Comparativas de cargadores y de vidrios",
+        "Si se vende, la ficha no se borra"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pendientes",
+      "items": [
+        "Ningún vidrio del inventario dice Gorilla",
+        "Tres artículos sin datos para una ficha",
+        "Confirmar si hay réplicas de marca"
+      ]
+    }
+  ]
+}

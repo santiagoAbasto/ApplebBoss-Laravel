@@ -1,230 +1,93 @@
-import React from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
-import { route } from 'ziggy-js';
 import AdminLayout from '@/Layouts/AdminLayout';
-import ToastContainer, { showSuccess, showError } from '@/Components/ToastNotification';
-import { Loader2, Smartphone } from 'lucide-react';
-
-/* ===== ESTILOS CRUD ===== */
+import { Head, router } from '@inertiajs/react';
+import { useRef, useState } from 'react';
+import { route } from 'ziggy-js';
+import { CopyPlus } from 'lucide-react';
+import PremiumNotice from '@/Components/PremiumNotice';
+import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
+import { Toast, buttonCls, useToast } from '@/Components/Admin/ui';
+import { EncabezadoFormulario, ErroresResumen } from '@/Components/Admin/inventario';
 import {
-  CrudWrapper,
-  CrudHeader,
-  CrudTitle,
-  CrudSubtitle,
-  CrudBackLink,
-  CrudCard,
-  CrudSectionTitle,
-  CrudGrid,
-  CrudLabel,
-  CrudInput,
-  CrudSelect,
-  CrudActions,
-  CrudButtonPrimary,
-  CrudButtonSecondary,
-} from '@/Components/CrudUI';
+  CamposCelular, ResumenCelular, datosDesde, payloadDe, useFormularioCelular, validarCelular,
+} from '@/Components/Admin/celulares';
 
-export default function CreateCelular() {
-  const { data, setData, post, processing, errors, reset } = useForm({
-    modelo: '',
-    capacidad: '',
-    color: '',
-    bateria: '',
-    imei_1: '',
-    imei_2: '',
-    estado_imei: 'libre',
-    procedencia: '',
-    precio_costo: '',
-    precio_venta: '',
-    estado: 'disponible',
-  });
+export default function Create({ sugerencias = {} }) {
+  const form = useFormularioCelular(datosDesde(null));
+  const { data, setData, errores, setErrores } = form;
+  const [guardando, setGuardando] = useState(null);
+  const [registrados, setRegistrados] = useState(0);
+  const [notice, setNotice] = useState(null);
+  const [toast] = useToast();
+  const refs = { modelo: useRef(null), color: useRef(null), imei: useRef(null) };
 
-  /* ===============================
-     HELPERS
-  =============================== */
-  const handleImei = (field, value) => {
-    const onlyDigits = value.replace(/\D/g, '').slice(0, 15);
-    setData(field, onlyDigits);
-  };
+  const avisar = (title, message = '', type = 'error') => setNotice({ id: Date.now(), title, message, type });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    post(route('admin.celulares.store'), {
+  // «Registrar otro» vuelve a esta página con el mismo modelo, capacidad, precios y procedencia
+  const guardar = (otro = false) => {
+    if (guardando) return;
+    const e = validarCelular(data);
+    setErrores(e);
+    if (Object.keys(e).length > 0) {
+      avisar('Revisa los datos', 'Hay campos por completar.');
+      return;
+    }
+
+    router.post(route('admin.celulares.store'), {
+      ...payloadDe(data),
+      ...(otro ? { return_to: route('admin.celulares.create', undefined, false) } : {}),
+    }, {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => setGuardando(otro ? 'otro' : 'listado'),
       onSuccess: () => {
-        showSuccess('Celular registrado correctamente');
-        reset();
+        notifyRecordsUpdated();
+        if (!otro) return;
+        setRegistrados((n) => n + 1);
+        setData((d) => ({ ...d, color: '', bateria_pct: '', imei_1: '', imei_2: '', numero_serie: '' }));
+        setErrores({});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => refs.color.current?.focus(), 300);
       },
-      onError: () => showError('Error al registrar el celular'),
+      onError: (errs) => {
+        setErrores(errs);
+        avisar('No se pudo registrar el celular', 'Revisa los datos marcados.');
+      },
+      onFinish: () => setGuardando(null),
     });
   };
 
   return (
     <AdminLayout>
-      <Head title="Registrar Celular" />
+      <Head title="Registrar celular" />
+      <PremiumNotice notice={notice} onClose={() => setNotice(null)} />
+      <Toast toast={toast} />
 
-      <CrudWrapper>
-        {/* ================= HEADER ================= */}
-        <CrudHeader>
-          <div>
-            <CrudTitle>
-              <Smartphone size={22} />
-              Registrar nuevo celular
-            </CrudTitle>
-            <CrudSubtitle>
-              Completa la información del equipo antes de guardarlo
-            </CrudSubtitle>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <EncabezadoFormulario volverUrl={route('admin.celulares.index')} volverLabel="Volver a celulares"
+          titulo="Registrar celular" subtitulo="Carga un equipo al inventario para poder venderlo y cotizarlo." />
+
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5">
+            <CamposCelular form={form} sugerencias={sugerencias} pasos refs={refs} />
           </div>
 
-          <CrudBackLink as={Link} href={route('admin.celulares.index')}>
-            ← Volver al listado
-          </CrudBackLink>
-        </CrudHeader>
-
-        {/* ================= FORM ================= */}
-        <form onSubmit={handleSubmit}>
-          <CrudCard>
-            <CrudSectionTitle>Información del equipo</CrudSectionTitle>
-
-            <CrudGrid>
-              {/* MODELO */}
-              <div>
-                <CrudLabel>Modelo</CrudLabel>
-                <CrudInput
-                  value={data.modelo}
-                  onChange={(e) => setData('modelo', e.target.value)}
-                />
-                {errors.modelo && <small style={{ color: 'red' }}>{errors.modelo}</small>}
-              </div>
-
-              {/* CAPACIDAD */}
-              <div>
-                <CrudLabel>Capacidad</CrudLabel>
-                <CrudInput
-                  value={data.capacidad}
-                  onChange={(e) => setData('capacidad', e.target.value)}
-                />
-                {errors.capacidad && <small style={{ color: 'red' }}>{errors.capacidad}</small>}
-              </div>
-
-              {/* COLOR */}
-              <div>
-                <CrudLabel>Color</CrudLabel>
-                <CrudInput
-                  value={data.color}
-                  onChange={(e) => setData('color', e.target.value)}
-                />
-              </div>
-
-              {/* BATERÍA */}
-              <div>
-                <CrudLabel>Batería (%)</CrudLabel>
-                <CrudInput
-                  value={data.bateria}
-                  onChange={(e) => setData('bateria', e.target.value)}
-                />
-              </div>
-
-              {/* IMEI 1 */}
-              <div>
-                <CrudLabel>IMEI 1</CrudLabel>
-                <CrudInput
-                  value={data.imei_1}
-                  maxLength={15}
-                  onChange={(e) => handleImei('imei_1', e.target.value)}
-                />
-                {errors.imei_1 && <small style={{ color: 'red' }}>{errors.imei_1}</small>}
-              </div>
-
-              {/* IMEI 2 */}
-              <div>
-                <CrudLabel>IMEI 2 (opcional)</CrudLabel>
-                <CrudInput
-                  value={data.imei_2}
-                  maxLength={15}
-                  onChange={(e) => handleImei('imei_2', e.target.value)}
-                />
-              </div>
-
-              {/* ESTADO IMEI */}
-              <div>
-                <CrudLabel>Estado IMEI</CrudLabel>
-                <CrudSelect
-                  value={data.estado_imei}
-                  onChange={(e) => setData('estado_imei', e.target.value)}
-                >
-                  <option value="libre">Libre</option>
-                  <option value="registrado">Registrado</option>
-                  <option value="imei1_libre_imei2_registrado">
-                    IMEI 1 libre / IMEI 2 registrado
-                  </option>
-                  <option value="imei1_registrado_imei2_libre">
-                    IMEI 1 registrado / IMEI 2 libre
-                  </option>
-                </CrudSelect>
-              </div>
-
-              {/* PROCEDENCIA */}
-              <div>
-                <CrudLabel>Procedencia</CrudLabel>
-                <CrudInput
-                  value={data.procedencia}
-                  onChange={(e) => setData('procedencia', e.target.value)}
-                />
-              </div>
-
-              {/* PRECIO COSTO */}
-              <div>
-                <CrudLabel>Precio costo</CrudLabel>
-                <CrudInput
-                  type="number"
-                  value={data.precio_costo}
-                  onChange={(e) => setData('precio_costo', e.target.value)}
-                />
-              </div>
-
-              {/* PRECIO VENTA */}
-              <div>
-                <CrudLabel>Precio venta</CrudLabel>
-                <CrudInput
-                  type="number"
-                  value={data.precio_venta}
-                  onChange={(e) => setData('precio_venta', e.target.value)}
-                />
-              </div>
-
-              {/* ESTADO */}
-              <div>
-                <CrudLabel>Estado</CrudLabel>
-                <CrudSelect
-                  value={data.estado}
-                  onChange={(e) => setData('estado', e.target.value)}
-                >
-                  <option value="disponible">Disponible</option>
-                  <option value="vendido">Vendido</option>
-                  <option value="permuta">Permuta</option>
-                </CrudSelect>
-              </div>
-            </CrudGrid>
-
-            {/* ================= ACTIONS ================= */}
-            <CrudActions>
-              <CrudButtonSecondary
-                type="button"
-                as={Link}
-                href={route('admin.celulares.index')}
-              >
-                Cancelar
-              </CrudButtonSecondary>
-
-              <CrudButtonPrimary type="submit" disabled={processing}>
-                {processing && <Loader2 size={18} className="animate-spin" />}
-                Guardar celular
-              </CrudButtonPrimary>
-            </CrudActions>
-          </CrudCard>
-        </form>
-      </CrudWrapper>
-
-      <ToastContainer />
+          <aside className="xl:sticky xl:top-24">
+            <ResumenCelular data={data}>
+              <ErroresResumen errores={errores} />
+              <button type="button" onClick={() => guardar(false)} disabled={Boolean(guardando)} className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
+                {guardando === 'listado' ? 'Guardando…' : 'Guardar celular'}
+              </button>
+              <button type="button" onClick={() => guardar(true)} disabled={Boolean(guardando)} className={buttonCls('secondary', 'h-11 w-full')}>
+                <CopyPlus className="h-4 w-4" /> {guardando === 'otro' ? 'Guardando…' : 'Guardar y registrar otro'}
+              </button>
+              <p className="text-center text-xs leading-relaxed text-slate-400">
+                «Registrar otro» mantiene el modelo, la capacidad, los precios y la procedencia para cargar el siguiente equipo.
+                {registrados > 0 && <span className="mt-1 block font-semibold text-emerald-700">Llevas {registrados} {registrados === 1 ? 'celular registrado' : 'celulares registrados'} seguidos.</span>}
+              </p>
+            </ResumenCelular>
+          </aside>
+        </div>
+      </div>
     </AdminLayout>
   );
 }

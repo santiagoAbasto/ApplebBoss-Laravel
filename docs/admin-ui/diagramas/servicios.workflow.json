@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Servicios: la tarjeta y lo que hace",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "panel",
+      "label": "Panel"
+    },
+    {
+      "id": "tienda",
+      "label": "Tienda"
+    },
+    {
+      "id": "sinboton",
+      "label": "Sin botón",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "tarjeta",
+    "accion",
+    "inicio",
+    "cliente"
+  ],
+  "nodes": [
+    {
+      "id": "tarjeta",
+      "lane": "panel",
+      "col": 0,
+      "type": "backend",
+      "width": 150,
+      "label": "Tarjeta",
+      "sublabel": "ícono, título y frase"
+    },
+    {
+      "id": "accion",
+      "lane": "panel",
+      "col": 1,
+      "type": "backend",
+      "width": 150,
+      "label": "Qué hace",
+      "sublabel": "informa, chat o página"
+    },
+    {
+      "id": "seccion",
+      "lane": "panel",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "Portada",
+      "sublabel": "la enciende y titula"
+    },
+    {
+      "id": "inicio",
+      "lane": "tienda",
+      "col": 2,
+      "type": "frontend",
+      "width": 150,
+      "label": "En el inicio",
+      "sublabel": "«Nuestros servicios»"
+    },
+    {
+      "id": "apagado",
+      "lane": "sinboton",
+      "col": 1,
+      "type": "security",
+      "width": 150,
+      "label": "Solo informa",
+      "sublabel": "WhatsApp apagado"
+    },
+    {
+      "id": "cliente",
+      "lane": "tienda",
+      "col": 3,
+      "type": "external",
+      "width": 150,
+      "label": "El cliente",
+      "sublabel": "escribe o sigue"
+    }
+  ],
+  "edges": [
+    {
+      "from": "tarjeta",
+      "to": "accion",
+      "label": "eliges qué hace",
+      "variant": "emphasis"
+    },
+    {
+      "from": "accion",
+      "to": "inicio",
+      "label": "encendida",
+      "variant": "emphasis"
+    },
+    {
+      "from": "accion",
+      "to": "apagado",
+      "label": "sin WhatsApp",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "from": "inicio",
+      "to": "cliente",
+      "label": "toca la tarjeta"
+    },
+    {
+      "from": "seccion",
+      "to": "inicio",
+      "label": "título y lugar",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué puede hacer",
+      "items": [
+        "Solo informar",
+        "Abrir WhatsApp con un mensaje",
+        "Llevar a una página o colección"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Cómo escribirlas",
+      "items": [
+        "Un título que se entienda solo",
+        "Una frase con lo que gana el cliente",
+        "Solo lo que cumples siempre"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "El orden manda",
+      "items": [
+        "Salen en el orden de la lista",
+        "Se arrastra y se guarda solo",
+        "El interruptor la oculta sin borrarla"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Ojo con esto",
+      "items": [
+        "Sin tarjetas, la sección no aparece",
+        "El título se cambia en Portada",
+        "No es «Servicio técnico»"
+      ]
+    }
+  ]
+}

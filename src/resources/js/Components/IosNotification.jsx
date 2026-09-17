@@ -20,7 +20,7 @@ export default function IosNotification({
   return (
     <div
       className={`
-        fixed top-6 right-6 z-50 w-[350px]
+        ab-reset fixed top-20 right-6 z-50 w-[350px]
         transform transition-all duration-500
         ${visible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}
       `}
@@ -52,7 +52,7 @@ export default function IosNotification({
         {/* ACTION */}
         <button
           onClick={onView}
-          className="mt-3 w-full bg-sky-600 hover:bg-sky-700 text-white text-sm py-2 rounded-xl font-semibold transition"
+          className="mt-3 w-full bg-[#011446] hover:bg-[#0A1F5C] text-white text-sm py-2 rounded-xl font-semibold transition"
         >
           Ver reporte completo
         </button>

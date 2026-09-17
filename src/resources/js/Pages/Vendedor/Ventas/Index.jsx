@@ -1,418 +1,381 @@
 import VendedorLayout from '@/Layouts/VendedorLayout';
 import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Pencil, PlusCircle, Printer, Receipt } from 'lucide-react';
+import {
+  FileDown, FileText, Pencil, Plus, Printer, Receipt, Search, ShoppingCart, Tag, TrendingDown, Wallet, X,
+} from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
+import { Badge, EmptyState, Modal, PageHeader, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { Stat } from '@/Components/Admin/inventario';
+import AdminGuide from '@/Components/Admin/AdminGuide';
 
-export default function Index({ ventas }) {
-  const [codigoNota, setCodigoNota] = useState('');
-  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+// Mis ventas: cada fila es un producto vendido por este vendedor. La lista ya llega filtrada
+// por `user_id` desde el servidor (VentaController@index), así que acá no se mezcla nada de nadie.
+
+const TIPOS = {
+  celular: { label: 'Celular', tone: 'blue' },
+  computadora: { label: 'Computadora', tone: 'violet' },
+  producto_apple: { label: 'Producto Apple', tone: 'amber' },
+  producto_general: { label: 'Producto general', tone: 'slate' },
+  servicio_tecnico: { label: 'Servicio técnico', tone: 'emerald' },
+};
+
+const normalizar = (v) => String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const TZ = 'America/La_Paz';
+const fecha = (iso) => new Date(iso).toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: TZ });
+const hora = (iso) => new Date(iso).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+const hoy = () => new Date().toISOString().slice(0, 10);
+const primeroDelMes = () => `${new Date().toISOString().slice(0, 7)}-01`;
+
+function AccionNota({ href, icon: Icon, label }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" title={label}
+      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </a>
+  );
+}
+
+export default function Index({ ventas = [] }) {
   useAutoRefresh(['ventas']);
 
-  const buscarNota = async (e) => {
-    e.preventDefault();
-    if (!codigoNota.trim()) return;
+  const [texto, setTexto] = useState('');
+  const [tipo, setTipo] = useState('todos');
+  const [limite, setLimite] = useState(50);
+  const [notas, setNotas] = useState(null);
+  const [buscando, setBuscando] = useState(false);
+  const [exportar, setExportar] = useState(null);
 
+  const buscarNota = async (e) => {
+    e?.preventDefault();
+    if (!texto.trim()) return;
+    setBuscando(true);
     try {
-      const response = await axios.get(route('vendedor.ventas.buscarNota'), {
-        params: { codigo_nota: codigoNota.trim() },
-      });
-      setResultadosBusqueda(response.data);
-    } catch (error) {
-      console.error('Error al buscar nota:', error);
+      const { data } = await axios.get(route('vendedor.ventas.buscarNota'), { params: { codigo_nota: texto.trim() } });
+      setNotas(data);
+    } catch {
+      setNotas([]);
+    } finally {
+      setBuscando(false);
     }
   };
 
-  /* ===============================
-     DESGLOSE DE ITEMS (NO TOCADO)
-  =============================== */
-  const itemsDesglosados = ventas.flatMap((venta) => {
+  /* Un renglón por producto vendido. La permuta y la seña se descuentan una sola vez por venta. */
+  const itemsDesglosados = useMemo(() => ventas.flatMap((venta) => {
     if (venta.tipo_venta === 'servicio_tecnico') {
       const precioVenta = parseFloat(venta.precio_venta || 0);
       const descuento = parseFloat(venta.descuento || 0);
-      const capital = parseFloat(venta.precio_invertido || 0);
-      const ganancia = precioVenta - descuento - capital;
-
       return [{
         cliente: venta.nombre_cliente,
-        producto: 'Servicio Técnico',
+        producto: 'Servicio técnico',
         codigoNota: venta.servicio_tecnico?.codigo_nota ?? venta.codigo_nota,
         id_venta: venta.id,
         tipo: 'servicio_tecnico',
-        precioVenta,
-        descuento,
-        permuta: 0,
-        capital,
+        precioVenta, descuento, permuta: 0, reserva: 0,
         precioFinal: precioVenta - descuento,
-        ganancia,
-        vendedor: venta.vendedor?.name || '—',
         fecha: venta.created_at,
       }];
     }
 
-    return venta.items.map((item, itemIndex) => {
+    return (venta.items ?? []).map((item, i) => {
       const precioVenta = parseFloat(item.precio_venta || 0);
       const descuento = parseFloat(item.descuento || 0);
-      const capital = parseFloat(item.precio_invertido || 0);
-      const permuta = itemIndex === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
-      const reserva = itemIndex === 0 ? parseFloat(venta.monto_reserva_aplicado || 0) : 0;
-      const ganancia = precioVenta - descuento - permuta - capital;
-
-      const nombre =
-        item.tipo === 'celular'
-          ? item.celular?.modelo
-          : item.tipo === 'computadora'
-            ? item.computadora?.nombre
-            : item.tipo === 'producto_apple'
-              ? item.producto_apple?.modelo
-              : item.producto_general?.nombre;
+      const permuta = i === 0 ? parseFloat(venta.valor_permuta || 0) : 0;
+      const reserva = i === 0 ? parseFloat(venta.monto_reserva_aplicado || 0) : 0;
+      const producto = item.tipo === 'celular' ? item.celular?.modelo
+        : item.tipo === 'computadora' ? item.computadora?.nombre
+          : item.tipo === 'producto_apple' ? item.producto_apple?.modelo
+            : item.producto_general?.nombre;
 
       return {
         cliente: venta.nombre_cliente,
-        producto: nombre,
+        producto,
         codigoNota: venta.codigo_nota,
         id_venta: venta.id,
         tipo: item.tipo,
-        precioVenta,
-        descuento,
-        permuta,
-        reserva,
-        capital,
+        precioVenta, descuento, permuta, reserva,
         precioFinal: precioVenta - descuento - permuta - reserva,
-        ganancia,
-        vendedor: venta.vendedor?.name || '—',
         fecha: venta.created_at,
       };
     });
-  });
+  }), [ventas]);
 
-  const gananciaTotal = itemsDesglosados.reduce(
-    (acc, i) => (i.ganancia > 0 ? acc + i.ganancia : acc),
-    0
+  const conteoTipos = useMemo(
+    () => itemsDesglosados.reduce((acc, i) => ({ ...acc, [i.tipo]: (acc[i.tipo] || 0) + 1 }), {}),
+    [itemsDesglosados],
   );
-  const totalFinal = itemsDesglosados.reduce((acc, i) => acc + i.precioFinal, 0);
+
+  const q = normalizar(texto.trim());
+  const filtrados = useMemo(() => itemsDesglosados.filter((i) =>
+    (tipo === 'todos' || i.tipo === tipo)
+    && (!q || normalizar([i.cliente, i.codigoNota, i.producto].join(' ')).includes(q)),
+  ), [itemsDesglosados, tipo, q]);
+
+  useEffect(() => { setLimite(50); }, [texto, tipo]);
+
+  const visibles = filtrados.slice(0, limite);
+  const totalCobrado = filtrados.reduce((a, i) => a + i.precioFinal, 0);
+  const totalPrecio = filtrados.reduce((a, i) => a + i.precioVenta, 0);
+  const totalDescuentos = filtrados.reduce((a, i) => a + i.descuento + i.permuta, 0);
+  const ventasUnicas = new Set(filtrados.map((i) => i.id_venta)).size;
+  const hayFiltros = q || tipo !== 'todos';
+  const limpiar = () => { setTexto(''); setTipo('todos'); setNotas(null); };
 
   return (
-    <VendedorLayout>
-      <Head title="Ventas Desglosadas" />
+    <VendedorLayout title="Mis ventas">
+      <Head title="Mis ventas | Apple Boss" />
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">
-            Ventas Desglosadas
-          </h1>
-          <p className="text-slate-500">
-            Detalle completo de ventas y servicios registrados
-          </p>
-        </div>
-
-        <Link
-          href={route('vendedor.ventas.create')}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl
-            bg-emerald-600 hover:bg-emerald-700
-            text-white text-sm font-semibold shadow transition"
-        >
-          <PlusCircle size={18} />
-          Nueva Venta
-        </Link>
-      </div>
-
-      {/* BUSCADOR */}
-      <form onSubmit={buscarNota} className="mb-5 rounded-xl border bg-white p-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div className="flex-1">
-            <label className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
-              Buscar nota
-            </label>
-            <input
-              value={codigoNota}
-              onChange={(e) => setCodigoNota(e.target.value)}
-              placeholder="Código de nota o cliente"
-              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm
-                focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-          </div>
-          <button
-            className="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700
-              text-white text-sm font-semibold transition shadow"
-          >
-            Buscar
-          </button>
-        </div>
-      </form>
-
-      {/* RESULTADOS BUSQUEDA */}
-      {resultadosBusqueda.length > 0 && (
-        <div className="mb-5 rounded-xl border bg-white shadow-sm">
-          <div className="px-4 py-2.5 border-b bg-slate-50 font-semibold text-slate-700">
-            Resultados encontrados
-          </div>
-
-          {resultadosBusqueda.map((r) => (
-            <div
-              key={r.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between
-                px-4 py-3 border-b last:border-b-0"
-            >
-              <div>
-                <div className="font-mono text-emerald-700 font-semibold">
-                  {r.codigo_nota}
-                </div>
-                <div className="text-sm text-slate-600">
-                  {r.nombre_cliente}
-                </div>
-              </div>
-
-              <div className="flex gap-4 mt-3 sm:mt-0 text-sm">
-                {r.tipo === 'venta' && (
-                  <Link
-                    href={route('vendedor.ventas.edit', r.id_real)}
-                    className="text-slate-700 hover:underline font-medium"
-                  >
-                    Editar
-                  </Link>
-                )}
-
-                <a
-                  href={
-                    r.tipo === 'servicio_tecnico'
-                      ? route('vendedor.servicios.boleta', r.id_real)
-                      : route('vendedor.ventas.boleta', r.id_real)
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-600 hover:underline font-medium"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <Receipt size={14} />
-                    Normal
-                  </span>
-                </a>
-
-                <a
-                  href={
-                    r.tipo === 'servicio_tecnico'
-                      ? route('vendedor.servicios.recibo80mm', r.id_real)
-                      : route('vendedor.ventas.boleta80', r.id_real)
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-medium"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    <Printer size={14} />
-                    Térmica
-                  </span>
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* TABLA */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-5">
-        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
-          <div className="text-xs text-slate-500">Movimientos</div>
-          <div className="text-xl font-bold text-slate-800">{itemsDesglosados.length}</div>
-        </div>
-        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
-          <div className="text-xs text-slate-500">Total final</div>
-          <div className="text-xl font-bold text-slate-800">{totalFinal.toFixed(2)} Bs</div>
-        </div>
-        <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
-          <div className="text-xs text-slate-500">Ganancia positiva</div>
-          <div className="text-xl font-bold text-emerald-600">{gananciaTotal.toFixed(2)} Bs</div>
-        </div>
-      </div>
-
-      <div className="hidden md:block rounded-xl border bg-white shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[1240px]">
-          <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
-            <tr>
-              <th className="px-3 py-2.5 text-left">Cliente</th>
-              <th className="px-3 py-2.5">Código</th>
-              <th className="px-3 py-2.5">Producto</th>
-              <th className="px-3 py-2.5 text-right">Venta</th>
-              <th className="px-3 py-2.5 text-right">Desc.</th>
-              <th className="px-3 py-2.5 text-right">Permuta</th>
-              <th className="px-3 py-2.5 text-right">Reserva</th>
-              <th className="px-3 py-2.5 text-right">Capital</th>
-              <th className="px-3 py-2.5 text-right">Final</th>
-              <th className="px-3 py-2.5 text-right">Ganancia</th>
-              <th className="px-3 py-2.5">Vendedor</th>
-              <th className="px-3 py-2.5">Fecha</th>
-              <th className="px-3 py-2.5 text-center">Boleta</th>
-              <th className="px-3 py-2.5 text-center">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y">
-            {itemsDesglosados.map((i, idx) => (
-              <tr key={idx} className="hover:bg-emerald-50/40 transition">
-                <td className="px-3 py-2.5">{i.cliente}</td>
-                <td className="px-3 py-2.5 font-mono text-emerald-700">
-                  {i.codigoNota}
-                </td>
-                <td className="px-3 py-2.5">{i.producto}</td>
-                <td className="px-3 py-2.5 text-right">{i.precioVenta.toFixed(2)}</td>
-                <td className="px-3 py-2.5 text-right text-rose-600">
-                  -{i.descuento.toFixed(2)}
-                </td>
-                <td className="px-3 py-2.5 text-right text-amber-600">
-                  -{i.permuta.toFixed(2)}
-                </td>
-                <td className="px-3 py-2.5 text-right text-blue-600">
-                  -{Number(i.reserva || 0).toFixed(2)}
-                </td>
-                <td className="px-3 py-2.5 text-right text-blue-600">
-                  -{i.capital.toFixed(2)}
-                </td>
-                <td className="px-3 py-2.5 text-right font-medium">
-                  {i.precioFinal.toFixed(2)}
-                </td>
-                <td
-                  className={`px-3 py-2.5 text-right font-bold ${i.ganancia < 0 ? 'text-rose-600' : 'text-emerald-600'
-                    }`}
-                >
-                  {i.ganancia < 0
-                    ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}`
-                    : i.ganancia.toFixed(2)}
-                </td>
-                <td className="px-3 py-2.5">{i.vendedor}</td>
-                <td className="px-3 py-2.5 text-xs">
-                  {new Date(i.fecha).toLocaleDateString('es-BO')}
-                  <br />
-                  <span className="text-slate-500">
-                    {new Date(i.fecha).toLocaleTimeString('es-BO')}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  <div className="flex flex-col gap-1 text-xs">
-                    <a
-                      href={route('vendedor.ventas.boleta', i.id_venta)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-600 hover:underline"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <Receipt size={14} />
-                        Normal
-                      </span>
-                    </a>
-                    <a
-                      href={route('vendedor.ventas.boleta80', i.id_venta)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        <Printer size={14} />
-                        Térmica
-                      </span>
-                    </a>
-                  </div>
-                </td>
-                <td className="px-3 py-2.5 text-center">
-                  <Link
-                    href={route('vendedor.ventas.edit', i.id_venta)}
-                    className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    <Pencil size={13} />
-                    Editar
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* RESUMEN */}
-        <div className="px-5 py-3 border-t bg-slate-50 flex justify-end">
-          <div className="text-right">
-            <div className="text-sm text-slate-600">
-              Ganancia Total Positiva
-            </div>
-            <div className="text-2xl font-bold text-emerald-600">
-              {gananciaTotal.toFixed(2)} Bs
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:hidden">
-        {itemsDesglosados.map((i, idx) => (
-          <div key={idx} className="rounded-2xl border bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-semibold text-slate-800">{i.cliente}</div>
-                <div className="font-mono text-sm text-emerald-700">{i.codigoNota}</div>
-              </div>
-              <div className="text-right text-xs text-slate-500">
-                {new Date(i.fecha).toLocaleDateString('es-BO')}
-              </div>
-            </div>
-
-            <div className="mt-3 grid gap-2 text-sm text-slate-600">
-              <div><strong>Producto:</strong> {i.producto}</div>
-              <div><strong>Venta:</strong> {i.precioVenta.toFixed(2)} Bs</div>
-              <div><strong>Desc.:</strong> -{i.descuento.toFixed(2)} Bs</div>
-              <div><strong>Permuta:</strong> -{i.permuta.toFixed(2)} Bs</div>
-              <div><strong>Reserva:</strong> -{Number(i.reserva || 0).toFixed(2)} Bs</div>
-              <div><strong>Capital:</strong> -{i.capital.toFixed(2)} Bs</div>
-              <div><strong>Final:</strong> {i.precioFinal.toFixed(2)} Bs</div>
-              <div className={i.ganancia < 0 ? 'text-rose-600 font-semibold' : 'text-emerald-600 font-semibold'}>
-                <strong>Ganancia:</strong> {i.ganancia < 0 ? `Se invirtió ${Math.abs(i.ganancia).toFixed(2)}` : `${i.ganancia.toFixed(2)} Bs`}
-              </div>
-              <div><strong>Vendedor:</strong> {i.vendedor}</div>
-            </div>
-
-            <div className="mt-4 flex gap-4 text-sm">
-              <Link
-                href={route('vendedor.ventas.edit', i.id_venta)}
-                className="text-slate-700 hover:underline font-medium"
-              >
-                <span className="inline-flex items-center gap-1">
-                  <Pencil size={14} />
-                  Editar
-                </span>
+      <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
+        <PageHeader
+          title="Mis ventas"
+          subtitle="Cada fila es un producto que vendiste. Desde aquí imprimes la nota o corriges una venta."
+          actions={(
+            <>
+              <button type="button" onClick={() => setExportar({ desde: primeroDelMes(), hasta: hoy() })} className={buttonCls('secondary', 'h-11')}>
+                <FileDown className="h-4 w-4" /> Exportar PDF
+              </button>
+              <Link href={route('vendedor.ventas.create')} className={buttonCls('primary', 'h-11 px-5')}>
+                <Plus className="h-4 w-4" /> Nueva venta
               </Link>
-              <a
-                href={route('vendedor.ventas.boleta', i.id_venta)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline font-medium"
-              >
-                <span className="inline-flex items-center gap-1">
-                  <Receipt size={14} />
-                  Normal
-                </span>
-              </a>
-              <a
-                href={route('vendedor.ventas.boleta80', i.id_venta)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                <span className="inline-flex items-center gap-1">
-                  <Printer size={14} />
-                  Térmica
-                </span>
-              </a>
-            </div>
-          </div>
-        ))}
+            </>
+          )}
+        />
 
-        <div className="rounded-2xl border bg-slate-50 px-4 py-5 text-right">
-          <div className="text-sm text-slate-600">Ganancia Total Positiva</div>
-          <div className="text-2xl font-bold text-emerald-600">
-            {gananciaTotal.toFixed(2)} Bs
-          </div>
+        <AdminGuide
+          id="vendedor-ventas"
+          title="¿Cómo se lee esta pantalla?"
+          steps={[
+            'Cada renglón es un producto. Si en una venta entregaste tres equipos, vas a ver tres renglones con el mismo código de nota.',
+'La permuta y la seña se descuentan una sola vez por venta, en el primer renglón.',
+            '«Buscar nota» busca también en tus servicios técnicos, que no aparecen en esta tabla si no se facturaron como venta.',
+          ]}
+          tip="¿Te equivocaste en una venta? Editala desde el lápiz: el stock se acomoda solo."
+        >
+          Un renglón por producto
+        </AdminGuide>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat icon={Receipt} tone="navy" label="Ventas" value={ventasUnicas.toLocaleString('es-BO')} hint={`${filtrados.length.toLocaleString('es-BO')} productos vendidos`} />
+          <Stat icon={Tag} tone="slate" label="Precio de lista" value={bsFmt(totalPrecio)} hint="Antes de descuentos y permutas" />
+          <Stat icon={TrendingDown} tone="amber" label="Descuentos y permutas" value={bsFmt(totalDescuentos)} hint="Lo que rebajaste del precio" />
+          <Stat icon={Wallet} tone="lila" label="Total cobrado" value={bsFmt(totalCobrado)} hint="Sin señas previas" />
         </div>
+
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <form onSubmit={buscarNota} className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder="Buscar por cliente, código de nota o producto"
+                aria-label="Buscar en mis ventas"
+                className={`${inputCls} h-11 pl-10 pr-10`}
+              />
+              {texto && (
+                <button type="button" onClick={() => { setTexto(''); setNotas(null); }} aria-label="Borrar búsqueda"
+                  className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <button type="submit" disabled={!texto.trim() || buscando} className={buttonCls('secondary', 'h-11')} title="Busca también en tus servicios técnicos">
+              <FileText className="h-4 w-4" /> {buscando ? 'Buscando…' : 'Buscar nota'}
+            </button>
+          </form>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {[['todos', 'Todos', itemsDesglosados.length], ...Object.entries(TIPOS).filter(([k]) => conteoTipos[k]).map(([k, t]) => [k, t.label, conteoTipos[k]])].map(([k, label, n]) => (
+              <button key={k} type="button" onClick={() => setTipo(k)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${tipo === k ? 'bg-[#011446] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                {label} <span className={tipo === k ? 'text-white/70' : 'text-slate-400'}>{n}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {notas !== null && (
+          <section className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
+              <p className="text-sm font-bold text-slate-900">Notas encontradas <span className="font-semibold text-slate-400">· {notas.length}</span></p>
+              <button type="button" onClick={() => setNotas(null)} className={buttonCls('ghost', 'h-8 px-2.5 text-xs')}>
+                <X className="h-3.5 w-3.5" /> Cerrar
+              </button>
+            </div>
+            {notas.length === 0 ? (
+              <p className="px-5 py-6 text-center text-sm text-slate-500">No tienes notas con «{texto}».</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {notas.map((r) => (
+                  <li key={`${r.tipo}-${r.id}`} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-[color:var(--ab-acento)]">{r.codigo_nota}</span>
+                      <span className="truncate text-sm font-semibold text-slate-800">{r.nombre_cliente}</span>
+                      <Badge tone={r.tipo === 'servicio_tecnico' ? 'emerald' : 'navy'}>{r.tipo === 'servicio_tecnico' ? 'Servicio técnico' : 'Venta'}</Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      {r.tipo === 'venta' && (
+                        <Link href={route('vendedor.ventas.edit', r.id_real)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900">
+                          <Pencil className="h-3.5 w-3.5" /> Editar
+                        </Link>
+                      )}
+                      <AccionNota icon={FileText} label="Nota"
+                        href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.boleta', r.id_real) : route('vendedor.ventas.boleta', r.id_real)} />
+                      <AccionNota icon={Printer} label="Térmica"
+                        href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.recibo80mm', r.id_real) : route('vendedor.ventas.boleta80', r.id_real)} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
+              <ShoppingCart className="h-[18px] w-[18px] text-[color:var(--ab-acento)]" /> Detalle de mis ventas
+            </h2>
+            {hayFiltros && (
+              <button type="button" onClick={limpiar} className={buttonCls('ghost', 'h-8 px-2.5 text-xs')}>
+                <X className="h-3.5 w-3.5" /> Quitar filtros
+              </button>
+            )}
+          </div>
+
+          {itemsDesglosados.length === 0 ? (
+            <EmptyState icon={Receipt} title="Todavía no registraste ninguna venta"
+              text="Cuando cargues la primera, va a aparecer acá con su nota lista para imprimir."
+              action={<Link href={route('vendedor.ventas.create')} className={buttonCls('primary')}><Plus className="h-4 w-4" /> Registrar una venta</Link>} />
+          ) : filtrados.length === 0 ? (
+            <EmptyState icon={Search} title="Sin resultados" text="Probá con otro nombre, otro código o quitá los filtros."
+              action={<button type="button" onClick={limpiar} className={buttonCls('secondary')}>Quitar filtros</button>} />
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[860px] text-[13px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">
+                      <th className="px-5 py-3">Venta</th>
+                      <th className="px-4 py-3">Cliente</th>
+                      <th className="px-4 py-3">Producto</th>
+                      <th className="px-4 py-3 text-right">Precio</th>
+                      <th className="px-4 py-3 text-right">Descuentos</th>
+                      <th className="px-4 py-3 text-right">Cobrado</th>
+                      <th className="px-5 py-3 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibles.map((i, idx) => {
+                      const tipoInfo = TIPOS[i.tipo] ?? { label: i.tipo, tone: 'slate' };
+                      const rebajas = i.descuento + i.permuta;
+                      return (
+                        <tr key={`${i.id_venta}-${idx}`} className="align-top transition-colors hover:bg-slate-50/70">
+                          <td className="px-5 py-3">
+                            <p className="font-mono text-[13px] font-bold text-[color:var(--ab-acento)]">{i.codigoNota}</p>
+                            <p className="mt-0.5 whitespace-nowrap text-xs text-slate-400">{fecha(i.fecha)} · {hora(i.fecha)}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="max-w-[180px] truncate font-semibold text-slate-900">{i.cliente || 'Sin nombre'}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="max-w-[240px] truncate font-medium text-slate-800">{i.producto || '—'}</p>
+                            <Badge tone={tipoInfo.tone} className="mt-1">{tipoInfo.label}</Badge>
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-700">{bsFmt(i.precioVenta)}</td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                            {rebajas > 0 ? (
+                              <>
+                                <p className="text-rose-600">−{bsFmt(rebajas)}</p>
+                                {i.descuento > 0 && i.permuta > 0 && (
+                                  <>
+                                    <p className="mt-0.5 whitespace-nowrap text-[11px] text-slate-400">Desc. {bsFmt(i.descuento)}</p>
+                                    <p className="whitespace-nowrap text-[11px] text-slate-400">Permuta {bsFmt(i.permuta)}</p>
+                                  </>
+                                )}
+                                {i.permuta > 0 && i.descuento === 0 && <p className="mt-0.5 text-[11px] text-slate-400">Permuta</p>}
+                              </>
+                            ) : <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                            <p className="whitespace-nowrap font-bold text-slate-900">{bsFmt(i.precioFinal)}</p>
+                            {i.reserva > 0 && <p className="mt-0.5 text-[11px] text-slate-400">Seña previa {bsFmt(i.reserva)}</p>}
+                          </td>
+                          <td className="px-5 py-3">
+                            <div className="flex justify-end gap-1.5">
+                              <AccionNota icon={FileText} label="Nota" href={route('vendedor.ventas.boleta', i.id_venta)} />
+                              <AccionNota icon={Printer} label="Térmica" href={route('vendedor.ventas.boleta80', i.id_venta)} />
+                              <Link href={route('vendedor.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-slate-200 bg-slate-50/70 text-[13px]">
+                      <td className="px-5 py-3 font-bold text-slate-900" colSpan={5}>
+                        Total {hayFiltros ? 'filtrado' : 'general'} · {filtrados.length.toLocaleString('es-BO')} productos
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right font-extrabold tabular-nums text-slate-900">{bsFmt(totalCobrado)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {filtrados.length > limite && (
+                <div className="border-t border-slate-100 px-5 py-3 text-center">
+                  <button type="button" onClick={() => setLimite((l) => l + 50)} className={buttonCls('secondary')}>
+                    Mostrar 50 más <span className="text-slate-400">({(filtrados.length - limite).toLocaleString('es-BO')} restantes)</span>
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
       </div>
+
+      {exportar && (
+        <Modal
+          title="Exportar mis ventas a PDF"
+          onClose={() => setExportar(null)}
+          footer={(
+            <>
+              <button type="button" onClick={() => setExportar(null)} className={buttonCls('secondary', 'h-11')}>Cancelar</button>
+              <a
+                href={route('vendedor.ventas.exportar', { fecha_inicio: exportar.desde, fecha_fin: exportar.hasta })}
+                target="_blank" rel="noopener noreferrer"
+                onClick={() => setExportar(null)}
+                className={buttonCls('primary', 'h-11')}
+              >
+                <FileDown className="h-4 w-4" /> Abrir el PDF
+              </a>
+            </>
+          )}
+        >
+          <p className="text-[13px] leading-relaxed text-slate-600">
+            Se arma un PDF con tus ventas del período que elijas. Se abre en otra pestaña, listo para imprimir o guardar.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Desde</span>
+              <input type="date" value={exportar.desde} max={exportar.hasta}
+                onChange={(e) => setExportar((v) => ({ ...v, desde: e.target.value }))} className={`${inputCls} h-11`} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">Hasta</span>
+              <input type="date" value={exportar.hasta} min={exportar.desde}
+                onChange={(e) => setExportar((v) => ({ ...v, hasta: e.target.value }))} className={`${inputCls} h-11`} />
+            </label>
+          </div>
+        </Modal>
+      )}
     </VendedorLayout>
   );
 }
