@@ -43,3 +43,7 @@ coverage/
 *.dump
 *.dump.gz
 *.bak
+
+# Caché de Python (herramientas de la base de modelos)
+__pycache__/
+*.pyc
