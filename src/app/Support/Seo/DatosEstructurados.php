@@ -48,9 +48,9 @@ class DatosEstructurados
         $sede = Cache::remember('seo.sede', 600, fn () => StoreLocation::where('active', true)->first());
 
         $telefono  = $cfg['telefono'] ?: ($sede->phone ?? null);
-        $calle     = $cfg['calle'] ?: null;
         $ciudad    = $cfg['ciudad'] ?: ($sede->city ?? null);
         $mapa      = $sede->map_link_url ?? null;
+        $calle     = $cfg['calle'] ?: self::calleReal($sede, $ciudad);
 
         $datos = [
             '@type'       => $cfg['tipo'] ?? 'Store',
@@ -80,12 +80,43 @@ class DatosEstructurados
             $datos['hasMap'] = $mapa;
         }
 
+        // El horario lo carga la tienda en el panel (Tienda online → Ubicaciones). Es dato propio
+        // y verificable, así que se publica. Si no hay horario cargado, no se inventa ninguno.
+        if ($sede && ($horario = $sede->horarioParaGoogle())) {
+            $datos['openingHoursSpecification'] = $horario;
+        }
+
         $perfiles = array_values(array_filter((array) ($cfg['perfiles'] ?? [])));
         if ($perfiles) {
             $datos['sameAs'] = $perfiles;
         }
 
         return array_filter($datos, fn ($v) => $v !== null && $v !== []);
+    }
+
+    /**
+     * La dirección del local, solo si de verdad es una dirección.
+     *
+     * En la base hoy dice «Cochabamba, Bolivia»: eso es la ciudad y el país, no una calle.
+     * Publicarlo como `streetAddress` sería darle a Google un dato falso, así que se descarta.
+     * Cuando la tienda cargue la dirección real, esta misma función la deja pasar sola.
+     */
+    private static function calleReal(?StoreLocation $sede, ?string $ciudad): ?string
+    {
+        $direccion = trim((string) ($sede->address ?? ''));
+
+        if ($direccion === '') {
+            return null;
+        }
+
+        $sobrante = str_ireplace(
+            array_filter([$ciudad, $sede->city ?? null, $sede->country ?? null, 'Bolivia']),
+            ' ',
+            $direccion
+        );
+
+        // Si al sacarle la ciudad y el país no queda nada, no había dirección de calle
+        return trim($sobrante, " \t\n\r,.-") === '' ? null : $direccion;
     }
 
     /** El sitio, para que Google entienda la entidad y el buscador interno. */

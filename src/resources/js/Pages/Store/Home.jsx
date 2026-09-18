@@ -1069,27 +1069,12 @@ export default function Home({ sections, featured, categories, totalAvailable, f
             tone: section.type in FIXED_TONE ? FIXED_TONE[section.type] : (light++ % 2 === 0 ? 'white' : 'muted'),
         }));
 
-    // Lo que lee Google del negocio: cada local encendido con su dirección y su horario día por día (Tienda online →
-    // Ubicaciones). Sin locales, solo el nombre de la tienda: nada de direcciones ni horarios de ejemplo.
-    const datosGoogle = (locations ?? []).map((l) => l.google).filter(Boolean);
-    const localBusiness = datosGoogle.length > 0
-        ? { '@context': 'https://schema.org', '@graph': datosGoogle }
-        : {
-            '@context': 'https://schema.org',
-            '@type': 'Store',
-            name: nombre,
-            description: tienda?.tienda_descripcion ?? undefined,
-            telephone: tienda?.whatsapp_enabled && tienda?.whatsapp_numero ? `+${tienda.whatsapp_numero}` : undefined,
-            url: typeof window !== 'undefined' ? window.location.origin : '',
-        };
+    // Los datos del negocio para Google ya NO se pintan acá. Los imprime el servidor en el <head>
+    // (App\Support\Seo\DatosEstructurados), así Google los lee sin ejecutar JavaScript y —sobre todo—
+    // existe un solo Store para la tienda. Tener dos le impedía saber cuál es el negocio de verdad.
 
     return (
         <StoreLayout>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusiness) }}
-            />
-
             {rendered.map(({ section, products, tone }) => (
                 <SectionRenderer
                     key={section.id}

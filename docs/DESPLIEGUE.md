@@ -170,7 +170,8 @@ docker compose -f docker-compose.production.yml exec app php artisan migrate:rol
 
 ## Pendientes que NO entran acá
 
-- **SSR** (el HTML todavía llega vacío para Google) — es el siguiente paso grande.
-- **GA4** (falta el ID de medición) y **Search Console** (falta el acceso).
+- **SSR** — **ya no es urgente**: Search Console confirma que Google renderiza e indexa la home. Queda como mejora (velocidad de indexación y vista previa al compartir en redes).
+- **GA4** (falta el ID de medición `G-XXXXXXX`). Search Console **ya está conectado**: sitemap aceptado, 24 páginas descubiertas.
+- **NAP**: falta la dirección de calle y el teléfono en el panel (Tienda online → Ubicaciones). Sin eso, Google no recibe ni `streetAddress` ni `telephone`.
 - **Credenciales del BNB** para el QR automático.
 - **`apple-boss.com.bo`**: queda para otro proyecto. Asegúrate de que **no** apunte a este sitio, para no crear contenido duplicado.

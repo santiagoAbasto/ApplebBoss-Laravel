@@ -26,37 +26,39 @@ Lo que **sí** sigue impidiendo que Google entienda el sitio, verificado pidiend
 | ~~H1~~ | ✅ Resuelto | ~~No existe dominio propio~~ → **el sitio ya está en producción en `https://appleboss.com.bo`** (HTTPS 200, `www` redirige 301 correctamente) | `dig` + `curl`: 200; `www` → 301 → raíz. *El diagnóstico inicial era del entorno local, que sí usaba Quick Tunnels* |
 | **H1b** | 🟠 Alto | **Dominio duplicado roto:** `apple-boss.com.bo` (con guion) existe en DNS y devuelve **error 525**. `.env.production.example` apuntaba justamente ahí | `curl https://apple-boss.com.bo` → 525 |
 | **H2** | 🟡 Medio (local) | `APP_URL=http://localhost:8010` en el entorno local → canonicals locales apuntan a localhost. **En producción el sitemap ya sale con el dominio correcto** | `src/.env` local vs sitemap de producción: `<loc>https://appleboss.com.bo/</loc>` |
-| **H3** | 🔴 Crítico | **El HTML llega prácticamente vacío**: 152 KB con **30 caracteres** de texto visible y **0 `<h1>`**. Todo el contenido lo pinta React | `curl /` + extracción de texto sin `<script>` |
-| **H4** | 🟠 Alto | **`public/robots.txt` estático tapa al `RobotsController`.** El servido no bloquea `/admin` ni `/vendedor` y **no declara el Sitemap** | `curl /robots.txt` → `User-agent: *` / `Disallow:` (el controlador, bien hecho, nunca se sirve) |
-| **H5** | 🟠 Alto | **Cero datos estructurados.** No hay `Organization`, `LocalBusiness`/`Store`, `Product`, `BreadcrumbList`, `WebSite` | 0 bloques `application/ld+json` en el `<head>` |
+| ~~H3~~ | 🟡 Medio (rebajado) | ~~El HTML llega vacío y Google no ve nada~~ → **Google sí renderiza el sitio.** El HTML servido trae 30 caracteres de texto, pero Search Console muestra la home **renderizada y completa**, indexada y con HTTPS válido | Inspección de URL en Search Console: «La URL está en Google» + HTML rastreado con el `<div id="app">` lleno (cabecera, productos, pie) |
+| ~~H4~~ | ✅ Resuelto | ~~`public/robots.txt` estático tapaba al `RobotsController`~~ → se eliminó el archivo; producción ya sirve el controlador con `Sitemap:` y los `Disallow` correctos. El servido no bloquea `/admin` ni `/vendedor` y **no declara el Sitemap** | `curl /robots.txt` → `User-agent: *` / `Disallow:` (el controlador, bien hecho, nunca se sirve) |
+| ~~H5~~ | ✅ Resuelto | ~~Cero datos estructurados~~ → `Store` + `WebSite` + `Product` + `BreadcrumbList`, impresos **en el servidor** | 1 bloque `application/ld+json` en el `<head>` de producción |
 | **H6** | 🟠 Alto | **NAP incompleto e inconsistente** con Google Business Profile | BD: dirección «Cochabamba, Bolivia», teléfono `null`, horarios `null`. GBP: «Edificio Fidel Anze sobre la Melchor Urquidi», teléfono 75904313, abre 9:00 |
 | **H7** | 🟠 Alto | **Sin analítica.** No hay GA4, ni GTM, ni ningún evento | Búsqueda de `gtag`/`GTM-`/`G-XXXX` en el HTML: solo hashes de Vite (falsos positivos) |
-| **H8** | 🟡 Medio | **Sin `og:image`** → al compartir no se ve imagen | `<meta property="og:image">` ausente |
-| **H9** | 🟡 Medio | Canonical usa el **host de la petición** (`http://127.0.0.1:8010`), no un dominio fijo | `<link rel="canonical">` en vivo |
+| ~~H8~~ | ✅ Resuelto | ~~Sin `og:image`~~ → en producción sale `https://appleboss.com.bo/images/LOGO.png` | `curl` a producción como Googlebot |
+| ~~H9~~ | ✅ Resuelto | ~~Canonical usaba el host de la petición~~ → sale siempre de `SEO_PUBLIC_URL`. En producción: `https://appleboss.com.bo/` | `curl` a producción como Googlebot |
 | **H10** | 🟡 Medio | Sitemap incluye **URLs con parámetros** (`/catalogo?categoria=…`) que duplican la categoría | sitemap en vivo (24 URLs) |
+| **H11** | 🔴 Crítico | **El título indexado terminaba en «- Laravel»**: `Apple Boss — Tecnología Apple en Cochabamba **- Laravel**`. El servidor mandaba el título bien, pero React le pegaba la marca de respaldo. El build de producción no recibía `VITE_APP_NAME`, así que esa marca era `Laravel` | HTML rastreado en Search Console + `grep Laravel` dentro del bundle desplegado `app-BzVGhLvK.js` |
+| **H12** | 🟠 Alto | **Dos negocios declarados.** El servidor emitía un `Store` y, al renderizar, `Home.jsx` inyectaba **otro** `Store` distinto. Con dos, Google no sabe cuál es el negocio real | HTML rastreado: el único `ld+json` visible era el del componente React, no el del servidor |
 
 **Lo que sí está bien hoy:** `title` y `meta description` propios y descriptivos; `meta robots: index,follow`; `twitter:card`; sitemap dinámico que **no filtra** rutas privadas (checkout, pedidos, seguimiento, admin, login); `SeoHead` ya sabe emitir OG/Twitter/canonical; hay un CMS de SEO (`SeoPage`: title, description, og_image, canonical, noindex).
 
 ---
 
-## 1. El problema de fondo hoy: Google recibe una página en blanco
+## 1. Renderizado: qué ve Google de verdad
 
-El sitio es una SPA de Inertia **sin SSR**. Pedida como Googlebot, la home devuelve 151.708 bytes de los cuales solo **30 son texto visible**, y **no hay ni un `<h1>`**. Todo el contenido viaja dentro del JSON de Inertia y lo pinta React en el navegador.
+**Corrección respecto de la primera versión de este documento.** Yo había concluido que Google recibía una página en blanco, midiendo el HTML que devuelve el servidor: 151.708 bytes con solo **30 caracteres de texto visible** y **0 `<h1>`**. Eso es cierto, pero **era la mitad del cuadro**.
 
-Google sí ejecuta JavaScript, pero:
+La Inspección de URL de Search Console mostró lo otro:
 
-- El renderizado va a una segunda cola, con retraso y presupuesto limitado.
-- Si el JS falla, tarda o se bloquea, la página queda **sin contenido** para el índice.
-- Las señales de estructura (encabezados, texto, enlaces internos) no existen en el HTML inicial.
+- **«La URL está en Google» · «La página está indexada» · HTTPS válido.**
+- El **HTML rastreado** trae el `<div id="app">` **completo**: cabecera, carrusel, fichas de producto con precios, pie de página.
 
-Para una tienda que recién empieza a indexarse, esto es el mayor freno que queda.
+O sea: **Googlebot ejecutó el JavaScript y renderizó el sitio entero.** La home está indexada.
 
-**Las dos salidas, en orden de recomendación:**
+**Qué significa para el proyecto:** el SSR **deja de ser el freno principal**. Baja de crítico a mejora de rendimiento. Sigue valiendo la pena por tres razones concretas, pero ninguna bloquea la indexación:
 
-1. **Inertia SSR** (lo correcto). Inertia 3.7 y React 19 ya lo soportan; falta el *entrypoint* `resources/js/ssr.jsx` y un proceso Node en producción. Google recibiría el HTML completo.
-2. **Contenido crítico renderizado en Blade** (paliativo). Servir en el HTML inicial el `<h1>`, el texto clave y los enlaces principales. Debe ser **el mismo contenido** que ve la persona: si difiere, es *cloaking* y Google penaliza.
+1. El renderizado va a una **segunda cola** de Google: las páginas nuevas tardan más en entrar.
+2. Si el JavaScript falla o tarda, **esa** página queda sin contenido.
+3. Las redes sociales y los buscadores de IA **no ejecutan JavaScript**: leen el HTML crudo. Hoy ven una página vacía.
 
----
+El punto 3 es el que más pesa hoy, y **ya está parcialmente cubierto**: `title`, `description`, `og:image`, canonical y los datos estructurados se imprimen **en el servidor**, así que se leen sin JavaScript.
 
 ## 2. Corregido en esta pasada
 
@@ -69,7 +71,10 @@ Para una tienda que recién empieza a indexarse, esto es el mayor freno que qued
 | Sin datos falsos | El JSON-LD **nunca** emite `aggregateRating`, `reviewCount` ni `ratingValue`; si falta teléfono o dirección, el campo simplemente no se publica |
 | `og:image` por defecto | `SEO_OG_IMAGE`, con respaldo del logo |
 | Dominio de producción | `.env.production.example` apuntaba a `apple-boss.com.bo` (roto, 525). Corregido a `appleboss.com.bo` |
-| Pruebas | `SeoTecnicoTest`: 10 casos que vigilan robots, sitemap, canonical, JSON-LD y detección de dominios no indexables |
+| Título sin «- Laravel» | Doble arreglo: la marca de respaldo en `app.jsx` pasó de `Laravel` a `Apple Boss`, y `Dockerfile.production` ahora inyecta `VITE_APP_NAME` al build. Antes el build de producción no veía el `.env` y caía en el respaldo |
+| Un solo negocio | Se quitó el `<script ld+json>` que `Home.jsx` inyectaba al renderizar. El `Store` queda solo en el servidor, y se le sumaron el **horario real** del panel y `hasMap` |
+| Dirección honesta | `DatosEstructurados::calleReal()`: si la dirección guardada es solo «Cochabamba, Bolivia», **no** se publica como `streetAddress`. Cuando cargues la calle real, entra sola |
+| Pruebas | `SeoTecnicoTest`: **13 casos** que vigilan robots, sitemap, canonical, JSON-LD, un único `Store`, la dirección honesta y la detección de dominios no indexables |
 
 ---
 
@@ -96,5 +101,5 @@ Siguiendo la regla de **no inventar**:
 4. ✅ Datos estructurados + `og:image`
 5. ⏳ SEO local (completar NAP con datos confirmados)
 6. ⏳ GA4 (falta el ID)
-7. ⏳ SSR o contenido crítico en HTML ← **el freno principal**
+7. ⏳ SSR o contenido crítico en HTML ← **ya NO es el freno**: Google renderiza e indexa (§1). Queda como mejora
 8. 🔒 Search Console, keyword research con datos reales, Core Web Vitals de campo → bloqueados hasta tener accesos

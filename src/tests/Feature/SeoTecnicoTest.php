@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\CatalogoPublicacion;
 use App\Models\Celular;
+use App\Models\StoreLocation;
 use App\Support\Seo\UrlPublica;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -163,6 +165,55 @@ class SeoTecnicoTest extends TestCase
         foreach (['aggregateRating', 'reviewCount', 'ratingValue'] as $prohibido) {
             $this->assertStringNotContainsString($prohibido, $html);
         }
+    }
+
+    /* ─── un solo negocio ─────────────────────────────────────────────────── */
+
+    public function test_la_pagina_declara_un_solo_negocio(): void
+    {
+        // Antes había dos Store: uno del servidor y otro que inyectaba React al renderizar.
+        // Con dos, Google no sabe cuál es el negocio de verdad.
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($html, 'application/ld+json'),
+            'debe haber un solo bloque de datos estructurados');
+
+        $tipos = array_column($this->jsonLd('/'), '@type');
+        $this->assertSame(1, count(array_keys($tipos, 'Store', true)),
+            'solo puede declararse una vez la tienda');
+    }
+
+    /* ─── NAP: nada inventado ─────────────────────────────────────────────── */
+
+    public function test_no_publica_como_calle_lo_que_es_solo_la_ciudad(): void
+    {
+        StoreLocation::create([
+            'name' => 'Apple Boss Cochabamba', 'address' => 'Cochabamba, Bolivia',
+            'city' => 'Cochabamba', 'country' => 'Bolivia', 'active' => true,
+        ]);
+        Cache::forget('seo.sede');
+
+        $tienda = collect($this->jsonLd('/'))->firstWhere('@type', 'Store');
+
+        // «Cochabamba, Bolivia» es la ciudad y el país: publicarlo como calle sería un dato falso
+        $this->assertArrayNotHasKey('streetAddress', $tienda['address'] ?? []);
+        $this->assertSame('Cochabamba', $tienda['address']['addressLocality'] ?? null);
+    }
+
+    public function test_publica_la_calle_cuando_es_una_direccion_de_verdad(): void
+    {
+        StoreLocation::create([
+            'name' => 'Apple Boss Cochabamba', 'address' => 'Av. Melchor Urquidi, Edificio Fidel Anze',
+            'city' => 'Cochabamba', 'country' => 'Bolivia', 'phone' => '75904313', 'active' => true,
+            'horarios' => [['dia' => 1, 'abierto' => true, 'tramos' => [['abre' => '09:00', 'cierra' => '19:00']]]],
+        ]);
+        Cache::forget('seo.sede');
+
+        $tienda = collect($this->jsonLd('/'))->firstWhere('@type', 'Store');
+
+        $this->assertSame('Av. Melchor Urquidi, Edificio Fidel Anze', $tienda['address']['streetAddress'] ?? null);
+        $this->assertNotEmpty($tienda['telephone'] ?? null);
+        $this->assertNotEmpty($tienda['openingHoursSpecification'] ?? null, 'el horario cargado en el panel debe llegar a Google');
     }
 
     /* ─── dominio publicable ──────────────────────────────────────────────── */

@@ -4,6 +4,11 @@ FROM node:24-bookworm-slim AS frontend
 
 WORKDIR /app
 
+# La marca entra al build: Vite la congela dentro del bundle y de ahi sale el <title>.
+# Sin esto el titulo termina en "- Laravel", que es lo que Google llego a indexar.
+ARG VITE_APP_NAME="Apple Boss"
+ENV VITE_APP_NAME=${VITE_APP_NAME}
+
 COPY src/package.json src/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 

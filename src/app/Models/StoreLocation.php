@@ -153,7 +153,7 @@ class StoreLocation extends Model
     }
 
     /** Los días con el mismo tramo van juntos: «lunes a viernes, de 09:00 a 19:00». */
-    private function horarioParaGoogle(): array
+    public function horarioParaGoogle(): array
     {
         $grupos = [];
 

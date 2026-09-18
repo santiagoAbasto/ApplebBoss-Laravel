@@ -10,7 +10,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Apple Boss';
 
 createInertiaApp({
     // Las páginas públicas ya traen el título completo desde SEO por página; solo se agrega la marca si falta.

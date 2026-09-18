@@ -1,6 +1,6 @@
 # Memory — apple-boss
 
-> Generated: 2026-09-17 06:42:05  
+> Generated: 2026-09-18 07:52:36  
 > Total memories: **101**  
 > Breakdown: instruction: 18, fact: 11, decision: 25, goal: 2, preference: 10, context: 4, learning: 25, artifact: 3, error: 3
 
@@ -22,17 +22,17 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `flujo-de-trabajo`, `git`, `commits`*
 
-### Condición comercial y afirmaciones verificables
-
-> La condición comercial (Nuevo, Seminuevo…) debe ser explícita y verificable; nunca se inventa ni se actualiza en masa. La tienda no muestra afirmaciones no verificadas (Apple Authorized, el mejor precio, garantía oficial, envío nacional, etc.).
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `condicion-comercial`, `contenido-tienda`, `verificacion`*
-
 ### WhatsApp y SMTP
 
 > La configuración de WhatsApp queda como está (null hasta que el usuario la configure) y las credenciales SMTP van solo en .env. A Inertia solo se comparte una lista blanca de configuracion_tienda.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `configuracion`, `smtp`, `whatsapp`*
+
+### Condición comercial y afirmaciones verificables
+
+> La condición comercial (Nuevo, Seminuevo…) debe ser explícita y verificable; nunca se inventa ni se actualiza en masa. La tienda no muestra afirmaciones no verificadas (Apple Authorized, el mejor precio, garantía oficial, envío nacional, etc.).
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `condicion-comercial`, `contenido-tienda`, `verificacion`*
 
 ### En Apple Boss (repositorio público) nunca se escri...
 
@@ -40,23 +40,17 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-17T04:39:17 | Tags: `seguridad`, `credenciales`, `seeders`, `git`, `apple-boss`*
 
-### MYSKIN solo para fundas
-
-> MYSKIN es una marca solo para fundas/cases; no es un fabricante y no se asigna a otras categorías.
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `myskin`, `catalogo`, `marcas`*
-
 ### Sin migraciones ni refactors masivos
 
 > No migrar framework, base de datos, CSS, JS a TypeScript ni la arquitectura; nada de refactors masivos ajenos al ecommerce.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `arquitectura`, `alcance`, `refactor`*
 
-### Verificar sin iniciar sesión en el panel
+### MYSKIN solo para fundas
 
-> No iniciar sesión en el panel admin ni escribir credenciales. Verificar con la suite de tests, el build y tinker; las pantallas del admin se revisan con un render estático (esbuild + renderToStaticMarkup con los props reales sacados con tinker) que después se borra.
+> MYSKIN es una marca solo para fundas/cases; no es un fabricante y no se asigna a otras categorías.
 
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `verificacion`, `admin`, `credenciales`*
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `myskin`, `catalogo`, `marcas`*
 
 ### El precio lo decide el backend
 
@@ -69,6 +63,12 @@
 > En la base de modelos de iPhone, todo dato que no salga de la página oficial de Apple se anota como pendiente con su fuente. Ante dos fuentes de Apple que no coinciden vale la de EE. UU., porque el negocio importa desde EE. UU.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `modelos-referencia`, `fuentes`, `verificacion`*
+
+### Verificar sin iniciar sesión en el panel
+
+> No iniciar sesión en el panel admin ni escribir credenciales. Verificar con la suite de tests, el build y tinker; las pantallas del admin se revisan con un render estático (esbuild + renderToStaticMarkup con los props reales sacados con tinker) que después se borra.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `verificacion`, `admin`, `credenciales`*
 
 ### Contenido de accesorios: los genéricos (fundas, vi...
 
@@ -160,17 +160,17 @@
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-16T21:48:37 | Tags: `apple-boss`, `ipad`, `inventario`*
 
-### Los accesorios se ordenan por tipo con la familia ...
-
-> Los accesorios se ordenan por tipo con la familia de su ficha (cargador, vidrio, protector, funda, cable y otros); ese tipo filtra el catálogo con ?tipo= y el panel muestra cuántos hay en tienda y por publicar.
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T23:38:10 | Tags: `accesorios`, `categorias`, `fichas`*
-
 ### Ninth Group (PROYECTO NIGHT): Laravel 13 + Inertia...
 
 > Ninth Group (PROYECTO NIGHT): Laravel 13 + Inertia v3 + React 19/TypeScript 7 + Tailwind 4 + Pest 5 sobre PHP 8.5 en Docker. La stack local corre en http://127.0.0.1:8090 porque 8080, 3306 y 5173 los usan otros proyectos de esta Mac; los tests corren con docker compose exec app php artisan test contra MySQL ninth_testing. Arquitectura en docs/architecture/foundation.md y deployment.md.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T16:52:13 | Tags: `ninth-group`, `stack`, `docker`, `puertos`*
+
+### Los accesorios se ordenan por tipo con la familia ...
+
+> Los accesorios se ordenan por tipo con la familia de su ficha (cargador, vidrio, protector, funda, cable y otros); ese tipo filtra el catálogo con ?tipo= y el panel muestra cuántos hay en tienda y por publicar.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T23:38:10 | Tags: `accesorios`, `categorias`, `fichas`*
 
 ### Stack y entorno de desarrollo
 
@@ -220,17 +220,17 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-17T04:59:10 | Tags: `tesis`, `documento-de-grado`, `apple-boss`, `docx`*
 
-### Qué muestra la ficha pública
-
-> La ficha pública del producto no muestra lo que el modelo no tiene (teleobjetivo, LiDAR, Thread, Botón Acción, Control de Cámara); la excepción es Apple Intelligence, que se muestra como «No compatible». La comparativa pública sí muestra «No tiene».
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `ficha-tecnica`, `apple-intelligence`, `comparativa`*
-
 ### Los accesorios viven en la base de modelos de refe...
 
 > Los accesorios viven en la base de modelos de referencia como tipo producto_general (accesorios.php generado por herramientas/generar_accesorios.py, validado por EsquemaAccesorio): una ficha por TIPO de accesorio, reconocida por expresiones regulares sobre el nombre del inventario (sistema.detectar, de lo más específico a lo más general). La publicación copia la ficha y arma resumen, descripción y qué incluye con {modelo} = el iPhone que dice el nombre. Las comparativas de accesorios se suman en ComparadorModelosController::FAMILIAS con familia de la base, inicio e invitacion; el front usa familia.base.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T21:02:20 | Tags: `accesorios`, `modelos-referencia`, `comparador`, `deteccion`*
+
+### Qué muestra la ficha pública
+
+> La ficha pública del producto no muestra lo que el modelo no tiene (teleobjetivo, LiDAR, Thread, Botón Acción, Control de Cámara); la excepción es Apple Intelligence, que se muestra como «No compatible». La comparativa pública sí muestra «No tiene».
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `ficha-tecnica`, `apple-intelligence`, `comparativa`*
 
 ### En Apple Boss los roles son datos, no texto en el ...
 
@@ -280,23 +280,17 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T23:38:10 | Tags: `categorias`, `tienda`, `admin`, `catalogo`*
 
-### En Apple Boss, la portada de la tienda se arma con...
-
-> En Apple Boss, la portada de la tienda se arma con secciones fijas que el administrador enciende, ordena y edita en Tienda online → Portada: no se crean ni se borran. Una sola regla decide qué productos le tocan a cada sección (HomeSection::filtrar), y la comparten la tienda y el panel, así que el panel puede decir qué muestra hoy cada sección y por qué queda fuera. En el inicio cada producto sale una sola vez: la vitrina de una colección se reserva los suyos y los demás carruseles toman lo que queda. Una sección de productos sin nada que mostrar no se dibuja: la portada nunca queda con un título y un hueco debajo.
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:36:08 | Tags: `portada`, `home-sections`, `tienda-online`, `dominio`*
-
 ### La página de una categoría (/catalogo?categoria=sl...
 
 > La página de una categoría (/catalogo?categoria=slug) tiene portada propia (título, texto y botón), título y descripción para Google, URL canónica propia y entra en el sitemap si tiene productos.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-15T23:38:11 | Tags: `categorias`, `seo`, `catalogo`*
 
-### Apple Boss: los productos de otras marcas cargados...
+### En Apple Boss, la portada de la tienda se arma con...
 
-> Apple Boss: los productos de otras marcas cargados en el inventario «Productos Apple» (Samsung Galaxy Tab S9 Ultra y S10 Lite 5G, monitor K&F Concept M5, ventilador Torras COOLiTE FG2) tienen ficha en la base producto_apple con familia otra_marca, pero NUNCA entran en la comparativa /comparar/apple (decisión del usuario: sería poco serio). En la tienda muestran su marca en vez de la categoría. Los iPad son Wi-Fi salvo un iPad Pro 11 M5 Wi-Fi + Cellular (el que tiene IMEI).
+> En Apple Boss, la portada de la tienda se arma con secciones fijas que el administrador enciende, ordena y edita en Tienda online → Portada: no se crean ni se borran. Una sola regla decide qué productos le tocan a cada sección (HomeSection::filtrar), y la comparten la tienda y el panel, así que el panel puede decir qué muestra hoy cada sección y por qué queda fuera. En el inicio cada producto sale una sola vez: la vitrina de una colección se reserva los suyos y los demás carruseles toman lo que queda. Una sección de productos sin nada que mostrar no se dibuja: la portada nunca queda con un título y un hueco debajo.
 
-*Confidence: 0.95 | Status: active | Created: 2026-09-16T22:16:08 | Tags: `apple-boss`, `productos-apple`, `comparativa`, `otras-marcas`*
+*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:36:08 | Tags: `portada`, `home-sections`, `tienda-online`, `dominio`*
 
 ### En Apple Boss la tienda tiene tres menús independi...
 
@@ -304,11 +298,11 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T04:50:01 | Tags: `menu`, `navegacion`, `tienda-online`, `dominio`*
 
-### En Apple Boss, Tienda online → Servicios (modelo S...
+### Apple Boss: los productos de otras marcas cargados...
 
-> En Apple Boss, Tienda online → Servicios (modelo StoreService) arma las tarjetas de «Nuestros servicios» del inicio. Cada tarjeta puede solo informar, abrir WhatsApp con «Hola Apple Boss, quiero consultar por: {título}» o llevar a una página (de la tienda, una colección o una página informativa). StoreService::paraLaTienda() es la única consulta pública: un botón de WhatsApp con el WhatsApp de la tienda apagado, o un enlace sin dirección, queda como solo informa. Sin tarjetas encendidas la sección no se dibuja y Portada lo informa; el título y la bajada de la sección se editan en Portada. No confundir con Servicio técnico (órdenes de reparación).
+> Apple Boss: los productos de otras marcas cargados en el inventario «Productos Apple» (Samsung Galaxy Tab S9 Ultra y S10 Lite 5G, monitor K&F Concept M5, ventilador Torras COOLiTE FG2) tienen ficha en la base producto_apple con familia otra_marca, pero NUNCA entran en la comparativa /comparar/apple (decisión del usuario: sería poco serio). En la tienda muestran su marca en vez de la categoría. Los iPad son Wi-Fi salvo un iPad Pro 11 M5 Wi-Fi + Cellular (el que tiene IMEI).
 
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T12:25:22 | Tags: `servicios`, `tienda-online`, `portada`, `whatsapp`*
+*Confidence: 0.95 | Status: active | Created: 2026-09-16T22:16:08 | Tags: `apple-boss`, `productos-apple`, `comparativa`, `otras-marcas`*
 
 ### En Apple Boss, Tienda online → Configuración (tabl...
 
@@ -316,17 +310,17 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T16:26:41 | Tags: `configuracion`, `tienda-online`, `whatsapp`, `nombre-tienda`, `dominio`*
 
+### En Apple Boss, Tienda online → Servicios (modelo S...
+
+> En Apple Boss, Tienda online → Servicios (modelo StoreService) arma las tarjetas de «Nuestros servicios» del inicio. Cada tarjeta puede solo informar, abrir WhatsApp con «Hola Apple Boss, quiero consultar por: {título}» o llevar a una página (de la tienda, una colección o una página informativa). StoreService::paraLaTienda() es la única consulta pública: un botón de WhatsApp con el WhatsApp de la tienda apagado, o un enlace sin dirección, queda como solo informa. Sin tarjetas encendidas la sección no se dibuja y Portada lo informa; el título y la bajada de la sección se editan en Portada. No confundir con Servicio técnico (órdenes de reparación).
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-16T12:25:22 | Tags: `servicios`, `tienda-online`, `portada`, `whatsapp`*
+
 ### En Apple Boss, un permiso es un MÓDULO del panel, ...
 
 > En Apple Boss, un permiso es un MÓDULO del panel, no una acción suelta. El catálogo vive en App\Support\Permisos (14 módulos con los prefijos de nombre de ruta que le pertenecen a cada uno) y lo hacen cumplir tres piezas con la misma regla (Role::permite): PermisoMiddleware corta con 403 en el servidor, AdminLayout esconde lo mismo en el menú con auth.permisos, y la pantalla de roles dibuja los módulos agrupados. Lo que está dentro de /admin y no pertenece a ningún módulo queda solo para administradores, así una ruta nueva nunca queda abierta por olvido.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T17:35:45 | Tags: `usuarios`, `roles`, `permisos`, `seguridad`, `arquitectura`*
-
-### En Apple Boss las páginas de Tienda online → Págin...
-
-> En Apple Boss las páginas de Tienda online → Páginas son de solo texto (Nosotros, Garantía, Envíos, Términos): explican algo al cliente y no llevan productos ni formularios. Viven en /paginas/{slug}, su dirección se arma con el título al crearlas y no cambia, y cada página encendida aparece sola en la columna «Información» del pie; si tiene su propio enlace en el menú del pie, deja de listarse sola para no repetirse. El texto se limpia siempre en el servidor: solo quedan p, br, strong, b, em, i, ul, ol, li, h2, h3, h4 y a, y un href con javascript:, data: o vbscript: pierde la dirección.
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T05:04:14 | Tags: `paginas`, `contenido`, `tienda-online`, `dominio`*
 
 ### En Apple Boss, Tienda online → Ubicaciones (StoreL...
 
@@ -334,17 +328,23 @@
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T13:06:56 | Tags: `ubicaciones`, `tienda-online`, `google-schema`, `configuracion`*
 
-### Apple Boss debe seguir funcionando en iPhone con i...
+### Apple Boss, servicio técnico (2026-09-16, pedido d...
 
-> Apple Boss debe seguir funcionando en iPhone con iOS 14 y 15 (clientes con equipos viejos): no migrar a Tailwind 4 (exige Safari 16.4); Vite 8 lleva build.target fijo en es2020/safari14/chrome87/firefox78/edge88 y cssMinify 'esbuild' (Lightning CSS reescribe fuentes); resources/js/polyfills.js agrega Object.hasOwn porque Inertia 3 usa es-toolkit. Antes de subir una librería, contar APIs modernas del build (structuredClone, Object.hasOwn, .at, lookbehind).
+> Apple Boss, servicio técnico (2026-09-16, pedido del usuario): el vendedor registra solo lo que paga el cliente y al guardar sale la nota; el servicio queda con costo_pendiente = true. Al administrador le llega en el momento una SystemNotification de tipo servicio_sin_costo (Resumen, abre /admin/servicios?pendientes=1) y la alerta fija en Servicio técnico. El administrador carga el costo de cada trabajo con PATCH admin.servicios.costo (ServicioTecnicoController::cargarCosto, solo rol admin): se completa el costo en el JSON sin tocar descripción ni precio (la nota no cambia), se guardan costo_cargado_por y costo_cargado_en y el aviso queda leído. Mientras falta el costo, ese servicio suma a lo cobrado pero no suma costo ni utilidad en ningún reporte (costoParaReportes y gananciaParaReportes del modelo) y se muestra como «Costo pendiente».
 
-*Confidence: 0.8 | Status: active | Created: 2026-09-17T02:14:14 | Tags: `apple-boss`, `navegadores`, `tailwind`, `vite`, `compatibilidad`*
+*Confidence: 1.0 | Status: active | Created: 2026-09-16T20:17:59 | Tags: `servicio-tecnico`, `costos`, `utilidad`, `vendedor`, `trazabilidad`*
 
 ### H5 (token n8n con ámbito+rotación) y H8 (horario del vendedor) implementados
 
 > Apple Boss (Laravel): H5 corregido sin romper n8n. Se comprobó que n8n SOLO llama /api/automation/reports y /api/automation/top-products; el export financiero no lo usa nadie de n8n y el admin exporta desde el panel (ruta web con sesión). Fix: /api/automation/reportes/exportar pasó a ámbito 'automation:export' con AUTOMATION_EXPORT_TOKEN aparte (vacío=cerrado por defecto). AutomationTokenMiddleware ahora acepta varios tokens (AUTOMATION_TOKEN + AUTOMATION_TOKENS_PREVIOS) para rotar sin cortar n8n; comando 'php artisan automation:token'. El backup diario 20:00 es scheduleTrigger (dump PostgreSQL), no usa la API. H8 (nuevo): el vendedor no inicia sesión fuera de 09:00-13:00 y 14:00-19:00 (America/La_Paz); se hace en LoginRequest con App\Support\HorarioLaboral (config/horario.php), NO en n8n porque n8n no intercepta un login en tiempo real; el admin no se restringe. 575 tests verdes.
 
 *Confidence: 0.9 | Status: active | Created: 2026-09-17T04:03:14 | Tags: `seguridad`, `n8n`, `token`, `horario`, `vendedor`, `apple-boss`, `tesis`*
+
+### Apple Boss debe seguir funcionando en iPhone con i...
+
+> Apple Boss debe seguir funcionando en iPhone con iOS 14 y 15 (clientes con equipos viejos): no migrar a Tailwind 4 (exige Safari 16.4); Vite 8 lleva build.target fijo en es2020/safari14/chrome87/firefox78/edge88 y cssMinify 'esbuild' (Lightning CSS reescribe fuentes); resources/js/polyfills.js agrega Object.hasOwn porque Inertia 3 usa es-toolkit. Antes de subir una librería, contar APIs modernas del build (structuredClone, Object.hasOwn, .at, lookbehind).
+
+*Confidence: 0.8 | Status: active | Created: 2026-09-17T02:14:14 | Tags: `apple-boss`, `navegadores`, `tailwind`, `vite`, `compatibilidad`*
 
 ---
 
@@ -538,17 +538,17 @@
 
 *Confidence: 0.9 | Status: active | Created: 2026-09-16T13:35:14 | Tags: `css`, `tailwind`, `tienda-publica`, `z-index`*
 
-### Diagrama de modelos más alto que la pantalla
-
-> El diagrama archify docs/admin-ui/diagramas/modelos-referencia.html pasa validate y deliver, pero visual-check falla la contención en escritorio: la página mide cerca de 1,8 veces el alto de la pantalla (6 carriles y 13 nodos). Es un problema previo al 2026-09-15; memoria-proyecto.html sí pasa.
-
-*Confidence: 0.95 | Status: active | Created: 2026-09-15T12:23:23 | Tags: `archify`, `visual-check`, `diagramas`*
-
 ### Las imágenes oficiales php:8.5 ya traen OPcache in...
 
 > Las imágenes oficiales php:8.5 ya traen OPcache integrado: docker-php-ext-install opcache falla con "cp: can't stat 'modules/*'". En PHP 8.5 OPcache solo se configura por php.ini.
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-15T16:52:11 | Tags: `php-8-5`, `docker`, `opcache`, `dockerfile`*
+
+### Diagrama de modelos más alto que la pantalla
+
+> El diagrama archify docs/admin-ui/diagramas/modelos-referencia.html pasa validate y deliver, pero visual-check falla la contención en escritorio: la página mide cerca de 1,8 veces el alto de la pantalla (6 carriles y 13 nodos). Es un problema previo al 2026-09-15; memoria-proyecto.html sí pasa.
+
+*Confidence: 0.95 | Status: active | Created: 2026-09-15T12:23:23 | Tags: `archify`, `visual-check`, `diagramas`*
 
 ### Los menús salen de la base
 
@@ -568,29 +568,17 @@
 
 *Confidence: 0.8 | Status: active | Created: 2026-09-17T02:14:15 | Tags: `inertia-v3`, `laravel`, `react`, `seo`*
 
-### Una entrada animada no puede dejar la pantalla en blanco
-
-> Apple Boss, lección: si el navegador frena las animaciones (pestaña en segundo plano), una entrada de framer-motion que arranca en initial={{opacity:0}} deja la pantalla vacía hasta que alguien la mire, y un arco de progreso que arranca vacío muestra 0 % en vez del valor real. El patrón del proyecto es useEntrada() en Components/Vendedor/dia.jsx: decide al montar si se anima (no hay «reducir movimiento» y document.hidden es falso) y, cuando no, pasa initial={false} para que todo se dibuje ya visible y en su valor. Los contadores además tienen un setTimeout de respaldo que deja el número real. Es la misma lección que el botón de WhatsApp que se quedaba en scale(0.3).
-
-*Confidence: 0.95 | Status: active | Created: 2026-09-16T19:52:57 | Tags: `apple-boss`, `animacion`, `framer-motion`, `robustez`*
-
 ### Padding survives max-width:0 under border-box
 
 > In CSS, padding on an element whose width is clamped by max-width:0 still contributes to its border-box width, so a collapsed expand-on-hover control stays wider than intended. Put the padding on an inner child of the overflow-hidden/max-width-animated element, not on the clipped element itself.
 
 *Confidence: 0.9 | Status: active | Created: 2026-09-16T12:07:26 | Tags: `css`, `layout`, `tailwind`, `animation`*
 
-### Antes de dar por alineado un módulo del panel hay ...
+### Una entrada animada no puede dejar la pantalla en blanco
 
-> Antes de dar por alineado un módulo del panel hay que verificar que su parte pública esté cableada de punta a punta: página propia, lugar en el inicio, enlace en el menú, título en Google con URL canónica y entrada en el sitemap. En Apple Boss, Colecciones se podía usar entero sin que la tienda mostrara nada (ningún controlador público consultaba CatalogCollection y la sección product_collection del inicio ignoraba su collection_id y mostraba las publicaciones más nuevas).
+> Apple Boss, lección: si el navegador frena las animaciones (pestaña en segundo plano), una entrada de framer-motion que arranca en initial={{opacity:0}} deja la pantalla vacía hasta que alguien la mire, y un arco de progreso que arranca vacío muestra 0 % en vez del valor real. El patrón del proyecto es useEntrada() en Components/Vendedor/dia.jsx: decide al montar si se anima (no hay «reducir movimiento» y document.hidden es falso) y, cuando no, pasa initial={false} para que todo se dibuje ya visible y en su valor. Los contadores además tienen un setTimeout de respaldo que deja el número real. Es la misma lección que el botón de WhatsApp que se quedaba en scale(0.3).
 
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:11:58 | Tags: `panel-admin`, `tienda-publica`, `cableado`, `colecciones`*
-
-### Leer fuentes web de forma exacta
-
-> Para datos técnicos de la web, leer la fuente de forma exacta con curl: gsmarena.com expone los valores en atributos data-spec y Wikipedia devuelve el infobox con action=raw. WebFetch resume mal las tablas grandes y mezcla columnas.
-
-*Confidence: 0.9 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `investigacion-web`, `gsmarena`, `wikipedia`*
+*Confidence: 0.95 | Status: active | Created: 2026-09-16T19:52:57 | Tags: `apple-boss`, `animacion`, `framer-motion`, `robustez`*
 
 ### Los valores que sembró la instalación en configura...
 
@@ -598,11 +586,17 @@
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-16T13:06:57 | Tags: `configuracion-tienda`, `datos-de-ejemplo`, `no-inventar`*
 
-### SQLSTATE 1412 in Ninth test suite is infra flakiness
+### Leer fuentes web de forma exacta
 
-> The intermittent SQLSTATE[HY000] 1412 'Table definition has changed' in the Ninth Group PHPUnit/Pest suite is test-infrastructure flakiness (disposable MySQL testing database + parallel migration state), not application code. Do not modify application code to chase it unless it reproduces deterministically and application code is proven to cause it. Clean baseline: 339 passed / 2178 assertions.
+> Para datos técnicos de la web, leer la fuente de forma exacta con curl: gsmarena.com expone los valores en atributos data-spec y Wikipedia devuelve el infobox con action=raw. WebFetch resume mal las tablas grandes y mezcla columnas.
 
-*Confidence: 0.9 | Status: active | Created: 2026-09-16T12:07:26 | Tags: `ninth`, `testing`, `mysql`, `flakiness`, `infrastructure`*
+*Confidence: 0.9 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `investigacion-web`, `gsmarena`, `wikipedia`*
+
+### Antes de dar por alineado un módulo del panel hay ...
+
+> Antes de dar por alineado un módulo del panel hay que verificar que su parte pública esté cableada de punta a punta: página propia, lugar en el inicio, enlace en el menú, título en Google con URL canónica y entrada en el sitemap. En Apple Boss, Colecciones se podía usar entero sin que la tienda mostrara nada (ningún controlador público consultaba CatalogCollection y la sección product_collection del inicio ignoraba su collection_id y mostraba las publicaciones más nuevas).
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:11:58 | Tags: `panel-admin`, `tienda-publica`, `cableado`, `colecciones`*
 
 ### En Apple Boss el directorio src/public/build del h...
 
@@ -610,11 +604,11 @@
 
 *Confidence: 0.9 | Status: active | Created: 2026-09-16T15:10:10 | Tags: `apple-boss`, `docker`, `vite`, `vista-previa`*
 
-### Un enlace que apunta fuera del sitio no puede dibu...
+### SQLSTATE 1412 in Ninth test suite is infra flakiness
 
-> Un enlace que apunta fuera del sitio no puede dibujarse con el Link de Inertia: solo sabe navegar dentro de la aplicación y el clic se rompe. En Apple Boss, el componente EnlaceMenu de StoreLayout decide solo: <a> para http(s), //, mailto y tel (y cuando se pide abrir en otra pestaña), <Link> para las rutas internas y <span> cuando no hay dirección. Si el panel deja pegar una dirección libre, hay que revisar que el front la dibuje así.
+> The intermittent SQLSTATE[HY000] 1412 'Table definition has changed' in the Ninth Group PHPUnit/Pest suite is test-infrastructure flakiness (disposable MySQL testing database + parallel migration state), not application code. Do not modify application code to chase it unless it reproduces deterministically and application code is proven to cause it. Clean baseline: 339 passed / 2178 assertions.
 
-*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:50:06 | Tags: `inertia`, `enlaces-externos`, `menu`, `tienda-publica`*
+*Confidence: 0.9 | Status: active | Created: 2026-09-16T12:07:26 | Tags: `ninth`, `testing`, `mysql`, `flakiness`, `infrastructure`*
 
 ### Laravel 13 PreventRequestForgery acepta POST sin t...
 
@@ -622,23 +616,29 @@
 
 *Confidence: 0.8 | Status: active | Created: 2026-09-17T02:14:15 | Tags: `laravel-13`, `csrf`, `postgresql-18`, `docker`*
 
+### Un enlace que apunta fuera del sitio no puede dibu...
+
+> Un enlace que apunta fuera del sitio no puede dibujarse con el Link de Inertia: solo sabe navegar dentro de la aplicación y el clic se rompe. En Apple Boss, el componente EnlaceMenu de StoreLayout decide solo: <a> para http(s), //, mailto y tel (y cuando se pide abrir en otra pestaña), <Link> para las rutas internas y <span> cuando no hay dirección. Si el panel deja pegar una dirección libre, hay que revisar que el front la dibuje así.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-16T04:50:06 | Tags: `inertia`, `enlaces-externos`, `menu`, `tienda-publica`*
+
 ### En Apple Boss el CSS que entra en el build es reso...
 
 > En Apple Boss el CSS que entra en el build es resources/css/app-vite.css (lo importa resources/js/app.jsx); resources/css/app.css NO se compila. Cualquier animación o clase escrita ahí no existe en la tienda: así estuvieron muertas las ondas del botón de WhatsApp.
 
 *Confidence: 1.0 | Status: active | Created: 2026-09-16T16:44:08 | Tags: `css`, `build`, `frontend`, `entorno`*
 
-### Tests en SQLite
-
-> La suite de tests corre en SQLite: no usar SQL exclusivo de PostgreSQL (por ejemplo REGEXP_REPLACE) en código que cubren los tests.
-
-*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `tests`, `sqlite`, `postgresql`*
-
 ### En Laravel con Docker Compose, las variables <env>...
 
 > En Laravel con Docker Compose, las variables <env> de phpunit.xml no pisan las variables del contenedor salvo con force="true"; sin eso los tests con RefreshDatabase apuntan a la base de desarrollo. Forzar el entorno de testing y bloquear en TestCase cualquier base que no termine en _testing.
 
 *Confidence: 0.95 | Status: active | Created: 2026-09-15T16:52:11 | Tags: `laravel`, `phpunit`, `docker-compose`, `testing-database`*
+
+### Tests en SQLite
+
+> La suite de tests corre en SQLite: no usar SQL exclusivo de PostgreSQL (por ejemplo REGEXP_REPLACE) en código que cubren los tests.
+
+*Confidence: 1.0 | Status: active | Created: 2026-09-15T12:14:12 | Tags: `tests`, `sqlite`, `postgresql`*
 
 ---
 
