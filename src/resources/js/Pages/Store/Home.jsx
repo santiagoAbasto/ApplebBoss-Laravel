@@ -884,10 +884,18 @@ function FaqSection({ faqs, tone }) {
     const wa = useWhatsApp();
     // Las preguntas se cargan en el panel: Tienda online → Preguntas frecuentes
     const items = faqs ?? [];
+
+    // Con muchas preguntas, una sola columna estira la sección y deja la izquierda vacía.
+    // Desde la séptima se reparten en dos columnas y el encabezado acompaña el scroll.
+    const enDosColumnas = items.length >= 7;
+    const corte = Math.ceil(items.length / 2);
+    const columnas = enDosColumnas ? [items.slice(0, corte), items.slice(corte)] : [items];
+
     return (
         <Section tone={tone} id="faq" labelledBy="home-faq">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,360px)_1fr] lg:gap-16">
-                <div>
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,290px)_1fr] lg:gap-14">
+                {/* El encabezado se queda fijo: sin esto, con la lista larga quedaba un vacío enorme */}
+                <div className="lg:sticky lg:top-24 lg:self-start">
                     <SectionHeading id="home-faq" eyebrow="Ayuda" title="Preguntas frecuentes" subtitle="Lo que más nos consultan antes de comprar." />
                     {wa.enabled && wa.number && (
                         <a href={wa.url(`${wa.saludo} tengo una consulta`)} target="_blank" rel="noreferrer"
@@ -896,15 +904,20 @@ function FaqSection({ faqs, tone }) {
                         </a>
                     )}
                 </div>
-                <div className="border-t" style={{ borderColor: 'var(--border-light)' }}>
-                    {items.map((item) => (
-                        <details key={item.id} className="group border-b py-5" style={{ borderColor: 'var(--border-light)' }}>
-                            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold [&::-webkit-details-marker]:hidden" style={{ color: 'var(--text-primary)' }}>
-                                {item.question}
-                                <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 group-open:rotate-180" style={{ color: 'var(--text-muted)' }} />
-                            </summary>
-                            <p className="mt-3 pr-9 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{item.answer}</p>
-                        </details>
+
+                <div className={`grid items-start gap-x-12 ${enDosColumnas ? 'xl:grid-cols-2' : ''}`}>
+                    {columnas.map((columna, i) => (
+                        <div key={i} className="border-t" style={{ borderColor: 'var(--border-light)' }}>
+                            {columna.map((item) => (
+                                <details key={item.id} className="group border-b py-5" style={{ borderColor: 'var(--border-light)' }}>
+                                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold [&::-webkit-details-marker]:hidden" style={{ color: 'var(--text-primary)' }}>
+                                        {item.question}
+                                        <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 group-open:rotate-180" style={{ color: 'var(--text-muted)' }} />
+                                    </summary>
+                                    <p className="mt-3 pr-9 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{item.answer}</p>
+                                </details>
+                            ))}
+                        </div>
                     ))}
                 </div>
             </div>
