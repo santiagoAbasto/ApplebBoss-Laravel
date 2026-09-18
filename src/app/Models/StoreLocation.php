@@ -54,7 +54,14 @@ class StoreLocation extends Model
     }
 
     /** Lo que ve el cliente de este local. */
-    public function publico(bool $whatsapp, bool $conGoogle = true): array
+    /**
+     * Los datos del local que ve la tienda.
+     *
+     * `$conGoogle` viene apagado a propósito: el JSON-LD del negocio lo imprime el
+     * servidor en el <head> (App\Support\Seo\DatosEstructurados). Mandarlo también
+     * acá declaraba la tienda dos veces y viajaba en cada página sin que nadie lo use.
+     */
+    public function publico(bool $whatsapp, bool $conGoogle = false): array
     {
         $datos = [
             'id'           => $this->id,

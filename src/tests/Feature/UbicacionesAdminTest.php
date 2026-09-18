@@ -53,6 +53,24 @@ class UbicacionesAdminTest extends TestCase
         ], $datos));
     }
 
+    /** El grafo JSON-LD que el servidor imprime en el <head> del inicio. */
+    private function grafoDeGoogle(): array
+    {
+        \Illuminate\Support\Facades\Cache::forget('seo.sedes');
+
+        $html = $this->get('/')->assertOk()->getContent();
+        preg_match('#application/ld\+json[^>]*>(.*?)</script>#s', $html, $m);
+        $this->assertNotEmpty($m, 'el inicio debería imprimir los datos estructurados');
+
+        return json_decode($m[1], true)['@graph'] ?? [];
+    }
+
+    /** Los negocios declarados, en orden: el principal primero. */
+    private function negociosDeGoogle(): array
+    {
+        return array_values(array_filter($this->grafoDeGoogle(), fn ($n) => ($n['@type'] ?? null) === 'Store'));
+    }
+
     private function seccion(array $datos = []): HomeSection
     {
         HomeSection::where('type', 'location')->delete();
@@ -278,18 +296,25 @@ class UbicacionesAdminTest extends TestCase
         $this->assertSame('https://maps.app.goo.gl/abc123', $cocha['como_llegar']);
         $this->assertCount(7, $cocha['horarios']);
 
-        $google = $cocha['google'];
+        // Los datos para Google ya no viajan en las props: los imprime el servidor en el <head>,
+        // así los lee sin ejecutar JavaScript y la tienda se declara una sola vez.
+        $this->assertArrayNotHasKey('google', $cocha, 'el esquema no debe duplicarse en las props');
+
+        $negocios = $this->negociosDeGoogle();
+        $this->assertCount(2, $negocios, 'cada local encendido es un negocio para Google');
+
+        [$google, $santaCruz] = $negocios;
         $this->assertSame('Store', $google['@type']);
         $this->assertSame('BO', $google['address']['addressCountry']);
         $this->assertSame('Av. Heroínas 456', $google['address']['streetAddress']);
-        $this->assertSame('+59144123456', $google['telephone']);
+        $this->assertSame('+59144123456', $google['telephone'], 'el teléfono sale en formato internacional');
         $this->assertSame([
             ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], 'opens' => '09:00', 'closes' => '19:00'],
             ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => ['Saturday'], 'opens' => '09:00', 'closes' => '13:00'],
         ], $google['openingHoursSpecification']);
 
         // Sin horario cargado, Google no recibe horario
-        $this->assertArrayNotHasKey('openingHoursSpecification', $locales[1]['google']);
+        $this->assertArrayNotHasKey('openingHoursSpecification', $santaCruz);
     }
 
     public function test_con_el_whatsapp_de_la_tienda_apagado_no_se_manda_el_del_local(): void
@@ -301,7 +326,9 @@ class UbicacionesAdminTest extends TestCase
         $local = $this->get('/')->assertOk()->viewData('page')['props']['locations'][0];
 
         $this->assertNull($local['whatsapp']);
-        $this->assertArrayNotHasKey('telephone', $local['google']);
+
+        // Y tampoco se filtra al esquema de Google por la puerta de atrás
+        $this->assertArrayNotHasKey('telephone', $this->negociosDeGoogle()[0]);
     }
 
     public function test_sin_locales_la_seccion_no_se_dibuja_y_portada_lo_dice(): void

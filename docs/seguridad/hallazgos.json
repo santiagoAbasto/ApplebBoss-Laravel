@@ -1,169 +1,186 @@
 {
-  "objetivo": "Apple Boss (Laravel 13 / PHP 8.5 / Inertia-React / PostgreSQL, Docker)",
-  "fecha": "2026-09-16",
-  "commit": "a991fb0",
-  "metodo": "security-audit (Cloudflare) recon + registro de 32 unidades + caja blanca + caja negra local + k6",
-  "hallazgos": [
-    {
-      "id": "H1",
-      "severidad": "alta",
-      "cwe": [
-        "CWE-290",
-        "CWE-307",
-        "CWE-348"
-      ],
-      "titulo": "Limites por IP burlables con X-Forwarded-For (incluye bloqueo de login)",
-      "ubicacion": [
-        "src/bootstrap/app.php:25"
-      ],
-      "evidencia": "70 pedidos a /api/buscar: 429 en el #61 sin cabecera; 0 bloqueos con X-Forwarded-For rotando. 25 intentos de login (cuenta inexistente) con XFF rotando: 0 bloqueos.",
-      "impacto": "Fuerza bruta de contrasenas sin limite; bypass de rate-limit global; envenenamiento del enlace de reset via Host.",
-      "remediacion": "trustProxies con las IP reales del proxy, no '*'; fijar host de URLs generadas.",
-      "estado": "corregido — TRUSTED_PROXIES por env (default: no confiar en nadie); verificado en vivo"
-    },
-    {
-      "id": "H2",
-      "severidad": "alta",
-      "cwe": [
-        "CWE-200",
-        "CWE-213"
-      ],
-      "titulo": "El vendedor ve costo, procedencia e IMEI en crear/editar venta y reservas activas",
-      "ubicacion": [
-        "src/app/Http/Controllers/VentaController.php:554",
-        "src/app/Http/Controllers/VentaController.php:890",
-        "src/app/Http/Controllers/ReservaController.php:263"
-      ],
-      "evidencia": "Serializacion runtime de un Celular disponible via create(): precio_costo=4000.00, procedencia=proveedor real (redactado), imei_1 y numero_serie PRESENTES. Modelos sin $hidden; no pasan por SinCostos.",
-      "impacto": "Rompe la regla dura de negocio; fuga de costo, proveedor e IMEI de todo el stock al vendedor.",
-      "remediacion": "Aplicar SinCostos en esas tres salidas y agregar $hidden/$visible en los modelos Celular/Computadora/ProductoGeneral/ProductoApple.",
-      "estado": "corregido — SinCostos::purgar() recursivo en create/edit/reservas activas; 4 tests nuevos"
-    },
-    {
-      "id": "H3",
-      "severidad": "media",
-      "cwe": [
-        "CWE-918"
-      ],
-      "titulo": "SSRF ciego al renderizar el PDF de cotizacion (dompdf enable_remote)",
-      "ubicacion": [
-        "src/config/dompdf.php:270",
-        "src/resources/views/pdf/cotizacion.blade.php:418"
-      ],
-      "evidencia": "enable_remote=true; notas en Markdown permiten ![](http://interno/) que dompdf trae al renderizar; html_input=strip no bloquea la imagen Markdown.",
-      "impacto": "GET ciego desde el servidor a servicios internos/metadatos por un usuario autenticado del panel.",
-      "remediacion": "enable_remote=false o allow-list de hosts; sanear imagenes con URL no relativas.",
-      "estado": "corregido — dompdf.enable_remote=false por env; PDFs siguen (imágenes locales)"
-    },
-    {
-      "id": "H4",
-      "severidad": "media",
-      "cwe": [
-        "CWE-352"
-      ],
-      "titulo": "OAuth de Google Drive sin parametro state",
-      "ubicacion": [
-        "src/app/Http/Controllers/GoogleDriveController.php"
-      ],
-      "evidencia": "redirectToGoogle no fija state; handleGoogleCallback no valida state. Callback bajo auth+rol:admin.",
-      "impacto": "CSRF de callback: conectar la tienda al Drive del atacante; fuga de cotizaciones subidas.",
-      "remediacion": "Generar y validar state en sesion (hash_equals); manejar errores del intercambio de code.",
-      "estado": "corregido — state anti-CSRF con hash_equals en el OAuth de Drive"
-    },
-    {
-      "id": "H5",
-      "severidad": "media",
-      "cwe": [
-        "CWE-284"
-      ],
-      "titulo": "El token unico de n8n abre el reporte de costo/ganancia de toda la tienda",
-      "ubicacion": [
-        "src/routes/api.php",
-        "src/app/Http/Controllers/ReporteController.php:28"
-      ],
-      "evidencia": "GET /api/automation/reportes/exportar bajo el token estatico devuelve ganancia/capital de cualquier vendedor_id o toda la tienda.",
-      "impacto": "Si el token se filtra o el contenedor n8n se compromete, se expone el dato financiero mas sensible.",
-      "remediacion": "Separar alcances/tokens; sacar el export financiero del canal de automatizacion; rotar AUTOMATION_TOKEN.",
-      "estado": "corregido — export financiero a ámbito/token aparte (cerrado por defecto), n8n intacto; multi-token para rotar; php artisan automation:token"
-    },
-    {
-      "id": "H6",
-      "severidad": "baja",
-      "cwe": [
-        "CWE-204"
-      ],
-      "titulo": "Olvide mi contrasena revela si un correo esta registrado",
-      "ubicacion": [
-        "src/app/Http/Controllers/Auth/PasswordResetLinkController.php"
-      ],
-      "evidencia": "Exito devuelve status; fallo lanza ValidationException con error del email; respuestas distinguibles.",
-      "impacto": "Enumeracion de cuentas (insumo para phishing y para H1).",
-      "remediacion": "Responder siempre el mismo mensaje neutro.",
-      "estado": "corregido — mensaje neutro en 'olvide mi contrasena'; test que compara existe vs no-existe"
-    },
-    {
-      "id": "H7",
-      "severidad": "refuerzo",
-      "cwe": [
-        "CWE-799",
-        "CWE-79",
-        "CWE-770"
-      ],
-      "titulo": "Blindaje de la parte publica: bots, inyeccion y cookies",
-      "ubicacion": [
-        "src/app/Http/Controllers/PublicCatalogController.php (syncCart)",
-        "src/app/Http/Controllers/NewsletterController.php",
-        "src/app/Http/Controllers/TradeInController.php"
-      ],
-      "evidencia": "Honeypots + throttle en todos los POST publicos (ahora no burlables tras H1); strip_tags server-side en textos publicos + React escapa; carrito con tope de 50 items e id numerico; panel con Cache-Control no-store.",
-      "impacto": "Reduce abuso por bots, XSS almacenado desde inputs publicos y amplificacion de consultas; evita que datos del panel queden cacheados en el navegador.",
-      "remediacion": "Aplicado. Pendiente de despliegue: SESSION_SECURE_COOKIE=true en produccion.",
-      "estado": "reforzado"
-    },
-    {
-      "id": "H8",
-      "severidad": "control nuevo",
-      "cwe": [
-        "CWE-284"
-      ],
-      "titulo": "Horario laboral: el vendedor no inicia sesion fuera de hora",
-      "ubicacion": [
-        "src/app/Http/Requests/Auth/LoginRequest.php",
-        "src/app/Support/HorarioLaboral.php",
-        "src/config/horario.php"
-      ],
-      "evidencia": "Tras validar credenciales, si el usuario es vendedor y esta fuera de 09:00-13:00 / 14:00-19:00 (America/La_Paz) se cierra la sesion y se rechaza. El admin no se restringe. Se hace en Laravel (no en n8n) porque n8n no puede interceptar un login en tiempo real.",
-      "impacto": "Impide el acceso del vendedor fuera del horario de trabajo.",
-      "remediacion": "Aplicado. Ventanas y dias configurables en config/horario.php.",
-      "estado": "nuevo control — 5 tests con hora fijada"
-    }
-  ],
-  "endurecimiento": [
-    "Desplegar con APP_ENV=production exacto (forceScheme https, uncompromised, HSTS, CSP estricta dependen de esa cadena).",
-    "SESSION_SECURE_COOKIE=true en produccion.",
-    "CSP de produccion sin script-src 'unsafe-inline' (usar nonces/hashes).",
-    "Ocultar X-Powered-By y version de Apache.",
-    "Rotar la contrasena de app de Gmail del .env."
-  ],
-  "positivos": [
-    "API publica v1 no expone costo/ganancia/IMEI (serial permitido por regla).",
-    "Login con mensaje generico, bloqueo email+IP, sesion regenerada.",
-    "CSRF activo; exencion acotada a newsletter/baja/*.",
-    "SinCostos aplicado en listados y API de stock.",
-    "Autoridad de precio en el servidor; subidas de trade-in a disco privado.",
-    "Token de automatizacion con hash_equals y falla cerrada."
-  ],
-  "remediacion": {
-    "tests": "575 en verde (5139 aserciones), 0 fallos",
-    "cambios": "solo PHP/config; el frontend no requiere recompilar",
-    "commit": "nada commiteado",
-    "acciones_de_despliegue": [
-      "APP_ENV=production",
-      "APP_DEBUG=false",
-      "SESSION_SECURE_COOKIE=true",
-      "TRUSTED_PROXIES=<red del tunel>",
-      "rotar AUTOMATION_TOKEN con 'php artisan automation:token' (ventana de gracia con AUTOMATION_TOKENS_PREVIOS)",
-      "rotar la contrasena de app de Gmail"
-    ]
+ "objetivo": "Apple Boss (Laravel 13 / PHP 8.5 / Inertia-React / PostgreSQL, Docker)",
+ "fecha": "2026-09-16",
+ "commit": "a991fb0",
+ "metodo": "security-audit (Cloudflare) recon + registro de 32 unidades + caja blanca + caja negra local + k6",
+ "hallazgos": [
+  {
+   "id": "H1",
+   "severidad": "alta",
+   "cwe": [
+    "CWE-290",
+    "CWE-307",
+    "CWE-348"
+   ],
+   "titulo": "Limites por IP burlables con X-Forwarded-For (incluye bloqueo de login)",
+   "ubicacion": [
+    "src/bootstrap/app.php:25"
+   ],
+   "evidencia": "70 pedidos a /api/buscar: 429 en el #61 sin cabecera; 0 bloqueos con X-Forwarded-For rotando. 25 intentos de login (cuenta inexistente) con XFF rotando: 0 bloqueos.",
+   "impacto": "Fuerza bruta de contrasenas sin limite; bypass de rate-limit global; envenenamiento del enlace de reset via Host.",
+   "remediacion": "trustProxies con las IP reales del proxy, no '*'; fijar host de URLs generadas.",
+   "estado": "corregido — TRUSTED_PROXIES por env (default: no confiar en nadie); verificado en vivo"
+  },
+  {
+   "id": "H2",
+   "severidad": "alta",
+   "cwe": [
+    "CWE-200",
+    "CWE-213"
+   ],
+   "titulo": "El vendedor ve costo, procedencia e IMEI en crear/editar venta y reservas activas",
+   "ubicacion": [
+    "src/app/Http/Controllers/VentaController.php:554",
+    "src/app/Http/Controllers/VentaController.php:890",
+    "src/app/Http/Controllers/ReservaController.php:263"
+   ],
+   "evidencia": "Serializacion runtime de un Celular disponible via create(): precio_costo=4000.00, procedencia=proveedor real (redactado), imei_1 y numero_serie PRESENTES. Modelos sin $hidden; no pasan por SinCostos.",
+   "impacto": "Rompe la regla dura de negocio; fuga de costo, proveedor e IMEI de todo el stock al vendedor.",
+   "remediacion": "Aplicar SinCostos en esas tres salidas y agregar $hidden/$visible en los modelos Celular/Computadora/ProductoGeneral/ProductoApple.",
+   "estado": "corregido — SinCostos::purgar() recursivo en create/edit/reservas activas; 4 tests nuevos"
+  },
+  {
+   "id": "H3",
+   "severidad": "media",
+   "cwe": [
+    "CWE-918"
+   ],
+   "titulo": "SSRF ciego al renderizar el PDF de cotizacion (dompdf enable_remote)",
+   "ubicacion": [
+    "src/config/dompdf.php:270",
+    "src/resources/views/pdf/cotizacion.blade.php:418"
+   ],
+   "evidencia": "enable_remote=true; notas en Markdown permiten ![](http://interno/) que dompdf trae al renderizar; html_input=strip no bloquea la imagen Markdown.",
+   "impacto": "GET ciego desde el servidor a servicios internos/metadatos por un usuario autenticado del panel.",
+   "remediacion": "enable_remote=false o allow-list de hosts; sanear imagenes con URL no relativas.",
+   "estado": "corregido — dompdf.enable_remote=false por env; PDFs siguen (imágenes locales)"
+  },
+  {
+   "id": "H4",
+   "severidad": "media",
+   "cwe": [
+    "CWE-352"
+   ],
+   "titulo": "OAuth de Google Drive sin parametro state",
+   "ubicacion": [
+    "src/app/Http/Controllers/GoogleDriveController.php"
+   ],
+   "evidencia": "redirectToGoogle no fija state; handleGoogleCallback no valida state. Callback bajo auth+rol:admin.",
+   "impacto": "CSRF de callback: conectar la tienda al Drive del atacante; fuga de cotizaciones subidas.",
+   "remediacion": "Generar y validar state en sesion (hash_equals); manejar errores del intercambio de code.",
+   "estado": "corregido — state anti-CSRF con hash_equals en el OAuth de Drive"
+  },
+  {
+   "id": "H5",
+   "severidad": "media",
+   "cwe": [
+    "CWE-284"
+   ],
+   "titulo": "El token unico de n8n abre el reporte de costo/ganancia de toda la tienda",
+   "ubicacion": [
+    "src/routes/api.php",
+    "src/app/Http/Controllers/ReporteController.php:28"
+   ],
+   "evidencia": "GET /api/automation/reportes/exportar bajo el token estatico devuelve ganancia/capital de cualquier vendedor_id o toda la tienda.",
+   "impacto": "Si el token se filtra o el contenedor n8n se compromete, se expone el dato financiero mas sensible.",
+   "remediacion": "Separar alcances/tokens; sacar el export financiero del canal de automatizacion; rotar AUTOMATION_TOKEN.",
+   "estado": "corregido — export financiero a ámbito/token aparte (cerrado por defecto), n8n intacto; multi-token para rotar; php artisan automation:token"
+  },
+  {
+   "id": "H6",
+   "severidad": "baja",
+   "cwe": [
+    "CWE-204"
+   ],
+   "titulo": "Olvide mi contrasena revela si un correo esta registrado",
+   "ubicacion": [
+    "src/app/Http/Controllers/Auth/PasswordResetLinkController.php"
+   ],
+   "evidencia": "Exito devuelve status; fallo lanza ValidationException con error del email; respuestas distinguibles.",
+   "impacto": "Enumeracion de cuentas (insumo para phishing y para H1).",
+   "remediacion": "Responder siempre el mismo mensaje neutro.",
+   "estado": "corregido — mensaje neutro en 'olvide mi contrasena'; test que compara existe vs no-existe"
+  },
+  {
+   "id": "H7",
+   "severidad": "refuerzo",
+   "cwe": [
+    "CWE-799",
+    "CWE-79",
+    "CWE-770"
+   ],
+   "titulo": "Blindaje de la parte publica: bots, inyeccion y cookies",
+   "ubicacion": [
+    "src/app/Http/Controllers/PublicCatalogController.php (syncCart)",
+    "src/app/Http/Controllers/NewsletterController.php",
+    "src/app/Http/Controllers/TradeInController.php"
+   ],
+   "evidencia": "Honeypots + throttle en todos los POST publicos (ahora no burlables tras H1); strip_tags server-side en textos publicos + React escapa; carrito con tope de 50 items e id numerico; panel con Cache-Control no-store.",
+   "impacto": "Reduce abuso por bots, XSS almacenado desde inputs publicos y amplificacion de consultas; evita que datos del panel queden cacheados en el navegador.",
+   "remediacion": "Aplicado. Pendiente de despliegue: SESSION_SECURE_COOKIE=true en produccion.",
+   "estado": "reforzado"
+  },
+  {
+   "id": "H8",
+   "severidad": "control nuevo",
+   "cwe": [
+    "CWE-284"
+   ],
+   "titulo": "Horario laboral: el vendedor no inicia sesion fuera de hora",
+   "ubicacion": [
+    "src/app/Http/Requests/Auth/LoginRequest.php",
+    "src/app/Support/HorarioLaboral.php",
+    "src/config/horario.php"
+   ],
+   "evidencia": "Tras validar credenciales, si el usuario es vendedor y esta fuera de 09:00-13:00 / 14:00-19:00 (America/La_Paz) se cierra la sesion y se rechaza. El admin no se restringe. Se hace en Laravel (no en n8n) porque n8n no puede interceptar un login en tiempo real.",
+   "impacto": "Impide el acceso del vendedor fuera del horario de trabajo.",
+   "remediacion": "Aplicado. Ventanas y dias configurables en config/horario.php.",
+   "estado": "nuevo control — 5 tests con hora fijada"
+  },
+  {
+   "id": "H9",
+   "severidad": "media",
+   "cwe": [
+    "CWE-200",
+    "CWE-651"
+   ],
+   "titulo": "El HTML público publicaba el mapa completo de rutas del panel",
+   "ubicacion": [
+    "src/resources/views/app.blade.php:62"
+   ],
+   "evidencia": "GET / como visitante anonimo: el bloque Ziggy incluia 206 rutas admin.* y 33 vendedor.* (33,9 KB), entre ellas admin.usuarios.destroy, admin.reportes.exportar y automation.store.",
+   "impacto": "No da acceso —el middleware sigue protegiendo cada ruta— pero entrega el inventario exacto de la superficie administrativa: nombres, verbos HTTP y parametros. Es reconocimiento gratis para quien busque por donde entrar, y 34 KB de peso muerto en cada carga publica.",
+   "correccion": "config/ziggy.php define el grupo 'publico' con !admin.*, !vendedor.* y !automation.*; app.blade.php publica ese grupo a los visitantes y la lista completa cuando hay sesion.",
+   "verificacion": "GET / anonimo: 0 rutas admin.*, 0 vendedor.*, 0 automation.*; bloque Ziggy de 33,9 KB a 5,1 KB. Sesion de admin en /admin/dashboard: la lista completa sigue llegando. 3 tests en SeguridadHardeningTest.",
+   "estado": "corregido"
   }
+ ],
+ "endurecimiento": [
+  "Desplegar con APP_ENV=production exacto (forceScheme https, uncompromised, HSTS, CSP estricta dependen de esa cadena).",
+  "SESSION_SECURE_COOKIE=true en produccion.",
+  "CSP de produccion sin script-src 'unsafe-inline' (usar nonces/hashes).",
+  "Ocultar X-Powered-By y version de Apache.",
+  "Rotar la contrasena de app de Gmail del .env."
+ ],
+ "positivos": [
+  "API publica v1 no expone costo/ganancia/IMEI (serial permitido por regla).",
+  "Login con mensaje generico, bloqueo email+IP, sesion regenerada.",
+  "CSRF activo; exencion acotada a newsletter/baja/*.",
+  "SinCostos aplicado en listados y API de stock.",
+  "Autoridad de precio en el servidor; subidas de trade-in a disco privado.",
+  "Token de automatizacion con hash_equals y falla cerrada."
+ ],
+ "remediacion": {
+  "tests": "575 en verde (5139 aserciones), 0 fallos",
+  "cambios": "solo PHP/config; el frontend no requiere recompilar",
+  "commit": "nada commiteado",
+  "acciones_de_despliegue": [
+   "APP_ENV=production",
+   "APP_DEBUG=false",
+   "SESSION_SECURE_COOKIE=true",
+   "TRUSTED_PROXIES=<red del tunel>",
+   "rotar AUTOMATION_TOKEN con 'php artisan automation:token' (ventana de gracia con AUTOMATION_TOKENS_PREVIOS)",
+   "rotar la contrasena de app de Gmail"
+  ]
+ }
 }

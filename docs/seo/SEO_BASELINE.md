@@ -36,6 +36,8 @@ Lo que **sí** sigue impidiendo que Google entienda el sitio, verificado pidiend
 | **H10** | 🟡 Medio | Sitemap incluye **URLs con parámetros** (`/catalogo?categoria=…`) que duplican la categoría | sitemap en vivo (24 URLs) |
 | **H11** | 🔴 Crítico | **El título indexado terminaba en «- Laravel»**: `Apple Boss — Tecnología Apple en Cochabamba **- Laravel**`. El servidor mandaba el título bien, pero React le pegaba la marca de respaldo. El build de producción no recibía `VITE_APP_NAME`, así que esa marca era `Laravel` | HTML rastreado en Search Console + `grep Laravel` dentro del bundle desplegado `app-BzVGhLvK.js` |
 | **H12** | 🟠 Alto | **Dos negocios declarados.** El servidor emitía un `Store` y, al renderizar, `Home.jsx` inyectaba **otro** `Store` distinto. Con dos, Google no sabe cuál es el negocio real | HTML rastreado: el único `ld+json` visible era el del componente React, no el del servidor |
+| **H13** | 🟡 Medio | **34 KB de rutas del panel en cada página pública.** Ziggy publicaba 206 rutas `admin.*` y 33 `vendedor.*` a cualquier visitante: peso muerto que retrasa la carga (y un problema de seguridad, ver `docs/seguridad`) | `GET /` anónimo: bloque Ziggy de 33,9 KB |
+| ~~H14~~ | ✅ Verificado | ~~La URL del mapa tenía un enlace en formato Markdown pegado dentro~~ → en producción ya sale limpia | `curl` al HTML de producción: la URL del iframe es válida |
 
 **Lo que sí está bien hoy:** `title` y `meta description` propios y descriptivos; `meta robots: index,follow`; `twitter:card`; sitemap dinámico que **no filtra** rutas privadas (checkout, pedidos, seguimiento, admin, login); `SeoHead` ya sabe emitir OG/Twitter/canonical; hay un CMS de SEO (`SeoPage`: title, description, og_image, canonical, noindex).
 
@@ -74,7 +76,10 @@ El punto 3 es el que más pesa hoy, y **ya está parcialmente cubierto**: `title
 | Título sin «- Laravel» | Doble arreglo: la marca de respaldo en `app.jsx` pasó de `Laravel` a `Apple Boss`, y `Dockerfile.production` ahora inyecta `VITE_APP_NAME` al build. Antes el build de producción no veía el `.env` y caía en el respaldo |
 | Un solo negocio | Se quitó el `<script ld+json>` que `Home.jsx` inyectaba al renderizar. El `Store` queda solo en el servidor, y se le sumaron el **horario real** del panel y `hasMap` |
 | Dirección honesta | `DatosEstructurados::calleReal()`: si la dirección guardada es solo «Cochabamba, Bolivia», **no** se publica como `streetAddress`. Cuando cargues la calle real, entra sola |
-| Pruebas | `SeoTecnicoTest`: **13 casos** que vigilan robots, sitemap, canonical, JSON-LD, un único `Store`, la dirección honesta y la detección de dominios no indexables |
+| Panel fuera del HTML público | `config/ziggy.php` grupo `publico` (`!admin.*`, `!vendedor.*`, `!automation.*`). Bloque de rutas: **33,9 KB → 5,1 KB**. Con sesión iniciada, el panel recibe la lista completa |
+| Teléfono en formato internacional | `negocio()` ahora se arma sobre `StoreLocation::datosParaGoogle()`, que ya normaliza el teléfono (`+591…`) y agrupa el horario día por día |
+| Cada local, un negocio | Si hay más de una sucursal encendida, cada una se declara como su propio `Store` |
+| Pruebas | `SeoTecnicoTest` (**13 casos**) + `SeguridadHardeningTest` (3 sobre Ziggy) + `UbicacionesAdminTest` reapuntado al JSON-LD del servidor. Suite: **619 en verde** que vigilan robots, sitemap, canonical, JSON-LD, un único `Store`, la dirección honesta y la detección de dominios no indexables |
 
 ---
 

@@ -25,7 +25,7 @@ class DatosEstructurados
         }
 
         $ruta = $request->route()?->getName();
-        $grafo = [self::negocio(), self::sitio()];
+        $grafo = array_merge([self::negocio(), self::sitio()], self::sucursales());
 
         if ($ruta === 'store.product') {
             $producto = self::producto($request->route('slug') ?? $request->segment(2), $seo);
@@ -41,50 +41,41 @@ class DatosEstructurados
         return array_values(array_filter($grafo));
     }
 
-    /** La tienda: Store (es un LocalBusiness) con el NAP real. */
+    /**
+     * La tienda: Store (es un LocalBusiness) con el NAP real.
+     *
+     * La base la arma el propio modelo (`StoreLocation::datosParaGoogle`), que ya sabe
+     * normalizar el teléfono a formato internacional y agrupar el horario día por día.
+     * Acá solo se le encima lo del negocio (nombre, descripción, redes) y se descarta
+     * la dirección si resulta no ser una calle.
+     */
     public static function negocio(): array
     {
-        $cfg = (array) config('seo.negocio', []);
-        $sede = Cache::remember('seo.sede', 600, fn () => StoreLocation::where('active', true)->first());
+        $cfg  = (array) config('seo.negocio', []);
+        $sede = self::sedePrincipal();
 
-        $telefono  = $cfg['telefono'] ?: ($sede->phone ?? null);
-        $ciudad    = $cfg['ciudad'] ?: ($sede->city ?? null);
-        $mapa      = $sede->map_link_url ?? null;
-        $calle     = $cfg['calle'] ?: self::calleReal($sede, $ciudad);
+        $datos = $sede
+            ? $sede->datosParaGoogle(StoreLocation::whatsappDeLaTiendaActivo())
+            : ['@type' => 'Store'];
 
-        $datos = [
-            '@type'       => $cfg['tipo'] ?? 'Store',
-            '@id'         => UrlPublica::de() . '#tienda',
-            'name'        => $cfg['nombre'] ?? 'Apple Boss',
-            'url'         => UrlPublica::de(),
-            'description' => $cfg['descripcion'] ?? null,
-            'image'       => UrlPublica::absoluta(config('seo.og_image_default')),
-        ];
+        $datos['@type'] = $cfg['tipo'] ?? $datos['@type'] ?? 'Store';
+        $datos['@id']   = UrlPublica::de() . '#tienda';
+        $datos['url']   = UrlPublica::de();
+        $datos['image'] = UrlPublica::absoluta(config('seo.og_image_default'));
 
-        // La dirección solo se publica si hay algo concreto que decir
-        if ($calle || $ciudad) {
-            $datos['address'] = array_filter([
-                '@type'           => 'PostalAddress',
-                'streetAddress'   => $calle,
-                'addressLocality' => $ciudad,
-                'addressRegion'   => $cfg['region'] ?? null,
-                'addressCountry'  => $cfg['pais'] ?? 'BO',
-            ]);
+        if (! empty($cfg['nombre'])) {
+            $datos['name'] = $cfg['nombre'];
         }
 
-        if ($telefono) {
-            $datos['telephone'] = $telefono;
+        if (! empty($cfg['descripcion'])) {
+            $datos['description'] = $cfg['descripcion'];
         }
 
-        if ($mapa) {
-            $datos['hasMap'] = $mapa;
+        if (! empty($cfg['telefono'])) {
+            $datos['telephone'] = $cfg['telefono'];
         }
 
-        // El horario lo carga la tienda en el panel (Tienda online → Ubicaciones). Es dato propio
-        // y verificable, así que se publica. Si no hay horario cargado, no se inventa ninguno.
-        if ($sede && ($horario = $sede->horarioParaGoogle())) {
-            $datos['openingHoursSpecification'] = $horario;
-        }
+        $datos['address'] = self::direccion($cfg, $sede, $datos['address'] ?? []);
 
         $perfiles = array_values(array_filter((array) ($cfg['perfiles'] ?? [])));
         if ($perfiles) {
@@ -92,6 +83,49 @@ class DatosEstructurados
         }
 
         return array_filter($datos, fn ($v) => $v !== null && $v !== []);
+    }
+
+    /** Las demás sucursales encendidas: cada local físico es un negocio propio para Google. */
+    public static function sucursales(): array
+    {
+        $whatsapp = StoreLocation::whatsappDeLaTiendaActivo();
+
+        return self::sedesActivas()->skip(1)
+            ->map(fn (StoreLocation $s) => $s->datosParaGoogle($whatsapp) + [
+                '@id'  => UrlPublica::de() . '#tienda-' . $s->id,
+                'url'  => UrlPublica::de(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** La dirección publicada: la del panel, con la calle de `seo.negocio` si la hay. */
+    private static function direccion(array $cfg, ?StoreLocation $sede, array $base): array
+    {
+        $ciudad = $cfg['ciudad'] ?: ($sede->city ?? null);
+        $calle  = $cfg['calle'] ?: self::calleReal($sede, $ciudad);
+
+        return array_filter([
+            '@type'           => 'PostalAddress',
+            'streetAddress'   => $calle,
+            'addressLocality' => $ciudad ?: ($base['addressLocality'] ?? null),
+            'addressRegion'   => $cfg['region'] ?? null,
+            'addressCountry'  => $base['addressCountry'] ?? ($cfg['pais'] ?? 'BO'),
+        ]);
+    }
+
+    private static function sedesActivas()
+    {
+        return Cache::remember(
+            'seo.sedes',
+            600,
+            fn () => StoreLocation::where('active', true)->orderBy('sort_order')->orderBy('id')->get()
+        );
+    }
+
+    private static function sedePrincipal(): ?StoreLocation
+    {
+        return self::sedesActivas()->first();
     }
 
     /**

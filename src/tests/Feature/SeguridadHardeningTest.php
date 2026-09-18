@@ -21,6 +21,43 @@ class SeguridadHardeningTest extends TestCase
         parent::tearDown();
     }
 
+    /* ─── H13: el mapa del panel no se publica ───────────────────────────── */
+
+    public function test_el_visitante_anonimo_no_recibe_el_mapa_del_panel(): void
+    {
+        // Ziggy imprime las rutas en el HTML. Publicar admin.* y vendedor.* le entrega
+        // a cualquiera el inventario de la superficie administrativa (y 34 KB de peso).
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('"admin.usuarios.destroy"', $html);
+        $this->assertStringNotContainsString('"admin.reportes.exportar"', $html);
+        $this->assertStringNotContainsString('"vendedor.ventas.store"', $html);
+        $this->assertStringNotContainsString('"automation.store"', $html);
+    }
+
+    public function test_el_visitante_anonimo_si_recibe_las_rutas_publicas(): void
+    {
+        // El filtro no puede llevarse por delante lo que la tienda necesita para funcionar
+        $html = $this->get('/')->assertOk()->getContent();
+
+        foreach (['"store.home"', '"store.catalog"', '"store.product"', '"checkout"',
+                  '"seguimiento"', '"login"', '"api.carrito.sync"'] as $publica) {
+            $this->assertStringContainsString($publica, $html, "falta la ruta pública {$publica}");
+        }
+    }
+
+    public function test_con_sesion_iniciada_el_panel_recibe_sus_rutas_completas(): void
+    {
+        // Si el filtro se aplicara también al panel, el frontend reventaría con
+        // «Ziggy error: route 'admin.x' is not in the route list».
+        $admin = User::factory()->create(['rol' => 'admin']);
+
+        $html = $this->actingAs($admin)->get('/admin/dashboard')->assertOk()->getContent();
+
+        $this->assertStringContainsString('"admin.dashboard"', $html);
+        $this->assertStringContainsString('"admin.usuarios.index"', $html);
+    }
+
     /* ─── H5: alcance del token de automatización ────────────────────────── */
 
     public function test_el_token_de_n8n_abre_sus_endpoints_pero_no_el_export_financiero(): void

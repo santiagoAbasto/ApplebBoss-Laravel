@@ -277,8 +277,11 @@ Las 76 que pasan incluyen: todas las rutas `/admin/*` y `/vendedor/*` sin sesió
 | H6 | ✅ Corregido | Mensaje neutro en «olvidé mi contraseña» | Test: existe vs no-existe dan la misma respuesta |
 | H7 | ✅ Reforzado | Tope de ítems en carrito; confirmado honeypots/throttle/strip_tags/no-store | Revisión + tope numérico en `syncCart` |
 | H8 | ✅ Nuevo control | Horario laboral: el vendedor no inicia sesión fuera de 09–13 / 14–19 (La Paz) | 5 tests con hora fijada; el admin no se restringe |
+| H9 | ✅ Corregido | El HTML público ya no publica `admin.*`, `vendedor.*` ni `automation.*` (grupo `publico` en `config/ziggy.php`) | Anónimo: 0 rutas privadas y el bloque Ziggy baja de 33,9 KB a 5,1 KB; con sesión el panel recibe todo. 3 tests |
 
-**Suite completa: 575 tests en verde (5139 aserciones), 0 fallos.** Los cambios son solo de PHP/config (no se tocó JSX), así que el frontend no requiere recompilar. Nada está commiteado.
+**Suite completa: 619 tests en verde (5298 aserciones), 0 fallos.**
+
+H9 se corrige en Blade y en `config/ziggy.php`: no cambia ningún JSX. Aun así hay que **reconstruir la imagen** (`docker compose -f docker-compose.production.yml build app`), porque en producción el código viaja dentro de la imagen, no en un volumen.
 
 **Queda como acción tuya de despliegue (§5):** `APP_ENV=production`, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, `TRUSTED_PROXIES=<red del túnel>`, y rotar `AUTOMATION_TOKEN` (con `php artisan automation:token`) y la contraseña de Gmail.
 
