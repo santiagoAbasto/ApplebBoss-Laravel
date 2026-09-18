@@ -23,7 +23,7 @@ function Confeti() {
     );
 }
 
-export default function Pago({ pedido, token, qr, transferencia, metodo }) {
+function PagoInterno({ pedido, token, qr, transferencia, metodo }) {
     const { clear } = useStoreCart();
     const [estado, setEstado] = useState(pedido.estado);
     const [confirmado, setConfirmado] = useState(pedido.pago_confirmado);
@@ -62,7 +62,7 @@ export default function Pago({ pedido, token, qr, transferencia, metodo }) {
     const urlSeguimiento = `/seguimiento/${pedido.codigo}?t=${encodeURIComponent(token)}`;
 
     return (
-        <StoreLayout>
+        <>
             <Head title={`Pago del pedido ${pedido.codigo}`} />
             <StoreContainer className="py-8 md:py-12">
                 <div className="mx-auto max-w-2xl">
@@ -194,6 +194,18 @@ export default function Pago({ pedido, token, qr, transferencia, metodo }) {
                     </AnimatePresence>
                 </div>
             </StoreContainer>
+        </>
+    );
+}
+
+/**
+ * Mismo motivo que en Checkout: el contexto del carrito lo provee StoreLayout, así que
+ * este componente tiene que quedar por debajo de él para poder leerlo con `useStoreCart()`.
+ */
+export default function Pago(props) {
+    return (
+        <StoreLayout>
+            <PagoInterno {...props} />
         </StoreLayout>
     );
 }

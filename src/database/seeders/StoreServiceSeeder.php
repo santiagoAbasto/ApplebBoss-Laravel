@@ -20,6 +20,7 @@ class StoreServiceSeeder extends Seeder
         $services = [
             ['icon' => 'scan', 'title' => 'Diagnóstico gratuito', 'description' => 'Revisamos tu equipo sin costo para identificar el problema antes de cualquier reparación.'],
             ['icon' => 'wrench', 'title' => 'Servicio técnico', 'description' => 'Reparaciones de iPhone y Mac realizadas por técnicos con experiencia en equipos Apple.'],
+            ['icon' => 'truck', 'title' => 'Envíos dentro de Bolivia', 'description' => 'Enviamos a nueve departamentos. El costo y el plazo se calculan en el checkout, con tu departamento, antes de que confirmes.'],
             ['icon' => 'chat', 'title' => 'Atención directa', 'description' => 'Te asesoramos por WhatsApp o en tienda para que elijas el equipo correcto.', 'accion' => 'whatsapp'],
             ['icon' => 'badge', 'title' => 'Equipos revisados', 'description' => 'Todo equipo seminuevo pasa por revisión técnica antes de publicarse. Sin sorpresas.'],
         ];

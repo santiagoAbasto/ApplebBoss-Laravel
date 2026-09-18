@@ -112,6 +112,80 @@ class Pedido extends Model
     }
 
     /**
+     * El pedido completo, para el panel.
+     *
+     * Acá sí va todo: notas internas, comprobante, quién confirmó el pago y los eventos
+     * privados. Es la vista de quien administra, no la del cliente.
+     */
+    public function paraElPanel(): array
+    {
+        return [
+            'id'              => $this->id,
+            'codigo'          => $this->codigo,
+            'estado'          => $this->estado,
+            'etiqueta'        => $this->etiqueta(),
+            'pago_confirmado' => $this->pagoConfirmado(),
+            'creado_en'       => $this->created_at?->toIso8601String(),
+            'expira_en'       => $this->expira_en?->toIso8601String(),
+            'tipo_entrega'    => $this->tipo_entrega,
+            'subtotal'        => (float) $this->subtotal,
+            'costo_envio'     => (float) $this->costo_envio,
+            'total'           => (float) $this->total,
+            'moneda'          => $this->moneda,
+            'cliente' => [
+                'nombre'       => $this->nombre_cliente,
+                'email'        => $this->email_cliente,
+                'telefono'     => $this->telefono_cliente,
+                'documento'    => $this->documento,
+                'razon_social' => $this->razon_social,
+            ],
+            'pago' => [
+                'metodo'         => $this->metodo_pago,
+                'referencia'     => $this->pago_referencia,
+                'tiene_comprobante' => filled($this->pago_comprobante),
+                'confirmado_en'  => $this->pago_confirmado_en?->toIso8601String(),
+                'confirmado_por' => $this->confirmadoPor?->name,
+            ],
+            'envio' => $this->esEnvio() ? [
+                'departamento' => $this->envio_departamento,
+                'ciudad'       => $this->envio_ciudad,
+                'direccion'    => $this->envio_direccion,
+                'referencia'   => $this->envio_referencia,
+                'destinatario' => $this->envio_destinatario,
+                'telefono'     => $this->envio_telefono,
+                'courier'      => $this->courier,
+                'tracking'     => $this->tracking_codigo,
+                'tracking_url' => $this->tracking_url,
+                'enviado_en'   => $this->enviado_en?->toIso8601String(),
+                'entregado_en' => $this->entregado_en?->toIso8601String(),
+            ] : null,
+            'notas_cliente'  => $this->notas_cliente,
+            'notas_internas' => $this->notas_internas,
+            'items' => $this->items->map(fn (PedidoItem $i) => [
+                'nombre'       => $i->nombre,
+                'condicion'    => $i->condicion,
+                'slug'         => $i->slug,
+                'tipo'         => $i->tipo,
+                'cantidad'     => $i->cantidad,
+                'precio'       => (float) $i->precio_unitario,
+                'subtotal'     => (float) $i->subtotal,
+                'imei_1'       => $i->imei_1,
+                'imei_2'       => $i->imei_2,
+                'numero_serie' => $i->numero_serie,
+            ])->all(),
+            // Toda la línea de tiempo, también lo que el cliente no ve, y con su autor
+            'eventos' => $this->eventos->sortBy('id')->values()->map(fn (PedidoEvento $e) => [
+                'titulo'  => $e->titulo,
+                'detalle' => $e->detalle,
+                'estado'  => $e->estado,
+                'publico' => (bool) $e->publico,
+                'autor'   => $e->usuario?->name,
+                'fecha'   => $e->created_at?->toIso8601String(),
+            ])->all(),
+        ];
+    }
+
+    /**
      * Lo único que puede ver el cliente en el seguimiento.
      *
      * El IMEI y la serie salen SOLO con el pago confirmado; las notas internas nunca.

@@ -77,7 +77,7 @@ function Campo({ label, error, children, requerido = false }) {
 const inputCls = 'h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition-shadow focus:ring-2';
 const inputStyle = { borderColor: 'var(--border-light)', background: 'var(--surface-white)', color: 'var(--text-primary)' };
 
-export default function Checkout({ entrega = [], destinos = [], metodos = [] }) {
+function CheckoutInterno({ entrega = [], destinos = [], metodos = [] }) {
     const { cart, total, syncing } = useStoreCart();
     const disponibles = useMemo(() => cart.filter((i) => i.available !== false), [cart]);
     const noDisponibles = useMemo(() => cart.filter((i) => i.available === false), [cart]);
@@ -111,7 +111,7 @@ export default function Checkout({ entrega = [], destinos = [], metodos = [] }) 
 
     if (!syncing && disponibles.length === 0) {
         return (
-            <StoreLayout>
+            <>
                 <Head title="Checkout" />
                 <StoreContainer className="py-20">
                     <div className="mx-auto max-w-md text-center">
@@ -125,12 +125,12 @@ export default function Checkout({ entrega = [], destinos = [], metodos = [] }) 
                         </a>
                     </div>
                 </StoreContainer>
-            </StoreLayout>
+            </>
         );
     }
 
     return (
-        <StoreLayout>
+        <>
             <Head title="Finalizar compra" />
             <StoreContainer className="py-8 md:py-12">
                 <h1 className="mb-1 text-2xl font-black md:text-3xl" style={{ color: 'var(--text-primary)' }}>Finalizar compra</h1>
@@ -340,6 +340,19 @@ export default function Checkout({ entrega = [], destinos = [], metodos = [] }) 
                     </aside>
                 </form>
             </StoreContainer>
+        </>
+    );
+}
+
+/**
+ * StoreLayout es quien PROVEE el contexto del carrito, así que tiene que estar montado por
+ * encima de quien lo consume. Cuando `useStoreCart()` se llamaba dentro de este mismo
+ * componente, el contexto todavía no existía: devolvía null y la página quedaba en blanco.
+ */
+export default function Checkout(props) {
+    return (
+        <StoreLayout>
+            <CheckoutInterno {...props} />
         </StoreLayout>
     );
 }

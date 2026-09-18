@@ -1,7 +1,7 @@
 import {
   CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
-  ShoppingCart, SlidersHorizontal, Smartphone, Store, Tablet, Tag, Users, Wallet, Wrench,
+  ShoppingCart, SlidersHorizontal, Smartphone, Store, Tablet, Tag, Truck, Users, Wallet, Wrench,
 } from 'lucide-react';
 import IconoUsuarios from '@/Components/Admin/IconoUsuarios';
 import PanelShell, { AB, DISPLAY_FONT } from '@/Layouts/PanelShell';
@@ -13,6 +13,7 @@ const NAV = [
   { key: 'inicio', items: [{ r: 'admin.dashboard', icon: LayoutDashboard, label: 'Resumen', exact: true, modulo: 'resumen' }] },
   { key: 'operacion', label: 'Ventas y operación', items: [
     { r: 'admin.ventas.index', icon: ShoppingCart, label: 'Ventas', modulo: 'ventas' },
+    { r: 'admin.pedidos.index', icon: Truck, label: 'Pedidos de la tienda', modulo: 'pedidos' },
     { r: 'admin.reservas.index', icon: CalendarCheck, label: 'Reservas', modulo: 'reservas' },
     { r: 'admin.servicios.index', icon: Hammer, label: 'Servicio técnico', modulo: 'servicios' },
     { r: 'admin.cotizaciones.index', icon: Receipt, label: 'Cotizaciones', modulo: 'cotizaciones' },

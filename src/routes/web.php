@@ -311,6 +311,17 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->parameters(['ventas' => 'venta']);
 
         // ========================
+        // 🧾 Pedidos de la tienda en línea
+        // ========================
+        Route::get('/pedidos', [App\Http\Controllers\Admin\PedidoController::class, 'index'])->name('pedidos.index');
+        Route::get('/pedidos/{pedido}', [App\Http\Controllers\Admin\PedidoController::class, 'show'])->name('pedidos.show');
+        Route::get('/pedidos/{pedido}/comprobante', [App\Http\Controllers\Admin\PedidoController::class, 'comprobante'])->name('pedidos.comprobante');
+        Route::post('/pedidos/{pedido}/confirmar-pago', [App\Http\Controllers\Admin\PedidoController::class, 'confirmarPago'])->name('pedidos.confirmarPago');
+        Route::post('/pedidos/{pedido}/avanzar', [App\Http\Controllers\Admin\PedidoController::class, 'avanzar'])->name('pedidos.avanzar');
+        Route::post('/pedidos/{pedido}/cancelar', [App\Http\Controllers\Admin\PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
+        Route::post('/pedidos/{pedido}/nota', [App\Http\Controllers\Admin\PedidoController::class, 'notaInterna'])->name('pedidos.nota');
+
+        // ========================
         // 📌 Reservas
         // ========================
         Route::get('/reservas/activas', [ReservaController::class, 'activas'])

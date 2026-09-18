@@ -7,6 +7,8 @@ use App\Models\Celular;
 use App\Models\Pedido;
 use App\Support\Checkout\ConfirmadorDePago;
 use App\Support\Checkout\CreadorDePedido;
+use App\Support\Checkout\Entrega;
+use App\Support\Pagos\MetodosDePago;
 use App\Support\Checkout\StockDePedidos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -55,6 +57,83 @@ class CheckoutTiendaTest extends TestCase
             'telefono_cliente' => '70011223',
             'tipo_entrega'     => 'retiro',
         ], $extra);
+    }
+
+    /* ─── Lo que promete la tienda tiene que coincidir con lo que hace ───── */
+
+    public function test_la_pregunta_de_envios_nombra_todos_los_departamentos_reales(): void
+    {
+        // Si mañana se agrega o se saca un departamento de config/envios.php, esta prueba avisa
+        // que la respuesta al cliente quedó desactualizada.
+        $respuesta = \App\Models\Faq::where('question', '¿Hacen envíos a otras ciudades?')->value('answer');
+        $this->assertNotNull($respuesta, 'debería existir la pregunta sobre envíos');
+
+        foreach (Entrega::destinos() as $destino) {
+            $this->assertStringContainsString(
+                $destino['departamento'],
+                $respuesta,
+                "la respuesta sobre envíos no menciona {$destino['departamento']}, al que sí se envía"
+            );
+        }
+    }
+
+    public function test_ninguna_respuesta_promete_algo_que_la_tienda_no_hace(): void
+    {
+        $respuestas = \App\Models\Faq::pluck('answer')->implode(' ');
+
+        // Afirmaciones que no podemos sostener (no somos distribuidor oficial ni damos plazos que no cumplimos)
+        foreach (['Apple Authorized', 'distribuidor oficial', 'garantía oficial de Apple', 'envío gratis a todo el país'] as $prohibida) {
+            $this->assertStringNotContainsString($prohibida, $respuestas, "no se puede afirmar «{$prohibida}»");
+        }
+    }
+
+    /* ─── El envío tiene que poder cobrarse ──────────────────────────────── */
+
+    public function test_sin_forma_de_pagar_a_distancia_no_se_ofrece_envio(): void
+    {
+        // Producción hoy: sin cuenta bancaria cargada y con el QR del BNB apagado,
+        // lo único que queda es pagar al retirar. Un envío así no se puede cobrar.
+        config([
+            'pagos.transferencia.cuenta' => null,
+            'pagos.bnb.habilitado'       => false,
+            'pagos.efectivo_en_tienda.habilitado' => true,
+            'envios.envio.habilitado'    => true,
+        ]);
+
+        $this->assertFalse(MetodosDePago::hayPagoADistancia());
+        $this->assertSame(['retiro'], array_column(Entrega::opciones(), 'valor'));
+    }
+
+    public function test_con_cuenta_cargada_el_envio_vuelve_a_ofrecerse(): void
+    {
+        config([
+            'pagos.transferencia.habilitado' => true,
+            'pagos.transferencia.cuenta'     => '1234567890',
+            'envios.envio.habilitado'        => true,
+        ]);
+
+        $this->assertTrue(MetodosDePago::hayPagoADistancia());
+        $this->assertSame(['retiro', 'envio'], array_column(Entrega::opciones(), 'valor'));
+    }
+
+    public function test_pagar_al_retirar_no_vale_para_un_envio_a_domicilio(): void
+    {
+        config(['pagos.transferencia.habilitado' => true, 'pagos.transferencia.cuenta' => '1234567890']);
+
+        $celular = $this->celular();
+        $this->publicar($celular);
+
+        $this->post('/checkout', $this->datosCliente([
+            'claves'             => ["celular:{$celular->id}"],
+            'tipo_entrega'       => 'envio',
+            'envio_departamento' => 'Santa Cruz',
+            'envio_ciudad'       => 'Santa Cruz de la Sierra',
+            'envio_direccion'    => 'Av. Siempre Viva 123',
+            'metodo_pago'        => 'efectivo_tienda',
+        ]))->assertSessionHasErrors('metodo_pago');
+
+        // Y el equipo no queda apartado por un pedido que no se puede cobrar
+        $this->assertDatabaseCount('pedidos', 0);
     }
 
     public function test_el_precio_lo_pone_el_servidor_no_el_navegador(): void

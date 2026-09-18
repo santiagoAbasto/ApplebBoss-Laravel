@@ -22,7 +22,9 @@ class Entrega
             ];
         }
 
-        if (config('envios.envio.habilitado')) {
+        // El envío solo se ofrece si existe una forma de cobrarlo a distancia. Ofrecerlo con
+        // «pago al retirar» como única opción dejaba al cliente en un callejón sin salida.
+        if (config('envios.envio.habilitado') && \App\Support\Pagos\MetodosDePago::hayPagoADistancia()) {
             $opciones[] = [
                 'valor'    => self::ENVIO,
                 'etiqueta' => 'Envío a domicilio',

@@ -44,6 +44,23 @@ class MetodosDePago
         return $metodos;
     }
 
+    /**
+     * ¿Hay alguna forma de pagar sin pasar por la tienda?
+     *
+     * «Pago al retirar» no sirve para un envío a domicilio: el cliente nunca pasa por el local.
+     * Si es la única forma configurada, el envío no se puede cobrar y por eso no se ofrece.
+     */
+    public static function hayPagoADistancia(): bool
+    {
+        foreach (self::disponibles() as $metodo) {
+            if ($metodo['valor'] !== self::EFECTIVO_TIENDA) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function valores(): array
     {
         return array_column(self::disponibles(), 'valor');

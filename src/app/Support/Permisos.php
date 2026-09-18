@@ -25,6 +25,7 @@ class Permisos
         'resumen'      => ['Resumen',              'Inicio',              ['admin.dashboard', 'admin.notifications']],
 
         'ventas'       => ['Ventas',               'Ventas y operación',  ['admin.ventas']],
+        'pedidos'      => ['Pedidos de la tienda', 'Ventas y operación',  ['admin.pedidos']],
         'reservas'     => ['Reservas',             'Ventas y operación',  ['admin.reservas']],
         'servicios'    => ['Servicio técnico',     'Ventas y operación',  ['admin.servicios']],
         'cotizaciones' => ['Cotizaciones',         'Ventas y operación',  ['admin.cotizaciones']],

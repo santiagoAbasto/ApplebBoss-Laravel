@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,8 +29,9 @@ class CheckoutController extends Controller
     public function mostrar(): Response
     {
         return Inertia::render('Store/Checkout', [
-            'entrega'  => Entrega::opciones(),
-            'destinos' => Entrega::destinos(),
+            'entrega'  => $opciones = Entrega::opciones(),
+            // La tabla de costos solo viaja si el envío se está ofreciendo de verdad
+            'destinos' => in_array(Entrega::ENVIO, array_column($opciones, 'valor'), true) ? Entrega::destinos() : [],
             'metodos'  => MetodosDePago::disponibles(),
         ]);
     }
@@ -55,6 +57,13 @@ class CheckoutController extends Controller
             'metodo_pago'        => ['required', Rule::in(MetodosDePago::valores())],
             'notas_cliente'      => ['nullable', 'string', 'max:500'],
         ]);
+
+        // «Pago al retirar» con envío a domicilio es imposible: el cliente nunca pasa por la tienda.
+        if ($datos['tipo_entrega'] === Entrega::ENVIO && $datos['metodo_pago'] === MetodosDePago::EFECTIVO_TIENDA) {
+            throw ValidationException::withMessages([
+                'metodo_pago' => 'El pago al retirar solo vale si recoges el equipo en la tienda. Para un envío, elige otra forma de pago.',
+            ]);
+        }
 
         // Si eligió envío, la dirección es obligatoria
         if ($datos['tipo_entrega'] === Entrega::ENVIO) {

@@ -168,6 +168,23 @@ docker compose -f docker-compose.production.yml exec app php artisan migrate:rol
 - **SEO técnico:** canonical y sitemap sobre el dominio oficial, `robots.txt` correcto, datos estructurados (Store, WebSite, Product, BreadcrumbList).
 - **Seguridad:** proxies de confianza acotados, costo oculto al vendedor, OAuth con `state`, sin SSRF en PDF.
 
+## Cobro manual mientras el banco no dé las credenciales
+
+El QR automático del BNB necesita credenciales que entrega el banco. Mientras tanto el cobro es
+manual y **está completo**:
+
+1. El cliente elige transferencia, ve los datos de la cuenta y **sube su comprobante**.
+2. El pedido pasa a **«pago en revisión»** y el equipo queda apartado.
+3. En **Panel → Pedidos de la tienda** se abre el comprobante y se confirma el pago.
+4. Confirmar es lo que **vende la unidad, la despublica** y le revela al comprador el IMEI y la serie.
+5. Después el pedido avanza: preparando → enviado (con courier y código) → entregado.
+
+Cada paso queda en la línea de tiempo **con su autor y su fecha**. Las notas internas nunca llegan
+al seguimiento del cliente, y el comprobante vive en disco privado: solo se abre desde el panel.
+
+> Para que la transferencia se ofrezca hay que cargar `PAGO_TITULAR` y `PAGO_CUENTA` en
+> `.env.production`. Sin esos datos el checkout solo ofrece retiro y pago en tienda.
+
 ## Pendientes que NO entran acá
 
 - **SSR** — **ya no es urgente**: Search Console confirma que Google renderiza e indexa la home. Queda como mejora (velocidad de indexación y vista previa al compartir en redes).
