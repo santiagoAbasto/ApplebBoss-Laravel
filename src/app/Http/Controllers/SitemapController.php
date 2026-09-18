@@ -12,7 +12,9 @@ class SitemapController extends Controller
 {
     public function index(): Response
     {
-        $base = rtrim(config('app.url'), '/');
+        // El sitemap SIEMPRE usa el dominio oficial: si usara el host de la petición,
+        // cada túnel publicaría un sitemap distinto para el mismo sitio.
+        $base = \App\Support\Seo\UrlPublica::base();
 
         // Publicaciones activas — solo slug + updated_at, mínima query
         $products = CatalogoPublicacion::publicadoAhora()

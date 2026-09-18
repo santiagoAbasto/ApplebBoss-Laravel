@@ -31,6 +31,8 @@ class CatalogoPublicacionController extends Controller
         'cargador_20w' => 'cargador', 'cargador_5w' => 'cargador', 'accesorio' => 'accesorio', 'otro' => 'accesorio',
     ];
 
+    private const NO_DISPONIBLE = 'Este producto ya no está disponible en el inventario (vendido o reservado). En la tienda solo se publica lo que está en stock.';
+
     public function __construct(private readonly ImagenProductoService $imagenes) {}
 
     // ─── Listado ──────────────────────────────────────────────────────────────
@@ -146,6 +148,12 @@ class CatalogoPublicacionController extends Controller
         // Regla de negocio: MYSKIN solo para fundas
         $this->validarStorefrontMyskin($validated['storefront'], $validated['categoria']);
 
+        // Solo se publica lo que está en stock (ni vendido ni reservado)
+        if (($validated['publicado'] ?? false)
+            && ! \App\Support\TiendaSoloDisponible::sePuedePublicar($validated['producto_tipo'], (int) $validated['producto_id'])) {
+            return back()->withErrors(['publicado' => self::NO_DISPONIBLE])->withInput();
+        }
+
         foreach (['descripcion', 'que_incluye', 'observaciones'] as $field) {
             if (isset($validated[$field])) {
                 $validated[$field] = $this->sanitizeRichText($validated[$field]);
@@ -259,6 +267,11 @@ class CatalogoPublicacionController extends Controller
             if (isset($validated[$field])) {
                 $validated[$field] = $this->sanitizeRichText($validated[$field]);
             }
+        }
+
+        // Solo se publica lo que está en stock (ni vendido ni reservado)
+        if (($validated['publicado'] ?? false) && ! $publicacion->productoDisponible()) {
+            return back()->withErrors(['publicado' => self::NO_DISPONIBLE]);
         }
 
         // Bloquear publicación si faltan campos obligatorios

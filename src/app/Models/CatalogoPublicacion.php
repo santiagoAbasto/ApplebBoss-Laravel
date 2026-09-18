@@ -302,6 +302,11 @@ class CatalogoPublicacion extends Model
         $m = $this->inventario();
         if (! $m || $m->estado !== 'disponible') return false;
 
+        // Un pedido en línea sin pagar también aparta el equipo: no se le vende a otra persona.
+        if (\App\Support\Checkout\StockDePedidos::estaRetenido($this->producto_tipo, (int) $this->producto_id)) {
+            return false;
+        }
+
         if ($this->precarga !== null) {
             return ! $this->precarga['reservado'];
         }
@@ -380,7 +385,7 @@ class CatalogoPublicacion extends Model
         }
     }
 
-    private function inventario(): mixed
+    public function inventario(): mixed
     {
         if ($this->precarga !== null) {
             return $this->precarga['modelo'];

@@ -500,28 +500,43 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
                             <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Total referencial</span>
                             <span className="text-lg font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>{money(total)}</span>
                         </div>
-                        {waUrl ? (
+                        {/* Compra en línea: es la acción principal */}
+                        <Link
+                            href="/checkout"
+                            onClick={onClose}
+                            className="flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-bold text-white transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+                            style={{ background: 'var(--ab-navy)' }}
+                        >
+                            Finalizar compra <ChevronRight className="h-4 w-4" />
+                        </Link>
+
+                        {waUrl && (
                             <a
                                 href={waUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex h-12 w-full items-center justify-center rounded-full text-sm font-bold transition-opacity hover:opacity-90"
+                                className="mt-2 flex h-11 w-full items-center justify-center rounded-full text-sm font-bold transition-opacity hover:opacity-90"
                                 style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}
                             >
-                                Cotizar por WhatsApp
+                                Prefiero consultar por WhatsApp
                             </a>
-                        ) : (
-                            <button
-                                disabled
-                                className="flex h-12 w-full items-center justify-center rounded-full text-sm font-bold opacity-40 cursor-not-allowed"
-                                style={{ background: 'var(--surface-muted)', color: 'var(--text-muted)' }}
-                            >
-                                WhatsApp no configurado
-                            </button>
                         )}
-                        <p className="mt-3 text-center text-xs leading-5" style={{ color: 'var(--text-muted)' }}>
-                            Confirmamos precio y disponibilidad antes de reservar.
-                        </p>
+
+                        {/* Confianza: en Bolivia la gente desconfía de comprar en línea */}
+                        <ul className="mt-4 space-y-1.5 text-xs leading-5" style={{ color: 'var(--text-muted)' }}>
+                            <li className="flex items-start gap-2">
+                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--ab-navy)' }} />
+                                Solo vendemos lo que tenemos en stock: al comprar, tu equipo queda apartado.
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--ab-navy)' }} />
+                                Pagas y recién ahí te mostramos el IMEI y la serie de tu equipo.
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--ab-navy)' }} />
+                                Sigues tu pedido paso a paso con tu código.
+                            </li>
+                        </ul>
                     </div>
                 )}
             </aside>
@@ -849,6 +864,13 @@ export default function StoreLayout({ children }) {
         setHydrated((cur) => cur.filter((i) => i.key !== key));
     }, []);
 
+    // Se usa al terminar la compra: el pedido ya quedó guardado en el servidor
+    const clear = useCallback(() => {
+        setStored([]);
+        setHydrated([]);
+        try { localStorage.removeItem(CART_KEY); } catch { /* sin almacenamiento */ }
+    }, []);
+
     const total = useMemo(
         () => hydrated.filter((i) => i.available !== false).reduce((sum, i) => sum + Number(i.price ?? 0) * (i.quantity ?? 1), 0),
         [hydrated]
@@ -868,7 +890,7 @@ export default function StoreLayout({ children }) {
     }, []);
 
     return (
-        <CartContext.Provider value={{ cart, add, remove, total, open: () => setCartOpen(true) }}>
+        <CartContext.Provider value={{ cart, add, remove, total, open: () => setCartOpen(true), clear, syncing }}>
             <CompareProvider>
                 {/* Las fuentes (Figtree y Barlow) se cargan una sola vez en app.blade.php: si el link viviera acá,
                     se quitaría y volvería a poner en cada cambio de página y el texto parpadearía. */}

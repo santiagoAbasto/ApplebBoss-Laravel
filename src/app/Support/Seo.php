@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\ConfiguracionTienda;
 use App\Models\SeoPage;
+use App\Support\Seo\UrlPublica;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -86,13 +87,17 @@ class Seo
 
         $image = $ctx['imagen']
             ?? ($row['og_image'] ?? null)
-            ?: (ConfiguracionTienda::get('seo_og_imagen_default') ?: null);
+            ?: (ConfiguracionTienda::get('seo_og_imagen_default') ?: config('seo.og_image_default') ?: null);
+
+        // La URL oficial siempre sale del dominio configurado, no del host de la petición:
+        // si no, cada túnel/IP genera otra URL para la misma página y se rompe la indexación.
+        $propia = UrlPublica::de($request->path());
 
         // Sin query string: los filtros no crean duplicados. Las páginas de una categoría y de una colección son la excepción (su propia URL).
         $canonical = match (true) {
             ! empty($ctx['canonical']) => self::absolute($ctx['canonical']),
             ! empty($row['canonical']) => self::absolute($row['canonical']),
-            default                    => $request->url(),
+            default                    => $propia,
         };
 
         $noindex = ! empty($row['noindex']) || ! empty($ctx['noindex']);
@@ -101,7 +106,7 @@ class Seo
             'title'       => Str::limit(strip_tags($title), 120, ''),
             'description' => $description ? Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($description))), 300, '…') : null,
             'image'       => $image ? self::absolute($image) : null,
-            'url'         => $request->url(),
+            'url'         => $propia,
             'canonical'   => $canonical,
             'robots'      => $noindex ? 'noindex,nofollow' : 'index,follow',
             'type'        => $default['type'] ?? 'website',
@@ -116,7 +121,7 @@ class Seo
             return $value;
         }
         if (Str::startsWith($value, '/')) {
-            return url($value);
+            return UrlPublica::de($value);
         }
         return Storage::disk('public')->url($value);
     }

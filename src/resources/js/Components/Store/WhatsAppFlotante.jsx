@@ -47,7 +47,12 @@ function useTope() {
                 .map((el) => el.getBoundingClientRect().top)
                 .filter((t) => Number.isFinite(t));
             if (topes.length === 0) { setSubir(0); return; }
-            const limite = window.innerHeight - MARGEN;
+            // Mismo `bottom` que el CSS de .ab-wa (16 px en celular, 24 en escritorio) más un aire libre sobre el tope,
+            // para que el botón nunca quede pegado a «Agregar» de la barra de compra.
+            const celular = window.matchMedia('(max-width: 640px)').matches;
+            const abajo = celular ? 16 : MARGEN;
+            const aire = celular ? 18 : 12;
+            const limite = window.innerHeight - abajo + aire;
             setSubir(Math.max(0, Math.round(limite - Math.min(...topes))));
         };
 
@@ -62,11 +67,15 @@ function useTope() {
         window.addEventListener('resize', alDesplazar);
         const observador = new ResizeObserver(alDesplazar);
         observador.observe(document.body);
+        // Una barra fija (la de compra en el celular) aparece sin cambiar el alto de la página: se mide al montarse.
+        const cambios = new MutationObserver(alDesplazar);
+        cambios.observe(document.body, { childList: true, subtree: true });
 
         return () => {
             window.removeEventListener('scroll', alDesplazar);
             window.removeEventListener('resize', alDesplazar);
             observador.disconnect();
+            cambios.disconnect();
         };
     }, []);
 

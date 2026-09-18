@@ -98,8 +98,10 @@ class ApiFiltrosTest extends TestCase
         $this->celular('IPHONE 13', 3500);
         $this->celular('IPHONE 12', 2800, 'vendido');
 
+        // Regla de la tienda (2026-09-17): lo vendido se despublica solo, así que no vuelve a
+        // aparecer en la API pública ni pidiendo "todos". Solo se publica lo que está en stock.
         $this->getJson('/api/v1/products')->assertJsonPath('meta.total', 1);
-        $this->getJson('/api/v1/products?disponible=todos')->assertJsonPath('meta.total', 2);
+        $this->getJson('/api/v1/products?disponible=todos')->assertJsonPath('meta.total', 1);
     }
 
     public function test_pagination_and_public_fields_only(): void

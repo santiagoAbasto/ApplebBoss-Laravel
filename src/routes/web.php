@@ -105,6 +105,27 @@ Route::post('/api/carrito/sync', [PublicCatalogController::class, 'syncCart'])
     ->name('api.carrito.sync')
     ->middleware('throttle:60,1');
 
+/*
+|--------------------------------------------------------------------------
+| Checkout y seguimiento de pedidos (tienda en línea)
+|--------------------------------------------------------------------------
+| El precio y la disponibilidad los decide el servidor. El pedido avanza solo
+| con el pago confirmado, y el seguimiento pide token o correo: es privado.
+*/
+Route::controller(\App\Http\Controllers\CheckoutController::class)->group(function () {
+    Route::get('/checkout', 'mostrar')->name('checkout')->middleware('throttle:60,1');
+    Route::post('/checkout', 'guardar')->name('checkout.guardar')->middleware('throttle:10,1');
+    Route::get('/pedido/{codigo}/pago', 'pago')->name('checkout.pago')->middleware('throttle:60,1');
+    Route::post('/pedido/{codigo}/pago/reportar', 'reportarPago')->name('checkout.reportar')->middleware('throttle:10,1');
+    Route::get('/pedido/{codigo}/estado', 'estado')->name('checkout.estado')->middleware('throttle:120,1');
+});
+
+Route::controller(\App\Http\Controllers\SeguimientoController::class)->group(function () {
+    Route::get('/seguimiento', 'buscar')->name('seguimiento')->middleware('throttle:60,1');
+    Route::post('/seguimiento', 'resolver')->name('seguimiento.resolver')->middleware('throttle:15,1');
+    Route::get('/seguimiento/{codigo}', 'ver')->name('seguimiento.ver')->middleware('throttle:60,1');
+});
+
 // 🚀 Redirección al dashboard según el rol autenticado
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $user = auth()->user();

@@ -37,6 +37,12 @@
         <title data-inertia>{{ config('app.name', 'Laravel') }}</title>
     @endif
 
+    {{-- Datos estructurados: se imprimen en el servidor para que Google los lea sin ejecutar JS --}}
+    @php($jsonLd = \App\Support\Seo\DatosEstructurados::json($seo ?? null, request()))
+    @if($jsonLd)
+        <script type="application/ld+json">{!! $jsonLd !!}</script>
+    @endif
+
     @php($faviconVersion = file_exists(public_path('favicon.ico')) ? filemtime(public_path('favicon.ico')) : time())
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}?v={{ $faviconVersion }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}?v={{ $faviconVersion }}">

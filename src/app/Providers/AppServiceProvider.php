@@ -54,6 +54,17 @@ class AppServiceProvider extends ServiceProvider
 
         // ── Vite prefetch ─────────────────────────────────────────────────
         Vite::prefetch(concurrency: 3);
+
+        // ── La tienda solo muestra lo que está en stock ───────────────────
+        // Lo que se vende (o se borra del inventario) deja de estar publicado en ese momento.
+        foreach ([\App\Models\Celular::class, \App\Models\Computadora::class, \App\Models\ProductoApple::class, \App\Models\ProductoGeneral::class] as $clase) {
+            $clase::updated(function ($producto) {
+                if ($producto->wasChanged('estado') && $producto->estado === \App\Support\TiendaSoloDisponible::VENDIDO) {
+                    \App\Support\TiendaSoloDisponible::revisar($producto);
+                }
+            });
+            $clase::deleted(fn ($producto) => \App\Support\TiendaSoloDisponible::revisar($producto, eliminado: true));
+        }
     }
 
     private function shouldUseBuiltAssetsInLocal(): bool
