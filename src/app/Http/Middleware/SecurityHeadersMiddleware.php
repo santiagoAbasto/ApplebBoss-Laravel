@@ -32,9 +32,10 @@ class SecurityHeadersMiddleware
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         // ── Deshabilitar APIs sensibles no usadas ────────────────────────
+        // `interest-cohort` salió de Chrome: hoy solo ensucia la consola con «Unrecognized feature».
         $response->headers->set(
             'Permissions-Policy',
-            'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()'
+            'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
         );
 
         // ── Aislamiento de ventana cross-origin ──────────────────────────
@@ -80,8 +81,9 @@ class SecurityHeadersMiddleware
             // Solo recursos del propio dominio por defecto
             "default-src 'self'",
 
-            // Scripts: solo self + inline (Inertia/React necesita inline en el <head>)
-            "script-src 'self' 'unsafe-inline'",
+            // Scripts: self + inline (Inertia/React necesita inline en el <head>) + la medición de Cloudflare,
+            // que el proxy inyecta solo en producción.
+            "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
 
             // Estilos: self + inline (Tailwind genera estilos inline) + bunny fonts + google fonts
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com",
@@ -92,8 +94,8 @@ class SecurityHeadersMiddleware
             // Imágenes: self + data URIs + blob (avatares, logos inline)
             "img-src 'self' data: blob:",
 
-            // Fetch/XHR: solo self
-            "connect-src 'self'",
+            // Fetch/XHR: self + el envío de la medición de Cloudflare
+            "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
 
             // Workers (service worker, etc.)
             "worker-src 'self' blob:",

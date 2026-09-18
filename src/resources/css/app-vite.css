@@ -96,6 +96,13 @@
    La marca va en el JSX (Components/Store/WhatsAppFlotante.jsx); acá su movimiento.
    Se frena en la línea del copyright con una traslación que calcula el componente. */
 
+/* Mientras el buscador está abierto, el botón de WhatsApp se aparta para no tapar el panel. */
+body[data-buscando] .ab-wa {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
+}
+
 .ab-wa {
   position: fixed;
   right: 24px;

@@ -517,6 +517,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
             {/* Sticky buy bar (mobile) */}
             {showBuyBar && product.available && (
                 <div
+                    data-tope-flotante
                     className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-3 border-t px-4 py-3 md:hidden"
                     style={{ background: 'var(--surface-white)', borderColor: 'var(--border-light)' }}
                 >

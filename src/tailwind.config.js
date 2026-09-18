@@ -1,7 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
-import aspectRatio from '@tailwindcss/aspect-ratio';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -47,9 +46,10 @@ export default {
     },
   },
 
+  // Sin el plugin @tailwindcss/aspect-ratio: ese plugin (pensado para Tailwind 2) apaga las utilidades
+  // aspect-* propias de Tailwind 3, y por eso las cajas de las fotos quedaban con altura 0 en el celular.
   plugins: [
     forms,
     typography,
-    aspectRatio,
   ],
 };

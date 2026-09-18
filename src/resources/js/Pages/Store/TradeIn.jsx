@@ -644,6 +644,24 @@ export default function TradeIn({ cuestionario, modelos = {}, maxFotos = 6 }) {
                                     <li key={t} className="flex items-center gap-1.5"><Check className="h-4 w-4" style={{ color: 'var(--ab-lime)' }} strokeWidth={2.4} />{t}</li>
                                 ))}
                             </ul>
+
+                            {/* En celular y tablet la revisión también se ve: la misma animación, acercada al equipo,
+                                y lo que revisamos escrito debajo para que se lea nítido en pantalla angosta. */}
+                            <div className="mt-7 xl:hidden">
+                                <div aria-hidden="true" className="relative h-[190px] sm:h-[240px]">
+                                    <EquipoEnRevision compacta />
+                                </div>
+                                <ul className="mt-2 flex flex-wrap justify-center gap-2">
+                                    {['Pantalla', 'Batería', 'Cuentas y bloqueos', 'Piezas'].map((t) => (
+                                        <li
+                                            key={t}
+                                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[12px] font-semibold text-white/85"
+                                        >
+                                            {t}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         </div>
                         {/* El espacio de la derecha: un equipo en revisión (solo decorativo) */}
                         <div aria-hidden="true" className="relative hidden self-stretch xl:block">

@@ -423,8 +423,11 @@ function Punto({ texto, lugar, orden, caja, reduce }) {
 /**
  * La derecha del hero de Trade-In: un equipo en revisión, dentro del contenedor y al lado del texto. Va pasando por un
  * iPhone, un celular Android, una laptop y un control de consola. Decorativo: el contenedor que lo usa lleva aria-hidden.
+ *
+ * Con `compacta` se usa en el celular: se acerca al equipo y deja fuera las etiquetas laterales, que en una pantalla
+ * angosta no entran. Lo que revisamos se cuenta ahí con texto normal, que siempre se lee nítido.
  */
-export function EquipoEnRevision() {
+export function EquipoEnRevision({ compacta = false }) {
     const reduce = useReducedMotion();
     const [px, py] = usePuntero(reduce);
     const [indice, setIndice] = useState(0);
@@ -444,8 +447,12 @@ export function EquipoEnRevision() {
     const caja = { x: 240 - w / 2, y: 170 - h / 2, w, h };
 
     return (
-        <div className="pointer-events-none absolute inset-x-0 -inset-y-14 md:-inset-y-20">
-            <svg viewBox="0 0 480 340" preserveAspectRatio="xMidYMid meet" className="h-full w-full overflow-visible">
+        <div className={compacta ? 'pointer-events-none absolute inset-0' : 'pointer-events-none absolute inset-x-0 -inset-y-14 md:-inset-y-20'}>
+            <svg
+                viewBox={compacta ? '95 45 290 250' : '0 0 480 340'}
+                preserveAspectRatio="xMidYMid meet"
+                className={`h-full w-full ${compacta ? 'overflow-hidden' : 'overflow-visible'}`}
+            >
                 <defs>
                     <radialGradient id={`${id}-luz`}>
                         <stop offset="0%" stopColor="#7B82D8" stopOpacity="0.38" />
@@ -519,12 +526,14 @@ export function EquipoEnRevision() {
                             </motion.g>
                         </motion.g>
 
-                        {/* Los puntos que revisa el formulario para este equipo */}
-                        <motion.g style={{ x: cerca[0], y: cerca[1] }}>
-                            {puntos.map((texto, i) => (
-                                <Punto key={texto} texto={texto} lugar={LUGARES[i]} orden={i} caja={caja} reduce={reduce} />
-                            ))}
-                        </motion.g>
+                        {/* Los puntos que revisa el formulario para este equipo (en el celular van como texto debajo) */}
+                        {!compacta && (
+                            <motion.g style={{ x: cerca[0], y: cerca[1] }}>
+                                {puntos.map((texto, i) => (
+                                    <Punto key={texto} texto={texto} lugar={LUGARES[i]} orden={i} caja={caja} reduce={reduce} />
+                                ))}
+                            </motion.g>
+                        )}
                     </motion.g>
                 </AnimatePresence>
 
