@@ -1,0 +1,19 @@
+{
+    email {$TLS_EMAIL}
+    admin off
+}
+
+www.{$APP_DOMAIN} {
+    redir https://{$APP_DOMAIN}{uri} permanent
+}
+
+{$APP_DOMAIN} {
+    encode zstd gzip
+
+    reverse_proxy app:80
+
+    log {
+        output stdout
+        format console
+    }
+}

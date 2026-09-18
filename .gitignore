@@ -10,6 +10,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+!.env.production.example
+# Production secrets and local rollback copies must never be pushed.
+.env.production
+.env.production.*
 *.pem
 *.key
 *.p12

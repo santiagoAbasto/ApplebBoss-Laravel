@@ -1,0 +1,84 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:24-bookworm-slim AS frontend
+
+WORKDIR /app
+
+COPY src/package.json src/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY src/ ./
+RUN npm run build
+
+
+FROM php:8.4-apache AS runtime
+
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gosu \
+        libexif-dev \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libonig-dev \
+        libpng-dev \
+        libpq-dev \
+        libwebp-dev \
+        libzip-dev \
+        unzip \
+    && docker-php-ext-configure gd --with-jpeg --with-webp --with-freetype \
+    && docker-php-ext-install -j"$(nproc)" exif gd pcntl pdo_pgsql zip \
+    && a2enmod headers rewrite \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY src/composer.json src/composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --optimize-autoloader \
+    --prefer-dist
+
+COPY src/ ./
+COPY --from=frontend /app/public/build ./public/build
+COPY docker/production/php.ini /usr/local/etc/php/conf.d/appleboss-production.ini
+COPY docker/production/entrypoint.sh /usr/local/bin/appleboss-entrypoint
+
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
+    && printf '%s\n' \
+        '<Directory /var/www/html/public>' \
+        '    AllowOverride All' \
+        '    Options -Indexes +FollowSymLinks' \
+        '    Require all granted' \
+        '</Directory>' \
+        > /etc/apache2/conf-available/appleboss.conf \
+    && printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-available/servername.conf \
+    && a2enconf appleboss servername \
+    && composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
+    && php artisan package:discover --ansi \
+    && mkdir -p \
+        bootstrap/cache \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+    && chmod -R a+rX /var/www/html \
+    && rm -f public/storage \
+    && ln -s ../storage/app/public public/storage \
+    && chown -R www-data:www-data bootstrap/cache storage \
+    && chmod +x /usr/local/bin/appleboss-entrypoint
+
+EXPOSE 80
+
+ENTRYPOINT ["appleboss-entrypoint"]
+CMD ["apache2-foreground"]
