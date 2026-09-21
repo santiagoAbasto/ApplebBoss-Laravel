@@ -41,6 +41,20 @@ class TextoEnriquecidoTest extends TestCase
         $this->assertSame(3, substr_count($html, '<li>'));
     }
 
+    /** Así la escriben en la tienda: título en mayúsculas y cada rótulo solo en su renglón. */
+    public function test_una_nota_con_el_rotulo_en_un_renglon_y_el_texto_abajo_tambien_se_estructura(): void
+    {
+        $nota = "CONDICIONES DE GARANTÍA Y BENEFICIOS\n\nGarantía inicial:\nEl equipo cuenta con 3 meses.\n\n"
+            . "La garantía NO cubre:\nDaños por caídas; contacto con agua; sobrecargas eléctricas.\n\nImportante: No cubre daños accidentales.";
+
+        $html = TextoEnriquecido::aHtml($nota);
+
+        $this->assertStringStartsWith('<h3>Condiciones de garantía y beneficios</h3>', $html);
+        $this->assertStringContainsString('<p><strong>Garantía inicial:</strong> El equipo cuenta con 3 meses.</p>', $html);
+        $this->assertSame(3, substr_count($html, '<li>'));
+        $this->assertStringContainsString('<p><strong>Importante:</strong> No cubre daños accidentales.</p>', $html);
+    }
+
     public function test_el_texto_plano_escapa_html_y_el_de_80mm_sale_sin_etiquetas(): void
     {
         $this->assertSame('<p>Precio &lt; 100 &amp; entrega</p>', TextoEnriquecido::aHtml('Precio < 100 & entrega'));

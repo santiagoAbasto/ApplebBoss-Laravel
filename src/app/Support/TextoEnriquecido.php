@@ -74,12 +74,20 @@ class TextoEnriquecido
 
         // Corta antes de cada rótulo de hasta 6 palabras que empieza con mayúscula y termina en dos puntos
         $rotulo  = '(?:\p{Lu}[\p{L}\p{N}\/]*)(?:\s+[\p{L}\p{N}\/]+){0,5}:';
-        $partes  = preg_split('/(?:\R+|(?<=[.;])\s+)(?=' . $rotulo . '\s)/u', trim($texto));
+        // «Rótulo:» solo en su renglón, con el texto en el de abajo: es lo mismo que en un solo renglón
+        $texto   = preg_replace('/^(' . $rotulo . ')[ \t]*\R+(?=\S)/mu', '$1 ', trim($texto));
+        $partes  = preg_split('/(?:\R+|(?<=[.;])\s+)(?=' . $rotulo . '\s)/u', $texto);
         $html    = '';
 
         foreach ($partes as $parte) {
             foreach (preg_split('/\R+/u', trim($parte)) as $linea) {
                 if ($linea === '') {
+                    continue;
+                }
+
+                // Un renglón entero en mayúsculas es el título de la nota
+                if (mb_strlen($linea) >= 12 && mb_strtoupper($linea) === $linea && preg_match('/\p{Lu}/u', $linea) && ! str_contains($linea, ':')) {
+                    $html .= '<h3>' . $e(self::oracion($linea)) . '</h3>';
                     continue;
                 }
 
