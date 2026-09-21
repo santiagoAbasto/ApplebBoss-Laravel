@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Entrar con Google (clientes de la tienda)
+    |--------------------------------------------------------------------------
+    |
+    | Cliente OAuth propio, separado del que usa Drive: si mañana hay que rotar uno,
+    | el otro sigue andando. Va en el mismo proyecto de Google Cloud.
+    |
+    | Solo sirve para clientes. Al staff no se le deja entrar por acá porque el control
+    | de horario del vendedor vive en el login por contraseña (App\Support\HorarioLaboral)
+    | y entrar con Google se lo saltaría.
+    |
+    */
+    'google' => [
+        'client_id'     => env('GOOGLE_LOGIN_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_LOGIN_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_LOGIN_REDIRECT', env('APP_URL') . '/auth/google/callback'),
+    ],
 ];

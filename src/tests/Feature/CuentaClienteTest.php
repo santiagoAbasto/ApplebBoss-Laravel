@@ -102,8 +102,29 @@ class CuentaClienteTest extends TestCase
 
     public function test_sin_cuenta_no_se_puede_comprar(): void
     {
-        $this->get('/checkout')->assertRedirect('/login');
-        $this->post('/checkout', [])->assertRedirect('/login');
+        // Y va a la puerta de la tienda, no a la del panel
+        $this->get('/checkout')->assertRedirect(route('cuenta.entrar'));
+        $this->post('/checkout', [])->assertRedirect(route('cuenta.entrar'));
+    }
+
+    public function test_las_dos_puertas_estan_separadas(): void
+    {
+        // La del equipo no ofrece crear cuenta; la de la tienda sí
+        $this->get('/login')->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Auth/Login'));
+
+        $this->get('/ingresar')->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Store/Cuenta/Entrar'));
+    }
+
+    public function test_el_cliente_que_entra_por_la_tienda_va_a_su_cuenta(): void
+    {
+        $cliente = User::factory()->create(['rol' => 'cliente', 'email' => 'ana@gmail.com']);
+
+        $this->post('/ingresar', ['email' => 'ana@gmail.com', 'password' => 'password'])
+            ->assertRedirect(route('cuenta.index'));
+
+        $this->assertAuthenticatedAs($cliente);
     }
 
     public function test_con_cuenta_el_checkout_llega_con_los_datos_puestos(): void

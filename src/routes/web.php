@@ -138,6 +138,23 @@ Route::controller(\App\Http\Controllers\Tienda\CuentaController::class)->group(f
     Route::get('/mi-cuenta', 'index')->name('cuenta.index')->middleware(['auth', 'throttle:60,1']);
 });
 
+// La puerta de quien compra, separada de la del equipo (/login). Las credenciales se
+// comprueban con el mismo controlador, así que el horario del vendedor se sigue aplicando.
+Route::middleware('guest')->group(function () {
+    Route::get('/ingresar', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'tienda'])
+        ->name('cuenta.entrar');
+    Route::post('/ingresar', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])
+        ->name('cuenta.entrar.enviar')->middleware('throttle:10,1');
+});
+
+// Entrar con Google. Solo clientes: el staff usa contraseña, que es donde se revisa el horario.
+Route::controller(\App\Http\Controllers\Tienda\GoogleLoginController::class)
+    ->middleware(['guest', 'throttle:20,1'])
+    ->group(function () {
+        Route::get('/auth/google', 'redirigir')->name('google.entrar');
+        Route::get('/auth/google/callback', 'volver')->name('google.volver');
+    });
+
 Route::controller(\App\Http\Controllers\SeguimientoController::class)->group(function () {
     Route::get('/seguimiento', 'buscar')->name('seguimiento')->middleware('throttle:60,1');
     Route::post('/seguimiento', 'resolver')->name('seguimiento.resolver')->middleware('throttle:15,1');

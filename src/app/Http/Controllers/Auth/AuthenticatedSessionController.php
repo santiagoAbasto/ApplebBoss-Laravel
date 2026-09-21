@@ -25,6 +25,22 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+     * La puerta de quien compra.
+     *
+     * Son dos puertas distintas a propósito: el panel es para el equipo y su pantalla habla
+     * de gestión; esta vive dentro de la tienda, con su carrito y su menú. La comprobación
+     * de credenciales es la misma para las dos (mismo `store`), así que el control de horario
+     * del vendedor se aplica igual si alguien del equipo entra por acá.
+     */
+    public function tienda(): Response
+    {
+        return Inertia::render('Store/Cuenta/Entrar', [
+            'canResetPassword' => Route::has('password.request'),
+            'status' => session('status'),
+        ]);
+    }
+
+    /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
@@ -32,6 +48,13 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+
+        // Quien compra va a su cuenta, no al panel. Y no pasa por /dashboard a propósito:
+        // esa ruta exige el correo verificado, y a un cliente recién registrado eso lo
+        // dejaría trabado en vez de dejarlo comprar.
+        if ($request->user()->esCliente()) {
+            return redirect()->intended(route('cuenta.index'));
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

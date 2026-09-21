@@ -62,6 +62,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            // El botón de «entrar con Google» solo se dibuja si hay credenciales cargadas
+            'googleLogin' => \App\Http\Controllers\Tienda\GoogleLoginController::configurado(),
             'auth' => [
                 'user' => $request->user(),
                 // Qué módulos del panel abre su rol: el menú esconde lo que el servidor va a rechazar igual

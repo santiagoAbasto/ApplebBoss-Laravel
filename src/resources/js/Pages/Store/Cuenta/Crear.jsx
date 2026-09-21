@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { Lock, ShieldCheck } from 'lucide-react';
 import StoreLayout, { StoreContainer } from '@/Layouts/StoreLayout';
+import BotonGoogle from '@/Components/Auth/BotonGoogle';
 
 const inputCls = 'h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition-shadow focus:ring-2';
 const inputStyle = { borderColor: 'var(--border-light)', background: 'var(--surface-white)', color: 'var(--text-primary)' };
@@ -34,8 +35,11 @@ function CrearCuenta({ desdeCheckout = false }) {
                             : 'Con tu cuenta sigues tus pedidos y ves lo que preparamos para ti.'}
                     </p>
 
+                    <div className="mt-7">
+                        <BotonGoogle texto="Continuar con Google" conSeparador />
+                    </div>
                     <form
-                        className="mt-7 flex flex-col gap-4"
+                        className="flex flex-col gap-4"
                         onSubmit={(e) => { e.preventDefault(); post(route('cuenta.registrar')); }}
                     >
                         <Campo label="Nombre completo *" error={errors.name}>

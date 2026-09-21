@@ -39,6 +39,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 | Request::HEADER_X_FORWARDED_PROTO,
         );
 
+        // Cada puerta manda a la suya: quien compra va a /ingresar (dentro de la tienda),
+        // el equipo a /login. Antes el checkout escupía al cliente a la pantalla del panel.
+        $middleware->redirectGuestsTo(fn ($request) => $request->routeIs('checkout*', 'cuenta.*')
+            ? route('cuenta.entrar')
+            : route('login'));
+
         // Baja en un clic (List-Unsubscribe-Post) llega desde clientes de correo, sin sesión ni CSRF
         $middleware->validateCsrfTokens(except: ['newsletter/baja/*']);
 
