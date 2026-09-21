@@ -6,6 +6,7 @@ import {
   SlidersHorizontal, Trash2, User, Wrench,
 } from 'lucide-react';
 import CardPaymentFields from '@/Components/CardPaymentFields';
+import SimpleEditor from '@/Components/Admin/SimpleEditor';
 import { Badge, Field, Input, Segmented, Select, StepCard, Textarea, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
 
 const money = (value) => Number(value || 0);
@@ -163,6 +164,14 @@ export default function VentaEditForm({
       descuento: money(item.descuento),
     };
   });
+
+  // Las notas de antes del editor son texto plano: se muestran tal cual, con sus saltos de renglón
+  const notasIniciales = useMemo(() => {
+    const n = venta.notas_adicionales || servicio.notas_adicionales || '';
+    if (/<(p|br|ul|ol|li|h[2-4]|strong|b|em|i)\b/i.test(n)) return n;
+    return n.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data, setData, put, processing, errors } = useForm({
     nombre_cliente: venta.nombre_cliente || '',
@@ -726,7 +735,7 @@ export default function VentaEditForm({
                 )}
                 <div className="md:col-span-2">
                   <Field label="Notas adicionales">
-                    <Textarea rows={3} value={data.notas_adicionales} onChange={(e) => setData('notas_adicionales', e.target.value)} />
+                    <SimpleEditor minHeight={140} value={notasIniciales} onChange={(html) => setData('notas_adicionales', html)} />
                   </Field>
                 </div>
               </div>

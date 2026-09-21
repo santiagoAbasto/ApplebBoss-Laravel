@@ -171,7 +171,7 @@
     <!-- IZQUIERDA -->
     <div>
       <div class="brand">
-        <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+        <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">
       </div>
       <div class="empresa-legal">
         <strong>NIT:</strong> 12555473014<br>

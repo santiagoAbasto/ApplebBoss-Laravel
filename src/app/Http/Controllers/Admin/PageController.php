@@ -216,39 +216,6 @@ class PageController extends Controller
 
     private function sanitizeRichText(?string $html): ?string
     {
-        if (blank($html)) {
-            return $html;
-        }
-
-        $allowed = '<p><br><strong><b><em><i><ul><ol><li><h2><h3><h4><a>';
-        $clean = strip_tags($html, $allowed);
-
-        $clean = preg_replace_callback('/<(?!a\b|\/a)[a-z][a-z0-9]*\b([^>]*)>/i', function ($m) {
-            preg_match('/^<([a-z][a-z0-9]*)/i', $m[0], $tagMatch);
-            $tag = strtolower($tagMatch[1]);
-            return "<{$tag}>";
-        }, $clean);
-
-        $clean = preg_replace_callback('/<a\b([^>]*)>/i', function ($m) {
-            $attrs = $m[1];
-            $href  = '';
-            $extra = '';
-
-            if (preg_match('/\bhref\s*=\s*["\']([^"\']*)["\']/', $attrs, $h)) {
-                $url = trim($h[1]);
-                if (! preg_match('/^\s*(javascript|data|vbscript):/i', $url)) {
-                    $href = ' href="' . htmlspecialchars($url, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '"';
-                }
-            }
-
-            if (preg_match('/\btarget=["\']_blank["\']/i', $attrs)) {
-                $extra = ' target="_blank" rel="noopener noreferrer"';
-            }
-
-            return '<a' . $href . $extra . '>';
-        }, $clean);
-
-        // Si solo quedaron etiquetas vacías, la página está en blanco
-        return trim(strip_tags($clean)) === '' ? null : $clean;
+        return \App\Support\TextoEnriquecido::limpiar($html);
     }
 }

@@ -52,6 +52,17 @@ class Venta extends Model
     ];
 
     /**
+     * Las notas pueden traer formato del editor: se guarda solo lo permitido (sin scripts ni atributos).
+     * El texto plano de siempre se guarda igual que antes.
+     */
+    public function setNotasAdicionalesAttribute(?string $valor): void
+    {
+        $this->attributes['notas_adicionales'] = \App\Support\TextoEnriquecido::tieneFormato($valor)
+            ? \App\Support\TextoEnriquecido::limpiar($valor)
+            : (filled($valor) ? trim(strip_tags($valor)) : null);
+    }
+
+    /**
      * Generación automática del código de nota de venta
      * Formato: AT-V001, AT-V101, etc.
      */

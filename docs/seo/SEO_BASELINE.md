@@ -31,7 +31,7 @@ Lo que **sí** sigue impidiendo que Google entienda el sitio, verificado pidiend
 | ~~H5~~ | ✅ Resuelto | ~~Cero datos estructurados~~ → `Store` + `WebSite` + `Product` + `BreadcrumbList`, impresos **en el servidor** | 1 bloque `application/ld+json` en el `<head>` de producción |
 | **H6** | 🟠 Alto | **NAP incompleto e inconsistente** con Google Business Profile | BD: dirección «Cochabamba, Bolivia», teléfono `null`, horarios `null`. GBP: «Edificio Fidel Anze sobre la Melchor Urquidi», teléfono 75904313, abre 9:00 |
 | **H7** | 🟠 Alto | **Sin analítica.** No hay GA4, ni GTM, ni ningún evento | Búsqueda de `gtag`/`GTM-`/`G-XXXX` en el HTML: solo hashes de Vite (falsos positivos) |
-| ~~H8~~ | ✅ Resuelto | ~~Sin `og:image`~~ → en producción sale `https://appleboss.com.bo/images/LOGO.png` | `curl` a producción como Googlebot |
+| ~~H8~~ | ✅ Resuelto | ~~Sin `og:image`~~ → en producción sale `https://appleboss.com.bo/images/logo.png` | `curl` a producción como Googlebot |
 | ~~H9~~ | ✅ Resuelto | ~~Canonical usaba el host de la petición~~ → sale siempre de `SEO_PUBLIC_URL`. En producción: `https://appleboss.com.bo/` | `curl` a producción como Googlebot |
 | **H10** | 🟡 Medio | Sitemap incluye **URLs con parámetros** (`/catalogo?categoria=…`) que duplican la categoría | sitemap en vivo (24 URLs) |
 | **H11** | 🔴 Crítico | **El título indexado terminaba en «- Laravel»**: `Apple Boss — Tecnología Apple en Cochabamba **- Laravel**`. El servidor mandaba el título bien, pero React le pegaba la marca de respaldo. El build de producción no recibía `VITE_APP_NAME`, así que esa marca era `Laravel` | HTML rastreado en Search Console + `grep Laravel` dentro del bundle desplegado `app-BzVGhLvK.js` |

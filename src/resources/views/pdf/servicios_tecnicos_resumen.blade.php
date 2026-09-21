@@ -120,7 +120,7 @@
 
     <!-- HEADER -->
     <div class="brand">
-        <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+        <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">
         <div class="title">APPLE BOSS</div>
         <div class="subtitle">Resumen Consolidado de Servicios Técnicos</div>
         @if(!empty($periodo))

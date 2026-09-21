@@ -383,7 +383,7 @@ class VentaController extends Controller
             'subtotal' => (float) ($venta->subtotal ?? 0),
             'capital' => (float) ($venta->precio_invertido ?? 0),
             'ganancia' => (float) ($venta->ganancia_neta ?? 0),
-            'notas' => $venta->notas_adicionales,
+            'notas' => \App\Support\TextoEnriquecido::aTexto($venta->notas_adicionales) ?: null,
             'servicio' => $venta->servicioTecnico ? [
                 'equipo' => $venta->servicioTecnico->equipo,
                 'detalle' => $venta->servicioTecnico->detalle_servicio,

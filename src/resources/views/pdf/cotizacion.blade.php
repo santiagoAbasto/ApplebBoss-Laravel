@@ -229,7 +229,7 @@
 
   <!-- BRAND + TÍTULO -->
   <div class="brand" style="text-align:center; margin-bottom: 6px;">
-    <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss" style="width:130px;">
+    <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss" style="width:130px;">
   </div>
 
   <h1 class="title-top" style="

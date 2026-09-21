@@ -192,7 +192,7 @@
 
         <!-- LOGO -->
         <div class="logo">
-            <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+            <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">
         </div>
 
         <!-- BRAND -->
@@ -332,7 +332,7 @@
         @if($venta->notas_adicionales)
         <div class="notes">
             <div class="section-title">Notas</div>
-            {{ $venta->notas_adicionales }}
+            {!! nl2br(e(\App\Support\TextoEnriquecido::aTexto($venta->notas_adicionales))) !!}
         </div>
         @endif
 

@@ -32,7 +32,7 @@
 <body>
     <div class="wrapper">
         <div class="logo">
-            <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
+            <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">
         </div>
 
         <div class="center">

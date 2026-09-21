@@ -137,7 +137,7 @@
 <body>
 
   <div class="brand">
-    <img src="{{ public_path('images/LOGO.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">
+    <img src="{{ public_path('images/logo.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">
   </div>
 
   <h1 class="title-top">APPLE BOSS</h1>

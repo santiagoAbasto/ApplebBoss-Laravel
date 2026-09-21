@@ -19,7 +19,9 @@ class DatosDeLaTienda
         $whatsapp = ConfiguracionTienda::waEnabled() ? ConfiguracionTienda::waNumber() : null;
         $telefono = $local?->phone ?: ($local?->whatsapp ?: $whatsapp);
 
-        $direccion = collect([$local?->address, $local?->city])->filter()->unique()->implode(', ');
+        // La ciudad solo se agrega si la dirección no la trae ya escrita
+        $ciudad    = $local?->city && ! str_contains(mb_strtolower((string) $local?->address), mb_strtolower($local->city)) ? $local->city : null;
+        $direccion = collect([$local?->address, $ciudad])->filter()->implode(', ');
 
         return [
             'nombre'    => ConfiguracionTienda::nombre(),

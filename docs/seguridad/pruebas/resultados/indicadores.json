@@ -1,0 +1,36 @@
+{
+    "generado": "2026-09-18 16:10:23",
+    "entorno": {
+        "php": "8.5.10",
+        "laravel": "13.32.0",
+        "conexion": "pgsql",
+        "motor": "pgsql",
+        "base": "appleboss_bench (PostgreSQL 18 en Docker)",
+        "comando": "vendor/bin/phpunit -c phpunit.rendimiento.xml"
+    },
+    "volumen": {
+        "celulares": 400,
+        "productos_generales": 250,
+        "servicios_tecnicos": 183,
+        "ventas": 233,
+        "movimientos_ultimos_30_dias": 416,
+        "movimientos_del_mes": 318
+    },
+    "repeticiones": 30,
+    "medidas": [
+        {"operacion": "Registro de una venta (POST admin/ventas)", "muestras": 30, "mediana_ms": 5, "promedio_ms": 5.1, "minimo_ms": 3.9, "p95_ms": 6.5, "maximo_ms": 7.3},
+        {"operacion": "Registro de un servicio técnico (POST admin/servicios)", "muestras": 30, "mediana_ms": 3.5, "promedio_ms": 3.6, "minimo_ms": 3.3, "p95_ms": 4.1, "maximo_ms": 4.1},
+        {"operacion": "Consulta de inventario (GET admin/celulares)", "muestras": 30, "mediana_ms": 37.6, "promedio_ms": 39.8, "minimo_ms": 36.1, "p95_ms": 50.7, "maximo_ms": 51.4},
+        {"operacion": "Búsqueda en inventario (GET admin/celulares?buscar=)", "muestras": 30, "mediana_ms": 39.1, "promedio_ms": 42.5, "minimo_ms": 35.5, "p95_ms": 56.3, "maximo_ms": 62.9},
+        {"operacion": "Consulta de stock desde la venta (GET api/stock/celulares)", "muestras": 30, "mediana_ms": 17.4, "promedio_ms": 18.1, "minimo_ms": 14.8, "p95_ms": 26.8, "maximo_ms": 31.3},
+        {"operacion": "Generación de reporte del período (GET admin/reportes)", "muestras": 30, "mediana_ms": 37.3, "promedio_ms": 39.2, "minimo_ms": 36.7, "p95_ms": 47.7, "maximo_ms": 63.6},
+        {"operacion": "Exportación del reporte mensual (GET admin/reportes/exportar-mes)", "muestras": 30, "mediana_ms": 5547.6, "promedio_ms": 5575.4, "minimo_ms": 5367.1, "p95_ms": 6037.3, "maximo_ms": 6055.1}
+    ],
+    "suite_completa": {
+        "comando": "php artisan test",
+        "pruebas": 636,
+        "verificaciones": 5373,
+        "archivos": 76,
+        "duracion_s": 121.76
+    }
+}

@@ -9,6 +9,7 @@ import {
 import ModalPermutaComponent from '@/Components/ModalPermutaComponent';
 import CardPaymentFields from '@/Components/CardPaymentFields';
 import PremiumNotice from '@/Components/PremiumNotice';
+import SimpleEditor from '@/Components/Admin/SimpleEditor';
 import { notifyRecordsUpdated, useAutoRefreshCallback } from '@/Hooks/useAutoRefresh';
 import { Badge, Button, Field, Input, Segmented, Select, StepCard, Switch, Textarea, bsFmt, buttonCls } from '@/Components/Admin/ui';
 
@@ -607,8 +608,8 @@ export default function VentaForm({ celulares, computadoras, productosGenerales,
                 </div>
 
                 <Field label="Notas (opcional)">
-                  <Textarea rows={2} placeholder="Ej.: se entregó con cargador y funda" value={data.notas_adicionales}
-                    onChange={(e) => setData('notas_adicionales', e.target.value)} />
+                  <SimpleEditor minHeight={110} placeholder="Ej.: se entregó con cargador y funda, o las condiciones de garantía"
+                    value={data.notas_adicionales} onChange={(html) => setData('notas_adicionales', html)} />
                 </Field>
 
                 {mensajesErrores.length > 0 && (

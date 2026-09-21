@@ -1,552 +1,206 @@
+@php
+  use App\Support\DatosDeLaTienda;
+  use App\Support\TextoEnriquecido;
+
+  $tienda = DatosDeLaTienda::paraPdf();
+  $bs     = fn ($n) => 'Bs ' . number_format((float) $n, 2);
+  $bat    = fn ($b) => filled($b) ? (is_numeric($b) ? $b . ' %' : $b) : null;
+  $imei   = fn ($p) => [
+      'IMEI 1'      => $p->imei_1 ?? null,
+      'IMEI 2'      => $p->imei_2 ?? null,
+      'Estado IMEI' => filled($p->estado_imei ?? null) ? ucfirst($p->estado_imei) : null,
+  ];
+
+  // Cada producto, del tipo que sea, se imprime igual: nombre, características e identificadores
+  $ficha = fn (string $tipo, $p) => match ($tipo) {
+      'celular'        => [$p->modelo, ['Capacidad' => $p->capacidad, 'Color' => $p->color, 'Batería' => $bat($p->bateria)], $imei($p)],
+      'computadora'    => [$p->nombre, ['Procesador' => $p->procesador, 'RAM' => $p->ram, 'Almacenamiento' => $p->almacenamiento, 'Color' => $p->color, 'Batería' => $bat($p->bateria)], ['Serie' => $p->numero_serie]],
+      'producto_apple' => [$p->modelo, ['Capacidad' => $p->capacidad, 'Color' => $p->color, 'Batería' => $bat($p->bateria)], $p->tiene_imei ? $imei($p) : ['Serie' => $p->numero_serie]],
+      default          => [$p->nombre, ['Tipo' => $p->tipo ? str_replace('_', ' ', $p->tipo) : null], ['Código' => $p->codigo]],
+  };
+
+  $relacion = ['celular' => 'celular', 'computadora' => 'computadora', 'producto_apple' => 'productoApple', 'producto_general' => 'productoGeneral'];
+  $lineas   = [];
+  foreach ($venta->items as $item) {
+      if ($producto = $item->{$relacion[$item->tipo] ?? 'productoGeneral'} ?? null) {
+          $lineas[] = [...$ficha($item->tipo, $producto), $item];
+      }
+  }
+
+  $permutas = [];
+  foreach (['celular' => 'entregadoCelular', 'computadora' => 'entregadoComputadora', 'producto_apple' => 'entregadoProductoApple', 'producto_general' => 'entregadoProductoGeneral'] as $tipo => $rel) {
+      if ($venta->{$rel}) {
+          $permutas[] = [...$ficha($tipo, $venta->{$rel}), $venta->{$rel}];
+      }
+  }
+
+  $sumaSubtotalItems = $sumaSubtotalItems ?? $venta->items->sum('subtotal');
+  $valorPermuta      = $valorPermuta ?? ($venta->valor_permuta ?? 0);
+  $montoReserva      = $montoReserva ?? ($venta->monto_reserva_aplicado ?? 0);
+  $totalAPagar       = $totalAPagar ?? ($sumaSubtotalItems - $valorPermuta - $montoReserva);
+  $notas             = TextoEnriquecido::aHtml($venta->notas_adicionales);
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
-  <style>
-    @page {
-      margin: 30px 28px;
-    }
-
-    body {
-      font-family: 'DejaVu Sans', sans-serif;
-      font-size: 10.5px;
-      color: #1e1e1e;
-    }
-
-    .header-wrap {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 2px solid #003366;
-      margin-bottom: 10px;
-    }
-
-    .brand img {
-      width: 130px;
-    }
-
-    .title-top {
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      color: #003366;
-      margin-top: -75px;
-    }
-
-    .venta-info {
-      text-align: right;
-      font-size: 10px;
-    }
-
-    .venta-info p {
-      margin: 1px 0;
-      color: #333;
-    }
-
-    .section-title {
-      font-size: 12px;
-      font-weight: bold;
-      margin-top: 14px;
-      margin-bottom: 6px;
-      color: #003366;
-      border-bottom: 1px solid #003366;
-      padding-bottom: 3px;
-    }
-
-    .info p {
-      margin: 1px 0;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-      font-size: 10px;
-      text-align: center;
-      /* Centrado para todas las celdas */
-    }
-
-    /* Centrado completo para tablas */
-    table th,
-    table td {
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    /* En caso quieras justificar contenido largo como Notas */
-    .justificado {
-      text-align: justify;
-    }
-
-    /* Estilo uniforme para columnas de estado IMEI */
-    .estado-imei {
-      font-weight: 600;
-      color: #003366;
-      text-align: center;
-      font-size: 9.5px;
-      line-height: 1.2;
-      white-space: normal;
-      /* 🔥 Permite el salto de línea */
-      word-break: break-word;
-      /* 🔥 Rompe palabras largas si es necesario */
-      padding: 4px 2px;
-    }
-
-    th {
-      background-color: #e9f0fa;
-      color: #003366;
-      text-align: center;
-      /* ✅ Esto centra los encabezados */
-      padding: 6px;
-      border: 1px solid #d0dce7;
-    }
-
-    td {
-      padding: 6px;
-      border: 1px solid #d0dce7;
-      vertical-align: top;
-    }
-
-    .table-right {
-      text-align: right;
-    }
-
-    .resumen {
-      width: 100%;
-      margin-top: 14px;
-      font-size: 10.5px;
-    }
-
-    .resumen td {
-      padding: 3px 5px;
-    }
-
-    .resumen tr td:first-child {
-      text-align: right;
-      font-weight: bold;
-      width: 85%;
-    }
-
-    .resumen tr td:last-child {
-      text-align: right;
-      width: 15%;
-      color: #003366;
-    }
-
-    .notas {
-      margin-top: 14px;
-      font-size: 10px;
-      border-left: 4px solid #003366;
-      padding-left: 10px;
-      color: #333;
-    }
-
-    .firma {
-      margin-top: 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 20px;
-    }
-
-    .firma-box {
-      text-align: center;
-      width: 48%;
-    }
-
-    .firma-box img {
-      width: 320px;
-      position: relative;
-      top: 30px;
-    }
-
-    .centrado th,
-    .centrado td {
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    .firma-box p {
-      margin: 0;
-    }
-  </style>
+  <title>Boleta de venta {{ $venta->codigo_nota ?? $venta->id }}</title>
+  @include('pdf.partials.estilos')
 </head>
 
 <body>
-  <div class="brand">
-    <img src="{{ public_path('images/LOGO.png') }}" alt="Apple Boss">
-  </div>
-
-  <h1 class="title-top">APPLE BOSS</h1>
-
-  <div class="header-wrap">
-    <div class="empresa-legal" style="font-size: 9.8px; color: #333;">
-      <p><strong>NIT:</strong> 12555473014</p>
-      <p><strong>Contribuyente:</strong> Empresa Unipersonal</p>
-    </div>
-    <div class="venta-info">
-      <p><strong>BOLETA DE VENTA</strong></p>
-      <p>Fecha: {{ optional($venta->created_at)->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
-      <p>ID Venta: #{{ $venta->id }}</p>
-      <p>Código Nota: {{ $venta->codigo_nota ?? '---' }}</p>
-    </div>
-  </div>
-
-  <div class="section-title">Datos del Cliente</div>
-  <div class="info">
-    <p><strong>Cliente:</strong> {{ $venta->nombre_cliente }}</p>
-    <p><strong>Teléfono:</strong> {{ $venta->telefono_cliente ?? '-' }}</p>
-    <p><strong>Método de pago:</strong> {{ ucfirst($venta->metodo_pago) }}</p>
-    @if ($venta->metodo_pago === 'tarjeta')
-    <p><strong>Tarjeta:</strong> {{ $venta->inicio_tarjeta ?? '••••' }} •••• •••• {{ $venta->fin_tarjeta ?? '••••' }}</p>
-    @endif
-    <p><strong>Vendedor:</strong> {{ $venta->vendedor->name ?? '---' }}</p>
-  </div>
-
-  @php
-  $celulares = $venta->items->where('tipo', 'celular');
-  $computadoras = $venta->items->where('tipo', 'computadora');
-  $productosApple = $venta->items->where('tipo', 'producto_apple');
-  $generales = $venta->items->where('tipo', 'producto_general');
-  @endphp
-
-  <!-- El contenido del <head> permanece igual (omitido aquí por brevedad) -->
-
-  @if ($celulares->count())
-  <div class="section-title">Celulares Vendidos</div>
-  <table style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: center;">
-    <thead>
+  <div class="pie">
+    <table>
       <tr>
-        <th>#</th>
-        <th>Modelo</th>
-        <th>Capacidad</th>
-        <th>Color</th>
-        <th>IMEI 1</th>
-        <th>IMEI 2</th>
-        <th>Batería</th>
-        <th>Estado IMEI</th>
-        <th class="table-right">Precio</th>
-        <th class="table-right">Descuento</th>
-        <th class="table-right">Subtotal</th>
+        <td>{{ $tienda['nombre'] }}@if($tienda['direccion']), {{ $tienda['direccion'] }}@endif @if($tienda['telefono']) &nbsp; Tel. {{ $tienda['telefono'] }}@endif</td>
+        <td class="der">NIT 12555473014, Empresa Unipersonal</td>
       </tr>
-    </thead>
-    <tbody>
-      @foreach ($celulares as $i => $item)
-      <tr>
-        <td>{{ $i + 1 }}</td>
-        <td>{{ $item->celular->modelo }}</td>
-        <td>{{ $item->celular->capacidad }}</td>
-        <td>{{ $item->celular->color }}</td>
-        <td>{{ $item->celular->imei_1 }}</td>
-        <td>{{ $item->celular->imei_2 }}</td>
-        <td>{{ $item->celular->bateria }}</td>
-        <td class="estado-imei">{{ $item->celular->estado_imei }}</td>
-        <td class="table-right">Bs {{ number_format($item->precio_venta, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->descuento, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->subtotal, 2) }}</td>
-      </tr>
-      @endforeach
-    </tbody>
-  </table>
-  @endif
+    </table>
+  </div>
 
-  @if ($computadoras->count())
-  <div class="section-title">Computadoras Vendidas</div>
   <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nombre</th>
-        <th>Procesador</th>
-        <th>RAM</th>
-        <th>Almacenamiento</th>
-        <th>Batería</th>
-        <th>Color</th>
-        <th>Serie</th>
-        <th class="table-right">Precio</th>
-        <th class="table-right">Descuento</th>
-        <th class="table-right">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach ($computadoras as $i => $item)
-      <tr>
-        <td>{{ $i + 1 }}</td>
-        <td>{{ $item->computadora->nombre }}</td>
-        <td>{{ $item->computadora->procesador }}</td>
-        <td>{{ $item->computadora->ram }}</td>
-        <td>{{ $item->computadora->almacenamiento }}</td>
-        <td>{{ $item->computadora->bateria }}</td>
-        <td>{{ $item->computadora->color }}</td>
-        <td>{{ $item->computadora->numero_serie }}</td>
-        <td class="table-right">Bs {{ number_format($item->precio_venta, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->descuento, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->subtotal, 2) }}</td>
-      </tr>
-      @endforeach
-    </tbody>
+    <tr>
+      <td class="marca">
+        <img src="{{ public_path('images/logo-pdf.png') }}" alt="">
+        <div class="nombre">{{ mb_strtoupper($tienda['nombre']) }}</div>
+      </td>
+      <td class="doc der">
+        <div class="titulo">Boleta de venta</div>
+        <div class="codigo">{{ $venta->codigo_nota ?? ('#' . $venta->id) }}</div>
+        <div class="gris">Venta n.º {{ $venta->id }}</div>
+      </td>
+    </tr>
   </table>
-  @endif
+  <div class="filete"></div>
 
-  @if ($productosApple->count())
-  <div class="section-title">Productos Apple Vendidos</div>
-  <table>
+  <table class="datos">
+    <tr>
+      <td>
+        <div class="gris">Cliente</div>
+        <div class="valor">{{ $venta->nombre_cliente }}</div>
+        <div>{{ $venta->telefono_cliente ?? '' }}</div>
+      </td>
+      <td>
+        <div class="gris">Fecha</div>
+        <div class="valor">{{ optional($venta->created_at)->timezone(config('app.timezone'))->format('d/m/Y') }}</div>
+        <div>{{ optional($venta->created_at)->timezone(config('app.timezone'))->format('H:i') }}</div>
+      </td>
+      <td>
+        <div class="gris">Forma de pago</div>
+        <div class="valor">{{ mb_strlen((string) $venta->metodo_pago) <= 3 ? mb_strtoupper($venta->metodo_pago) : ucfirst($venta->metodo_pago) }}</div>
+        @if ($venta->metodo_pago === 'tarjeta')
+        <div>{{ $venta->inicio_tarjeta ?? '****' }} **** **** {{ $venta->fin_tarjeta ?? '****' }}</div>
+        @endif
+      </td>
+      <td>
+        <div class="gris">Atendido por</div>
+        <div class="valor">{{ $venta->vendedor->name ?? '---' }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="seccion">Detalle de la compra</div>
+  <table class="lineas">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Modelo</th>
-        <th>Capacidad</th>
-        <th>Batería</th>
-        <th>Color</th>
-        <th>Serie / IMEI</th>
-        <th>Tiene IMEI</th>
-        <th>Estado IMEI</th>
-        <th class="table-right">Precio</th>
-        <th class="table-right">Descuento</th>
-        <th class="table-right">Subtotal</th>
+        <th class="n">N.º</th>
+        <th>Producto</th>
+        <th class="der">Importe</th>
       </tr>
     </thead>
     <tbody>
-      @foreach ($productosApple as $i => $item)
+      @foreach ($lineas as $i => [$nombre, $caracteristicas, $identificadores, $item])
       <tr>
-        <td>{{ $i + 1 }}</td>
-        <td>{{ $item->productoApple->modelo }}</td>
-        <td>{{ $item->productoApple->capacidad }}</td>
-        <td>{{ $item->productoApple->bateria }}</td>
-        <td>{{ $item->productoApple->color }}</td>
+        <td class="n">{{ $i + 1 }}</td>
         <td>
-          @if($item->productoApple->tiene_imei)
-          IMEI 1: {{ $item->productoApple->imei_1 }}<br>
-          IMEI 2: {{ $item->productoApple->imei_2 }}
-          @else
-          {{ $item->productoApple->numero_serie }}
+          <div class="producto">{{ $nombre }}</div>
+          @foreach (array_filter($caracteristicas, 'filled') as $rotulo => $valor)
+          <span class="par"><span class="gris">{{ $rotulo }}</span> {{ $valor }}</span>
+          @endforeach
+          <div>
+            @foreach (array_filter($identificadores, 'filled') as $rotulo => $valor)
+            <span class="par ident"><span class="gris">{{ $rotulo }}</span> <b>{{ $valor }}</b></span>
+            @endforeach
+          </div>
+        </td>
+        <td class="importe">
+          {{ $bs($item->subtotal) }}
+          @if ((float) $item->descuento > 0)
+          <div class="gris" style="font-size: 8.5px; font-weight: normal;">Precio {{ $bs($item->precio_venta) }}<br>Descuento - {{ $bs($item->descuento) }}</div>
           @endif
         </td>
-        <td>{{ $item->productoApple->tiene_imei ? 'Sí' : 'No' }}</td>
-        <td class="estado-imei">{{ $item->productoApple->estado_imei ?? '-' }}</td>
-        <td class="table-right">Bs {{ number_format($item->precio_venta, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->descuento, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->subtotal, 2) }}</td>
+      </tr>
+      @endforeach
+    </tbody>
+  </table>
+
+  @if ($permutas)
+  <div class="seccion">Equipo recibido en permuta</div>
+  <table class="lineas">
+    <tbody>
+      @foreach ($permutas as [$nombre, $caracteristicas, $identificadores, $equipo])
+      <tr>
+        <td>
+          <div class="producto">{{ $nombre }}</div>
+          @foreach (array_filter($caracteristicas, 'filled') as $rotulo => $valor)
+          <span class="par"><span class="gris">{{ $rotulo }}</span> {{ $valor }}</span>
+          @endforeach
+          <div>
+            @foreach (array_filter($identificadores, 'filled') as $rotulo => $valor)
+            <span class="par ident"><span class="gris">{{ $rotulo }}</span> <b>{{ $valor }}</b></span>
+            @endforeach
+          </div>
+        </td>
+        <td class="importe">{{ $bs($equipo->precio_costo) }}</td>
       </tr>
       @endforeach
     </tbody>
   </table>
   @endif
 
-  @if ($generales->count())
-  <div class="section-title">Productos Generales Vendidos</div>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Código</th>
-        <th class="table-right">Precio</th>
-        <th class="table-right">Descuento</th>
-        <th class="table-right">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach ($generales as $i => $item)
-      <tr>
-        <td>{{ $i + 1 }}</td>
-        <td>{{ $item->productoGeneral->nombre }}</td>
-        <td>{{ $item->productoGeneral->tipo }}</td>
-        <td>{{ $item->productoGeneral->codigo }}</td>
-        <td class="table-right">Bs {{ number_format($item->precio_venta, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->descuento, 2) }}</td>
-        <td class="table-right">Bs {{ number_format($item->subtotal, 2) }}</td>
-      </tr>
-      @endforeach
-    </tbody>
-  </table>
-  @endif
-
-  @if ($venta->entregadoCelular || $venta->entregadoComputadora || $venta->entregadoProductoGeneral || $venta->entregadoProductoApple)
-  <div class="section-title">Producto Entregado en Permuta</div>
-
-  @if ($venta->entregadoCelular)
-  <table>
-    <thead>
-      <tr>
-        <th>Modelo</th>
-        <th>Capacidad</th>
-        <th>Color</th>
-        <th>IMEI 1</th>
-        <th>IMEI 2</th>
-        <th>Batería</th>
-        <th>Estado IMEI</th>
-        <th class="table-right">Valor</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ $venta->entregadoCelular->modelo }}</td>
-        <td>{{ $venta->entregadoCelular->capacidad }}</td>
-        <td>{{ $venta->entregadoCelular->color }}</td>
-        <td>{{ $venta->entregadoCelular->imei_1 }}</td>
-        <td>{{ $venta->entregadoCelular->imei_2 }}</td>
-        <td>{{ $venta->entregadoCelular->bateria }}</td>
-        <td class="estado-imei">{{ $venta->entregadoCelular->estado_imei }}</td>
-        <td class="table-right">Bs {{ number_format($venta->entregadoCelular->precio_costo, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @endif
-
-  @if ($venta->entregadoComputadora)
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Procesador</th>
-        <th>RAM</th>
-        <th>Almacenamiento</th>
-        <th>Batería</th>
-        <th>Color</th>
-        <th>Serie</th>
-        <th class="table-right">Valor</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ $venta->entregadoComputadora->nombre }}</td>
-        <td>{{ $venta->entregadoComputadora->procesador }}</td>
-        <td>{{ $venta->entregadoComputadora->ram }}</td>
-        <td>{{ $venta->entregadoComputadora->almacenamiento }}</td>
-        <td>{{ $venta->entregadoComputadora->bateria }}</td>
-        <td>{{ $venta->entregadoComputadora->color }}</td>
-        <td>{{ $venta->entregadoComputadora->numero_serie }}</td>
-        <td class="table-right">Bs {{ number_format($venta->entregadoComputadora->precio_costo, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @endif
-
-  @if ($venta->entregadoProductoGeneral)
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Tipo</th>
-        <th>Código</th>
-        <th class="table-right">Valor</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ $venta->entregadoProductoGeneral->nombre }}</td>
-        <td>{{ $venta->entregadoProductoGeneral->tipo }}</td>
-        <td>{{ $venta->entregadoProductoGeneral->codigo }}</td>
-        <td class="table-right">Bs {{ number_format($venta->entregadoProductoGeneral->precio_costo, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @endif
-  @if ($venta->entregadoProductoApple)
-  <table>
-    <thead>
-      <tr>
-        <th>Modelo</th>
-        <th>Capacidad</th>
-        <th>Batería</th>
-        <th>Color</th>
-        <th>IMEI 1</th>
-        <th>IMEI 2</th>
-        <th>Serie</th>
-        <th>Estado IMEI</th>
-        <th class="table-right">Valor</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ $venta->entregadoProductoApple->modelo }}</td>
-        <td>{{ $venta->entregadoProductoApple->capacidad }}</td>
-        <td>{{ $venta->entregadoProductoApple->bateria }}</td>
-        <td>{{ $venta->entregadoProductoApple->color }}</td>
-        <td>{{ $venta->entregadoProductoApple->imei_1 }}</td>
-        <td>{{ $venta->entregadoProductoApple->imei_2 }}</td>
-        <td>{{ $venta->entregadoProductoApple->numero_serie }}</td>
-        <td>{{ $venta->entregadoProductoApple->estado_imei }}</td>
-        <td class="table-right">Bs {{ number_format($venta->entregadoProductoApple->precio_costo, 2) }}</td>
-      </tr>
-    </tbody>
-  </table>
-  @endif
-  @endif
-
-  @php
-  $sumaSubtotalItems = $sumaSubtotalItems ?? $venta->items->sum('subtotal');
-  $valorPermuta = $valorPermuta ?? ($venta->valor_permuta ?? 0);
-  $montoReserva = $montoReserva ?? ($venta->monto_reserva_aplicado ?? 0);
-  $totalAPagar = $totalAPagar ?? ($sumaSubtotalItems - $valorPermuta - $montoReserva);
-  @endphp
-
-  <table class="resumen">
+  <table class="totales">
     <tr>
-      <td>Subtotal:</td>
-      <td>Bs {{ number_format($sumaSubtotalItems, 2) }}</td>
+      <td class="gris">Subtotal</td>
+      <td class="der nowrap">{{ $bs($sumaSubtotalItems) }}</td>
     </tr>
-
     @if ($valorPermuta > 0)
     <tr>
-      <td>Valor de producto en permuta:</td>
-      <td>- Bs {{ number_format($valorPermuta, 2) }}</td>
+      <td class="gris">Equipo en permuta</td>
+      <td class="der nowrap">- {{ $bs($valorPermuta) }}</td>
     </tr>
     @endif
-
     @if ($montoReserva > 0)
     <tr>
-      <td>Reserva aplicada{{ $venta->reserva ? ' (' . $venta->reserva->codigo_nota . ')' : '' }}:</td>
-      <td>- Bs {{ number_format($montoReserva, 2) }}</td>
+      <td class="gris">Reserva aplicada{{ $venta->reserva ? ' (' . $venta->reserva->codigo_nota . ')' : '' }}</td>
+      <td class="der nowrap">- {{ $bs($montoReserva) }}</td>
     </tr>
     @endif
-
-    <tr>
-      <td><strong>Total a pagar / diferencia:</strong></td>
-      <td><strong>Bs {{ number_format($totalAPagar, 2) }}</strong></td>
+    <tr class="total">
+      <td>{{ ($valorPermuta > 0 || $montoReserva > 0) ? 'Diferencia a pagar' : 'Total' }}</td>
+      <td class="der nowrap">{{ $bs($totalAPagar) }}</td>
     </tr>
   </table>
 
-  @if ($venta->notas_adicionales)
+  @if ($notas !== '')
   <div class="notas">
-    <strong>Notas:</strong> {{ $venta->notas_adicionales }}
+    @unless (preg_match('/^\s*<h[2-4]>/', $notas))
+    <h3>Notas</h3>
+    @endunless
+    {!! $notas !!}
   </div>
   @endif
 
-  <table style="width: 100%; margin-top: 40px; font-size: 10.5px; text-align: center; border-collapse: collapse;">
+  <table class="firmas">
     <tr>
-      <td style="width: 50%; position: relative; height: 80px; padding: 0;">
-        <img src="{{ public_path('images/firma.png') }}" alt="Firma Apple Boss"
-          style="
-          width: 150px;
-          height: auto;
-          position: absolute;
-          top: 0px;
-          left: 50%;
-          transform: translateX(-50%);
-          opacity: 0.95;
-        ">
-      </td>
-      <td style="width: 50%; height: 80px;"></td>
+      <td class="hueco"><img src="{{ public_path('images/firma.png') }}" alt=""></td>
+      <td class="hueco"></td>
     </tr>
     <tr>
-      <td style="font-weight: bold; color: #003366; padding-top: 5px;">
-        Firma autorizada - Apple Boss
-      </td>
-      <td style="font-weight: bold; color: #003366; padding-top: 5px;">
-        Firma del Cliente
-      </td>
-    </tr>
-    <tr>
-      <td></td>
-      <td style="font-size: 9px; color: #555; padding-top: 4px;">
-        Conforme con la recepción del producto
-      </td>
+      <td><div class="raya">{{ $tienda['nombre'] }}</div><div class="gris">Firma autorizada</div></td>
+      <td><div class="raya">{{ $venta->nombre_cliente }}</div><div class="gris">Recibí conforme el producto</div></td>
     </tr>
   </table>
-
 </body>
 
 </html>

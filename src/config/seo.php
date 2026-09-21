@@ -12,7 +12,7 @@ return [
     'public_url' => env('SEO_PUBLIC_URL', env('APP_URL', 'http://localhost')),
 
     // Imagen por defecto al compartir en WhatsApp/Facebook (ruta dentro de public/ o URL absoluta)
-    'og_image_default' => env('SEO_OG_IMAGE', '/images/LOGO.png'),
+    'og_image_default' => env('SEO_OG_IMAGE', '/images/logo.png'),
 
     // Identidad del negocio para los datos estructurados (Organization / LocalBusiness).
     // Solo datos verificables: si algo no se sabe, se deja null y NO se publica en el JSON-LD.

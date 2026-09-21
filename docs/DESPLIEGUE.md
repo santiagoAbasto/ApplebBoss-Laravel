@@ -42,7 +42,7 @@ SESSION_SECURE_COOKIE=true
 
 # SEO
 SEO_PUBLIC_URL=https://appleboss.com.bo
-SEO_OG_IMAGE=/images/LOGO.png
+SEO_OG_IMAGE=/images/logo.png
 
 # Checkout (opcional: si están vacías, se cobra por transferencia y pago en tienda)
 PAGO_TITULAR=
