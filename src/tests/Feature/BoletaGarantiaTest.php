@@ -25,7 +25,7 @@ class BoletaGarantiaTest extends TestCase
 
         $this->assertSame(12, $meses('celular', ['condicion' => 'Nuevo'])['meses']);
         $this->assertSame('21/01/2027', $meses('celular', ['condicion' => 'Seminuevo'])['vence']->format('d/m/Y'));
-        $this->assertSame(6, $meses('producto_general', ['tipo' => 'cargador_20w', 'nombre' => 'CUBO 20 W ORIGINAL'])['meses']);
+        $this->assertSame(12, $meses('producto_general', ['tipo' => 'cargador_20w', 'nombre' => 'CUBO 20 W ORIGINAL'])['meses']);
         $this->assertSame(3, $meses('producto_general', ['tipo' => 'cargador_20w', 'nombre' => 'CUBO 20 W'])['meses']);
     }
 

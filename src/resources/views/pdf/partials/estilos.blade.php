@@ -13,8 +13,8 @@
   .ico { width: 11px; height: 11px; vertical-align: -2px; margin-right: 4px; }
 
   /* Encabezado */
-  .sello { width: 66px; height: 66px; background: #c8f902; text-align: center; }
-  .sello img { height: 46px; margin-top: 10px; }
+  .sello { width: 74px; height: 74px; background: #c8f902; text-align: center; }
+  .sello img { height: 52px; margin-top: 11px; }
   .marca { padding-left: 12px; }
   .marca .nombre { font-size: 25px; line-height: .95; letter-spacing: -.5px; }
   .marca .nombre b { font-weight: bold; }
@@ -37,23 +37,37 @@
   .pildora { display: inline-block; background: #0d0d0d; color: #fff; font-size: 9.6px; font-weight: bold; letter-spacing: .9px;
     border-radius: 11px; padding: 4px 16px 4px 13px; margin: 16px 0 7px; }
 
-  /* Productos */
-  .caja { border: 1px solid #0d0d0d; border-radius: 16px; padding: 3px 14px; }
-  .lineas td { padding: 9px 0; border-bottom: 1px solid #dcdcdc; }
-  .lineas tr.ultima td { border-bottom: 0; }
-  .lineas .ic { width: 36px; }
-  .cuadro { width: 27px; height: 27px; background: #f1f1f1; border-radius: 8px; text-align: center; }
-  .cuadro img { width: 16px; height: 16px; margin-top: 5.5px; }
-  .producto { font-size: 11.5px; font-weight: bold; }
-  .chip { display: inline-block; background: #f1f1f1; border-radius: 8px; padding: 1.5px 8px; margin: 3px 4px 0 0; font-size: 8.8px; white-space: nowrap; }
-  .chip.lima { background: #c8f902; font-weight: bold; }
-  .ident { display: inline-block; margin: 5px 14px 0 0; font-size: 9.6px; white-space: nowrap; }
-  .ident b { font-weight: bold; letter-spacing: .3px; }
-  .importe { width: 104px; text-align: right; font-size: 11.5px; font-weight: bold; white-space: nowrap; }
+  /* Productos: una ficha por cada uno */
+  .ficha-producto { border: 1px solid #0d0d0d; border-radius: 18px; padding: 13px 15px 12px; margin-bottom: 9px; page-break-inside: avoid; }
+  .cuadro { width: 36px; height: 36px; background: #c8f902; border-radius: 11px; text-align: center; }
+  .cuadro img { width: 21px; height: 21px; margin-top: 7.5px; }
+  .producto { font-size: 15px; font-weight: bold; line-height: 1.15; letter-spacing: -.2px; }
+  .importe { width: 150px; text-align: right; font-size: 15px; font-weight: bold; white-space: nowrap; vertical-align: middle; }
   .importe .detalle { font-size: 8.4px; font-weight: normal; color: #5f6368; }
+  .mosaicos { margin-top: 7px; }
+  .mosaicos td { padding-right: 7px; }
+  .mosaicos td td { padding-right: 0; }
+  .mosaico { background: #f3f3f3; border-radius: 13px; padding: 8px 10px; }
+  .aro { width: 26px; height: 26px; background: #fff; border-radius: 13px; text-align: center; }
+  .aro img { width: 16px; height: 16px; margin-top: 5px; }
+  .mosaico .rotulo { font-size: 8.2px; color: #5f6368; line-height: 1.2; }
+  .mosaico .valor { font-size: 12.5px; font-weight: bold; line-height: 1.2; }
+  .bandas { margin-top: 9px; }
+  .banda { border: 1px solid #0d0d0d; border-radius: 11px; padding: 7px 12px; font-size: 10px; }
+  .banda.lima { background: #c8f902; border-color: #c8f902; font-size: 11px; }
+  .banda .ico { width: 13px; height: 13px; vertical-align: -3px; margin-right: 6px; }
+  .ident { display: inline-block; margin-right: 18px; white-space: nowrap; }
+  .ident b { font-size: 11px; font-weight: bold; letter-spacing: .5px; }
+
+  /* Resumen de la garantía en la primera hoja */
+  .resumen .bloque { border: 1px solid #0d0d0d; border-radius: 16px; padding: 11px 13px 7px; font-size: 9.2px; line-height: 1.5; min-height: 134px; }
+  .bloque-titulo { font-size: 10.5px; font-weight: bold; margin-bottom: 4px; }
+  .bloque-titulo .ico { width: 13px; height: 13px; vertical-align: -3px; margin-right: 5px; }
+  .resumen ul { margin: 0 0 4px; padding-left: 13px; }
+  .resumen li { margin-bottom: 1.5px; }
 
   /* Totales */
-  .cierre { margin-top: 12px; }
+  .cierre { margin-top: 8px; }
   .letras { font-size: 9.4px; padding-right: 18px; }
   .letras b { font-weight: bold; }
   .totales { width: 250px; }
@@ -72,6 +86,7 @@
 
   /* Firmas */
   .firmas { margin-top: 14px; page-break-inside: avoid; }
+  .firmas.holgada { margin-top: 44px; }
   .firmas td { width: 50%; text-align: center; padding: 0 20px; }
   .firmas .trazo { height: 60px; vertical-align: bottom; }
   .firmas .trazo img { height: 56px; }

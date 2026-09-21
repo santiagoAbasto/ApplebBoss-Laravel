@@ -10,14 +10,14 @@ return [
     'contribuyente' => 'Empresa Unipersonal',
     'web'           => 'appleboss.com.bo',
     'instagram'     => '@apple_boss_bol',
-    'correo'        => 'apple.boss2011@gmail.com',
+    'correo'        => 'ventas@appleboss.com.bo',
 
     'garantia' => [
         // Meses de garantía según lo que se vende
         'meses' => [
             'equipo_nuevo'       => 12,
             'equipo_seminuevo'   => 4,
-            'cargador_original'  => 6,
+            'cargador_original'  => 12,
             'cargador_certificado' => 3,
         ],
 
@@ -30,7 +30,7 @@ return [
                 'lista'  => [
                     'Equipos nuevos: 12 meses.',
                     'Equipos seminuevos: 4 meses.',
-                    'Cargadores originales Apple: 6 meses.',
+                    'Cargadores originales Apple: 12 meses.',
                     'Cargadores certificados: 3 meses.',
                 ],
                 'cierre' => 'El plazo corre desde la fecha de entrega que figura en esta boleta.',

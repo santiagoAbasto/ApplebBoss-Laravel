@@ -18,13 +18,18 @@
       'Estado IMEI' => filled($p->estado_imei ?? null) ? ucfirst($p->estado_imei) : null,
   ];
 
-  // Cada producto, del tipo que sea, se imprime igual: icono, nombre, características e identificadores
+  // Cada producto, del tipo que sea, se imprime igual: icono, nombre, propiedades [icono, rótulo, valor] e identificadores
+  $equipo = fn ($p, string $capacidad = 'Capacidad') => [
+      ['disco', $capacidad, $p->capacidad ?? $p->almacenamiento ?? null], ['color', 'Color', $p->color ? ucfirst(mb_strtolower($p->color)) : null],
+      ['bateria', 'Batería', $bat($p->bateria)], ['etiqueta', 'Condición', $p->condicion ?? null],
+  ];
   $ficha = fn (string $tipo, $p) => match ($tipo) {
-      'celular'        => ['celular', $p->modelo, [$p->capacidad, $p->color, $bat($p->bateria) ? 'Batería ' . $bat($p->bateria) : null, $p->condicion ?? null], $imei($p)],
-      'computadora'    => ['computadora', $p->nombre, [$p->procesador, $p->ram ? 'RAM ' . $p->ram : null, $p->almacenamiento, $p->color, $bat($p->bateria) ? 'Batería ' . $bat($p->bateria) : null, $p->condicion ?? null], ['Serie' => $p->numero_serie]],
-      'producto_apple' => ['tablet', $p->modelo, [$p->capacidad, $p->color, $bat($p->bateria) ? 'Batería ' . $bat($p->bateria) : null, $p->condicion ?? null], $p->tiene_imei ? $imei($p) : ['Serie' => $p->numero_serie]],
-      default          => ['caja', $p->nombre, [$p->tipo ? ucfirst(str_replace('_', ' ', $p->tipo)) : null], ['Código' => $p->codigo]],
+      'celular'        => ['celular', $p->modelo, $equipo($p), $imei($p)],
+      'computadora'    => ['computadora', $p->nombre, [['chip', 'Procesador', $p->procesador], ['memoria', 'Memoria RAM', $p->ram], ...$equipo($p, 'Almacenamiento')], ['N.º de serie' => $p->numero_serie]],
+      'producto_apple' => ['tablet', $p->modelo, $equipo($p), $p->tiene_imei ? $imei($p) : ['N.º de serie' => $p->numero_serie]],
+      default          => ['caja', $p->nombre, [['etiqueta', 'Tipo', $p->tipo ? ucfirst(str_replace('_', ' ', $p->tipo)) : null], ['etiqueta', 'Condición', $p->condicion ?? null]], ['Código' => $p->codigo]],
   };
+  $conValor = fn (array $props) => array_values(array_filter($props, fn ($x) => filled($x[2]) && trim((string) $x[2]) !== '-'));
 
   // Una venta anterior puede traer sus propias condiciones de garantía escritas en la nota: esas son las que
   // se pactaron, así que se imprimen tal cual y no se les agrega la hoja ni los plazos de hoy.
@@ -53,6 +58,7 @@
   $pago              = mb_strlen((string) $venta->metodo_pago) <= 3 ? mb_strtoupper($venta->metodo_pago) : ucfirst($venta->metodo_pago);
   $cubiertos         = array_values(array_filter($lineas, fn ($l) => $l[5]));
   $secciones         = $doc['garantia']['secciones'];
+  $hayLugar          = ! $garantiaEnNota && (count($lineas) + count($permutas)) <= 2 && mb_strlen(strip_tags($notas)) < 220;
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -77,7 +83,7 @@
   {{-- Encabezado: la marca y los datos de la tienda a la izquierda, el documento a la derecha --}}
   <table>
     <tr>
-      <td class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></td>
+      <td style="width: 74px;"><div class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></div></td>
       <td class="marca">
         <div class="nombre"><b>APPLE</b><br>BOSS</div>
         <div class="dato" style="margin-top: 6px;">NIT {{ $doc['nit'] }} &nbsp;|&nbsp; {{ $doc['contribuyente'] }}</div>
@@ -125,61 +131,20 @@
     </tr>
   </table>
 
-  {{-- Productos --}}
+  {{-- Productos: una ficha por cada uno --}}
   <div class="pildora">DETALLE DE LA COMPRA</div>
-  <div class="caja">
-    <table class="lineas">
-      @foreach ($lineas as $i => [$ic, $nombre, $caracteristicas, $identificadores, $item, $cobertura])
-      <tr class="{{ $loop->last ? 'ultima' : '' }}">
-        <td class="ic"><div class="cuadro"><img src="{{ IconoPdf::uri($ic, '#0d0d0d') }}" alt=""></div></td>
-        <td>
-          <div class="producto">{{ $nombre }}</div>
-          @foreach ($conDato($caracteristicas) as $valor)
-          <span class="chip">{{ $valor }}</span>
-          @endforeach
-          @if ($cobertura)
-          <span class="chip lima">Garantía {{ $cobertura['meses'] }} meses, hasta el {{ $cobertura['vence']->format('d/m/Y') }}</span>
-          @endif
-          <div>
-            @foreach ($conDato($identificadores) as $rotulo => $valor)
-            <span class="ident"><span class="gris">{{ $rotulo }}</span> <b>{{ $valor }}</b></span>
-            @endforeach
-          </div>
-        </td>
-        <td class="importe">
-          {{ $bs($item->subtotal) }}
-          @if ((float) $item->descuento > 0)
-          <div class="detalle">Precio {{ $bs($item->precio_venta) }}<br>Descuento - {{ $bs($item->descuento) }}</div>
-          @endif
-        </td>
-      </tr>
-      @endforeach
-    </table>
-  </div>
+  @foreach ($lineas as [$ic, $nombre, $propiedades, $identificadores, $item, $cobertura])
+  @include('pdf.partials.ficha_producto', ['ic' => $ic, 'nombre' => $nombre, 'propiedades' => $conValor($propiedades),
+      'identificadores' => $conDato($identificadores), 'cobertura' => $cobertura, 'importe' => $bs($item->subtotal),
+      'detalle' => (float) $item->descuento > 0 ? 'Precio ' . $bs($item->precio_venta) . ' | Descuento - ' . $bs($item->descuento) : null])
+  @endforeach
 
   @if ($permutas)
   <div class="pildora">EQUIPO RECIBIDO EN PERMUTA</div>
-  <div class="caja">
-    <table class="lineas">
-      @foreach ($permutas as [$ic, $nombre, $caracteristicas, $identificadores, $equipo])
-      <tr class="{{ $loop->last ? 'ultima' : '' }}">
-        <td class="ic"><div class="cuadro"><img src="{{ IconoPdf::uri('permuta', '#0d0d0d') }}" alt=""></div></td>
-        <td>
-          <div class="producto">{{ $nombre }}</div>
-          @foreach ($conDato($caracteristicas) as $valor)
-          <span class="chip">{{ $valor }}</span>
-          @endforeach
-          <div>
-            @foreach ($conDato($identificadores) as $rotulo => $valor)
-            <span class="ident"><span class="gris">{{ $rotulo }}</span> <b>{{ $valor }}</b></span>
-            @endforeach
-          </div>
-        </td>
-        <td class="importe">{{ $bs($equipo->precio_costo) }}</td>
-      </tr>
-      @endforeach
-    </table>
-  </div>
+  @foreach ($permutas as [$ic, $nombre, $propiedades, $identificadores, $equipoRecibido])
+  @include('pdf.partials.ficha_producto', ['ic' => 'permuta', 'nombre' => $nombre, 'propiedades' => $conValor($propiedades),
+      'identificadores' => $conDato($identificadores), 'cobertura' => null, 'importe' => $bs($equipoRecibido->precio_costo), 'detalle' => 'Valor reconocido'])
+  @endforeach
   @endif
 
   {{-- Monto en letras y totales --}}
@@ -221,12 +186,30 @@
     </tr>
   </table>
 
+  @if ($hayLugar)
+  <div class="pildora"><img class="ico" src="{{ IconoPdf::uri('garantia', '#c8f902') }}" alt="">TU GARANTÍA EN CORTO</div>
+  <table class="resumen">
+    <tr>
+      @foreach ([['garantia', 'Qué cubre', $secciones[1]['lista'], null], ['alerta', 'Qué no cubre', array_slice($secciones[3]['lista'], 0, 4), 'La lista completa está en la hoja de garantía.'], ['documento', 'Para hacerla efectiva', $secciones[2]['lista'], 'La revisión la hace nuestro Servicio Técnico.']] as $n => [$ic, $titulo, $lista, $cierre])
+      @if ($n) <td class="hueco-col"></td> @endif
+      <td style="width: 32%;">
+        <div class="bloque">
+          <div class="bloque-titulo"><img class="ico" src="{{ IconoPdf::uri($ic, '#0d0d0d') }}" alt="">{{ $titulo }}</div>
+          <ul>@foreach ($lista as $li)<li>{{ $li }}</li>@endforeach</ul>
+          @if ($cierre)<p class="gris">{{ $cierre }}</p>@endif
+        </div>
+      </td>
+      @endforeach
+    </tr>
+  </table>
+  @endif
+
   @if ($notas !== '')
   <div class="pildora">{{ $garantiaEnNota ? 'GARANTÍA Y NOTAS DE ESTA VENTA' : 'NOTAS DE LA VENTA' }}</div>
   <div class="texto">{!! $notas !!}</div>
   @endif
 
-  <table class="firmas">
+  <table class="firmas {{ $hayLugar ? 'holgada' : '' }}">
     <tr>
       <td class="trazo"><img src="{{ public_path('images/firma.png') }}" alt=""></td>
       <td class="trazo"></td>
@@ -242,7 +225,7 @@
   <div class="salto"></div>
   <table>
     <tr>
-      <td class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></td>
+      <td style="width: 74px;"><div class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></div></td>
       <td class="marca" style="vertical-align: middle;">
         <div class="g-titulo">Garantía de productos Apple Boss</div>
         <div class="g-intro">{{ $doc['garantia']['intro'] }}</div>
