@@ -77,14 +77,15 @@ function Campo({ label, error, children, requerido = false }) {
 const inputCls = 'h-11 w-full rounded-xl border px-3.5 text-sm outline-none transition-shadow focus:ring-2';
 const inputStyle = { borderColor: 'var(--border-light)', background: 'var(--surface-white)', color: 'var(--text-primary)' };
 
-function CheckoutInterno({ entrega = [], destinos = [], metodos = [] }) {
+function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = {} }) {
     const { cart, total, syncing } = useStoreCart();
     const disponibles = useMemo(() => cart.filter((i) => i.available !== false), [cart]);
     const noDisponibles = useMemo(() => cart.filter((i) => i.available === false), [cart]);
 
     const { data, setData, post, processing, errors } = useForm({
         claves: [],
-        nombre_cliente: '', email_cliente: '', telefono_cliente: '', documento: '', razon_social: '',
+        nombre_cliente: cliente.nombre ?? '', email_cliente: cliente.email ?? '',
+        telefono_cliente: cliente.telefono ?? '', documento: '', razon_social: '',
         tipo_entrega: entrega[0]?.valor ?? 'retiro',
         envio_departamento: '', envio_ciudad: '', envio_direccion: '', envio_referencia: '',
         envio_destinatario: '', envio_telefono: '',

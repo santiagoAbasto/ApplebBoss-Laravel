@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -53,6 +54,12 @@ class Pedido extends Model
         'enviado_en'         => 'datetime',
         'entregado_en'       => 'datetime',
     ];
+
+    /** La cuenta que hizo el pedido. Null en los pedidos viejos, de cuando no hacía falta cuenta. */
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function items(): HasMany
     {

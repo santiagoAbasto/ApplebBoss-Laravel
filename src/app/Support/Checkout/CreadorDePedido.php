@@ -47,6 +47,8 @@ class CreadorDePedido
             $pedido = Pedido::create([
                 'codigo'             => Pedido::nuevoCodigo(),
                 'token_seguimiento'  => Pedido::nuevoToken(),
+                // El pedido queda atado a la cuenta; los datos de abajo son la foto del momento
+                'user_id'            => auth()->id(),
                 'nombre_cliente'     => $datos['nombre_cliente'],
                 'email_cliente'      => $datos['email_cliente'],
                 'telefono_cliente'   => $datos['telefono_cliente'],

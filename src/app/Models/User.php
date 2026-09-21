@@ -62,6 +62,24 @@ class User extends Authenticatable
         return $this->rol === 'vendedor';
     }
 
+    /**
+     * Cliente de la tienda en línea: compra, pero no entra al panel.
+     *
+     * `RolMiddleware` compara contra una lista blanca, así que un cliente queda fuera de
+     * /admin y /vendedor sin necesidad de un guard aparte. Ojo: lo que está solo detrás de
+     * `auth` (dashboard, profile) sí lo alcanza, y por eso se redirige aparte.
+     */
+    public function esCliente(): bool
+    {
+        return $this->rol === 'cliente';
+    }
+
+    /** Los pedidos que hizo esta persona en la tienda. */
+    public function pedidos()
+    {
+        return $this->hasMany(Pedido::class)->latest('id');
+    }
+
     /** Meta de ventas del mes que le cargó el administrador. 0 = todavía no le pusieron ninguna. */
     public function metaMensual(): float
     {

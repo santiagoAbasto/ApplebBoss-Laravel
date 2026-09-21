@@ -28,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Models\Pedido::observe(\App\Observers\PedidoObserver::class);
+
         if ($this->shouldUseBuiltAssetsInLocal()) {
             Vite::useHotFile(storage_path('framework/vite-disabled.hot'));
         }

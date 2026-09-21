@@ -26,13 +26,19 @@ use Inertia\Response;
 class CheckoutController extends Controller
 {
     /** Pantalla de datos + entrega. El carrito se resuelve contra el inventario. */
-    public function mostrar(): Response
+    public function mostrar(Request $request): Response
     {
         return Inertia::render('Store/Checkout', [
             'entrega'  => $opciones = Entrega::opciones(),
             // La tabla de costos solo viaja si el envío se está ofreciendo de verdad
             'destinos' => in_array(Entrega::ENVIO, array_column($opciones, 'valor'), true) ? Entrega::destinos() : [],
             'metodos'  => MetodosDePago::disponibles(),
+            // Ya dio estos datos al crear la cuenta: no se los volvemos a pedir
+            'cliente'  => [
+                'nombre'   => $request->user()->name,
+                'email'    => $request->user()->email,
+                'telefono' => $request->user()->telefono,
+            ],
         ]);
     }
 

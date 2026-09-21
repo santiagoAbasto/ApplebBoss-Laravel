@@ -123,6 +123,9 @@ class CheckoutTiendaTest extends TestCase
         $celular = $this->celular();
         $this->publicar($celular);
 
+        // Comprar exige cuenta desde que el checkout está detrás de `auth`
+        $this->actingAs(\App\Models\User::factory()->create(['rol' => 'cliente']));
+
         $this->post('/checkout', $this->datosCliente([
             'claves'             => ["celular:{$celular->id}"],
             'tipo_entrega'       => 'envio',

@@ -113,11 +113,29 @@ Route::post('/api/carrito/sync', [PublicCatalogController::class, 'syncCart'])
 | con el pago confirmado, y el seguimiento pide token o correo: es privado.
 */
 Route::controller(\App\Http\Controllers\CheckoutController::class)->group(function () {
-    Route::get('/checkout', 'mostrar')->name('checkout')->middleware('throttle:60,1');
-    Route::post('/checkout', 'guardar')->name('checkout.guardar')->middleware('throttle:10,1');
+    // Comprar exige cuenta: el pedido queda atado a alguien y la persona puede seguirlo
+    // sin códigos. El pago y el estado NO piden sesión: se abren con el token que va en
+    // el correo, que es lo que permite pagar desde otro dispositivo.
+    Route::get('/checkout', 'mostrar')->name('checkout')->middleware(['auth', 'throttle:60,1']);
+    Route::post('/checkout', 'guardar')->name('checkout.guardar')->middleware(['auth', 'throttle:10,1']);
     Route::get('/pedido/{codigo}/pago', 'pago')->name('checkout.pago')->middleware('throttle:60,1');
     Route::post('/pedido/{codigo}/pago/reportar', 'reportarPago')->name('checkout.reportar')->middleware('throttle:10,1');
     Route::get('/pedido/{codigo}/estado', 'estado')->name('checkout.estado')->middleware('throttle:120,1');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Cuenta de quien compra
+|--------------------------------------------------------------------------
+| Un `User` con rol 'cliente'. No entra al panel: `RolMiddleware` usa lista blanca.
+*/
+Route::controller(\App\Http\Controllers\Tienda\CuentaController::class)->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/crear-cuenta', 'crear')->name('cuenta.crear');
+        Route::post('/crear-cuenta', 'registrar')->name('cuenta.registrar')->middleware('throttle:5,1');
+    });
+
+    Route::get('/mi-cuenta', 'index')->name('cuenta.index')->middleware(['auth', 'throttle:60,1']);
 });
 
 Route::controller(\App\Http\Controllers\SeguimientoController::class)->group(function () {
@@ -129,6 +147,11 @@ Route::controller(\App\Http\Controllers\SeguimientoController::class)->group(fun
 // 🚀 Redirección al dashboard según el rol autenticado
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $user = auth()->user();
+    // El cliente no tiene panel: su lugar es «Mi cuenta»
+    if ($user->esCliente()) {
+        return redirect()->route('cuenta.index');
+    }
+
     return redirect()->route($user->rol === 'admin' ? 'admin.dashboard' : 'vendedor.dashboard');
 })->name('dashboard');
 

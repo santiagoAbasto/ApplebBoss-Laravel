@@ -19,8 +19,17 @@ export default function Login({ status, canResetPassword }) {
         <AuthShell
             pageTitle="Iniciar sesión | Apple Boss"
             title="Inicia sesión"
-            subtitle="Ingresa con el correo y la contraseña de tu cuenta del equipo."
-            footer={<>¿No tienes cuenta? Pídele al administrador de la tienda que te cree una.</>}
+            subtitle="Ingresa con tu correo y tu contraseña."
+            // Por acá entran los dos: quien compra y quien trabaja en la tienda.
+            // Al cliente hay que darle la salida a crear cuenta; al staff se la crea el admin.
+            footer={(
+                <>
+                    ¿No tienes cuenta?{' '}
+                    <Link href={route('cuenta.crear')} className="font-bold underline">Créala aquí</Link>
+                    <br />
+                    <span className="text-xs opacity-70">Si trabajas en Apple Boss, pídesela al administrador.</span>
+                </>
+            )}
         >
             {status && <AuthAlert>{status}</AuthAlert>}
 
