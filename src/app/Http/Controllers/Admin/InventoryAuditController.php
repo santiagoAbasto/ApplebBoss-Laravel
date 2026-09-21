@@ -121,12 +121,17 @@ class InventoryAuditController extends Controller
             !str_starts_with($normalized, 'S') ? 'S' . $normalized : null,
         ])));
 
+        // La normalizacion SQL debe ser identica a normalizeCode(): tambien quita "_"
+        // (los codigos de accesorios/fundas usan guion bajo, ej. FUNDA_SILIC_198).
+        // Sin esto el match exacto fallaba y caia al fallback por prefijo, trayendo "semejantes".
+        $normalizeSql = fn (string $column) => "UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE($column,'')), ' ', ''), '-', ''), '_', ''))";
+
         $matches = $inventoryAudit->items()
-            ->where(function ($query) use ($candidates) {
+            ->where(function ($query) use ($candidates, $normalizeSql) {
                 foreach ($candidates as $candidate) {
-                    $query->orWhereRaw("UPPER(REPLACE(REPLACE(TRIM(COALESCE(primary_code,'')), ' ', ''), '-', '')) = ?", [$candidate])
-                        ->orWhereRaw("UPPER(REPLACE(REPLACE(TRIM(COALESCE(secondary_code,'')), ' ', ''), '-', '')) = ?", [$candidate])
-                        ->orWhereRaw("UPPER(REPLACE(REPLACE(TRIM(COALESCE(tertiary_code,'')), ' ', ''), '-', '')) = ?", [$candidate]);
+                    foreach (['primary_code', 'secondary_code', 'tertiary_code'] as $column) {
+                        $query->orWhereRaw($normalizeSql($column).' = ?', [$candidate]);
+                    }
                 }
             })
             ->get()

@@ -144,6 +144,34 @@ class InventoryAuditTest extends TestCase
             ->assertJsonPath('audit.scanned', 1);
     }
 
+    public function test_exact_code_matches_itself_even_when_prefix_of_siblings(): void
+    {
+        $admin = $this->admin();
+
+        // El codigo exacto es prefijo de un hermano mas largo.
+        foreach (['FUNDA_SILIC_19', 'FUNDA_SILIC_198'] as $codigo) {
+            ProductoGeneral::create([
+                'codigo'      => $codigo,
+                'tipo'        => 'funda',
+                'nombre'      => 'Funda de Silicona',
+                'procedencia' => 'GZ STORES',
+                'precio_costo' => 20,
+                'precio_venta' => 60,
+                'estado'      => 'disponible',
+            ]);
+        }
+
+        $this->actingAs($admin)->post(route('admin.inventory-audits.store'));
+        $auditId = (int) \DB::table('inventory_audits')->value('id');
+
+        // Escribir el codigo completo debe marcar solo esa funda, no traer semejantes.
+        $this->actingAs($admin)
+            ->postJson(route('admin.inventory-audits.scan', $auditId), ['code' => 'FUNDA_SILIC_19'])
+            ->assertOk()
+            ->assertJsonPath('item.primary_code', 'FUNDA_SILIC_19')
+            ->assertJsonPath('audit.scanned', 1);
+    }
+
     public function test_open_audit_recognizes_imei_added_after_snapshot(): void
     {
         $admin = $this->admin();
