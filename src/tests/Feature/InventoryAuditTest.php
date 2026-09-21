@@ -172,6 +172,33 @@ class InventoryAuditTest extends TestCase
             ->assertJsonPath('audit.scanned', 1);
     }
 
+    public function test_exact_code_with_colon_matches_itself_not_siblings(): void
+    {
+        $admin = $this->admin();
+
+        // El codigo real lleva ":" y es prefijo de sus hermanos (FUNDASILI:130..138).
+        foreach (['FUNDASILI:13', 'FUNDASILI:130', 'FUNDASILI:134', 'FUNDASILI:138'] as $codigo) {
+            ProductoGeneral::create([
+                'codigo'      => $codigo,
+                'tipo'        => 'funda',
+                'nombre'      => 'Funda Silicona',
+                'procedencia' => 'GZ STORES',
+                'precio_costo' => 20,
+                'precio_venta' => 60,
+                'estado'      => 'disponible',
+            ]);
+        }
+
+        $this->actingAs($admin)->post(route('admin.inventory-audits.store'));
+        $auditId = (int) \DB::table('inventory_audits')->value('id');
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.inventory-audits.scan', $auditId), ['code' => 'FUNDASILI:13'])
+            ->assertOk()
+            ->assertJsonPath('item.primary_code', 'FUNDASILI:13')
+            ->assertJsonPath('audit.scanned', 1);
+    }
+
     public function test_open_audit_recognizes_imei_added_after_snapshot(): void
     {
         $admin = $this->admin();

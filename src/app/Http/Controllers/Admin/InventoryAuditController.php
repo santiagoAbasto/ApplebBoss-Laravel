@@ -121,21 +121,21 @@ class InventoryAuditController extends Controller
             !str_starts_with($normalized, 'S') ? 'S' . $normalized : null,
         ])));
 
-        // La normalizacion SQL debe ser identica a normalizeCode(): tambien quita "_"
-        // (los codigos de accesorios/fundas usan guion bajo, ej. FUNDA_SILIC_198).
-        // Sin esto el match exacto fallaba y caia al fallback por prefijo, trayendo "semejantes".
-        $normalizeSql = fn (string $column) => "UPPER(REPLACE(REPLACE(REPLACE(TRIM(COALESCE($column,'')), ' ', ''), '-', ''), '_', ''))";
-
-        $matches = $inventoryAudit->items()
-            ->where(function ($query) use ($candidates, $normalizeSql) {
-                foreach ($candidates as $candidate) {
-                    foreach (['primary_code', 'secondary_code', 'tertiary_code'] as $column) {
-                        $query->orWhereRaw($normalizeSql($column).' = ?', [$candidate]);
+        // Match exacto normalizando con normalizeCode() en ambos lados: asi el codigo
+        // guardado y el escaneado se comparan sin separadores (":", "_", "-", espacios...).
+        // Normalizar en SQL obligaba a listar cada separador a mano y un ":" ya rompia el
+        // match, cayendo al fallback por prefijo (FUNDASILI:13 chocaba con FUNDASILI:130..138).
+        $matches = $inventoryAudit->items()->get()
+            ->filter(function (InventoryAuditItem $item) use ($candidates) {
+                foreach ([$item->primary_code, $item->secondary_code, $item->tertiary_code] as $stored) {
+                    if (filled($stored) && in_array($this->normalizeCode((string) $stored), $candidates, true)) {
+                        return true;
                     }
                 }
+
+                return false;
             })
-            ->get()
-            ->unique('id'); // por si acaso algún candidato matchea el mismo item dos veces
+            ->values();
 
         // Accept corrected IMEI/serial values only for products already in the snapshot.
         if ($matches->isEmpty()) {
