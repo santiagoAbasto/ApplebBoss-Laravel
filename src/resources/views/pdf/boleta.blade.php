@@ -70,39 +70,8 @@
 </head>
 
 <body>
-  <div class="pie">
-    <table>
-      <tr>
-        <td><img class="ico" src="{{ IconoPdf::uri('web', '#c8f902') }}" alt="">{{ $doc['web'] }} &nbsp;&nbsp; {{ $doc['instagram'] }}</td>
-        <td style="text-align: center;">{{ $doc['correo'] }}</td>
-        <td class="der">@if($tienda['telefono'])<img class="ico" src="{{ IconoPdf::uri('telefono', '#c8f902') }}" alt="">{{ $tienda['telefono'] }}@endif</td>
-      </tr>
-    </table>
-  </div>
-
-  {{-- Encabezado: la marca y los datos de la tienda a la izquierda, el documento a la derecha --}}
-  <table>
-    <tr>
-      <td style="width: 74px;"><div class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></div></td>
-      <td class="marca">
-        <div class="nombre"><b>APPLE</b><br>BOSS</div>
-        <div class="dato" style="margin-top: 6px;">NIT {{ $doc['nit'] }} &nbsp;|&nbsp; {{ $doc['contribuyente'] }}</div>
-        @if($tienda['direccion'])
-        <div class="dato"><img class="ico" src="{{ IconoPdf::uri('ubicacion', '#0d0d0d') }}" alt="">{{ $tienda['direccion'] }}</div>
-        @endif
-        @if($tienda['telefono'])
-        <div class="dato"><img class="ico" src="{{ IconoPdf::uri('telefono', '#0d0d0d') }}" alt="">{{ $tienda['telefono'] }}</div>
-        @endif
-      </td>
-      <td style="width: 246px;">
-        <div class="ficha">
-          <div class="tipo">BOLETA DE VENTA</div>
-          <div class="codigo">{{ $venta->codigo_nota ?? ('N.º ' . $venta->id) }}</div>
-          <div class="cuando">{{ $fecha?->format('d/m/Y') }} &nbsp; {{ $fecha?->format('H:i') }} &nbsp;|&nbsp; Venta n.º {{ $venta->id }}</div>
-        </div>
-      </td>
-    </tr>
-  </table>
+  @include('pdf.partials.membrete', ['tipo' => 'BOLETA DE VENTA', 'codigo' => $venta->codigo_nota ?? ('N.º ' . $venta->id),
+      'cuando' => $fecha?->format('d/m/Y') . ' &nbsp; ' . $fecha?->format('H:i') . ' &nbsp;|&nbsp; Venta n.º ' . $venta->id])
 
   {{-- Datos de la venta --}}
   <table class="tarjetas">

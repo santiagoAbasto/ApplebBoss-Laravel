@@ -55,6 +55,18 @@ class TextoEnriquecidoTest extends TestCase
         $this->assertStringContainsString('<p><strong>Importante:</strong> No cubre daños accidentales.</p>', $html);
     }
 
+    /** Las cotizaciones viejas se guardaron en Markdown: los asteriscos no pueden salir impresos en el PDF. */
+    public function test_una_nota_en_markdown_sale_con_negritas_y_lista(): void
+    {
+        $nota = "**Condiciones de la cotización**\n\n* Entrega en 3 semanas\n* Precio expresado en USD\n\nTipo de cambio: se actualiza al pagar.";
+
+        $html = TextoEnriquecido::aHtml($nota);
+
+        $this->assertStringContainsString('<strong>Condiciones de la cotización</strong>', $html);
+        $this->assertSame(2, substr_count($html, '<li>'));
+        $this->assertStringNotContainsString('*', $html);
+    }
+
     public function test_el_texto_plano_escapa_html_y_el_de_80mm_sale_sin_etiquetas(): void
     {
         $this->assertSame('<p>Precio &lt; 100 &amp; entrega</p>', TextoEnriquecido::aHtml('Precio < 100 & entrega'));

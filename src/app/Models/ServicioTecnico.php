@@ -21,6 +21,8 @@ class ServicioTecnico extends Model
         'cliente',
         'telefono',
         'equipo',
+        'marca',
+        'recepcion',
         'detalle_servicio',
         'notas_adicionales', // 👈 NUEVO
         'precio_costo',
@@ -40,8 +42,26 @@ class ServicioTecnico extends Model
      */
     protected $casts = [
         'fecha'            => 'date',
+        'recepcion'        => 'array',
         'costo_pendiente'  => 'boolean',
         'costo_cargado_en' => 'datetime',
+    ];
+
+    /* =========================
+     |  MARCA DEL EQUIPO
+     ========================= */
+
+    public const MARCA_APPLE = 'apple';
+
+    public const MARCA_ANDROID = 'android';
+
+    public const MARCA_OTRO = 'otro';
+
+    /** De qué es el equipo: de acá sale quién lo puede reparar. */
+    public const MARCAS = [
+        self::MARCA_APPLE   => 'iPhone / Apple',
+        self::MARCA_ANDROID => 'Android',
+        self::MARCA_OTRO    => 'Otro equipo',
     ];
 
     /**

@@ -28,7 +28,8 @@ class BusinessFlowTest extends TestCase
                 'cliente' => 'Cliente Demo',
                 'telefono' => '70000000',
                 'equipo' => 'iPhone 13',
-                'tecnico' => 'Edson',
+                'marca' => \App\Models\ServicioTecnico::MARCA_APPLE,
+                'tecnico_id' => \App\Models\Tecnico::create(['nombre' => 'Edson', 'especialidad' => 'ambas'])->id,
                 'fecha' => '2026-04-02',
                 'detalle_servicio' => json_encode([
                     ['descripcion' => 'Pantalla', 'costo' => 200, 'precio' => 350],

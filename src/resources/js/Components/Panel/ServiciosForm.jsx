@@ -3,14 +3,18 @@ import { useRef, useState } from 'react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { route } from 'ziggy-js';
-import { ArrowLeft, Hammer, Plus, Trash2, Wrench } from 'lucide-react';
+import { ArrowLeft, Hammer, Plus, Trash2, UserPlus, Wrench } from 'lucide-react';
 import PremiumNotice from '@/Components/PremiumNotice';
 import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
-import { Badge, Field, Input, StepCard, Textarea, bsFmt, buttonCls } from '@/Components/Admin/ui';
+import { Badge, Field, Input, Segmented, StepCard, Textarea, bsFmt, buttonCls } from '@/Components/Admin/ui';
+import RecepcionEquipo, { payloadRecepcion, recepcionInicial, textoDesbloqueo, validarRecepcion } from '@/Components/Panel/RecepcionEquipo';
 
 let ultimoId = 0;
 const nuevoTrabajo = () => ({ id: ++ultimoId, descripcion: '', costo: '', precio: '' });
 const monto = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+/** La regla del taller: quién puede recibir cada marca. El servidor la vuelve a aplicar al guardar. */
+const atiende = (tecnico, marca) => marca === 'otro' || tecnico.especialidad === 'ambas' || tecnico.especialidad === marca;
 
 function Linea({ label, valor }) {
   return (
@@ -21,7 +25,7 @@ function Linea({ label, valor }) {
   );
 }
 
-export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin' }) {
+export default function ServiciosForm({ tecnicos = [], marcas = [], especialidades = [], revision = [], Layout, prefijo = 'admin' }) {
   // El vendedor registra solo lo que paga el cliente: con eso sale la nota. El costo de cada trabajo lo carga
   // el administrador desde la lista (le llega el aviso), y recién ahí se calcula la utilidad.
   const conMargen = prefijo === 'admin';
@@ -29,10 +33,13 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
     cliente: '',
     telefono: '',
     equipo: '',
-    tecnico: '',
+    marca: '',
+    tecnico_id: '',
     fecha: dayjs().format('YYYY-MM-DD'), // fecha local (no UTC)
     notas_adicionales: '',
   });
+  const [recepcion, setRecepcion] = useState(() => recepcionInicial(revision));
+  const [nuevoTecnico, setNuevoTecnico] = useState(null); // { nombre, especialidad } mientras se da de alta
   const [trabajos, setTrabajos] = useState(() => [nuevoTrabajo()]);
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
@@ -76,6 +83,43 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
     setMostrarSugerencias(false);
   };
 
+  /* Marca del equipo y técnico que lo atiende */
+  const disponibles = data.marca ? tecnicos.filter((t) => atiende(t, data.marca)) : tecnicos;
+  const fueraDeLista = data.marca ? tecnicos.filter((t) => !disponibles.includes(t)) : [];
+  const marcaEspecifica = Boolean(data.marca) && data.marca !== 'otro';
+  const marcaTexto = marcas.find((m) => m.value === data.marca)?.label ?? data.marca;
+  const tecnicoElegido = tecnicos.find((t) => String(t.id) === String(data.tecnico_id));
+
+  const elegirMarca = (marca) => {
+    setData((d) => {
+      const puestoSirve = tecnicos.some((t) => String(t.id) === String(d.tecnico_id) && atiende(t, marca));
+      // El elegido se suelta si no atiende esta marca: más honesto que rechazarlo recién al guardar
+      if (puestoSirve) return { ...d, marca };
+      // Si para esta marca hay un solo técnico, se elige solo
+      const unico = tecnicos.filter((t) => atiende(t, marca));
+      return { ...d, marca, tecnico_id: unico.length === 1 ? unico[0].id : '' };
+    });
+    quitarError('marca');
+    quitarError('tecnico_id');
+  };
+
+  const guardarTecnico = () => {
+    const nombre = (nuevoTecnico?.nombre || '').trim();
+    if (!nombre) return;
+    router.post(route(`${prefijo}.servicios.tecnicos.store`), { nombre, especialidad: nuevoTecnico.especialidad }, {
+      preserveScroll: true,
+      onSuccess: () => setNuevoTecnico(null),
+      onError: () => avisar('No se pudo guardar el técnico', 'Revisa el nombre y la especialidad.'),
+    });
+  };
+
+  const cambiarEspecialidad = (tecnico, especialidad) => {
+    router.patch(route(`${prefijo}.servicios.tecnicos.update`, tecnico.id), { especialidad }, {
+      preserveScroll: true,
+      onError: () => avisar('No se pudo cambiar la especialidad'),
+    });
+  };
+
   /* Trabajos */
   const cambiarTrabajo = (id, campo, valor) => {
     setTrabajos((ts) => ts.map((t) => (t.id === id ? { ...t, [campo]: valor } : t)));
@@ -93,10 +137,11 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
   const sinCosto = conMargen ? descritos.filter((t) => t.costo === '').length : 0;
 
   const validar = () => {
-    const e = {};
+    const e = { ...validarRecepcion(recepcion) };
     if (!data.cliente.trim()) e.cliente = 'Escribe el nombre del cliente.';
     if (!data.equipo.trim()) e.equipo = 'Indica qué equipo deja el cliente.';
-    if (!data.tecnico.trim()) e.tecnico = 'Indica quién hace el trabajo.';
+    if (!data.marca) e.marca = 'Indica de qué es el equipo.';
+    if (!data.tecnico_id) e.tecnico_id = 'Elige quién hace el trabajo.';
     if (!data.fecha) e.fecha = 'Elige la fecha.';
     trabajos.forEach((t) => {
       if (!t.descripcion.trim() && (t.costo !== '' || t.precio !== '')) e[`trabajo.${t.id}`] = 'Describe este trabajo.';
@@ -127,7 +172,9 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
       cliente: data.cliente.trim(),
       telefono: data.telefono.trim(),
       equipo: data.equipo.trim(),
-      tecnico: data.tecnico.trim(),
+      marca: data.marca,
+      tecnico_id: data.tecnico_id,
+      recepcion: payloadRecepcion(recepcion),
       fecha: data.fecha,
       notas_adicionales: data.notas_adicionales.trim(),
       detalle_servicio: JSON.stringify(detalle),
@@ -218,26 +265,112 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
               </div>
 
               <div className="mt-4">
-                <Field label="Técnico" error={errores.tecnico}>
-                  <Input value={data.tecnico} placeholder="Nombre de quien repara el equipo"
-                    onChange={(e) => cambiar('tecnico', e.target.value)} />
+                <Field label="¿De qué es el equipo?" hint="De acá sale quién lo puede reparar." error={errores.marca}>
+                  <Segmented options={marcas} value={data.marca} ariaLabel="Marca del equipo"
+                    cols="grid-cols-3" onChange={elegirMarca} />
                 </Field>
-                {tecnicos.length > 0 && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="mr-1 text-xs text-slate-400">Anteriores:</span>
-                    {tecnicos.slice(0, 10).map((t) => (
-                      <button key={t} type="button" onClick={() => cambiar('tecnico', t)} aria-pressed={data.tecnico === t}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${data.tecnico === t ? 'bg-[#011446] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                        <Wrench className="h-3 w-3" /> {t}
-                      </button>
-                    ))}
+              </div>
+
+              <div className="mt-4">
+                <Field label="Técnico" error={errores.tecnico_id}
+                  hint={data.marca ? 'Solo aparecen los que atienden esta marca.' : 'Elige primero de qué es el equipo.'}>
+                  {disponibles.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+                      {tecnicos.length === 0
+                        ? 'Todavía no hay técnicos cargados. Agrega uno aquí abajo.'
+                        : `Ningún técnico atiende ${marcaTexto} todavía. Agrega uno o cambia su especialidad.`}
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Técnico">
+                      {disponibles.map((t) => {
+                        const elegido = String(data.tecnico_id) === String(t.id);
+                        return (
+                          <button key={t.id} type="button" role="radio" aria-checked={elegido}
+                            onClick={() => { setData((d) => ({ ...d, tecnico_id: t.id })); quitarError('tecnico_id'); }}
+                            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                              elegido
+                                ? 'border-[#011446] bg-[#011446] text-white shadow-[0_8px_18px_-10px_rgba(1,20,70,0.6)]'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900'}`}>
+                            <Wrench className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{t.nombre}</span>
+                            {marcaEspecifica && t.especialidad === 'ambas' && (
+                              <span className={`shrink-0 text-[11px] font-medium ${elegido ? 'text-white/60' : 'text-slate-400'}`}>
+                                · atiende todo
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Field>
+
+                {/* Nombrar a los que se fueron de la lista para que no parezca un error de pantalla */}
+                {data.marca && fueraDeLista.length > 0 && (
+                  <p className="mt-2 text-[11.5px] leading-snug text-slate-500">
+                    {fueraDeLista.length <= 2
+                      ? `${fueraDeLista.map((t) => t.nombre).join(' y ')} no ${fueraDeLista.length === 1 ? 'aparece' : 'aparecen'}: no ${fueraDeLista.length === 1 ? 'atiende' : 'atienden'} ${marcaTexto}.`
+                      : `${fueraDeLista.length} técnicos no aparecen porque no atienden ${marcaTexto}.`}
+                  </p>
+                )}
+
+                {/* Alta de un técnico sin salir del formulario */}
+                {nuevoTecnico ? (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input value={nuevoTecnico.nombre} maxLength={120} autoFocus aria-label="Nombre del técnico"
+                        placeholder="Nombre del técnico"
+                        onChange={(e) => setNuevoTecnico((t) => ({ ...t, nombre: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); guardarTecnico(); } }} />
+                      <div className="flex gap-2">
+                        <select value={nuevoTecnico.especialidad} aria-label="Qué equipos atiende"
+                          onChange={(e) => setNuevoTecnico((t) => ({ ...t, especialidad: e.target.value }))}
+                          className="h-11 w-48 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900">
+                          {especialidades.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                        </select>
+                        <button type="button" onClick={guardarTecnico} disabled={!nuevoTecnico.nombre.trim()}
+                          className={buttonCls('primary', 'h-11 px-4 disabled:opacity-40')}>Guardar</button>
+                        <button type="button" onClick={() => setNuevoTecnico(null)}
+                          className="h-11 rounded-xl px-3 text-sm font-semibold text-slate-500 hover:text-slate-900">Cancelar</button>
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  <button type="button" onClick={() => setNuevoTecnico({ nombre: '', especialidad: 'ambas' })}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100">
+                    <UserPlus className="h-3.5 w-3.5" /> Agregar técnico
+                  </button>
+                )}
+
+                {/* Quién atiende qué: lo define el administrador */}
+                {conMargen && tecnicos.length > 0 && (
+                  <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm">
+                    <summary className="cursor-pointer text-xs font-bold text-slate-600">Qué atiende cada técnico</summary>
+                    <ul className="mt-3 space-y-2">
+                      {tecnicos.map((t) => (
+                        <li key={`esp-${t.id}`} className="flex items-center justify-between gap-3">
+                          <span className="min-w-0 truncate text-[13px] font-semibold text-slate-800">{t.nombre}</span>
+                          <select value={t.especialidad} aria-label={`Qué atiende ${t.nombre}`}
+                            onChange={(e) => cambiarEspecialidad(t, e.target.value)}
+                            className="h-9 w-48 shrink-0 rounded-lg border border-slate-200 bg-white px-2 text-[13px] text-slate-900">
+                            {especialidades.map((e) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                          </select>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 )}
               </div>
             </StepCard>
 
             {/* Paso 3 */}
-            <StepCard step={3} title="Trabajos a realizar"
+            <StepCard step={3} title="Recepción del equipo"
+              subtitle="Cómo entra el equipo: se revisa punto por punto y se anota el código de desbloqueo. Sale impreso en la nota que firman las dos partes.">
+              <RecepcionEquipo recepcion={recepcion} onCambiar={setRecepcion} error={errores.desbloqueo} />
+            </StepCard>
+
+            {/* Paso 4 */}
+            <StepCard step={4} title="Trabajos a realizar"
               subtitle={conMargen
                 ? 'Cada trabajo con su costo y lo que paga el cliente. Si todavía no sabes el costo, déjalo vacío y lo cargas después desde la lista.'
                 : 'Cada trabajo con lo que paga el cliente. El costo lo carga el administrador.'}
@@ -288,11 +421,11 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
               {errores.trabajos && <p className="mt-2 text-xs font-semibold text-rose-600">{errores.trabajos}</p>}
             </StepCard>
 
-            {/* Paso 4 */}
-            <StepCard step={4} title="Notas" subtitle="Opcional. Estado del equipo, accesorios que deja o recomendaciones.">
-              <Textarea rows={3} value={data.notas_adicionales} placeholder="Ej.: Llega con la pantalla rayada; deja el cargador."
+            {/* Paso 5 */}
+            <StepCard step={5} title="Notas" subtitle="Opcional. Lo que no entra en la revisión: acuerdos, plazos o recomendaciones.">
+              <Textarea rows={3} value={data.notas_adicionales} placeholder="Ej.: El cliente pasa a recogerlo el viernes."
                 onChange={(e) => cambiar('notas_adicionales', e.target.value)} />
-              <p className="mt-1.5 text-[11px] text-slate-500">Aparecen en el recibo térmico.</p>
+              <p className="mt-1.5 text-[11px] text-slate-500">Aparecen en la nota y en el recibo térmico.</p>
             </StepCard>
           </div>
 
@@ -310,7 +443,10 @@ export default function ServiciosForm({ tecnicos = [], Layout, prefijo = 'admin'
                 <dl className="space-y-1.5 text-sm">
                   <Linea label="Cliente" valor={data.cliente.trim()} />
                   <Linea label="Equipo" valor={data.equipo.trim()} />
-                  <Linea label="Técnico" valor={data.tecnico.trim()} />
+                  <Linea label="Marca" valor={data.marca ? marcaTexto : ''} />
+                  <Linea label="Técnico" valor={tecnicoElegido?.nombre} />
+                  <Linea label="Desbloqueo" valor={textoDesbloqueo(recepcion.desbloqueo)} />
+                  <Linea label="Revisión" valor={`${recepcion.revision.filter((p) => p.estado).length} puntos marcados`} />
                 </dl>
 
                 {descritos.length > 0 && (

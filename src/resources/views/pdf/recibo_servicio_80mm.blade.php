@@ -229,11 +229,27 @@ td:last-child {
         <div class="total-amount">Bs {{ number_format($servicio->precio_venta, 2) }}</div>
     </div>
 
+    <!-- CÓMO ENTRÓ EL EQUIPO -->
+    @php
+      $revision = $servicio->recepcion['revision'] ?? [];
+      $desbloqueo = \App\Support\RecepcionDeEquipo::textoDesbloqueo($servicio->recepcion['desbloqueo'] ?? null);
+    @endphp
+    @if($revision || $desbloqueo)
+    <div class="notes">
+        <div class="section-title">Cómo entró el equipo</div>
+        @if($desbloqueo)<p><strong>Desbloqueo:</strong> {{ $desbloqueo }}</p>@endif
+        @if($revision)
+        <p>{!! collect($revision)->map(fn ($p) => e($p['etiqueta']) . ': <strong>'
+            . e(\App\Support\RecepcionDeEquipo::ETIQUETAS_ESTADO[$p['estado']] ?? $p['estado']) . '</strong>')->implode(' · ') !!}</p>
+        @endif
+    </div>
+    @endif
+
     <!-- NOTES -->
     @if(!empty($servicio->notas_adicionales))
     <div class="notes">
         <div class="section-title">Notas</div>
-        {{ $servicio->notas_adicionales }}
+        {!! nl2br(e(\App\Support\TextoEnriquecido::aTexto($servicio->notas_adicionales))) !!}
     </div>
     @endif
 

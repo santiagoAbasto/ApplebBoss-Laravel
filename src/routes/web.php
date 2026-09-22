@@ -393,6 +393,13 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->names('servicios')
             ->parameters(['servicios' => 'servicio']);
 
+        // El catálogo de técnicos se maneja desde el propio formulario del servicio
+        Route::post('/servicios/tecnicos', [ServicioTecnicoController::class, 'guardarTecnico'])
+            ->name('servicios.tecnicos.store');
+
+        Route::patch('/servicios/tecnicos/{tecnico}', [ServicioTecnicoController::class, 'actualizarTecnico'])
+            ->name('servicios.tecnicos.update');
+
         Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])
             ->name('servicios.boleta');
 
@@ -833,6 +840,10 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
 
         Route::post('/servicios', [ServicioTecnicoController::class, 'store'])
             ->name('servicios.store');
+
+        // Un técnico nuevo se da de alta desde el mismo formulario; la especialidad la cambia el administrador
+        Route::post('/servicios/tecnicos', [ServicioTecnicoController::class, 'guardarTecnico'])
+            ->name('servicios.tecnicos.store');
 
         Route::get('/servicios/{servicio}/boleta', [ServicioTecnicoController::class, 'boleta'])
             ->name('servicios.boleta'); // ✅ CORREGIDO

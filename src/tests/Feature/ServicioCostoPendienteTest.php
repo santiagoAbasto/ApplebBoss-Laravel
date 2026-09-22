@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ServicioTecnico;
+use App\Models\Tecnico;
 use App\Models\SystemNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +35,8 @@ class ServicioCostoPendienteTest extends TestCase
             'cliente'          => 'María Rojas',
             'telefono'         => '70000001',
             'equipo'           => 'iPhone 13',
-            'tecnico'          => 'AXEL',
+            'marca'            => ServicioTecnico::MARCA_APPLE,
+            'tecnico_id'       => Tecnico::firstOrCreate(['nombre' => 'AXEL'], ['especialidad' => Tecnico::AMBAS])->id,
             'fecha'            => '2026-09-16',
             'detalle_servicio' => json_encode($trabajos),
             'precio_venta'     => 999,

@@ -84,19 +84,23 @@ class AdminServiciosTest extends TestCase
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
-    public function test_formulario_de_admin_sugiere_los_tecnicos_anteriores(): void
+    public function test_formulario_de_admin_recibe_el_catalogo_de_tecnicos(): void
     {
         $admin = User::factory()->create(['rol' => 'admin']);
-        $this->servicio($admin, ['tecnico' => 'MARCELO RPR']);
-        $this->servicio($admin, ['tecnico' => 'AXEL']);
-        $this->servicio($admin, ['tecnico' => 'AXEL']);
+        \App\Models\Tecnico::create(['nombre' => 'MARCELO RPR', 'especialidad' => 'android']);
+        \App\Models\Tecnico::create(['nombre' => 'AXEL', 'especialidad' => 'apple']);
+        \App\Models\Tecnico::create(['nombre' => 'RETIRADO', 'especialidad' => 'ambas', 'activo' => false]);
 
         $this->actingAs($admin)
             ->get(route('admin.servicios.create'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Servicios/Create')
-                ->where('tecnicos', ['AXEL', 'MARCELO RPR']));
+                // El formulario recibe a quién se le puede entregar cada marca; el inactivo no aparece
+                ->where('tecnicos', fn ($tecnicos) => collect($tecnicos)->pluck('especialidad', 'nombre')->all()
+                    === ['AXEL' => 'apple', 'MARCELO RPR' => 'android'])
+                ->has('marcas', 3)
+                ->has('revision', 12));
     }
 
     public function test_vendedor_exporta_su_pdf_con_los_parametros_que_manda_su_pantalla(): void

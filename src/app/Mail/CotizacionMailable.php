@@ -22,10 +22,7 @@ class CotizacionMailable extends Mailable
     public function build()
     {
         // Generar PDF adjunto
-        $pdf = Pdf::loadView('pdf.cotizacion', [
-            'cotizacion' => $this->cotizacion,
-            'logo_path' => public_path('images/logo-appleboss1.png'), // solo si el PDF lo necesita
-        ]);
+        $pdf = Pdf::loadView('pdf.cotizacion', ['cotizacion' => $this->cotizacion]);
 
         return $this->subject('Cotización N.º COT-' . $this->cotizacion->id . ' | Apple Boss')
                     ->from('apple.boss2011@gmail.com', 'Apple Boss')

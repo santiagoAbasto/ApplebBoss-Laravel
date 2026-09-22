@@ -3,7 +3,8 @@
 <style>
   @page { margin: 34px 40px 58px; }
 
-  body { font-family: Helvetica, Arial, sans-serif; font-size: 9.5px; line-height: 1.4; color: #0d0d0d; }
+  /* El fondo va explícito: sin él la hoja queda transparente y algunos visores la muestran oscura */
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 9.5px; line-height: 1.4; color: #0d0d0d; background: #fff; }
   table { width: 100%; border-collapse: collapse; }
   td, th { vertical-align: top; padding: 0; text-align: left; font-weight: normal; }
   p { margin: 0; }

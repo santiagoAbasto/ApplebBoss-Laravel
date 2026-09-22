@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
+
 /**
  * Texto con formato que escribe una persona en el panel (títulos, negrita, listas, enlaces).
  *
@@ -52,7 +54,16 @@ class TextoEnriquecido
             return '';
         }
 
-        return self::tieneFormato($texto) ? (string) self::limpiar($texto) : self::estructurar($texto);
+        if (self::tieneFormato($texto)) {
+            return (string) self::limpiar($texto);
+        }
+
+        // Notas escritas en Markdown (así se guardaban las cotizaciones antes del editor)
+        if (preg_match('/\*\*.+?\*\*|^\s*[-*+]\s+\S|^\s*#{1,6}\s+\S/mu', $texto)) {
+            return (string) self::limpiar(Str::markdown($texto, ['html_input' => 'strip', 'allow_unsafe_links' => false]));
+        }
+
+        return self::estructurar($texto);
     }
 
     public static function aTexto(?string $texto): string

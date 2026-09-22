@@ -1,256 +1,174 @@
+@php
+  use App\Models\ServicioTecnico;
+  use App\Support\DatosDeLaTienda;
+  use App\Support\IconoPdf;
+  use App\Support\MontoEnLetras;
+  use App\Support\RecepcionDeEquipo;
+  use App\Support\TextoEnriquecido;
+
+  $tienda   = DatosDeLaTienda::paraPdf();
+  // Cómo entró el equipo: la revisión y el código de desbloqueo que se anotaron en el mostrador
+  $revision   = $servicio->recepcion['revision'] ?? [];
+  $desbloqueo = RecepcionDeEquipo::textoDesbloqueo($servicio->recepcion['desbloqueo'] ?? null);
+  $marca      = ServicioTecnico::MARCAS[$servicio->marca] ?? null;
+  $bs       = fn ($n) => 'Bs ' . number_format((float) $n, 2);
+  $fecha    = $servicio->fecha ?? $servicio->created_at;
+  $fecha    = $fecha ? $fecha->timezone(config('app.timezone')) : null;
+  $hora     = optional($servicio->created_at)->timezone(config('app.timezone'))?->format('H:i');
+  // Lo que paga el cliente por cada trabajo. El costo interno nunca sale en este documento.
+  $trabajos = collect($servicios_cliente)->map(fn ($t) => ['descripcion' => $t['descripcion'] ?? '', 'precio' => (float) ($t['precio'] ?? 0)])
+      ->filter(fn ($t) => $t['descripcion'] !== '')->values();
+  $notas    = TextoEnriquecido::aHtml($servicio->notas_adicionales);
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
-
-  <style>
-    @page {
-      margin: 30px 28px;
-    }
-
-    body {
-      font-family: 'DejaVu Sans', sans-serif;
-      font-size: 10.5px;
-      color: #1e1e1e;
-    }
-
-    /* ================= HEADER ================= */
-    .header-wrap {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #003366;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
-      position: relative;
-    }
-
-    .brand img {
-      width: 130px;
-    }
-
-    .empresa-legal {
-      font-size: 9.3px;
-      color: #334155;
-      margin-top: 4px;
-      line-height: 1.4;
-    }
-
-    .company-name {
-      position: absolute;
-      top: 32px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 1px;
-      color: #003366;
-    }
-
-    .venta-info {
-      text-align: right;
-      font-size: 10px;
-      color: #334155;
-      line-height: 1.5;
-    }
-
-    /* ================= SECTIONS ================= */
-    .section-title {
-      font-size: 12px;
-      font-weight: bold;
-      color: #003366;
-      margin-top: 18px;
-      margin-bottom: 6px;
-      border-bottom: 1px solid #003366;
-      padding-bottom: 4px;
-    }
-
-    .info {
-      padding: 6px 0;
-    }
-
-    .info p {
-      margin: 3px 0;
-      font-size: 10.5px;
-    }
-
-    /* ================= TABLES ================= */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 10px;
-    }
-
-    thead th {
-      background: #e9f0fa;
-      color: #003366;
-      padding: 7px 6px;
-      border: 1px solid #cbd5e1;
-      text-align: left;
-      font-weight: bold;
-    }
-
-    tbody td {
-      padding: 7px 6px;
-      border: 1px solid #cbd5e1;
-      vertical-align: top;
-    }
-
-    tbody tr:nth-child(even) {
-      background-color: #f8fafc;
-    }
-
-    .precio-servicio {
-      font-size: 9.5px;
-      color: #475569;
-      margin-top: 3px;
-      display: inline-block;
-    }
-
-    /* ================= TOTAL ================= */
-    .total-final {
-      margin-top: 14px;
-      padding-top: 6px;
-      border-top: 1px dashed #94a3b8;
-      text-align: right;
-      font-size: 12px;
-      font-weight: bold;
-      color: #003366;
-    }
-
-    /* ================= FIRMAS ================= */
-    .firmas {
-      margin-top: 48px;
-      width: 100%;
-      text-align: center;
-    }
-
-    .firmas td {
-      width: 50%;
-      height: 95px;
-      vertical-align: bottom;
-    }
-
-    .firmas img {
-      width: 150px;
-      opacity: 0.95;
-    }
-
-    .firma-label {
-      font-size: 9.5px;
-      color: #334155;
-      margin-top: 4px;
-    }
-
-    /* ================= FOOTER ================= */
-    .footer {
-      margin-top: 22px;
-      text-align: center;
-      font-size: 9.5px;
-      color: #475569;
-      line-height: 1.4;
-    }
-
-    .whatsapp {
-      margin-top: 4px;
-      font-size: 10.5px;
-      font-weight: bold;
-      color: #065f46;
-    }
-  </style>
+  <title>Boleta de servicio técnico {{ $servicio->codigo_nota }}</title>
+  @include('pdf.partials.estilos')
 </head>
 
 <body>
+  @include('pdf.partials.membrete', ['tipo' => 'SERVICIO TÉCNICO', 'codigo' => $servicio->codigo_nota,
+      'cuando' => $fecha?->format('d/m/Y') . ($hora ? ' &nbsp; ' . $hora : '') . ' &nbsp;|&nbsp; Servicio n.º ' . $servicio->id])
 
-  <!-- HEADER -->
-  <div class="header-wrap">
-
-    <!-- IZQUIERDA -->
-    <div>
-      <div class="brand">
-        <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">
-      </div>
-      <div class="empresa-legal">
-        <strong>NIT:</strong> 12555473014<br>
-        <strong>Contribuyente:</strong> Empresa Unipersonal
-      </div>
-    </div>
-
-    <!-- CENTRO -->
-    <div class="company-name">APPLE BOSS</div>
-
-    <!-- DERECHA -->
-    <div class="venta-info">
-      <p><strong>BOLETA DE SERVICIO TÉCNICO</strong></p>
-      <p>Fecha: {{ optional($servicio->created_at)->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
-      <p>Código Nota: {{ $servicio->codigo_nota }}</p>
-    </div>
-
-  </div>
-
-  <!-- CLIENTE -->
-  <div class="section-title">Datos del Cliente</div>
-  <div class="info">
-    <p><strong>Cliente:</strong> {{ $servicio->cliente }}</p>
-    <p><strong>Teléfono:</strong> {{ $servicio->telefono ?? '—' }}</p>
-  </div>
-
-  <!-- DETALLE DEL SERVICIO -->
-  <div class="section-title">Detalle del Servicio</div>
-  <table>
-    <thead>
-      <tr>
-        <th style="width:25%">Equipo</th>
-        <th style="width:45%">Servicio realizado</th>
-        <th style="width:30%">Registrado por</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach ($servicios_cliente as $item)
-      <tr>
-        <td>{{ $servicio->equipo }}</td>
-        <td>
-          {{ $item['descripcion'] }}<br>
-          <span class="precio-servicio">
-            Precio del servicio: Bs {{ number_format($item['precio'], 2) }}
-          </span>
-        </td>
-        <td>{{ $servicio->vendedor->name ?? '—' }}</td>
-      </tr>
+  {{-- Datos del servicio --}}
+  <table class="tarjetas">
+    <tr>
+      @foreach ([
+        ['cliente', 'Cliente', $servicio->cliente, $servicio->telefono],
+        ['herramienta', 'Técnico', $servicio->tecnico ?: '---', null],
+        ['vendedor', 'Registrado por', $servicio->vendedor->name ?? '---', null],
+      ] as $n => [$ic, $rotulo, $valor, $extra])
+      @if ($n) <td class="hueco-col"></td> @endif
+      <td style="width: {{ $n === 0 ? '40%' : '28%' }};">
+        <div class="tarjeta">
+        <table>
+          <tr>
+            <td style="width: 30px;"><div class="bola"><img src="{{ IconoPdf::uri($ic, '#0d0d0d') }}" alt=""></div></td>
+            <td>
+              <div class="rotulo">{{ $rotulo }}</div>
+              <div class="valor">{{ $valor }}</div>
+              <div style="min-height: 12px;">{{ $extra }}</div>
+            </td>
+          </tr>
+        </table>
+        </div>
+      </td>
       @endforeach
-    </tbody>
+    </tr>
   </table>
 
-  <!-- TOTAL -->
-  <div class="total-final">
-    Total a pagar por el cliente: Bs {{ number_format($servicio->precio_venta, 2) }}
+  {{-- El equipo y lo que se le hizo --}}
+  <div class="pildora">EQUIPO Y TRABAJOS REALIZADOS</div>
+  <div class="ficha-producto">
+    <table>
+      <tr>
+        <td style="width: 46px;"><div class="cuadro"><img src="{{ IconoPdf::uri('herramienta', '#0d0d0d') }}" alt=""></div></td>
+        <td style="vertical-align: middle;">
+          <div class="producto">{{ $servicio->equipo }}</div>
+          @if ($marca)<div class="gris" style="font-size: 8.8px;">{{ $marca }}</div>@endif
+        </td>
+        <td class="importe">{{ $bs($servicio->precio_venta) }}<div class="detalle">{{ $trabajos->count() }} {{ $trabajos->count() === 1 ? 'trabajo' : 'trabajos' }}</div></td>
+      </tr>
+    </table>
+
+    <table class="cobertura" style="margin-top: 9px;">
+      <thead>
+      <tr>
+        <th>Trabajo realizado</th>
+        <th class="der" style="width: 110px;">Importe</th>
+      </tr>
+      </thead>
+      @forelse ($trabajos as $trabajo)
+      <tr class="{{ $loop->last ? 'ultima' : '' }}">
+        <td>{{ $trabajo['descripcion'] }}</td>
+        <td class="der nowrap"><b>{{ $bs($trabajo['precio']) }}</b></td>
+      </tr>
+      @empty
+      <tr class="ultima">
+        <td colspan="2" class="gris">{{ TextoEnriquecido::aTexto($servicio->detalle_servicio) ?: 'Sin detalle cargado.' }}</td>
+      </tr>
+      @endforelse
+    </table>
   </div>
 
-  <!-- FIRMAS -->
-  <table class="firmas">
+  {{-- Cómo entró el equipo: lo que se revisó delante del cliente y el código de desbloqueo --}}
+  @if ($revision || $desbloqueo)
+  <div class="pildora"><img class="ico" src="{{ IconoPdf::uri('revision', '#c8f902') }}" alt="">CÓMO ENTRÓ EL EQUIPO</div>
+
+  @if ($desbloqueo)
+  <div class="banda lima" style="margin-bottom: 8px;">
+    <img class="ico" src="{{ IconoPdf::uri('llave', '#0d0d0d') }}" alt=""><b>Desbloqueo:</b> {{ $desbloqueo }}
+  </div>
+  @endif
+
+  @if ($revision)
+  @php $mitad = (int) ceil(count($revision) / 2); @endphp
+  <table>
     <tr>
-      <td>
-        <img src="{{ public_path('images/firma.png') }}"><br>
-        <div class="firma-label">Firma autorizada – Apple Boss</div>
+      @foreach (array_chunk($revision, max($mitad, 1)) as $n => $grupo)
+      <td class="columna" style="padding-{{ $n ? 'left' : 'right' }}: 8px;">
+        <table class="cobertura">
+          @foreach ($grupo as $punto)
+          <tr class="{{ $loop->last ? 'ultima' : '' }}">
+            <td>{{ $punto['etiqueta'] }}</td>
+            <td class="der nowrap" style="width: 86px;">
+              @if ($punto['estado'] === 'nc')
+              <span class="gris">No probado</span>
+              @else
+              <b>{{ RecepcionDeEquipo::ETIQUETAS_ESTADO[$punto['estado']] ?? $punto['estado'] }}</b>
+              @endif
+            </td>
+          </tr>
+          @endforeach
+        </table>
       </td>
-      <td>
-        <div class="firma-label">
-          Firma del Cliente<br>
-          Conforme con la recepción del equipo
+      @endforeach
+      @if (count($revision) <= 1) <td class="columna"></td> @endif
+    </tr>
+  </table>
+  <p class="gris" style="margin-top: 6px; font-size: 8.6px;">Se revisó con el cliente presente al recibir el equipo.</p>
+  @endif
+  @endif
+
+  {{-- Total --}}
+  <table class="cierre">
+    <tr>
+      <td class="letras">
+        <div class="gris">Son</div>
+        <div><b>{{ MontoEnLetras::bolivianos($servicio->precio_venta) }}</b></div>
+        <div class="gris" style="margin-top: 5px;">Documento interno sin valor fiscal.</div>
+      </td>
+      <td class="totales">
+        <div class="total">
+          <table>
+            <tr>
+              <td>TOTAL DEL SERVICIO</td>
+              <td class="monto">{{ $bs($servicio->precio_venta) }}</td>
+            </tr>
+          </table>
         </div>
       </td>
     </tr>
   </table>
 
-  <!-- FOOTER -->
-  <div class="footer">
-    Av. Melchor Urquidi entre Calle Fidel Anze y Av. Julio Rodríguez<br>
-    Cochabamba – Bolivia
-    <div class="whatsapp">WhatsApp: +591 75 90 4313</div>
-  </div>
+  @if ($notas !== '')
+  <div class="pildora">NOTAS DEL SERVICIO</div>
+  <div class="texto">{!! $notas !!}</div>
+  @endif
 
+  <table class="firmas">
+    <tr>
+      <td class="trazo"><img src="{{ public_path('images/firma.png') }}" alt=""></td>
+      <td class="trazo"></td>
+    </tr>
+    <tr>
+      <td><div class="raya">{{ $tienda['nombre'] }}</div><div class="gris">Firma autorizada</div></td>
+      <td><div class="raya">{{ $servicio->cliente }}</div><div class="gris">Recibí conforme el equipo</div></td>
+    </tr>
+  </table>
 </body>
+
 </html>

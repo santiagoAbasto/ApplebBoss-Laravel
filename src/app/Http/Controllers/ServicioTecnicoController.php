@@ -11,7 +11,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use App\Services\GeneradorCodigos;
 use App\Models\Cliente;
+use App\Models\Tecnico;
+use App\Support\RecepcionDeEquipo;
 use App\Support\SinCostos;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 
 class ServicioTecnicoController extends Controller
@@ -112,8 +116,45 @@ class ServicioTecnicoController extends Controller
     {
         return Inertia::render(
             Auth::user()->rol === 'admin' ? 'Admin/Servicios/Create' : 'Vendedor/Servicios/Create',
-            ['tecnicos' => $this->tecnicosConocidos()]
+            [
+                // Quién puede recibir el equipo sale de la marca: por eso van con su especialidad
+                'tecnicos' => Tecnico::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'especialidad']),
+                'marcas'   => collect(ServicioTecnico::MARCAS)->map(fn ($label, $value) => compact('value', 'label'))->values(),
+                'especialidades' => collect(Tecnico::ESPECIALIDADES)->map(fn ($label, $value) => compact('value', 'label'))->values(),
+                'revision' => RecepcionDeEquipo::PUNTOS,
+            ]
         );
+    }
+
+    /**
+     * Alta de un técnico desde el propio formulario: nombre y qué equipos atiende. No se le registra ningún pago:
+     * el catálogo existe para saber a quién se le puede entregar cada marca.
+     */
+    public function guardarTecnico(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'       => ['required', 'string', 'max:120'],
+            'especialidad' => ['required', Rule::in(array_keys(Tecnico::ESPECIALIDADES))],
+        ]);
+
+        Tecnico::updateOrCreate(
+            ['nombre' => trim($data['nombre'])],
+            ['especialidad' => $data['especialidad'], 'activo' => true]
+        );
+
+        return back()->with('success', 'Técnico guardado.');
+    }
+
+    /** Cambiar qué equipos atiende un técnico (solo el administrador). */
+    public function actualizarTecnico(Request $request, Tecnico $tecnico)
+    {
+        abort_if(SinCostos::aplica(Auth::user()), 403, 'Solo el administrador cambia la especialidad de un técnico.');
+
+        $tecnico->update($request->validate([
+            'especialidad' => ['required', Rule::in(array_keys(Tecnico::ESPECIALIDADES))],
+        ]));
+
+        return back()->with('success', 'Técnico actualizado.');
     }
 
     /* ======================================================
@@ -121,19 +162,30 @@ class ServicioTecnicoController extends Controller
      * ====================================================== */
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $data = $request->validate(RecepcionDeEquipo::reglas() + [
             'cliente'           => 'required|string|max:255',
             'telefono'          => 'nullable|string|max:50',
             'equipo'            => 'required|string|max:255',
+            'marca'             => ['required', Rule::in(array_keys(ServicioTecnico::MARCAS))],
             'detalle_servicio'  => 'required|string',
             'notas_adicionales' => 'nullable|string',
             // El costo solo lo carga el administrador: al vendedor se le ignora aunque lo mande
             'precio_costo'      => 'nullable|numeric|min:0',
             'precio_venta'      => 'required|numeric|min:0',
-            'tecnico'           => 'required|string|max:120',
+            'tecnico_id'        => 'required|integer|exists:tecnicos,id',
             'fecha'             => 'nullable|date',
         ]);
 
+        $tecnico = Tecnico::findOrFail($data['tecnico_id']);
+
+        // La regla del taller, aplicada también en el servidor y no solo en el desplegable
+        if (! $tecnico->atiende($data['marca'])) {
+            throw ValidationException::withMessages([
+                'tecnico_id' => $tecnico->nombre . ' no atiende esa marca.',
+            ]);
+        }
+
+        $data['tecnico'] = $tecnico->nombre;
         $esAdmin = ! SinCostos::aplica(Auth::user());
         $montos = $this->montosDelServicio($data, $esAdmin);
 
@@ -158,6 +210,8 @@ class ServicioTecnicoController extends Controller
                     'cliente'           => $cliente->nombre,
                     'telefono'          => $cliente->telefono,
                     'equipo'            => $data['equipo'],
+                    'marca'             => $data['marca'],
+                    'recepcion'         => RecepcionDeEquipo::normalizar($data['recepcion'] ?? null),
                     'detalle_servicio'  => $montos['detalle'],
                     'notas_adicionales' => $data['notas_adicionales'] ?? null,
                     'precio_costo'      => $montos['costo'],

@@ -177,7 +177,8 @@ class IndicadoresRendimientoTest extends TestCase
                 'cliente' => 'Cliente Benchmark ' . $i,
                 'telefono' => '70000000',
                 'equipo' => 'iPhone 13',
-                'tecnico' => 'AXEL',
+                'marca' => \App\Models\ServicioTecnico::MARCA_APPLE,
+                'tecnico_id' => \App\Models\Tecnico::firstOrCreate(['nombre' => 'AXEL'], ['especialidad' => 'ambas'])->id,
                 'fecha' => now()->toDateString(),
                 'detalle_servicio' => json_encode([
                     ['descripcion' => 'Pantalla', 'costo' => 200, 'precio' => 350],
