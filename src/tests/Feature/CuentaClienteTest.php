@@ -117,6 +117,38 @@ class CuentaClienteTest extends TestCase
             ->assertInertia(fn ($page) => $page->component('Store/Cuenta/Entrar'));
     }
 
+    /**
+     * Al entrar, la app se reconstruye entera.
+     *
+     * La lista de rutas de Ziggy se imprime en el HTML una sola vez, y al invitado se le da
+     * una recortada (sin admin.* ni vendedor.*). Si Inertia solo cambiara el componente, esa
+     * lista quedaría congelada en la de invitado y el panel reventaría con
+     * «route 'admin.ventas.create' is not in the route list» hasta que recargaras a mano.
+     */
+    public function test_al_entrar_se_recarga_la_app_y_no_queda_la_lista_de_rutas_vieja(): void
+    {
+        foreach (['admin', 'vendedor', 'cliente'] as $rol) {
+            User::factory()->create(['rol' => $rol, 'email' => "{$rol}@gmail.com"]);
+
+            $r = $this->withHeader('X-Inertia', 'true')
+                ->post('/login', ['email' => "{$rol}@gmail.com", 'password' => 'password']);
+
+            $r->assertStatus(409);
+            $this->assertNotEmpty($r->headers->get('X-Inertia-Location'),
+                "al entrar como {$rol} tiene que recargarse la aplicación entera");
+
+            $this->post('/logout');
+        }
+    }
+
+    public function test_al_salir_tambien_se_recarga(): void
+    {
+        $this->actingAs(User::factory()->create(['rol' => 'admin']));
+
+        // Si no, la lista completa de rutas del panel quedaría en memoria del navegador
+        $this->withHeader('X-Inertia', 'true')->post('/logout')->assertStatus(409);
+    }
+
     public function test_el_cliente_que_entra_por_la_tienda_va_a_su_cuenta(): void
     {
         $cliente = User::factory()->create(['rol' => 'cliente', 'email' => 'ana@gmail.com']);

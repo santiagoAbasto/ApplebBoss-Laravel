@@ -6,6 +6,8 @@ namespace App\Support\Pagos;
 class MetodosDePago
 {
     public const QR_BNB           = 'qr_bnb';
+    public const LIBELULA         = 'libelula';
+    public const BINANCE_PAY      = 'binance_pay';
     public const TRANSFERENCIA    = 'transferencia';
     public const EFECTIVO_TIENDA  = 'efectivo_tienda';
 
@@ -19,6 +21,24 @@ class MetodosDePago
                 'valor'    => self::QR_BNB,
                 'etiqueta' => 'QR del Banco Nacional de Bolivia',
                 'detalle'  => 'Escaneas el QR con tu app del banco y la confirmación es automática.',
+                'automatico' => true,
+            ];
+        }
+
+        if (Libelula::disponible()) {
+            $metodos[] = [
+                'valor'    => self::LIBELULA,
+                'etiqueta' => 'Tarjeta, QR o Tigo Money',
+                'detalle'  => 'Pagas en la pasarela de Libélula y la confirmación es automática.',
+                'automatico' => true,
+            ];
+        }
+
+        if (BinancePay::disponible()) {
+            $metodos[] = [
+                'valor'    => self::BINANCE_PAY,
+                'etiqueta' => 'Binance Pay (USDT)',
+                'detalle'  => 'Pagas con cripto desde tu app de Binance. La confirmación es automática.',
                 'automatico' => true,
             ];
         }

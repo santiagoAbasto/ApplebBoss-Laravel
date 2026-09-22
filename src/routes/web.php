@@ -121,6 +121,10 @@ Route::controller(\App\Http\Controllers\CheckoutController::class)->group(functi
     Route::get('/pedido/{codigo}/pago', 'pago')->name('checkout.pago')->middleware('throttle:60,1');
     Route::post('/pedido/{codigo}/pago/reportar', 'reportarPago')->name('checkout.reportar')->middleware('throttle:10,1');
     Route::get('/pedido/{codigo}/estado', 'estado')->name('checkout.estado')->middleware('throttle:120,1');
+    // Aviso de Libélula. No confirma por sí solo: dispara la consulta contra la pasarela.
+    Route::get('/pedido/{codigo}/libelula/aviso', 'avisoLibelula')->name('pago.libelula.aviso')->middleware('throttle:60,1');
+    // Webhook de Binance Pay. Tampoco confirma solo: dispara la consulta contra Binance.
+    Route::post('/pedido/{codigo}/binance/aviso', 'avisoBinance')->name('pago.binance.aviso')->middleware('throttle:60,1');
 });
 
 /*

@@ -7,6 +7,8 @@ use App\Support\Checkout\ConfirmadorDePago;
 use App\Support\Checkout\CreadorDePedido;
 use App\Support\Checkout\Entrega;
 use App\Support\Pagos\MetodosDePago;
+use App\Support\Pagos\BinancePay;
+use App\Support\Pagos\Libelula;
 use App\Support\Pagos\PasarelaBnb;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -88,10 +90,33 @@ class CheckoutController extends Controller
         ]);
     }
 
-    /** Pantalla de pago: QR del banco o datos para transferir. */
-    public function pago(Request $request, string $codigo): Response
+    /** Pantalla de pago: pasarela de Libélula, QR del banco o datos para transferir. */
+    public function pago(Request $request, string $codigo): Response|RedirectResponse
     {
         $pedido = $this->pedidoDelCliente($request, $codigo);
+
+        // Libélula cobra en su propia pantalla: se registra la deuda y se manda al cliente allá.
+        // El id de la transacción se guarda para poder reconciliar después contra la pasarela.
+        if ($pedido->metodo_pago === MetodosDePago::LIBELULA && ! $pedido->pagoConfirmado() && Libelula::disponible()) {
+            $deuda = Libelula::registrarDeuda($pedido);
+
+            if ($deuda) {
+                $pedido->forceFill(['pago_referencia' => $deuda['id_transaccion']])->save();
+
+                return redirect()->away($deuda['url']);
+            }
+        }
+
+        // Binance Pay cobra en su propia pantalla, igual que Libélula
+        if ($pedido->metodo_pago === MetodosDePago::BINANCE_PAY && ! $pedido->pagoConfirmado() && BinancePay::disponible()) {
+            $orden = BinancePay::crearOrden($pedido);
+
+            if ($orden) {
+                $pedido->forceFill(['pago_referencia' => $orden['prepay_id']])->save();
+
+                return redirect()->away($orden['url']);
+            }
+        }
 
         $qr = null;
         if ($pedido->metodo_pago === MetodosDePago::QR_BNB && ! $pedido->pagoConfirmado() && PasarelaBnb::disponible()) {
@@ -160,6 +185,56 @@ class CheckoutController extends Controller
      * Busca el pedido y comprueba que quien pregunta es su dueño.
      * Sin el token (o el correo correcto) no se abre: los pedidos son privados.
      */
+    /**
+     * El aviso de pago de Libélula.
+     *
+     * Libélula avisa con un GET sin firma ni secreto (manual v2.145, pág. 15), y el cliente
+     * ve ese identificador en su navegador. Así que acá NO se confirma nada por recibir el
+     * aviso: se le vuelve a preguntar a Libélula si ese pago existe y por cuánto. El token
+     * del pedido en la URL es solo para saber de qué pedido hablamos, no es la prueba.
+     */
+    public function avisoLibelula(Request $request, string $codigo): RedirectResponse
+    {
+        $pedido = $this->pedidoDelCliente($request, $codigo);
+
+        $idTransaccion = (string) $request->query('transaction_id', $pedido->pago_referencia);
+
+        if ($pedido->pagoConfirmado()) {
+            return redirect()->route('seguimiento.ver', ['codigo' => $pedido->codigo, 't' => $pedido->token_seguimiento]);
+        }
+
+        // La única fuente de verdad: preguntarle a Libélula con el appkey del servidor
+        if (Libelula::confirmoElPago($idTransaccion, (float) $pedido->total)) {
+            ConfirmadorDePago::confirmar($pedido, $idTransaccion, null, MetodosDePago::LIBELULA);
+
+            return redirect()->route('seguimiento.ver', ['codigo' => $pedido->codigo, 't' => $pedido->token_seguimiento]);
+        }
+
+        // Todavía no figura pagado: puede tardar horas si pagó por banco o PagosNet
+        return redirect()->route('checkout.pago', ['codigo' => $pedido->codigo, 't' => $pedido->token_seguimiento])
+            ->with('error', 'Todavía no vemos tu pago acreditado. Si ya pagaste, dale unos minutos y vuelve a esta página.');
+    }
+
+    /**
+     * El webhook de Binance Pay.
+     *
+     * Binance sí firma su webhook, a diferencia de Libélula. Aun así se trata como un
+     * aviso: lo único que confirma el pedido es preguntarle a Binance por el estado de
+     * la orden. Si la verificación de la firma tuviera un error sutil, nadie podría
+     * llevarse un equipo gratis por eso.
+     */
+    public function avisoBinance(Request $request, string $codigo): JsonResponse
+    {
+        $pedido = $this->pedidoDelCliente($request, $codigo);
+
+        if (! $pedido->pagoConfirmado() && BinancePay::confirmoElPago($pedido)) {
+            ConfirmadorDePago::confirmar($pedido, $pedido->pago_referencia, null, MetodosDePago::BINANCE_PAY);
+        }
+
+        // Binance espera este acuse; si no lo recibe, reintenta
+        return response()->json(['returnCode' => 'SUCCESS', 'returnMessage' => null]);
+    }
+
     private function pedidoDelCliente(Request $request, string $codigo): Pedido
     {
         $pedido = Pedido::with(['items', 'eventos'])->where('codigo', $codigo)->firstOrFail();

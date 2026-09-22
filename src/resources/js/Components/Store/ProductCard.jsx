@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Plus, GitCompare } from '@/Components/Store/Icons';
 import ProductVisual from './ProductVisual';
 import { useCompare } from './CompareContext';
+import { useUsdt } from '@/Layouts/StoreLayout';
 
 const money = (value) =>
     new Intl.NumberFormat('es-BO', {
@@ -32,6 +33,7 @@ function ConditionBadge({ condition }) {
 }
 
 export default function ProductCard({ product, onAdd, priority = false }) {
+    const enUsdt = useUsdt();
     const isMyskin = product.is_myskin ?? false;
     const { inCompare, toggle, items, max } = useCompare();
     const compared = inCompare(product.slug);
@@ -105,22 +107,34 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                             </p>
                         )}
 
+                        {/* El precio va en Bs con su equivalente en USDT al dólar paralelo */}
                         {product.promo_price ? (
-                            <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-                                <span className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
-                                    {money(product.promo_price)}
-                                </span>
-                                <span className="text-[11px] font-semibold tabular-nums line-through" style={{ color: 'var(--text-muted)' }}>
-                                    {money(product.price)}
-                                </span>
-                            </p>
+                            <div className="mt-2">
+                                <p className="flex flex-wrap items-baseline gap-x-2">
+                                    <span className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
+                                        {money(product.promo_price)}
+                                    </span>
+                                    <span className="text-[11px] font-semibold tabular-nums line-through" style={{ color: 'var(--text-muted)' }}>
+                                        {money(product.price)}
+                                    </span>
+                                </p>
+                                {enUsdt(product.promo_price) && (
+                                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                        ≈ {enUsdt(product.promo_price)}
+                                    </p>
+                                )}
+                            </div>
                         ) : (
-                            <p
-                                className="mt-2 text-base font-black tabular-nums"
-                                style={{ color: 'var(--ab-navy)' }}
-                            >
-                                {money(product.price)}
-                            </p>
+                            <div className="mt-2">
+                                <p className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
+                                    {money(product.price)}
+                                </p>
+                                {enUsdt(product.price) && (
+                                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                                        ≈ {enUsdt(product.price)}
+                                    </p>
+                                )}
+                            </div>
                         )}
                     </div>
 

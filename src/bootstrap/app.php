@@ -46,7 +46,14 @@ return Application::configure(basePath: dirname(__DIR__))
             : route('login'));
 
         // Baja en un clic (List-Unsubscribe-Post) llega desde clientes de correo, sin sesión ni CSRF
-        $middleware->validateCsrfTokens(except: ['newsletter/baja/*']);
+        // Sin CSRF: llegan de afuera, sin sesión ni token.
+        //  · la baja en un clic del newsletter, desde el cliente de correo
+        //  · el webhook de Binance Pay — protegido por el token del pedido en la URL,
+        //    y de todos modos no confirma nada por sí solo (se consulta a Binance)
+        $middleware->validateCsrfTokens(except: [
+            'newsletter/baja/*',
+            'pedido/*/binance/aviso',
+        ]);
 
         // Middlewares WEB
         $middleware->web(append: [

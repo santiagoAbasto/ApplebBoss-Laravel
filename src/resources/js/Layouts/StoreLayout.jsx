@@ -23,6 +23,39 @@ export const money = (value) =>
         maximumFractionDigits: 0,
     }).format(value);
 
+/**
+ * El mismo precio en USDT, al dólar paralelo.
+ *
+ * La tasa la manda el servidor (`tipoCambio`, de dolarbluebolivia.click). Si no se pudo
+ * saber, devuelve null y la tienda muestra solo bolivianos: nunca una conversión inventada.
+ */
+export function useUsdt() {
+    const { tipoCambio } = usePage().props;
+    const tasa = Number(tipoCambio?.bob_por_usdt) || 0;
+
+    return (bolivianos) => {
+        if (!tasa || !Number(bolivianos)) return null;
+
+        return `${(Number(bolivianos) / tasa).toLocaleString('en-US', { maximumFractionDigits: 2 })} USDT`;
+    };
+}
+
+/** El precio en bolivianos y, debajo, su equivalente en USDT. */
+export function Precio({ valor, className = '', claseUsdt = '' }) {
+    const enUsdt = useUsdt()(valor);
+
+    return (
+        <span className={className}>
+            {money(valor)}
+            {enUsdt && (
+                <span className={`block text-[11px] font-semibold tabular-nums opacity-60 ${claseUsdt}`}>
+                    ≈ {enUsdt}
+                </span>
+            )}
+        </span>
+    );
+}
+
 // ─── Container central 1224px ─────────────────────────────────────────────────
 // A 1366px: márgenes exactos de 71px cada lado (71+1224+71=1366)
 // En pantallas mayores el contenido permanece centrado en 1224px

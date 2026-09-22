@@ -71,6 +71,9 @@ class HandleInertiaRequests extends Middleware
                     ? \App\Models\Role::mapa()[$request->user()->rol] ?? ($request->user()->rol === 'admin' ? ['*'] : [])
                     : [],
             ],
+            // Para mostrar cada precio en Bs y en USDT. Null si no se pudo saber la tasa:
+            // en ese caso la tienda muestra solo bolivianos, nunca una conversión inventada.
+            'tipoCambio' => fn () => \App\Support\Pagos\TipoDeCambio::paraLaVista(),
             'tienda'  => fn () => static::publicStoreSettings(),
             'navMenu' => fn () => static::navMenuData(),
             // Contadores del menú del panel (solo para administradores): solicitudes de Trade-In sin responder

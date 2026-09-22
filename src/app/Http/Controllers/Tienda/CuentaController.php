@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Tienda;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +32,7 @@ class CuentaController extends Controller
         ]);
     }
 
-    public function registrar(Request $request): RedirectResponse
+    public function registrar(Request $request): SymfonyResponse
     {
         $datos = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s\-\'\.]+$/u'],
@@ -66,7 +66,9 @@ class CuentaController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('cuenta.index'));
+        // Recarga completa: acaba de nacer una sesión y la lista de rutas del navegador
+        // todavía es la de invitado (ver AuthenticatedSessionController::store).
+        return Inertia::location(redirect()->intended(route('cuenta.index'))->getTargetUrl());
     }
 
     /** «Mi cuenta»: los pedidos de esta persona, sin tener que buscar ningún código. */
