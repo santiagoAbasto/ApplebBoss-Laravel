@@ -142,9 +142,10 @@ class BinancePay
         }
 
         // 451: Binance no atiende a servidores en países donde no opera (EE. UU.). Se deja de
-        // intentar por 12 horas y el cobro pasa a manual con el Pay ID.
+        // intentar y el cobro pasa a manual con el Binance ID.
+        // ponytail: una semana fija; si el servidor se muda, limpiar la caché para volver a automático.
         if ($r->status() === 451) {
-            Cache::put(self::BLOQUEADO, true, now()->addHours(12));
+            Cache::put(self::BLOQUEADO, true, now()->addDays(7));
             Log::warning('Binance Pay rechazó al servidor por su ubicación (451). El cobro sigue en modo manual.');
 
             return null;
