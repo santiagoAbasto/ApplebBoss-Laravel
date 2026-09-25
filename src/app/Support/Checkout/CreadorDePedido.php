@@ -32,8 +32,17 @@ class CreadorDePedido
                 ]);
             }
 
-            $tipoEntrega = $datos['tipo_entrega'] === Entrega::ENVIO ? Entrega::ENVIO : Entrega::RETIRO;
-            $departamento = $tipoEntrega === Entrega::ENVIO ? ($datos['envio_departamento'] ?? null) : null;
+            $tipoEntrega = in_array($datos['tipo_entrega'] ?? null, [Entrega::ENVIO, Entrega::DELIVERY], true)
+                ? $datos['tipo_entrega'] : Entrega::RETIRO;
+            $aDomicilio = Entrega::aDomicilio($tipoEntrega);
+            $esDelivery = $tipoEntrega === Entrega::DELIVERY;
+
+            // El delivery es siempre dentro de Cochabamba; el envío, al departamento que eligió
+            $departamento = match ($tipoEntrega) {
+                Entrega::ENVIO    => $datos['envio_departamento'] ?? null,
+                Entrega::DELIVERY => config('envios.delivery.ciudad'),
+                default           => null,
+            };
 
             if ($tipoEntrega === Entrega::ENVIO && ! Entrega::seEnviaA($departamento)) {
                 throw ValidationException::withMessages([
@@ -56,11 +65,15 @@ class CreadorDePedido
                 'razon_social'       => $datos['razon_social'] ?? null,
                 'tipo_entrega'       => $tipoEntrega,
                 'envio_departamento' => $departamento,
-                'envio_ciudad'       => $tipoEntrega === Entrega::ENVIO ? ($datos['envio_ciudad'] ?? null) : null,
-                'envio_direccion'    => $tipoEntrega === Entrega::ENVIO ? ($datos['envio_direccion'] ?? null) : null,
-                'envio_referencia'   => $tipoEntrega === Entrega::ENVIO ? ($datos['envio_referencia'] ?? null) : null,
-                'envio_destinatario' => $tipoEntrega === Entrega::ENVIO ? ($datos['envio_destinatario'] ?? $datos['nombre_cliente']) : null,
-                'envio_telefono'     => $tipoEntrega === Entrega::ENVIO ? ($datos['envio_telefono'] ?? $datos['telefono_cliente']) : null,
+                'envio_ciudad'       => $esDelivery ? config('envios.delivery.ciudad') : ($aDomicilio ? ($datos['envio_ciudad'] ?? null) : null),
+                'envio_zona'         => $esDelivery ? ($datos['envio_zona'] ?? null) : null,
+                'envio_barrio'       => $esDelivery ? ($datos['envio_barrio'] ?? null) : null,
+                'envio_direccion'    => $aDomicilio ? ($datos['envio_direccion'] ?? null) : null,
+                'envio_referencia'   => $aDomicilio ? ($datos['envio_referencia'] ?? null) : null,
+                'envio_lat'          => $esDelivery ? ($datos['envio_lat'] ?? null) : null,
+                'envio_lng'          => $esDelivery ? ($datos['envio_lng'] ?? null) : null,
+                'envio_destinatario' => $aDomicilio ? ($datos['envio_destinatario'] ?? $datos['nombre_cliente']) : null,
+                'envio_telefono'     => $aDomicilio ? ($datos['envio_telefono'] ?? $datos['telefono_cliente']) : null,
                 'subtotal'           => $subtotal,
                 'costo_envio'        => $costoEnvio,
                 'total'              => $subtotal + $costoEnvio,

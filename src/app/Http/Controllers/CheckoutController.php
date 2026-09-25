@@ -55,21 +55,26 @@ class CheckoutController extends Controller
             'telefono_cliente'   => ['required', 'string', 'max:30', 'regex:/^\+?[\d\s\-().]{7,30}$/'],
             'documento'          => ['nullable', 'string', 'max:30'],
             'razon_social'       => ['nullable', 'string', 'max:150'],
-            'tipo_entrega'       => ['required', Rule::in([Entrega::RETIRO, Entrega::ENVIO])],
+            // Solo lo que se está ofreciendo: sin forma de cobrar a distancia no hay envío ni delivery
+            'tipo_entrega'       => ['required', Rule::in(Entrega::valores())],
             'envio_departamento' => ['nullable', 'string', 'max:40'],
             'envio_ciudad'       => ['nullable', 'string', 'max:80'],
+            'envio_zona'         => ['nullable', 'string', 'max:80'],
+            'envio_barrio'       => ['nullable', 'string', 'max:80'],
             'envio_direccion'    => ['nullable', 'string', 'max:200'],
             'envio_referencia'   => ['nullable', 'string', 'max:200'],
+            'envio_lat'          => ['nullable', 'numeric', 'between:-90,90', 'required_with:envio_lng'],
+            'envio_lng'          => ['nullable', 'numeric', 'between:-180,180', 'required_with:envio_lat'],
             'envio_destinatario' => ['nullable', 'string', 'max:120'],
             'envio_telefono'     => ['nullable', 'string', 'max:30'],
             'metodo_pago'        => ['required', Rule::in(MetodosDePago::valores())],
             'notas_cliente'      => ['nullable', 'string', 'max:500'],
         ]);
 
-        // «Pago al retirar» con envío a domicilio es imposible: el cliente nunca pasa por la tienda.
-        if ($datos['tipo_entrega'] === Entrega::ENVIO && $datos['metodo_pago'] === MetodosDePago::EFECTIVO_TIENDA) {
+        // «Pago al retirar» con algo que llega a una casa es imposible: el cliente nunca pasa por la tienda.
+        if (Entrega::aDomicilio($datos['tipo_entrega']) && $datos['metodo_pago'] === MetodosDePago::EFECTIVO_TIENDA) {
             throw ValidationException::withMessages([
-                'metodo_pago' => 'El pago al retirar solo vale si recoges el equipo en la tienda. Para un envío, elige otra forma de pago.',
+                'metodo_pago' => 'El pago al retirar solo vale si recoges el equipo en la tienda. Para un envío o un delivery, elige otra forma de pago.',
             ]);
         }
 
@@ -80,6 +85,22 @@ class CheckoutController extends Controller
                 'envio_ciudad'       => ['required', 'string', 'max:80'],
                 'envio_direccion'    => ['required', 'string', 'max:200'],
             ], [], ['envio_departamento' => 'departamento', 'envio_ciudad' => 'ciudad', 'envio_direccion' => 'dirección']);
+        }
+
+        // El delivery llega a una puerta de Cochabamba: sin zona, barrio y dirección el repartidor no la encuentra
+        if ($datos['tipo_entrega'] === Entrega::DELIVERY) {
+            $request->validate([
+                'envio_zona'      => ['required', 'string', 'max:80'],
+                'envio_barrio'    => ['required', 'string', 'max:80'],
+                'envio_direccion' => ['required', 'string', 'max:200'],
+            ], [], ['envio_zona' => 'zona', 'envio_barrio' => 'barrio', 'envio_direccion' => 'dirección']);
+
+            if (isset($datos['envio_lat'], $datos['envio_lng'])
+                && ! Entrega::dentroDelDelivery((float) $datos['envio_lat'], (float) $datos['envio_lng'])) {
+                throw ValidationException::withMessages([
+                    'envio_lat' => 'Ese punto del mapa queda fuera del área de delivery en Cochabamba. Para otra ciudad, elige «Envío al interior».',
+                ]);
+            }
         }
 
         $pedido = CreadorDePedido::crear($datos['claves'], $datos);
@@ -107,7 +128,9 @@ class CheckoutController extends Controller
             }
         }
 
-        // Binance Pay cobra en su propia pantalla, igual que Libélula
+        // Binance Pay: si la API atiende, cobra en su propia pantalla como Libélula. Si no (el
+        // servidor está donde Binance no opera), el cliente paga al Pay ID desde su app.
+        $binance = null;
         if ($pedido->metodo_pago === MetodosDePago::BINANCE_PAY && ! $pedido->pagoConfirmado() && BinancePay::disponible()) {
             $orden = BinancePay::crearOrden($pedido);
 
@@ -116,6 +139,8 @@ class CheckoutController extends Controller
 
                 return redirect()->away($orden['url']);
             }
+
+            $binance = BinancePay::datosManuales($pedido);
         }
 
         $qr = null;
@@ -132,6 +157,7 @@ class CheckoutController extends Controller
             'token'         => $pedido->token_seguimiento,
             'qr'            => $qr,
             'transferencia' => MetodosDePago::datosDeTransferencia(),
+            'binance'       => $binance,
             'metodo'        => $pedido->metodo_pago,
         ]);
     }

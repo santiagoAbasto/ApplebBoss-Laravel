@@ -23,11 +23,11 @@ class FaqSeeder extends Seeder
         ],
         [
             'question' => '¿Hacen envíos a otras ciudades?',
-            'answer'   => 'Enviamos a Cochabamba, La Paz, Santa Cruz, Oruro, Sucre, Potosí, Tarija, Beni y Pando. Al elegir tu departamento en el checkout ves el costo y el plazo exactos antes de confirmar: en Cochabamba el envío no tiene costo y llega en 1 día hábil. Si no te aparece la opción de envío, escríbenos por WhatsApp y lo coordinamos.',
+            'answer'   => 'Sí. Enviamos por courier a La Paz, Santa Cruz, Oruro, Sucre, Potosí, Tarija, Beni y Pando, sin costo y con código de seguimiento: llega en 2 a 5 días hábiles desde que confirmamos tu pago. En Cochabamba tenemos delivery propio, también sin costo, el mismo día en que confirmamos tu pago. Y si prefieres, lo retiras en nuestra tienda.',
         ],
         [
             'question' => '¿Qué métodos de pago aceptan?',
-            'answer'   => 'Las que veas en el checkout, con el total ya calculado. Puedes pagar al retirar en nuestra tienda de Cochabamba, o por transferencia o QR: en ese caso te mostramos los datos, subes tu comprobante y confirmamos el pedido cuando verificamos el pago. Nunca te pedimos datos de tarjeta por WhatsApp ni por correo.',
+            'answer'   => 'Las que veas en el checkout, con el total ya calculado. Puedes pagar al retirar en nuestra tienda de Cochabamba, con Binance Pay en USDT o por transferencia o QR: te mostramos los datos, pagas desde tu app, subes tu comprobante y confirmamos el pedido cuando verificamos el pago. Nunca te pedimos datos de tarjeta por WhatsApp ni por correo.',
         ],
         [
             'question' => '¿Cuánto tiempo me guardan el equipo?',

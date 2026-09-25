@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\Checkout\Entrega;
 use Illuminate\Support\Str;
 
 /**
@@ -93,7 +94,13 @@ class Pedido extends Model
 
     public function esEnvio(): bool
     {
-        return $this->tipo_entrega === 'envio';
+        return $this->tipo_entrega === Entrega::ENVIO;
+    }
+
+    /** Envío al interior o delivery en Cochabamba: hay dirección y pasa por «En camino». */
+    public function esADomicilio(): bool
+    {
+        return Entrega::aDomicilio($this->tipo_entrega);
     }
 
     public function pagoConfirmado(): bool
@@ -149,15 +156,20 @@ class Pedido extends Model
             'pago' => [
                 'metodo'         => $this->metodo_pago,
                 'referencia'     => $this->pago_referencia,
+                'monto_usdt'     => $this->pago_monto_usdt !== null ? (float) $this->pago_monto_usdt : null,
                 'tiene_comprobante' => filled($this->pago_comprobante),
                 'confirmado_en'  => $this->pago_confirmado_en?->toIso8601String(),
                 'confirmado_por' => $this->confirmadoPor?->name,
             ],
-            'envio' => $this->esEnvio() ? [
+            'envio' => $this->esADomicilio() ? [
                 'departamento' => $this->envio_departamento,
                 'ciudad'       => $this->envio_ciudad,
+                'zona'         => $this->envio_zona,
+                'barrio'       => $this->envio_barrio,
                 'direccion'    => $this->envio_direccion,
                 'referencia'   => $this->envio_referencia,
+                'lat'          => $this->envio_lat !== null ? (float) $this->envio_lat : null,
+                'lng'          => $this->envio_lng !== null ? (float) $this->envio_lng : null,
                 'destinatario' => $this->envio_destinatario,
                 'telefono'     => $this->envio_telefono,
                 'courier'      => $this->courier,
@@ -208,19 +220,23 @@ class Pedido extends Model
             'pago_confirmado' => $confirmado,
             'creado_en'     => $this->created_at?->toIso8601String(),
             'tipo_entrega'  => $this->tipo_entrega,
+            'plazo'         => Entrega::plazo((string) $this->tipo_entrega, $this->envio_departamento),
             'subtotal'      => (float) $this->subtotal,
             'costo_envio'   => (float) $this->costo_envio,
             'total'         => (float) $this->total,
             'moneda'        => $this->moneda,
             'metodo_pago'   => $this->metodo_pago,
+            'pago_monto_usdt' => $this->pago_monto_usdt !== null ? (float) $this->pago_monto_usdt : null,
             'cliente'       => [
                 'nombre'   => $this->nombre_cliente,
                 'telefono' => $this->telefono_cliente,
                 'email'    => $this->email_cliente,
             ],
-            'envio' => $this->esEnvio() ? [
+            'envio' => $this->esADomicilio() ? [
                 'departamento' => $this->envio_departamento,
                 'ciudad'       => $this->envio_ciudad,
+                'zona'         => $this->envio_zona,
+                'barrio'       => $this->envio_barrio,
                 'direccion'    => $this->envio_direccion,
                 'referencia'   => $this->envio_referencia,
                 'destinatario' => $this->envio_destinatario,

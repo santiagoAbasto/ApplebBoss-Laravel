@@ -104,7 +104,7 @@ export default function Index({ pedidos, filtros = {}, estados = [], conteos = {
                                             {p.codigo}
                                         </Link>
                                         <p className="text-xs text-slate-500">
-                                            {p.articulos} {p.articulos === 1 ? 'artículo' : 'artículos'} · {p.entrega === 'envio' ? 'Envío' : 'Retiro'}
+                                            {p.articulos} {p.articulos === 1 ? 'artículo' : 'artículos'} · {{ envio: 'Envío', delivery: 'Delivery' }[p.entrega] ?? 'Retiro'}
                                         </p>
                                     </td>
                                     <td className="px-4 py-3 text-slate-700">{p.cliente}</td>

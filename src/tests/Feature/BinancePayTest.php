@@ -170,4 +170,71 @@ class BinancePayTest extends TestCase
 
         $this->assertFalse($pedido->fresh()->pagoConfirmado());
     }
+
+    /* ─── Modo manual: cuando Binance no atiende al servidor ──────────────── */
+
+    public function test_si_binance_no_atiende_al_servidor_el_cliente_paga_al_pay_id(): void
+    {
+        config(['pagos.binance.pay_id' => '123456789']);
+        // Así contesta Binance a un servidor en EE. UU.
+        $this->fingir(['*binancepay*' => Http::response(['code' => 0, 'msg' => 'Service unavailable from a restricted location'], 451)]);
+
+        $pedido = $this->pedido();
+
+        $this->get("/pedido/{$pedido->codigo}/pago?t={$pedido->token_seguimiento}")
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('Store/Pago')
+                ->where('binance.pay_id', '123456789')
+                ->where('binance.monto_usdt', 500)
+                ->where('binance.moneda', 'USDT'));
+
+        $this->assertFalse(BinancePay::automatico(), 'después del 451 no se sigue golpeando la API');
+        $this->assertSame(500.0, (float) $pedido->fresh()->pago_monto_usdt);
+    }
+
+    public function test_con_la_api_bloqueada_y_sin_pay_id_no_se_ofrece(): void
+    {
+        $this->fingir(['*binancepay*' => Http::response([], 451)]);
+        $pedido = $this->pedido();
+
+        BinancePay::crearOrden($pedido->load('items'));
+
+        // Sin forma de cobrar, mejor no ofrecerlo que dejar al cliente trabado
+        $this->assertFalse(BinancePay::disponible());
+        $this->assertNotContains('binance_pay', \App\Support\Pagos\MetodosDePago::valores());
+    }
+
+    public function test_el_monto_en_usdt_queda_congelado_aunque_se_mueva_el_paralelo(): void
+    {
+        config(['pagos.binance.pay_id' => '123456789', 'pagos.binance.api_key' => null]);
+        // Primera consulta del paralelo: 13; la siguiente: 10
+        Http::fake(['*dolarbluebolivia*' => Http::sequence()
+            ->push(['data' => ['blue' => ['buy' => 13.0]]])
+            ->push(['data' => ['blue' => ['buy' => 10.0]]])]);
+        $pedido = $this->pedido();
+
+        $this->assertSame(500.0, BinancePay::cotizar($pedido));
+
+        // El paralelo cambia a 10: el mismo pedido ahora costaría 650 USDT
+        Cache::flush();
+        $this->assertSame(650.0, BinancePay::enCripto(6500));
+
+        // Pero al cliente se le cobra lo que se le mostró
+        $this->assertSame(500.0, BinancePay::cotizar($pedido->fresh()));
+    }
+
+    public function test_en_modo_manual_el_webhook_no_confirma_nada(): void
+    {
+        config(['pagos.binance.pay_id' => '123456789', 'pagos.binance.api_key' => null]);
+        $this->fingir(['*order/query' => Http::response(['status' => 'SUCCESS', 'data' => [
+            'status' => 'PAID', 'orderAmount' => 999999,
+        ]])]);
+        $pedido = $this->pedido();
+
+        $this->postJson("/pedido/{$pedido->codigo}/binance/aviso?t={$pedido->token_seguimiento}")->assertOk();
+
+        // En manual lo confirma una persona en el panel, mirando la captura
+        $this->assertFalse($pedido->fresh()->pagoConfirmado());
+        Http::assertNotSent(fn ($req) => str_contains($req->url(), 'order/query'));
+    }
 }

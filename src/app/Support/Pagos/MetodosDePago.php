@@ -35,11 +35,14 @@ class MetodosDePago
         }
 
         if (BinancePay::disponible()) {
+            $automatico = BinancePay::automatico();
             $metodos[] = [
                 'valor'    => self::BINANCE_PAY,
                 'etiqueta' => 'Binance Pay (USDT)',
-                'detalle'  => 'Pagas con cripto desde tu app de Binance. La confirmación es automática.',
-                'automatico' => true,
+                'detalle'  => $automatico
+                    ? 'Pagas con USDT desde tu app de Binance. La confirmación es automática.'
+                    : 'Envías USDT a nuestro Binance Pay ID desde tu app y subes la captura. Te avisamos por correo cuando lo confirmemos.',
+                'automatico' => $automatico,
             ];
         }
 

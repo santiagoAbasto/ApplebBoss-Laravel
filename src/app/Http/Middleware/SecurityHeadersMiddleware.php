@@ -33,9 +33,11 @@ class SecurityHeadersMiddleware
 
         // ── Deshabilitar APIs sensibles no usadas ────────────────────────
         // `interest-cohort` salió de Chrome: hoy solo ensucia la consola con «Unrecognized feature».
+        // La ubicación sí se usa: el delivery en Cochabamba ubica al cliente en el mapa. Solo para
+        // este mismo sitio (ningún iframe de afuera) y el navegador igual le pide permiso a la persona.
         $response->headers->set(
             'Permissions-Policy',
-            'camera=(), microphone=(), geolocation=(), payment=(), usb=()'
+            'camera=(), microphone=(), geolocation=(self), payment=(), usb=()'
         );
 
         // ── Aislamiento de ventana cross-origin ──────────────────────────
@@ -92,7 +94,7 @@ class SecurityHeadersMiddleware
             "font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data:",
 
             // Imágenes: self + data URIs + blob (avatares, logos inline)
-            "img-src 'self' data: blob:",
+            "img-src 'self' data: blob: https://tile.openstreetmap.org",
 
             // Fetch/XHR: self + el envío de la medición de Cloudflare
             "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
@@ -136,7 +138,7 @@ class SecurityHeadersMiddleware
             "font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data: http://localhost:5173 http://127.0.0.1:5173 http://localhost:5174 http://127.0.0.1:5174",
 
             // Imágenes
-            "img-src 'self' data: blob:",
+            "img-src 'self' data: blob: https://tile.openstreetmap.org",
 
             // WebSocket de Vite HMR (ws://) + fetch normal
             "connect-src 'self' http://localhost:5173 ws://localhost:5173 http://127.0.0.1:5173 ws://127.0.0.1:5173 http://localhost:5174 ws://localhost:5174 http://127.0.0.1:5174 ws://127.0.0.1:5174",

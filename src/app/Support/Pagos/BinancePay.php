@@ -3,6 +3,7 @@
 namespace App\Support\Pagos;
 
 use App\Models\Pedido;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -25,12 +26,68 @@ use Illuminate\Support\Str;
  */
 class BinancePay
 {
+    /** Marca que Binance rechazó al servidor por su ubicación (HTTP 451). */
+    private const BLOQUEADO = 'binance.api_bloqueada';
+
+    /**
+     * Se ofrece si hay tipo de cambio y alguna forma de cobrar: la API (automático) o el
+     * Pay ID de la tienda (manual). Con el Pay ID nunca queda un cliente sin cómo pagar.
+     */
     public static function disponible(): bool
     {
         return (bool) config('pagos.binance.habilitado')
-            && filled(config('pagos.binance.api_key'))
-            && filled(config('pagos.binance.api_secret'))
+            && (filled(config('pagos.binance.pay_id')) || self::automatico())
             && self::tasa() > 0;
+    }
+
+    /** ¿Se puede crear la orden y confirmarla sola? Hace falta la API y que Binance nos atienda. */
+    public static function automatico(): bool
+    {
+        return filled(config('pagos.binance.api_key'))
+            && filled(config('pagos.binance.api_secret'))
+            && ! Cache::has(self::BLOQUEADO);
+    }
+
+    /**
+     * El monto en USDT, congelado en el pedido la primera vez que se calcula.
+     *
+     * El paralelo se mueve durante el día: el cliente paga lo que le mostramos y el equipo
+     * verifica contra ese mismo número, no contra el de la hora en que revisa.
+     */
+    public static function cotizar(Pedido $pedido): float
+    {
+        if ((float) $pedido->pago_monto_usdt > 0) {
+            return (float) $pedido->pago_monto_usdt;
+        }
+
+        $monto = self::enCripto((float) $pedido->total);
+
+        if ($monto > 0) {
+            $pedido->forceFill(['pago_monto_usdt' => $monto])->save();
+            $pedido->registrarEvento(
+                'Monto en USDT fijado',
+                number_format($monto, 2, ',', '.') . ' USDT, a Bs ' . number_format(self::tasa(), 2, ',', '.') . ' por USDT.',
+            );
+        }
+
+        return $monto;
+    }
+
+    /** Lo que el cliente necesita para pagar desde su app, cuando no hay orden automática. */
+    public static function datosManuales(Pedido $pedido): ?array
+    {
+        $payId = config('pagos.binance.pay_id');
+        $monto = self::cotizar($pedido);
+
+        if (blank($payId) || $monto <= 0) {
+            return null;
+        }
+
+        return [
+            'pay_id'     => (string) $payId,
+            'monto_usdt' => $monto,
+            'moneda'     => (string) config('pagos.binance.moneda', 'USDT'),
+        ];
     }
 
     /** Cuántos bolivianos vale 1 USDT, al paralelo. Ver TipoDeCambio. */
@@ -84,6 +141,15 @@ class BinancePay
             return null;
         }
 
+        // 451: Binance no atiende a servidores en países donde no opera (EE. UU.). Se deja de
+        // intentar por 12 horas y el cobro pasa a manual con el Pay ID.
+        if ($r->status() === 451) {
+            Cache::put(self::BLOQUEADO, true, now()->addHours(12));
+            Log::warning('Binance Pay rechazó al servidor por su ubicación (451). El cobro sigue en modo manual.');
+
+            return null;
+        }
+
         if (! $r->successful() || $r->json('status') !== 'SUCCESS') {
             Log::warning("Binance Pay rechazó {$ruta}: " . $r->json('errorMessage', $r->body()));
 
@@ -96,11 +162,11 @@ class BinancePay
     /** Crea la orden y devuelve a dónde mandar al cliente a pagar. */
     public static function crearOrden(Pedido $pedido): ?array
     {
-        if (! self::disponible()) {
+        if (! self::disponible() || ! self::automatico()) {
             return null;
         }
 
-        $monto = self::enCripto((float) $pedido->total);
+        $monto = self::cotizar($pedido);
 
         if ($monto <= 0) {
             return null;
@@ -143,7 +209,7 @@ class BinancePay
      */
     public static function confirmoElPago(Pedido $pedido): bool
     {
-        if (! self::disponible()) {
+        if (! self::disponible() || ! self::automatico()) {
             return false;
         }
 
@@ -155,9 +221,9 @@ class BinancePay
             return false;
         }
 
-        // Pagó de menos: no se confirma
+        // Pagó de menos: no se confirma. Se compara contra lo que se le cotizó, no contra el paralelo de ahora.
         $pagado   = (float) ($datos['orderAmount'] ?? 0);
-        $esperado = self::enCripto((float) $pedido->total);
+        $esperado = self::cotizar($pedido);
 
         if ($pagado + 0.01 < $esperado) {
             Log::warning("Binance reporta {$pagado} USDT para {$pedido->codigo}, se esperaban {$esperado}");

@@ -38,10 +38,15 @@ return [
     |
     | Legal en Bolivia desde la Resolución 082/2024 del BCB, que derogó la prohibición.
     |
-    | OJO CON EL TIPO DE CAMBIO: el precio está en Bs y Binance cobra en USDT. La tasa la
-    | fija la tienda a mano (`BINANCE_PAY_TASA_BOB` = cuántos Bs vale 1 USDT). No se saca de
-    | ninguna API a propósito: en Bolivia el oficial y el real no coinciden, y usar el
-    | equivocado es perder plata en cada venta. Sin tasa cargada, el método no se ofrece.
+    | OJO CON EL TIPO DE CAMBIO: el precio está en Bs y Binance cobra en USDT. La tasa sale del
+    | dólar PARALELO (App\Support\Pagos\TipoDeCambio), nunca del oficial: usar el equivocado es
+    | perder plata en cada venta. Sin tipo de cambio, el método no se ofrece.
+    |
+    | DOS MODOS:
+    | - Automático: con API key y secret, se crea la orden en Binance y se confirma sola.
+    | - Manual: con el Pay ID, el cliente manda los USDT desde su app y sube la captura; el
+    |   equipo confirma en el panel. Es el modo que queda cuando la API no responde (desde un
+    |   servidor en EE. UU., Binance contesta 451 y no atiende).
     */
     'binance' => [
         'habilitado' => env('BINANCE_PAY_HABILITADO', false),
@@ -49,7 +54,9 @@ return [
         'api_secret' => env('BINANCE_PAY_API_SECRET'),
         'base_url'   => env('BINANCE_PAY_BASE_URL', 'https://bpay.binanceapi.com'),
         'moneda'     => env('BINANCE_PAY_MONEDA', 'USDT'),
-        // Cuántos bolivianos vale 1 USDT. La pone la tienda; si falta, no se cobra por acá.
+        // El Binance Pay ID de la cuenta de la tienda. No es secreto: se le muestra al cliente.
+        'pay_id'     => env('BINANCE_PAY_ID'),
+        // Respaldo si la fuente del paralelo no responde (cuántos Bs vale 1 USDT)
         'tasa_bob'   => env('BINANCE_PAY_TASA_BOB'),
     ],
 

@@ -203,7 +203,7 @@ class PedidoController extends Controller
 
         return match ($pedido->estado) {
             Pedido::PAGADO     => [Pedido::PREPARANDO],
-            Pedido::PREPARANDO => $pedido->esEnvio() ? [Pedido::ENVIADO] : [Pedido::ENTREGADO],
+            Pedido::PREPARANDO => $pedido->esADomicilio() ? [Pedido::ENVIADO] : [Pedido::ENTREGADO],
             Pedido::ENVIADO    => [Pedido::ENTREGADO],
             default            => [],
         };

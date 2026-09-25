@@ -113,7 +113,8 @@ class CheckoutTiendaTest extends TestCase
         ]);
 
         $this->assertTrue(MetodosDePago::hayPagoADistancia());
-        $this->assertSame(['retiro', 'envio'], array_column(Entrega::opciones(), 'valor'));
+        // Las tres entregas que eligió la tienda, en su orden
+        $this->assertSame(['retiro', 'envio', 'delivery'], array_column(Entrega::opciones(), 'valor'));
     }
 
     public function test_pagar_al_retirar_no_vale_para_un_envio_a_domicilio(): void
@@ -275,5 +276,105 @@ class CheckoutTiendaTest extends TestCase
 
         $this->expectException(\Illuminate\Validation\ValidationException::class);
         ConfirmadorDePago::confirmar($pedido->fresh());
+    }
+
+    /* ─── Delivery propio en Cochabamba ──────────────────────────────────── */
+
+    /** Arma un pedido con delivery; lo que se pase en $extra pisa lo de por defecto. */
+    private function pedirDelivery(array $extra = [])
+    {
+        config(['pagos.transferencia.habilitado' => true, 'pagos.transferencia.cuenta' => '1234567890']);
+
+        $celular = $this->celular();
+        $this->publicar($celular);
+        $this->actingAs(\App\Models\User::factory()->create(['rol' => 'cliente']));
+
+        return $this->post('/checkout', $this->datosCliente(array_merge([
+            'claves'           => ["celular:{$celular->id}"],
+            'tipo_entrega'     => 'delivery',
+            'envio_zona'       => 'Queru Queru',
+            'envio_barrio'     => 'Villa Moscú',
+            'envio_direccion'  => 'Calle Los Pinos 245',
+            'envio_referencia' => 'Portón negro',
+            'envio_lat'        => -17.3712,
+            'envio_lng'        => -66.1531,
+            'metodo_pago'      => 'transferencia',
+        ], $extra)));
+    }
+
+    public function test_el_delivery_se_guarda_con_su_punto_y_sin_costo(): void
+    {
+        $this->pedirDelivery()->assertRedirect();
+
+        $pedido = Pedido::first();
+        $this->assertSame('delivery', $pedido->tipo_entrega);
+        $this->assertSame('Cochabamba', $pedido->envio_departamento);
+        $this->assertSame('Queru Queru', $pedido->envio_zona);
+        $this->assertSame('Villa Moscú', $pedido->envio_barrio);
+        $this->assertEqualsWithDelta(-17.3712, (float) $pedido->envio_lat, 0.0001);
+        $this->assertSame(0.0, (float) $pedido->costo_envio);
+        $this->assertSame(6500.0, (float) $pedido->total);
+    }
+
+    public function test_el_delivery_pide_zona_barrio_y_direccion(): void
+    {
+        $this->pedirDelivery(['envio_zona' => '', 'envio_barrio' => '', 'envio_direccion' => ''])
+            ->assertSessionHasErrors(['envio_zona', 'envio_barrio', 'envio_direccion']);
+
+        $this->assertDatabaseCount('pedidos', 0);
+    }
+
+    public function test_un_punto_fuera_de_cochabamba_no_entra_al_delivery(): void
+    {
+        // Plaza Murillo, La Paz: para eso está el envío al interior
+        $this->pedirDelivery(['envio_lat' => -16.4958, 'envio_lng' => -68.1335])
+            ->assertSessionHasErrors('envio_lat');
+
+        $this->assertDatabaseCount('pedidos', 0);
+    }
+
+    public function test_pagar_al_retirar_no_vale_para_el_delivery(): void
+    {
+        config(['pagos.efectivo_en_tienda.habilitado' => true]);
+
+        $this->pedirDelivery(['metodo_pago' => 'efectivo_tienda'])->assertSessionHasErrors('metodo_pago');
+
+        $this->assertDatabaseCount('pedidos', 0);
+    }
+
+    public function test_sin_pago_a_distancia_no_se_puede_pedir_delivery(): void
+    {
+        $celular = $this->celular();
+        $this->publicar($celular);
+        $this->actingAs(\App\Models\User::factory()->create(['rol' => 'cliente']));
+        config(['pagos.transferencia.cuenta' => null, 'pagos.bnb.habilitado' => false]);
+
+        // Aunque el navegador lo mande, si no se ofrece no se acepta
+        $this->post('/checkout', $this->datosCliente([
+            'claves'          => ["celular:{$celular->id}"],
+            'tipo_entrega'    => 'delivery',
+            'envio_zona'      => 'Centro', 'envio_barrio' => 'Centro', 'envio_direccion' => 'Calle 1',
+            'metodo_pago'     => 'efectivo_tienda',
+        ]))->assertSessionHasErrors('tipo_entrega');
+
+        $this->assertDatabaseCount('pedidos', 0);
+    }
+
+    public function test_el_delivery_avanza_por_en_camino_antes_de_entregado(): void
+    {
+        $this->pedirDelivery()->assertRedirect();
+        $pedido = Pedido::first();
+        $pedido->forceFill(['estado' => Pedido::PREPARANDO])->save();
+
+        $admin = \App\Models\User::factory()->create(['rol' => 'admin']);
+        $this->actingAs($admin)
+            ->post("/admin/pedidos/{$pedido->id}/avanzar", ['estado' => Pedido::ENTREGADO])
+            ->assertSessionHas('error');
+
+        $this->actingAs($admin)
+            ->post("/admin/pedidos/{$pedido->id}/avanzar", ['estado' => Pedido::ENVIADO, 'courier' => 'Repartidor Apple Boss'])
+            ->assertSessionHas('success');
+
+        $this->assertSame(Pedido::ENVIADO, $pedido->fresh()->estado);
     }
 }

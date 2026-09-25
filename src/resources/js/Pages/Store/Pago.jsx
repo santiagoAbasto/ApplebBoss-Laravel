@@ -23,20 +23,66 @@ function Confeti() {
     );
 }
 
-function PagoInterno({ pedido, token, qr, transferencia, metodo }) {
+/* Formulario para avisar que ya pagó; sirve para transferencia y para Binance manual */
+function SubirComprobante({ reporte, onSubmit, titulo, placeholder }) {
+    return (
+        <form onSubmit={onSubmit} className="mt-5 space-y-3 border-t pt-5" style={{ borderColor: 'var(--border-light)' }}>
+            <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>{titulo}</p>
+            <input type="text" placeholder={placeholder}
+                className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none"
+                style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}
+                value={reporte.data.referencia} onChange={(e) => reporte.setData('referencia', e.target.value)} />
+            <input type="file" accept="image/*,application/pdf"
+                onChange={(e) => reporte.setData('comprobante', e.target.files[0])}
+                className="w-full text-sm" />
+            {reporte.errors.comprobante && <p className="text-xs font-semibold" style={{ color: '#dc2626' }}>{reporte.errors.comprobante}</p>}
+            <button type="submit" disabled={reporte.processing}
+                className="h-11 w-full rounded-full text-sm font-bold text-white disabled:opacity-50"
+                style={{ background: 'var(--ab-navy)' }}>
+                {reporte.processing ? 'Enviando…' : 'Enviar comprobante'}
+            </button>
+        </form>
+    );
+}
+
+function Copiar({ texto }) {
+    const [hecho, setHecho] = useState(false);
+    const copiar = async () => {
+        try {
+            await navigator.clipboard.writeText(texto);
+            setHecho(true);
+            setTimeout(() => setHecho(false), 1800);
+        } catch { /* sin permiso de portapapeles: el dato queda a la vista para copiarlo a mano */ }
+    };
+    return (
+        <button type="button" onClick={copiar}
+            className="shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors"
+            style={{ borderColor: hecho ? 'var(--ab-lime)' : 'var(--border-light)', background: hecho ? 'var(--ab-lime)' : 'transparent', color: hecho ? 'var(--text-on-lime)' : 'var(--ab-navy)' }}>
+            {hecho ? 'Copiado' : 'Copiar'}
+        </button>
+    );
+}
+
+const usdt = (n) => Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
     const { clear } = useStoreCart();
     const [estado, setEstado] = useState(pedido.estado);
     const [confirmado, setConfirmado] = useState(pedido.pago_confirmado);
     const yaLimpio = useRef(false);
+
+    // Después de subir el comprobante, Inertia trae el pedido nuevo: el estado se sincroniza
+    useEffect(() => { setEstado(pedido.estado); }, [pedido.estado]);
 
     // El pedido ya está guardado en el servidor: el carrito del navegador deja de hacer falta
     useEffect(() => {
         if (!yaLimpio.current) { clear(); yaLimpio.current = true; }
     }, [clear]);
 
-    // Si el pago es por QR, preguntamos al servidor hasta que el banco confirme
+    // Preguntamos al servidor hasta que se confirme: el QR lo confirma el banco (rápido); la
+    // transferencia y Binance manual, una persona del equipo (más espaciado)
     useEffect(() => {
-        if (confirmado || metodo !== 'qr_bnb') return undefined;
+        if (confirmado || metodo === 'efectivo_tienda') return undefined;
         const id = setInterval(async () => {
             try {
                 const r = await fetch(`/pedido/${pedido.codigo}/estado?t=${encodeURIComponent(token)}`, {
@@ -47,7 +93,7 @@ function PagoInterno({ pedido, token, qr, transferencia, metodo }) {
                 setEstado(d.estado);
                 if (d.pago_confirmado) setConfirmado(true);
             } catch { /* si falla una consulta, se reintenta en la siguiente */ }
-        }, 5000);
+        }, metodo === 'qr_bnb' ? 5000 : 15000);
         return () => clearInterval(id);
     }, [confirmado, metodo, pedido.codigo, token]);
 
@@ -148,24 +194,59 @@ function PagoInterno({ pedido, token, qr, transferencia, metodo }) {
                                             </div>
                                         </dl>
 
-                                        <form onSubmit={enviarComprobante} className="mt-5 space-y-3 border-t pt-5" style={{ borderColor: 'var(--border-light)' }}>
-                                            <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>Ya transferí: sube tu comprobante</p>
-                                            <input type="text" placeholder="N.° de transacción (opcional)"
-                                                className="h-11 w-full rounded-xl border px-3.5 text-sm outline-none"
-                                                style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}
-                                                value={reporte.data.referencia} onChange={(e) => reporte.setData('referencia', e.target.value)} />
-                                            <input type="file" accept="image/*,application/pdf"
-                                                onChange={(e) => reporte.setData('comprobante', e.target.files[0])}
-                                                className="w-full text-sm" />
-                                            {reporte.errors.comprobante && <p className="text-xs font-semibold" style={{ color: '#dc2626' }}>{reporte.errors.comprobante}</p>}
-                                            <button type="submit" disabled={reporte.processing}
-                                                className="h-11 w-full rounded-full text-sm font-bold text-white disabled:opacity-50"
-                                                style={{ background: 'var(--ab-navy)' }}>
-                                                {reporte.processing ? 'Enviando…' : 'Enviar comprobante'}
-                                            </button>
-                                        </form>
+                                        <SubirComprobante reporte={reporte} onSubmit={enviarComprobante}
+                                            titulo="Ya transferí: sube tu comprobante" placeholder="N.° de transacción (opcional)" />
                                     </div>
                                 )}
+
+                                {/* Binance Pay manual: el cliente manda los USDT al Pay ID desde su app */}
+                                {metodo === 'binance_pay' && (binance ? (
+                                    <div className="overflow-hidden rounded-2xl border" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
+                                        <div className="px-6 py-5 text-center" style={{ background: 'var(--ab-navy)' }}>
+                                            <p className="text-[11px] font-bold uppercase tracking-widest text-white/70">Monto exacto a enviar</p>
+                                            <motion.p initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                                                className="mt-1 text-3xl font-black tabular-nums" style={{ color: 'var(--ab-lime)' }}>
+                                                {usdt(binance.monto_usdt)} {binance.moneda}
+                                            </motion.p>
+                                            <p className="mt-1 text-xs text-white/70">Equivale a {money(pedido.total)} al dólar paralelo</p>
+                                        </div>
+
+                                        <div className="p-6">
+                                            <div className="flex items-center justify-between gap-3 rounded-xl border px-4 py-3" style={{ borderColor: 'var(--border-light)' }}>
+                                                <div className="min-w-0">
+                                                    <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Nuestro Binance Pay ID</p>
+                                                    <p className="truncate text-lg font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>{binance.pay_id}</p>
+                                                </div>
+                                                <Copiar texto={binance.pay_id} />
+                                            </div>
+
+                                            <ol className="mt-5 space-y-3">
+                                                {[
+                                                    <>Abre tu app de Binance y entra a <strong>Pagar → Enviar</strong>.</>,
+                                                    <>Elige <strong>Pay ID</strong> y pega el nuestro.</>,
+                                                    <>Envía exactamente <strong>{usdt(binance.monto_usdt)} {binance.moneda}</strong>. En la nota escribe <strong>{pedido.codigo}</strong>.</>,
+                                                    <>Sube aquí la captura del pago.</>,
+                                                ].map((paso, i) => (
+                                                    <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.07 }}
+                                                        className="flex gap-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black"
+                                                            style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}>{i + 1}</span>
+                                                        <span className="pt-0.5">{paso}</span>
+                                                    </motion.li>
+                                                ))}
+                                            </ol>
+
+                                            <SubirComprobante reporte={reporte} onSubmit={enviarComprobante}
+                                                titulo="Ya pagué: sube la captura" placeholder="ID de la orden de Binance (opcional)" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border p-6 text-center" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
+                                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                            No pudimos preparar el pago con Binance en este momento. Escríbenos por WhatsApp y lo resolvemos.
+                                        </p>
+                                    </div>
+                                ))}
 
                                 {/* Pago al retirar */}
                                 {metodo === 'efectivo_tienda' && (

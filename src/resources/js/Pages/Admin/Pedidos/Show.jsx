@@ -16,6 +16,12 @@ const ETIQUETA_AVANCE = {
     entregado: 'Marcar como entregado',
 };
 
+const ENTREGA = { retiro: 'Retiro en tienda', envio: 'Envío al interior', delivery: 'Delivery en Cochabamba' };
+const METODO = {
+    binance_pay: 'Binance Pay (USDT)', transferencia: 'Transferencia', efectivo_tienda: 'Pago al retirar',
+    qr_bnb: 'QR del BNB', libelula: 'Libélula',
+};
+
 function Dato({ label, children }) {
     if (!children) return null;
     return (
@@ -50,7 +56,7 @@ export default function Show({ pedido, avances = [] }) {
 
             <PageHeader
                 title={`Pedido ${pedido.codigo}`}
-                subtitle={`${fmtDate(pedido.creado_en)} · ${pedido.tipo_entrega === 'envio' ? 'Envío a domicilio' : 'Retiro en tienda'}`}
+                subtitle={`${fmtDate(pedido.creado_en)} · ${ENTREGA[pedido.tipo_entrega] ?? pedido.tipo_entrega}`}
                 actions={<Badge tone={TONO[pedido.estado] ?? 'slate'}>{pedido.etiqueta}</Badge>}
             />
 
@@ -59,7 +65,9 @@ export default function Show({ pedido, avances = [] }) {
                     {/* ── Pago ─────────────────────────────────────────────── */}
                     <Card title="Pago" subtitle={pedido.pago_confirmado ? 'Confirmado' : 'Todavía sin confirmar'}>
                         <dl className="grid gap-4 sm:grid-cols-2">
-                            <Dato label="Método">{pedido.pago?.metodo}</Dato>
+                            <Dato label="Método">{METODO[pedido.pago?.metodo] ?? pedido.pago?.metodo}</Dato>
+                            {/* Lo que se le cotizó al cliente: es lo que tiene que figurar en la captura de Binance */}
+                            <Dato label="Monto en USDT">{pedido.pago?.monto_usdt ? `${Number(pedido.pago.monto_usdt).toFixed(2)} USDT` : null}</Dato>
                             <Dato label="Referencia">{pedido.pago?.referencia ?? '—'}</Dato>
                             <Dato label="Confirmado">{pedido.pago?.confirmado_en ? fmtDate(pedido.pago.confirmado_en) : '—'}</Dato>
                             <Dato label="Confirmado por">{pedido.pago?.confirmado_por ?? '—'}</Dato>
@@ -176,12 +184,22 @@ export default function Show({ pedido, avances = [] }) {
                     </Card>
 
                     {pedido.envio && (
-                        <Card title="Envío">
+                        <Card title={pedido.tipo_entrega === 'delivery' ? 'Delivery' : 'Envío'}>
                             <dl className="space-y-3">
                                 <Dato label="Departamento">{pedido.envio.departamento}</Dato>
                                 <Dato label="Ciudad">{pedido.envio.ciudad}</Dato>
+                                <Dato label="Zona">{pedido.envio.zona}</Dato>
+                                <Dato label="Barrio">{pedido.envio.barrio}</Dato>
                                 <Dato label="Dirección">{pedido.envio.direccion}</Dato>
                                 <Dato label="Referencia">{pedido.envio.referencia}</Dato>
+                                <Dato label="Ubicación">
+                                    {pedido.envio.lat != null && (
+                                        <a href={`https://www.google.com/maps?q=${pedido.envio.lat},${pedido.envio.lng}`} target="_blank" rel="noreferrer"
+                                            className="font-semibold text-blue-700 underline">
+                                            Abrir el punto en Google Maps
+                                        </a>
+                                    )}
+                                </Dato>
                                 <Dato label="Destinatario">{pedido.envio.destinatario}</Dato>
                                 <Dato label="Courier">{pedido.envio.courier}</Dato>
                                 <Dato label="Seguimiento">{pedido.envio.tracking}</Dato>
@@ -272,10 +290,19 @@ export default function Show({ pedido, avances = [] }) {
                 >
                     {modal === 'enviado' ? (
                         <div className="flex flex-col gap-3">
-                            <p className="text-sm text-slate-600">Si cargas el courier y el código, el cliente los ve en su seguimiento.</p>
-                            <Field label="Courier"><Input value={avanzar.data.courier} onChange={(e) => avanzar.setData('courier', e.target.value)} placeholder="Trans Copacabana" /></Field>
-                            <Field label="Código de seguimiento"><Input value={avanzar.data.tracking_codigo} onChange={(e) => avanzar.setData('tracking_codigo', e.target.value)} /></Field>
-                            <Field label="Enlace de seguimiento" hint="Opcional"><Input value={avanzar.data.tracking_url} onChange={(e) => avanzar.setData('tracking_url', e.target.value)} placeholder="https://..." /></Field>
+                            {pedido.tipo_entrega === 'delivery' ? (
+                                <>
+                                    <p className="text-sm text-slate-600">El cliente ve en su seguimiento que el pedido va en camino.</p>
+                                    <Field label="Repartidor" hint="Opcional"><Input value={avanzar.data.courier} onChange={(e) => avanzar.setData('courier', e.target.value)} placeholder="Nombre de quien lo lleva" /></Field>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-slate-600">Si cargas el courier y el código, el cliente los ve en su seguimiento.</p>
+                                    <Field label="Courier"><Input value={avanzar.data.courier} onChange={(e) => avanzar.setData('courier', e.target.value)} placeholder="Trans Copacabana" /></Field>
+                                    <Field label="Código de seguimiento"><Input value={avanzar.data.tracking_codigo} onChange={(e) => avanzar.setData('tracking_codigo', e.target.value)} /></Field>
+                                    <Field label="Enlace de seguimiento" hint="Opcional"><Input value={avanzar.data.tracking_url} onChange={(e) => avanzar.setData('tracking_url', e.target.value)} placeholder="https://..." /></Field>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <p className="text-sm text-slate-600">Queda registrado en la línea de tiempo y el cliente lo ve en su seguimiento.</p>

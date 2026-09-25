@@ -1,9 +1,13 @@
 import { Head, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
-import StoreLayout, { StoreContainer, money, useStoreCart } from '@/Layouts/StoreLayout';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import StoreLayout, { StoreContainer, money, useStoreCart, useUsdt } from '@/Layouts/StoreLayout';
 import ProductVisual from '@/Components/Store/ProductVisual';
-import { Check, ChevronRight, ShoppingBag } from '@/Components/Store/Icons';
+import { IconoEntrega } from '@/Components/Store/Ilustraciones3D';
+import { Check, ChevronRight, Clock, ShoppingBag } from '@/Components/Store/Icons';
+
+// El mapa (Leaflet) solo se descarga si el cliente elige delivery
+const MapaDelivery = lazy(() => import('@/Components/Store/MapaDelivery'));
 
 /* ── Tarjeta con inclinación 3D suave al pasar el mouse ──────────────────── */
 function Tarjeta3D({ children, className = '', intensidad = 6 }) {
@@ -88,6 +92,7 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
         telefono_cliente: cliente.telefono ?? '', documento: '', razon_social: '',
         tipo_entrega: entrega[0]?.valor ?? 'retiro',
         envio_departamento: '', envio_ciudad: '', envio_direccion: '', envio_referencia: '',
+        envio_zona: '', envio_barrio: '', envio_lat: null, envio_lng: null,
         envio_destinatario: '', envio_telefono: '',
         metodo_pago: metodos[0]?.valor ?? '',
         notas_cliente: '',
@@ -99,11 +104,27 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
     }, [disponibles.length]);
 
     const esEnvio = data.tipo_entrega === 'envio';
+    const esDelivery = data.tipo_entrega === 'delivery';
+    const aDomicilio = esEnvio || esDelivery;
     const destino = destinos.find((d) => d.departamento === data.envio_departamento);
-    const costoEnvio = esEnvio ? (destino?.costo ?? 0) : 0;
+    const opcionDelivery = entrega.find((o) => o.valor === 'delivery');
+    const costoEnvio = esEnvio ? (destino?.costo ?? 0) : esDelivery ? (opcionDelivery?.costo ?? 0) : 0;
     const totalFinal = total + costoEnvio;
+    const enUsdt = useUsdt();
+    const etiquetaCosto = (c) => (c === 0 ? 'Gratis' : money(c));
 
-    const paso = !data.nombre_cliente ? 0 : (esEnvio && !data.envio_direccion) ? 1 : 2;
+    // Pagar al retirar no sirve si el equipo llega a una casa: el servidor lo rechaza y acá ni se ofrece
+    const metodosPosibles = useMemo(
+        () => (aDomicilio ? metodos.filter((m) => m.valor !== 'efectivo_tienda') : metodos),
+        [aDomicilio, metodos],
+    );
+    useEffect(() => {
+        if (!metodosPosibles.some((m) => m.valor === data.metodo_pago)) {
+            setData('metodo_pago', metodosPosibles[0]?.valor ?? '');
+        }
+    }, [metodosPosibles]);
+
+    const paso = !data.nombre_cliente ? 0 : (aDomicilio && !data.envio_direccion) ? 1 : 2;
 
     const enviar = (e) => {
         e.preventDefault();
@@ -177,20 +198,36 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
                         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                             className="rounded-2xl border p-5" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
                             <h2 className="mb-4 text-sm font-black uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>¿Cómo lo recibes?</h2>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {entrega.map((op) => (
-                                    <Tarjeta3D key={op.valor}>
-                                        <button type="button" onClick={() => setData('tipo_entrega', op.valor)}
-                                            className="w-full rounded-xl border p-4 text-left transition-shadow hover:shadow-md"
-                                            style={{
-                                                borderColor: data.tipo_entrega === op.valor ? 'var(--ab-navy)' : 'var(--border-light)',
-                                                boxShadow: data.tipo_entrega === op.valor ? '0 0 0 2px var(--ab-navy) inset' : 'none',
-                                            }}>
-                                            <span className="block text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{op.etiqueta}</span>
-                                            <span className="mt-1 block text-xs" style={{ color: 'var(--text-secondary)' }}>{op.detalle}</span>
-                                        </button>
-                                    </Tarjeta3D>
-                                ))}
+                            <div className={`grid gap-3 ${entrega.length >= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                                {entrega.map((op) => {
+                                    const activa = data.tipo_entrega === op.valor;
+                                    return (
+                                        <Tarjeta3D key={op.valor} className="h-full">
+                                            <button type="button" onClick={() => setData('tipo_entrega', op.valor)} aria-pressed={activa}
+                                                className="relative flex h-full w-full flex-col items-start rounded-2xl border p-4 text-left transition-shadow hover:shadow-lg"
+                                                style={{
+                                                    borderColor: activa ? 'var(--ab-navy)' : 'var(--border-light)',
+                                                    boxShadow: activa ? '0 0 0 2px var(--ab-navy) inset' : 'none',
+                                                    background: activa ? 'linear-gradient(160deg, rgba(198,203,54,0.16), var(--surface-white) 62%)' : 'var(--surface-white)',
+                                                }}>
+                                                {op.costo === 0 && (
+                                                    <span className="absolute right-3 top-3 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide"
+                                                        style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}>
+                                                        Gratis
+                                                    </span>
+                                                )}
+                                                <IconoEntrega tipo={op.valor} animado={activa} className="-ml-1 h-16 w-20" />
+                                                <span className="mt-2 block text-sm font-black" style={{ color: 'var(--text-primary)' }}>{op.etiqueta}</span>
+                                                <span className="mt-1 block text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>{op.detalle}</span>
+                                                {op.plazo && (
+                                                    <span className="mt-auto inline-flex items-start gap-1 pt-2 text-[11px] font-bold leading-4" style={{ color: 'var(--ab-navy)' }}>
+                                                        <Clock className="h-3.5 w-3.5 shrink-0" /> {op.plazo}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </Tarjeta3D>
+                                    );
+                                })}
                             </div>
 
                             {esEnvio && (
@@ -231,19 +268,58 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
                                     )}
                                 </motion.div>
                             )}
+
+                            {esDelivery && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                                    className="mt-4 grid gap-4 overflow-hidden sm:grid-cols-2">
+                                    <Campo label="Zona" requerido error={errors.envio_zona}>
+                                        <input className={inputCls} style={inputStyle} value={data.envio_zona}
+                                            onChange={(e) => setData('envio_zona', e.target.value)} placeholder="Ej.: Queru Queru" />
+                                    </Campo>
+                                    <Campo label="Barrio" requerido error={errors.envio_barrio}>
+                                        <input className={inputCls} style={inputStyle} value={data.envio_barrio}
+                                            onChange={(e) => setData('envio_barrio', e.target.value)} placeholder="Ej.: Villa Moscú" />
+                                    </Campo>
+                                    <div className="sm:col-span-2">
+                                        <Campo label="Dirección" requerido error={errors.envio_direccion}>
+                                            <input className={inputCls} style={inputStyle} value={data.envio_direccion}
+                                                onChange={(e) => setData('envio_direccion', e.target.value)} autoComplete="street-address"
+                                                placeholder="Calle, número, edificio y piso" />
+                                        </Campo>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Suspense fallback={<div className="h-64 animate-pulse rounded-xl sm:h-72" style={{ background: 'var(--surface-muted)' }} />}>
+                                            <MapaDelivery lat={data.envio_lat} lng={data.envio_lng} error={errors.envio_lat}
+                                                onChange={(la, ln) => setData((d) => ({ ...d, envio_lat: Number(la.toFixed(7)), envio_lng: Number(ln.toFixed(7)) }))} />
+                                        </Suspense>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Campo label="Referencia adicional (opcional)" error={errors.envio_referencia}>
+                                            <input className={inputCls} style={inputStyle} value={data.envio_referencia}
+                                                onChange={(e) => setData('envio_referencia', e.target.value)}
+                                                placeholder="Ej.: portón negro, al lado de la farmacia" />
+                                        </Campo>
+                                    </div>
+                                    {opcionDelivery?.plazo && (
+                                        <p className="sm:col-span-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                                            Entrega: {opcionDelivery.plazo.charAt(0).toLowerCase() + opcionDelivery.plazo.slice(1)}.
+                                        </p>
+                                    )}
+                                </motion.div>
+                            )}
                         </motion.section>
 
                         {/* Pago */}
                         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                             className="rounded-2xl border p-5" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
                             <h2 className="mb-4 text-sm font-black uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>¿Cómo pagas?</h2>
-                            {metodos.length === 0 ? (
+                            {metodosPosibles.length === 0 ? (
                                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                     Todavía no hay formas de pago configuradas. Escríbenos por WhatsApp y lo cerramos por ahí.
                                 </p>
                             ) : (
                                 <div className="space-y-3">
-                                    {metodos.map((m) => (
+                                    {metodosPosibles.map((m) => (
                                         <button key={m.valor} type="button" onClick={() => setData('metodo_pago', m.valor)}
                                             className="flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-shadow hover:shadow-md"
                                             style={{
@@ -299,9 +375,9 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
                                         <span className="font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{money(total)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span style={{ color: 'var(--text-secondary)' }}>Envío</span>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Entrega</span>
                                         <span className="font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                                            {esEnvio ? (destino ? (costoEnvio === 0 ? 'Sin costo' : money(costoEnvio)) : 'Elige departamento') : 'Retiro en tienda'}
+                                            {esEnvio ? (destino ? etiquetaCosto(costoEnvio) : 'Elige departamento') : esDelivery ? etiquetaCosto(costoEnvio) : 'Retiro en tienda'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between border-t pt-2" style={{ borderColor: 'var(--border-light)' }}>
@@ -311,11 +387,16 @@ function CheckoutInterno({ entrega = [], destinos = [], metodos = [], cliente = 
                                             {money(totalFinal)}
                                         </motion.span>
                                     </div>
+                                    {data.metodo_pago === 'binance_pay' && enUsdt(totalFinal) && (
+                                        <p className="text-right text-xs font-bold" style={{ color: 'var(--text-muted)' }}>
+                                            ≈ {enUsdt(totalFinal)} al dólar paralelo
+                                        </p>
+                                    )}
                                 </div>
 
                                 {errors.carrito && <p className="mt-3 text-xs font-semibold" style={{ color: '#dc2626' }}>{errors.carrito}</p>}
 
-                                <motion.button type="submit" disabled={processing || metodos.length === 0}
+                                <motion.button type="submit" disabled={processing || metodosPosibles.length === 0}
                                     whileTap={{ scale: 0.98 }}
                                     className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-bold text-white disabled:opacity-50"
                                     style={{ background: 'var(--ab-navy)' }}>
