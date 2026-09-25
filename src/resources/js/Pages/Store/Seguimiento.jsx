@@ -1,6 +1,6 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import StoreLayout, { StoreContainer, money } from '@/Layouts/StoreLayout';
 import { EscenaEstado } from '@/Components/Store/Ilustraciones3D';
 import { Check, ChevronRight, Clock, MapPin } from '@/Components/Store/Icons';
@@ -108,6 +108,82 @@ function Progreso({ pasos, actual, terminado }) {
     );
 }
 
+/* Al recibir el pedido, su opinión: es la reseña de compra verificada. Una sola vez, y la aprueba el equipo. */
+function Opinar({ pedido, token }) {
+    const { flash } = usePage().props;
+    const [encima, setEncima] = useState(0);
+    const form = useForm({ calificacion: 0, texto: '' });
+    const TEXTOS = ['', 'Mala', 'Regular', 'Buena', 'Muy buena', 'Excelente'];
+    const marcadas = encima || form.data.calificacion;
+
+    if (pedido.ya_opino) {
+        return (
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="mb-8 flex items-center gap-4 rounded-2xl border p-5"
+                style={{ borderColor: 'var(--border-light)', background: 'rgba(198,203,54,0.12)' }}>
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ background: 'var(--ab-lime)' }}>
+                    <Check className="h-5 w-5" style={{ color: 'var(--text-on-lime)' }} />
+                </span>
+                <div>
+                    <p className="text-sm font-black" style={{ color: 'var(--text-primary)' }}>¡Gracias por tu opinión!</p>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {flash?.success ?? 'La publicamos apenas la revisemos. Nos ayuda a que otros compren tranquilos.'}
+                    </p>
+                </div>
+            </motion.section>
+        );
+    }
+
+    const enviar = (e) => {
+        e.preventDefault();
+        form.post(`/seguimiento/${pedido.codigo}/opinion?t=${encodeURIComponent(token)}`, { preserveScroll: true });
+    };
+
+    return (
+        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="mb-8 rounded-2xl border p-5 sm:p-6" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
+            <h2 className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>¿Qué te pareció tu compra?</h2>
+            <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Tu opinión aparece en la tienda como compra verificada, con tu nombre y la inicial de tu apellido.
+            </p>
+
+            <form onSubmit={enviar} className="mt-4 space-y-4">
+                <div className="flex flex-wrap items-center gap-3" onMouseLeave={() => setEncima(0)}>
+                    <div className="flex gap-1" role="radiogroup" aria-label="Calificación">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                            <motion.button key={n} type="button" role="radio" aria-checked={form.data.calificacion === n} aria-label={`${n} de 5`}
+                                whileTap={{ scale: 0.85 }} onMouseEnter={() => setEncima(n)} onClick={() => form.setData('calificacion', n)}
+                                className="rounded-md p-0.5">
+                                <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true">
+                                    <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8L12 3.6z"
+                                        fill={n <= marcadas ? '#E3B11A' : 'none'} stroke={n <= marcadas ? '#E3B11A' : '#C9D0DE'} strokeWidth="1.6" strokeLinejoin="round" />
+                                </svg>
+                            </motion.button>
+                        ))}
+                    </div>
+                    {marcadas > 0 && <span className="text-sm font-bold" style={{ color: 'var(--ab-navy)' }}>{TEXTOS[marcadas]}</span>}
+                </div>
+                {form.errors.calificacion && <p className="text-xs font-semibold" style={{ color: '#dc2626' }}>Elige de 1 a 5 estrellas.</p>}
+
+                <div>
+                    <textarea rows={3} maxLength={1000} value={form.data.texto} onChange={(e) => form.setData('texto', e.target.value)}
+                        placeholder="Cuéntanos cómo te fue: el equipo, la atención, la entrega…"
+                        className="w-full rounded-xl border p-3 text-sm outline-none focus:ring-2"
+                        style={{ borderColor: form.errors.texto ? '#dc2626' : 'var(--border-light)', background: 'var(--surface-white)', color: 'var(--text-primary)' }} />
+                    {form.errors.texto && <p className="mt-1 text-xs font-semibold" style={{ color: '#dc2626' }}>{form.errors.texto}</p>}
+                    {flash?.error && <p className="mt-1 text-xs font-semibold" style={{ color: '#b45309' }}>{flash.error}</p>}
+                </div>
+
+                <button type="submit" disabled={form.processing || form.data.calificacion === 0}
+                    className="h-11 rounded-full px-7 text-sm font-bold text-white transition-opacity disabled:opacity-40"
+                    style={{ background: 'var(--ab-navy)' }}>
+                    {form.processing ? 'Enviando…' : 'Enviar mi opinión'}
+                </button>
+            </form>
+        </motion.section>
+    );
+}
+
 export default function Seguimiento({ pedido, token }) {
     useEnVivo(pedido, token);
 
@@ -190,6 +266,8 @@ export default function Seguimiento({ pedido, token }) {
 
                         {!cancelado && <Progreso pasos={pasos} actual={actual} terminado={pedido.estado === 'entregado'} />}
                     </motion.section>
+
+                    {pedido.estado === 'entregado' && token && <Opinar pedido={pedido} token={token} />}
 
                     <div className="grid gap-6 md:grid-cols-2">
                         {/* Productos */}

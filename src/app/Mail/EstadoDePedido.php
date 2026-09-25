@@ -58,8 +58,8 @@ class EstadoDePedido extends Mailable implements ShouldQueue
         Pedido::ENTREGADO => [
             'asunto' => 'Entregado · %s',
             'titulo' => 'Tu pedido fue entregado',
-            'cuerpo' => 'Gracias por comprar en Apple Boss. Cualquier cosa, escríbenos.',
-            'boton'  => 'Ver mi pedido',
+            'cuerpo' => 'Gracias por comprar en Apple Boss. Si tienes un minuto, cuéntanos qué te pareció: tu opinión ayuda a que otros compren tranquilos.',
+            'boton'  => 'Dejar mi opinión',
         ],
         Pedido::CANCELADO => [
             'asunto' => 'Tu pedido %s fue cancelado',

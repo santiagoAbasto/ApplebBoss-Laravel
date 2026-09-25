@@ -79,6 +79,10 @@ class PublicCatalogController extends Controller
             ? Novedad::paraLaTienda(HomeSection::limite('news', $seccionNovedades->settings['limit'] ?? null))
             : [];
 
+        // Reseñas — solo si la sección está encendida, y solo las aprobadas en Tienda online → Reseñas
+        $conResenas = $sections->contains('type', 'reviews');
+        $resenas = $conResenas ? \App\Models\Resena::paraLaTienda() : [];
+
         return Inertia::render('Store/Home', [
             'sections'       => $sections,
             'featured'       => $featured,
@@ -89,6 +93,8 @@ class PublicCatalogController extends Controller
             'services'       => $services,
             'locations'      => $locations,
             'novedades'      => $novedades,
+            'resenas'        => $resenas,
+            'resenasResumen' => $conResenas && $resenas !== [] ? \App\Models\Resena::resumenPublico() : null,
         ]);
     }
 

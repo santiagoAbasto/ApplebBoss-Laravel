@@ -84,6 +84,11 @@ export const TIPOS = {
     ayuda: 'Las preguntas que más te hacen.',
     fuente: { label: 'Preguntas frecuentes', ruta: 'admin.faqs.index' },
   },
+  reviews: {
+    Icon: Star, nombre: 'Reseñas',
+    ayuda: 'Las opiniones de tus clientes que aprobaste, pasando una por una.',
+    fuente: { label: 'Reseñas', ruta: 'admin.resenas.index' },
+  },
 };
 
 export const metaDe = (tipo) => TIPOS[tipo] ?? { Icon: Package, nombre: tipo, ayuda: '' };
@@ -93,7 +98,7 @@ export const ORDEN_MENU = [
   ['hero'], ['trust'], ['featured'], ['category_rail'],
   ['category_products', 'celulares'], ['category_products', 'computadoras'], ['category_products', 'productos-apple'],
   ['myskin'], ['category_products', 'accesorios'], ['semiused'], ['trade_in'],
-  ['product_collection'], ['new_arrivals'], ['offers'], ['services'], ['location'], ['news'], ['faq'],
+  ['product_collection'], ['new_arrivals'], ['offers'], ['services'], ['location'], ['news'], ['faq'], ['reviews'],
 ];
 
 export function rangoMenu(section) {
@@ -151,6 +156,7 @@ export function FuentesDeContenido({ ruta }) {
     ['Ubicaciones', 'admin.locations.index', 'Tus locales: dirección, horario, contacto y mapa.'],
     ['Novedades', 'admin.novedades.index', 'Las publicaciones con fecha: lo que llegó, guías y avisos.'],
     ['Preguntas frecuentes', 'admin.faqs.index', 'Las preguntas del final.'],
+    ['Reseñas', 'admin.resenas.index', 'Las opiniones de tus clientes, después de las preguntas.'],
   ];
 
   return (

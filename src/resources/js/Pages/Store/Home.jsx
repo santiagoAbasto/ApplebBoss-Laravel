@@ -13,6 +13,7 @@ import TarjetaServicio, { columnasServicios } from '@/Components/Store/TarjetaSe
 import TarjetaNovedad, { columnasNovedades } from '@/Components/Store/TarjetaNovedad';
 import { FichaUbicacion, MapaUbicacion, SelectorLocales } from '@/Components/Store/Ubicacion';
 import TrustMarquee from '@/Components/Store/TrustMarquee';
+import CarruselResenas from '@/Components/Store/CarruselResenas';
 import Reveal from '@/Components/Store/Reveal';
 import { esExterno } from '@/Components/Store/enlaces';
 import { nombreTienda, useNombreTienda } from '@/Components/Store/tienda';
@@ -925,6 +926,19 @@ function FaqSection({ faqs, tone }) {
     );
 }
 
+// ─── Reseñas: las opiniones aprobadas en Tienda online → Reseñas ──────────────
+function ResenasSection({ resenas, resumen, settings = {}, tone }) {
+    const nombre = useNombreTienda();
+    return (
+        <Section tone={tone} id="resenas" labelledBy="home-resenas">
+            <SectionHeading id="home-resenas" eyebrow="Opiniones reales"
+                title={settings.titulo || 'Lo que dicen nuestros clientes'}
+                subtitle={settings.subtitle || `Opiniones de personas que ya compraron en ${nombre}.`} />
+            <CarruselResenas resenas={resenas} resumen={resumen} />
+        </Section>
+    );
+}
+
 // ─── Productos de cada sección ───────────────────────────────────────────────
 // Cada sección de productos trae su propio listado, ya filtrado y limitado por el backend.
 // Un producto se muestra una sola vez en la portada: si ya apareció arriba, no se repite más abajo.
@@ -945,6 +959,8 @@ function hasContent(section, data) {
         case 'location': return (data.locations?.length ?? 0) > 0;
         // Solo las novedades publicadas en Tienda online → Novedades
         case 'news': return (data.novedades?.length ?? 0) > 0;
+        // Solo las reseñas aprobadas en Tienda online → Reseñas
+        case 'reviews': return (data.resenas?.length ?? 0) > 0 && Boolean(data.resenasResumen);
         case 'hero': case 'trust': case 'trade_in':
             return true;
         default: return false;
@@ -952,7 +968,7 @@ function hasContent(section, data) {
 }
 
 // ─── Renderer de sección por tipo ────────────────────────────────────────────
-function SectionRenderer({ section, products, tone, featured, categories, totalAvailable, faqs, services, locations, novedades }) {
+function SectionRenderer({ section, products, tone, featured, categories, totalAvailable, faqs, services, locations, novedades, resenas, resenasResumen }) {
     const s = section.settings ?? {};
     const hid = `home-sec-${section.id}`;
     const nombre = useNombreTienda();
@@ -1037,6 +1053,8 @@ function SectionRenderer({ section, products, tone, featured, categories, totalA
             return <NewsSection novedades={novedades} settings={s} tone={tone} />;
         case 'faq':
             return <FaqSection faqs={faqs} tone={tone} />;
+        case 'reviews':
+            return <ResenasSection resenas={resenas} resumen={resenasResumen} settings={s} tone={tone} />;
         default:
             return null;
     }
@@ -1045,7 +1063,7 @@ function SectionRenderer({ section, products, tone, featured, categories, totalA
 // ─── Página principal ──────────────────────────────────────────────────────────
 const FIXED_TONE = { hero: null, trust: null, myskin: 'dark' };
 
-export default function Home({ sections, featured, categories, totalAvailable, faqs, services, locations, novedades }) {
+export default function Home({ sections, featured, categories, totalAvailable, faqs, services, locations, novedades, resenas = [], resenasResumen = null }) {
     const { tienda } = usePage().props;
     // El título y la metaetiqueta del inicio los escribe el servidor con App\Support\Seo (se editan en Marketing y
     // Google → «Google y redes sociales»). Acá solo van los datos del negocio que lee Google.
@@ -1053,7 +1071,7 @@ export default function Home({ sections, featured, categories, totalAvailable, f
 
     // CMS es la fuente de verdad. Solo se renderizan secciones activas con contenido,
     // alternando fondo blanco / gris para un ritmo visual limpio.
-    const data = { categories, faqs, services, locations, novedades };
+    const data = { categories, faqs, services, locations, novedades, resenas, resenasResumen };
     const seen = new Set();
     let light = 0;
 
@@ -1101,6 +1119,8 @@ export default function Home({ sections, featured, categories, totalAvailable, f
                     services={services}
                     locations={locations}
                     novedades={novedades}
+                    resenas={resenas}
+                    resenasResumen={resenasResumen}
                 />
             ))}
         </StoreLayout>

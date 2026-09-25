@@ -67,6 +67,12 @@ class Pedido extends Model
         return $this->hasMany(PedidoItem::class);
     }
 
+    /** La opinión que dejó al recibirlo (compra verificada). */
+    public function resena(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Resena::class);
+    }
+
     public function eventos(): HasMany
     {
         return $this->hasMany(PedidoEvento::class)->orderBy('created_at');
@@ -227,6 +233,8 @@ class Pedido extends Model
             'moneda'        => $this->moneda,
             'metodo_pago'   => $this->metodo_pago,
             'pago_monto_usdt' => $this->pago_monto_usdt !== null ? (float) $this->pago_monto_usdt : null,
+            // Ya entregado, puede opinar una sola vez
+            'ya_opino'      => $this->estado === self::ENTREGADO && $this->resena()->exists(),
             'cliente'       => [
                 'nombre'   => $this->nombre_cliente,
                 'telefono' => $this->telefono_cliente,

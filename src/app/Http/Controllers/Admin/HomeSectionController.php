@@ -51,6 +51,8 @@ class HomeSectionController extends Controller
         'services'           => ['text' => ['titulo', 'subtitle']],
         // Las publicaciones salen de Tienda online → Novedades; acá el título y cuántas se muestran
         'news'               => ['text' => ['titulo', 'subtitle'], 'integer' => ['limit']],
+        // Las opiniones salen de Tienda online → Reseñas (solo las aprobadas); acá solo el título
+        'reviews'            => ['text' => ['titulo', 'subtitle']],
         // Tipos sin nada que editar: su contenido sale entero de otro módulo
         'category_rail' => [],
         'trust'         => [],
@@ -184,6 +186,7 @@ class HomeSectionController extends Controller
             'servicios'   => StoreService::active()->count(),
             'faqs'        => count(Faq::deLugar('general')),
             'novedades'   => Novedad::published()->count(),
+            'resenas'     => \App\Models\Resena::publicadas()->count(),
             'conAccesos'  => CatalogCategory::forHome()->get()
                 ->filter(fn (CatalogCategory $c) => $disponibles->where('category', $c->slug)->count() > 0
                     || ($c->is_myskin && $disponibles->where('is_myskin', true)->count() > 0))
@@ -262,6 +265,7 @@ class HomeSectionController extends Controller
             'faq'           => $contexto['faqs'] > 0,
             'services'      => $contexto['servicios'] > 0,
             'news'          => $contexto['novedades'] > 0,
+            'reviews'       => $contexto['resenas'] > 0,
             'location'      => $contexto['ubicaciones'] > 0,
             default         => true,
         };
@@ -294,6 +298,10 @@ class HomeSectionController extends Controller
 
         if ($s->type === 'news' && $contexto['novedades'] === 0) {
             return 'No hay novedades publicadas.';
+        }
+
+        if ($s->type === 'reviews' && $contexto['resenas'] === 0) {
+            return 'No hay reseñas aprobadas.';
         }
 
         if ($s->type === 'location' && $contexto['ubicaciones'] === 0) {

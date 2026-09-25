@@ -1,7 +1,7 @@
 import {
   CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
-  ShoppingCart, SlidersHorizontal, Smartphone, Store, Tablet, Tag, Truck, Users, Wallet, Wrench,
+  ShoppingCart, SlidersHorizontal, Smartphone, Star, Store, Tablet, Tag, Truck, UserRound, Users, Wallet, Wrench,
 } from 'lucide-react';
 import IconoUsuarios from '@/Components/Admin/IconoUsuarios';
 import PanelShell, { AB, DISPLAY_FONT } from '@/Layouts/PanelShell';
@@ -14,6 +14,7 @@ const NAV = [
   { key: 'operacion', label: 'Ventas y operación', items: [
     { r: 'admin.ventas.index', icon: ShoppingCart, label: 'Ventas', modulo: 'ventas' },
     { r: 'admin.pedidos.index', icon: Truck, label: 'Pedidos de la tienda', modulo: 'pedidos' },
+    { r: 'admin.cuentas-tienda.index', icon: UserRound, label: 'Usuarios de la tienda', modulo: 'pedidos' },
     { r: 'admin.reservas.index', icon: CalendarCheck, label: 'Reservas', modulo: 'reservas' },
     { r: 'admin.servicios.index', icon: Hammer, label: 'Servicio técnico', modulo: 'servicios' },
     { r: 'admin.cotizaciones.index', icon: Receipt, label: 'Cotizaciones', modulo: 'cotizaciones' },
@@ -37,6 +38,7 @@ const NAV = [
     { r: 'admin.menus.index', icon: List, label: 'Menú', modulo: 'tienda' },
     { r: 'admin.pages.index', icon: FileText, label: 'Páginas', modulo: 'tienda' },
     { r: 'admin.faqs.index', icon: CircleHelp, label: 'Preguntas frecuentes', modulo: 'tienda' },
+    { r: 'admin.resenas.index', icon: Star, label: 'Reseñas', modulo: 'tienda' },
     { r: 'admin.services.index', icon: Wrench, label: 'Servicios', modulo: 'tienda' },
     { r: 'admin.locations.index', icon: MapPin, label: 'Ubicaciones', modulo: 'tienda' },
     { r: 'admin.novedades.index', icon: Newspaper, label: 'Novedades', modulo: 'tienda' },

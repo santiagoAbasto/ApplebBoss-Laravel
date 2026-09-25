@@ -29,6 +29,7 @@ class HomeSectionSeeder extends Seeder
             ['type' => 'location',          'label' => 'Visitanos',             'active' => true,  'settings' => []],
             ['type' => 'news',              'label' => 'Novedades',             'active' => true,  'settings' => []],
             ['type' => 'faq',               'label' => 'Preguntas frecuentes',  'active' => true,  'settings' => []],
+            ['type' => 'reviews',           'label' => 'Reseñas',               'active' => true,  'settings' => []],
         ];
 
         foreach ($sections as $i => $data) {

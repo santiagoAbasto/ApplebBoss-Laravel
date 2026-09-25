@@ -163,6 +163,7 @@ Route::controller(\App\Http\Controllers\SeguimientoController::class)->group(fun
     Route::get('/seguimiento', 'buscar')->name('seguimiento')->middleware('throttle:60,1');
     Route::post('/seguimiento', 'resolver')->name('seguimiento.resolver')->middleware('throttle:15,1');
     Route::get('/seguimiento/{codigo}', 'ver')->name('seguimiento.ver')->middleware('throttle:60,1');
+    Route::post('/seguimiento/{codigo}/opinion', 'opinar')->name('seguimiento.opinion')->middleware('throttle:10,1');
 });
 
 // 🚀 Redirección al dashboard según el rol autenticado
@@ -364,6 +365,10 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::post('/pedidos/{pedido}/avanzar', [App\Http\Controllers\Admin\PedidoController::class, 'avanzar'])->name('pedidos.avanzar');
         Route::post('/pedidos/{pedido}/cancelar', [App\Http\Controllers\Admin\PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
         Route::post('/pedidos/{pedido}/nota', [App\Http\Controllers\Admin\PedidoController::class, 'notaInterna'])->name('pedidos.nota');
+
+        // Usuarios de la tienda: las cuentas de los clientes y todo lo que compraron
+        Route::get('/cuentas-tienda', [App\Http\Controllers\Admin\CuentaTiendaController::class, 'index'])->name('cuentas-tienda.index');
+        Route::get('/cuentas-tienda/{cuenta}', [App\Http\Controllers\Admin\CuentaTiendaController::class, 'show'])->name('cuentas-tienda.show');
 
         // ========================
         // 📌 Reservas
@@ -593,6 +598,14 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->name('faqs.reorder');
         Route::post('/sitio/faq/copiar', [FaqController::class, 'copiar'])
             ->name('faqs.copiar');
+
+        // ========================
+        // ⭐ Reseñas de clientes
+        // ========================
+        Route::get('/sitio/resenas', [App\Http\Controllers\Admin\ResenaController::class, 'index'])->name('resenas.index');
+        Route::post('/sitio/resenas', [App\Http\Controllers\Admin\ResenaController::class, 'store'])->name('resenas.store');
+        Route::patch('/sitio/resenas/{resena}', [App\Http\Controllers\Admin\ResenaController::class, 'update'])->name('resenas.update');
+        Route::delete('/sitio/resenas/{resena}', [App\Http\Controllers\Admin\ResenaController::class, 'destroy'])->name('resenas.destroy');
 
         // ========================
         // 📄 Pages CMS

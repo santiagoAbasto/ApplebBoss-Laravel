@@ -54,6 +54,7 @@ class HomeSection extends Model
         'location',
         'news',
         'faq',
+        'reviews',
     ];
 
     /** Categorías que puede mostrar una sección category_products (mismo orden del header). */

@@ -25,7 +25,7 @@ class Permisos
         'resumen'      => ['Resumen',              'Inicio',              ['admin.dashboard', 'admin.notifications']],
 
         'ventas'       => ['Ventas',               'Ventas y operación',  ['admin.ventas']],
-        'pedidos'      => ['Pedidos de la tienda', 'Ventas y operación',  ['admin.pedidos']],
+        'pedidos'      => ['Pedidos de la tienda', 'Ventas y operación',  ['admin.pedidos', 'admin.cuentas-tienda']],
         'reservas'     => ['Reservas',             'Ventas y operación',  ['admin.reservas']],
         'servicios'    => ['Servicio técnico',     'Ventas y operación',  ['admin.servicios']],
         'cotizaciones' => ['Cotizaciones',         'Ventas y operación',  ['admin.cotizaciones']],
@@ -38,7 +38,7 @@ class Permisos
 
         'tienda'       => ['Tienda online',        'Tienda online',       [
             'admin.catalogo', 'admin.modelos', 'admin.categories', 'admin.collections', 'admin.home-builder',
-            'admin.menus', 'admin.pages', 'admin.faqs', 'admin.services', 'admin.locations', 'admin.novedades',
+            'admin.menus', 'admin.pages', 'admin.faqs', 'admin.resenas', 'admin.services', 'admin.locations', 'admin.novedades',
             'admin.trade-in', 'admin.configuracion',
         ]],
 
