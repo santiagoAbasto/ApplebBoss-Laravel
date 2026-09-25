@@ -41,7 +41,7 @@ class MetodosDePago
                 'etiqueta' => 'Binance Pay (USDT)',
                 'detalle'  => $automatico
                     ? 'Pagas con USDT desde tu app de Binance. La confirmación es automática.'
-                    : 'Envías USDT a nuestro Binance Pay ID desde tu app y subes la captura. Te avisamos por correo cuando lo confirmemos.',
+                    : 'Envías USDT a nuestro Binance ID desde tu app y subes la captura. Te avisamos por correo cuando lo confirmemos.',
                 'automatico' => $automatico,
             ];
         }

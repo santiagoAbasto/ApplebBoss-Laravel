@@ -199,7 +199,7 @@ function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
                                     </div>
                                 )}
 
-                                {/* Binance Pay manual: el cliente manda los USDT al Pay ID desde su app */}
+                                {/* Binance Pay manual: el cliente manda los USDT a nuestro Binance ID desde su app */}
                                 {metodo === 'binance_pay' && (binance ? (
                                     <div className="overflow-hidden rounded-2xl border" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
                                         <div className="px-6 py-5 text-center" style={{ background: 'var(--ab-navy)' }}>
@@ -214,7 +214,7 @@ function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
                                         <div className="p-6">
                                             <div className="flex items-center justify-between gap-3 rounded-xl border px-4 py-3" style={{ borderColor: 'var(--border-light)' }}>
                                                 <div className="min-w-0">
-                                                    <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Nuestro Binance Pay ID</p>
+                                                    <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Nuestro Binance ID</p>
                                                     <p className="truncate text-lg font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>{binance.pay_id}</p>
                                                 </div>
                                                 <Copiar texto={binance.pay_id} />
@@ -223,8 +223,9 @@ function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
                                             <ol className="mt-5 space-y-3">
                                                 {[
                                                     <>Abre tu app de Binance y entra a <strong>Pagar → Enviar</strong>.</>,
-                                                    <>Elige <strong>Pay ID</strong> y pega el nuestro.</>,
-                                                    <>Envía exactamente <strong>{usdt(binance.monto_usdt)} {binance.moneda}</strong>. En la nota escribe <strong>{pedido.codigo}</strong>.</>,
+                                                    <>Elige <strong>Binance ID</strong> y pega el nuestro.</>,
+                                                    <>Antes de confirmar, revisa que el destinatario diga <strong>APPLEBOSS</strong>.</>,
+                                                    <>Elige <strong>{binance.moneda}</strong> (Binance a veces trae otra moneda elegida) y envía exactamente <strong>{usdt(binance.monto_usdt)} {binance.moneda}</strong>. En la nota escribe <strong>{pedido.codigo}</strong>.</>,
                                                     <>Sube aquí la captura del pago.</>,
                                                 ].map((paso, i) => (
                                                     <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.07 }}

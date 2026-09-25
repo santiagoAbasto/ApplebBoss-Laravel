@@ -44,7 +44,7 @@ return [
     |
     | DOS MODOS:
     | - Automático: con API key y secret, se crea la orden en Binance y se confirma sola.
-    | - Manual: con el Pay ID, el cliente manda los USDT desde su app y sube la captura; el
+    | - Manual: con el Binance ID, el cliente manda los USDT desde su app y sube la captura; el
     |   equipo confirma en el panel. Es el modo que queda cuando la API no responde (desde un
     |   servidor en EE. UU., Binance contesta 451 y no atiende).
     */
@@ -54,7 +54,8 @@ return [
         'api_secret' => env('BINANCE_PAY_API_SECRET'),
         'base_url'   => env('BINANCE_PAY_BASE_URL', 'https://bpay.binanceapi.com'),
         'moneda'     => env('BINANCE_PAY_MONEDA', 'USDT'),
-        // El Binance Pay ID de la cuenta de la tienda. No es secreto: se le muestra al cliente.
+        // El Binance ID de la cuenta de la tienda (Binance Pay → arriba, junto al nombre). No es
+        // secreto: se le muestra al cliente para que envíe los USDT desde su app.
         'pay_id'     => env('BINANCE_PAY_ID'),
         // Respaldo si la fuente del paralelo no responde (cuántos Bs vale 1 USDT)
         'tasa_bob'   => env('BINANCE_PAY_TASA_BOB'),
