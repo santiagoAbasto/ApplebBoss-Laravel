@@ -92,7 +92,8 @@ class SeoPagesTest extends TestCase
             ->assertInertia(fn ($p) => $p
                 ->where('seo.title', 'Compra iPhone 15 Pro 256GB en Cochabamba')
                 ->where('seo.type', 'product')
-                ->where('seo.description', 'Equipo disponible. Disponible en Apple Boss, Cochabamba.'));
+                // La descripción se arma con los datos del producto: qué es, su estado, el precio y dónde se compra
+                ->where('seo.description', 'iPhone 15 Pro 256GB, nuevo. Bs 7.500 en Apple Boss, Cochabamba. Equipo disponible.'));
     }
 
     public function test_product_own_seo_beats_template(): void

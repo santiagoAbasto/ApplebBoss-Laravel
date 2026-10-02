@@ -53,6 +53,7 @@ use Illuminate\Http\Request;
 
 // 🗺 SEO
 Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
+Route::get('/llms.txt', [RobotsController::class, 'llms'])->name('llms');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // 📖 API Docs — Swagger UI estático (sin anotaciones, spec en public/api-docs/openapi.json)

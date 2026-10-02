@@ -29,32 +29,36 @@ class SitemapController extends Controller
 
         $urls = collect();
 
+        // Inicio, catálogo, hubs y categorías cambian cuando cambia lo publicado: esa es su fecha real.
+        // Antes todas llevaban «ahora», y con una fecha que nunca es cierta Google deja de mirarla.
+        $ultimoCambio = optional($products->first()?->updated_at)->toAtomString();
+
         // Home
-        $urls->push(['loc' => $base . '/', 'priority' => '1.0', 'changefreq' => 'daily',   'lastmod' => now()->toAtomString()]);
+        $urls->push(['loc' => $base . '/', 'priority' => '1.0', 'changefreq' => 'daily',   'lastmod' => $ultimoCambio]);
 
         // Catálogo
-        $urls->push(['loc' => $base . '/catalogo', 'priority' => '0.9', 'changefreq' => 'daily', 'lastmod' => now()->toAtomString()]);
+        $urls->push(['loc' => $base . '/catalogo', 'priority' => '0.9', 'changefreq' => 'daily', 'lastmod' => $ultimoCambio]);
 
         // Hubs fijos + Trade-In
         foreach (['/iphone', '/mac', '/seminuevos', '/myskin', '/trade-in'] as $hub) {
-            $urls->push(['loc' => $base . $hub, 'priority' => '0.8', 'changefreq' => 'weekly', 'lastmod' => now()->toAtomString()]);
+            $urls->push(['loc' => $base . $hub, 'priority' => '0.8', 'changefreq' => 'weekly', 'lastmod' => $ultimoCambio]);
         }
 
         // Novedades: solo con alguna publicada e indexable (sin ellas, la página es un aviso)
         if (\App\Models\Novedad::published()->where('indexable', true)->exists()) {
-            $urls->push(['loc' => $base . '/novedades', 'priority' => '0.7', 'changefreq' => 'weekly', 'lastmod' => now()->toAtomString()]);
+            $urls->push(['loc' => $base . '/novedades', 'priority' => '0.7', 'changefreq' => 'weekly', 'lastmod' => $ultimoCambio]);
         }
 
         // Comparativas de modelos (una por familia con base de modelos de referencia)
         foreach (array_keys(ComparadorModelosController::FAMILIAS) as $familia) {
-            $urls->push(['loc' => $base . '/comparar/' . $familia, 'priority' => '0.7', 'changefreq' => 'weekly', 'lastmod' => now()->toAtomString()]);
+            $urls->push(['loc' => $base . '/comparar/' . $familia, 'priority' => '0.7', 'changefreq' => 'weekly']);
         }
 
         // Páginas de las categorías con productos publicados: su portada y su título en Google (Tienda online → Categorías)
         $categoriasConProductos = CatalogoPublicacion::publicadoAhora()->distinct()->pluck('categoria')->flip();
         foreach (CatalogCategory::active()->orderBy('sort_order')->get() as $categoria) {
             if (isset($categoriasConProductos[$categoria->slug])) {
-                $urls->push(['loc' => $base . $categoria->urlCatalogo(), 'priority' => '0.8', 'changefreq' => 'daily', 'lastmod' => now()->toAtomString()]);
+                $urls->push(['loc' => $base . $categoria->urlCatalogo(), 'priority' => '0.8', 'changefreq' => 'daily', 'lastmod' => $ultimoCambio]);
             }
         }
 
@@ -111,7 +115,7 @@ class SitemapController extends Controller
         });
 
         $rows = $urls->map(function (array $u) {
-            $lastmod = isset($u['lastmod']) ? "\n        <lastmod>{$u['lastmod']}</lastmod>" : '';
+            $lastmod = ! empty($u['lastmod']) ? "\n        <lastmod>{$u['lastmod']}</lastmod>" : '';
             return
                 "    <url>\n" .
                 "        <loc>" . htmlspecialchars($u['loc'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . "</loc>\n" .

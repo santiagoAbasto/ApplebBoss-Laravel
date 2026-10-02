@@ -70,5 +70,14 @@
 </head>
 <body class="font-sans antialiased">
     @inertia
+
+    {{-- La misma página en HTML simple, para quien no ejecuta JavaScript (buscadores de IA, redes, lectores).
+         Con JavaScript queda oculta y app.jsx la quita al montar React. --}}
+    @php($lectura = \App\Support\Seo\ContenidoLegible::html($page ?? null))
+    @if($lectura !== '')
+        <style>#lectura{display:none}</style>
+        <noscript><style>#lectura{display:block;max-width:60rem;margin:0 auto;padding:1.25rem;font-family:system-ui,sans-serif;line-height:1.55}</style></noscript>
+        <div id="lectura">{!! $lectura !!}</div>
+    @endif
 </body>
 </html>

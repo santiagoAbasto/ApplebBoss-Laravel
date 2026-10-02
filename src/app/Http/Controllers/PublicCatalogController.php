@@ -257,7 +257,7 @@ class PublicCatalogController extends Controller
             'titulo'          => $pub->titulo,
             'seo_title'       => $pub->seo_title,
             'seo_description' => $pub->seo_description,
-            'descripcion'     => trim(($pub->resumen ? rtrim($pub->resumen, '. ') . '. ' : '') . 'Disponible en Apple Boss, Cochabamba.'),
+            'descripcion'     => \App\Support\Seo\DescripcionProducto::de($product, $price),
             'imagen'          => $principal['url_card'] ?? null,
         ]);
         // Agrupar por family del target para el PDP

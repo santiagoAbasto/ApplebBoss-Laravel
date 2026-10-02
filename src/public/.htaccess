@@ -13,6 +13,13 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Barra final: detrás del proxy (Caddy) la petición llega por http; sin esto la redirección salía
+    # hacia http:// y de ahí otra vez a https (dos saltos para Google).
+    RewriteCond %{HTTP:X-Forwarded-Proto} =https
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ https://%{HTTP_HOST}%1 [L,R=301]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

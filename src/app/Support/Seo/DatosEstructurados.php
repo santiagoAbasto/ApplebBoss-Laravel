@@ -196,7 +196,7 @@ class DatosEstructurados
             'url'         => UrlPublica::de('productos/' . $pub->slug),
             'description' => $seo['description'] ?? $pub->resumen,
             'image'       => $seo['image'] ?? null,
-            'brand'       => $pub->marca ? ['@type' => 'Brand', 'name' => $pub->marca] : null,
+            'brand'       => ($marca = $pub->marca ?: DescripcionProducto::marcaPorNombre($pub->titulo)) ? ['@type' => 'Brand', 'name' => $marca] : null,
             'category'    => $pub->categoria,
             // Nuevo vs seminuevo: es un dato comercial verificable y a Google le importa
             'itemCondition' => match (mb_strtolower((string) $pub->condicion)) {

@@ -24,6 +24,9 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(<App {...props} />);
+
+        // El servidor imprime la página en HTML simple para quien no ejecuta JavaScript; acá ya no hace falta
+        document.getElementById('lectura')?.remove();
     },
     progress: {
         color: '#0f3d2e',

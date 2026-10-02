@@ -194,6 +194,8 @@ function Hero({ featured, totalAvailable, cmsSettings = {} }) {
         ? { label: cmsSettings.cta2_label.trim(), url: cmsSettings.cta2_url.trim() }
         : null;
     const conTexto = Boolean(volanta || titulo || texto);
+    // Toda página necesita un título principal: si Portada no tiene uno escrito, vale el de la página (solo para lectores y buscadores)
+    const tituloPagina = usePage().props.seo?.title;
 
     const tinta      = tema.oscuro ? '#fff' : '#011446';
     const tintaSuave = tema.oscuro ? 'rgba(255,255,255,0.68)' : 'rgba(1,20,70,0.66)';
@@ -298,6 +300,8 @@ function Hero({ featured, totalAvailable, cmsSettings = {} }) {
 
                 {/* ── Grain ── */}
                 <div style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none', opacity: tema.oscuro ? 0.35 : 0.12, backgroundImage: `url("${GRAIN_SVG}")`, backgroundSize: '200px 200px' }} />
+
+                {!titulo && tituloPagina && <h1 className="sr-only">{tituloPagina}</h1>}
 
                 {/* ── Texto de la portada (Portada → «Portada grande») ── */}
                 {conTexto && (
