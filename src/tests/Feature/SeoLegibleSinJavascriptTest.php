@@ -117,6 +117,17 @@ class SeoLegibleSinJavascriptTest extends TestCase
         $this->assertStringNotContainsString('<lastmod>2026-10-02T', $xml);
     }
 
+    public function test_una_pagina_informativa_sin_descripcion_propia_usa_el_comienzo_de_su_texto(): void
+    {
+        \App\Models\Page::create(['title' => 'Garantía', 'slug' => 'garantia', 'active' => true,
+            'content' => '<h2>Plazos</h2><p>Los equipos nuevos tienen 12 meses de garantía y los seminuevos, 4 meses.</p>']);
+
+        $html = $this->get('/paginas/garantia')->assertOk()->getContent();
+
+        $this->assertStringContainsString('<meta name="description" content="Plazos Los equipos nuevos tienen 12 meses de garantía', $html);
+        $this->assertStringContainsString('<p>Los equipos nuevos tienen 12 meses de garantía y los seminuevos, 4 meses.</p>', $this->lectura($html));
+    }
+
     public function test_la_marca_solo_se_dice_cuando_el_nombre_la_trae(): void
     {
         $this->assertSame('Apple', DescripcionProducto::marcaPorNombre('iPhone 14 Plus 128 GB Celeste'));

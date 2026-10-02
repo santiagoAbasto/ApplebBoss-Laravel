@@ -17,6 +17,8 @@ class PublicPageController extends Controller
             'titulo'          => $page->title,
             'seo_title'       => $page->tituloGoogle(),
             'seo_description' => $page->meta_description,
+            // Sin descripción propia, el comienzo del texto de la página: antes las cinco compartían la del sitio
+            'descripcion'     => \Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', \App\Support\TextoEnriquecido::aTexto($page->content)), 155, '…') ?: null,
         ]);
 
         return Inertia::render('Store/Page', [
