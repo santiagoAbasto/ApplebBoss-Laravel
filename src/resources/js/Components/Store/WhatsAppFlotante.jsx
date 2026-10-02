@@ -82,7 +82,7 @@ function useTope() {
     return subir;
 }
 
-export default function WhatsAppFlotante({ url, titulo = '¿Te ayudamos a elegir?', bajada = 'Te respondemos por WhatsApp, sin bots.' }) {
+export default function WhatsAppFlotante({ url, titulo = '¿Te ayudamos a elegir?', bajada = 'Te respondemos por WhatsApp, sin bots.', saludar = true }) {
     const [entro, setEntro]       = useState(false);
     const [apuntado, setApuntado] = useState(false);
     const [saludo, setSaludo]     = useState(false);
@@ -96,8 +96,10 @@ export default function WhatsAppFlotante({ url, titulo = '¿Te ayudamos a elegir
         return () => clearTimeout(t);
     }, []);
 
-    // El saludo se abre una sola vez por visita y se cierra solo
+    // El saludo se abre una sola vez por visita y se cierra solo. Donde taparía la portada (`saludar` apagado) espera a
+    // la página siguiente.
     useEffect(() => {
+        if (!saludar) return undefined;
         let visto = true;
         try { visto = sessionStorage.getItem(CLAVE_SALUDO) === 'visto'; } catch { /* sin almacenamiento */ }
         if (visto) return undefined;
@@ -110,7 +112,7 @@ export default function WhatsAppFlotante({ url, titulo = '¿Te ayudamos a elegir
         const cerrar = setTimeout(() => setSaludo(false), ESPERA_SALUDO + DURA_SALUDO);
 
         return () => { clearTimeout(abrir); clearTimeout(cerrar); };
-    }, []);
+    }, [saludar]);
 
     // El guiño se repite hasta que el cliente lo apunta o lo toca
     useEffect(() => {

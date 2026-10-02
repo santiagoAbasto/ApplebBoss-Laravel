@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion';
+import { useMotionValueEvent, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import { ArrowRight, ChevronDown, MessageCircle } from '@/Components/Store/Icons';
 
 // La portada de servicio técnico: un iPhone que se desarma al bajar y se vuelve a armar al final, como las páginas de
@@ -7,8 +7,11 @@ import { ArrowRight, ChevronDown, MessageCircle } from '@/Components/Store/Icons
 // (public/images/servicio/secuencia) que se dibuja en un <canvas>. Con «reducir movimiento» no se fija nada: se muestra
 // el equipo desarmado, quieto, con la lista de piezas.
 
-const CUADROS = 74;                       // 000.webp … 073.webp: armado → desarmado
-const LADO = { grande: 1080, chico: 600 };
+// Dos juegos de cuadros (armado → desarmado): el de escritorio y uno más liviano para celulares
+const SERIES = {
+  grande: { carpeta: 'secuencia', lado: 1080, cuadros: 121 },
+  chico: { carpeta: 'secuencia-m', lado: 600, cuadros: 61 },
+};
 const ruta = (i, carpeta) => `/images/servicio/${carpeta}/${String(i).padStart(3, '0')}.webp`;
 
 // En qué parte del recorrido pasa cada cosa (0 = arriba de la sección, 1 = el final)
@@ -16,14 +19,22 @@ const ABRE = [0.07, 0.44];
 const PIEZAS = [0.46, 0.80];
 const CIERRA = [0.82, 0.96];
 
-function cuadroDe(p) {
-  const ultimo = CUADROS - 1;
+// La posición dentro de la secuencia, con decimales: 12,4 es el cuadro 12 con un 40 % del 13 encima. Cada tramo arranca
+// y frena suave, y entre cuadro y cuadro se funde, así el movimiento no va a saltos.
+const suave = (t) => t * t * (3 - 2 * t);
+
+function posicionDe(p, cuadros) {
+  const ultimo = cuadros - 1;
   if (p <= ABRE[0]) return 0;
-  if (p < ABRE[1]) return Math.round(((p - ABRE[0]) / (ABRE[1] - ABRE[0])) * ultimo);
+  if (p < ABRE[1]) return suave((p - ABRE[0]) / (ABRE[1] - ABRE[0])) * ultimo;
   if (p <= CIERRA[0]) return ultimo;
-  if (p < CIERRA[1]) return Math.round((1 - (p - CIERRA[0]) / (CIERRA[1] - CIERRA[0])) * ultimo);
+  if (p < CIERRA[1]) return (1 - suave((p - CIERRA[0]) / (CIERRA[1] - CIERRA[0]))) * ultimo;
   return 0;
 }
+
+// En qué orden se piden los cuadros: primero uno de cada ocho, para que la secuencia entera se pueda recorrer enseguida,
+// y después los del medio
+const ordenDe = (cuadros) => [8, 4, 2, 1].flatMap((paso, n) => Array.from({ length: cuadros }, (_, i) => i).filter((i) => i % paso === 0 && (n === 0 || i % (paso * 2) !== 0)));
 
 // Qué texto está a la vista en cada parte del recorrido
 const tramoDe = (p) => {
@@ -87,45 +98,65 @@ export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPi
   const seccion = useRef(null);
   const lienzo = useRef(null);
   const imagenes = useRef([]);
-  const dibujado = useRef(-1);
+  const dibujado = useRef(null);
+  const serie = useRef(SERIES.grande);
   const [activa, setActiva] = useState(-1);
   const [tramo, setTramo] = useState('portada');   // qué texto está a la vista: solo ese recibe los clics
 
   const { scrollYProgress } = useScroll({ target: seccion, offset: ['start start', 'end end'] });
 
-  // Dibuja el cuadro pedido o, si todavía no bajó, el más cercano que ya esté
-  const dibujar = (i) => {
+  // El scroll con inercia: la rueda del mouse avanza a saltos y esto los convierte en un movimiento continuo
+  const recorrido = useSpring(scrollYProgress, { stiffness: 70, damping: 22, mass: 0.6, restDelta: 0.0002 });
+
+  const lista = (i) => { const img = imagenes.current[i]; return img?.complete && img.naturalWidth ? img : null; };
+
+  const dibujar = (pos) => {
     const ctx = lienzo.current?.getContext('2d');
     if (!ctx) return;
-    let img = null;
-    for (let d = 0; d < CUADROS && !img; d += 1) {
-      img = [imagenes.current[i - d], imagenes.current[i + d]].find((x) => x?.complete && x.naturalWidth) ?? null;
+    const [w, h] = [lienzo.current.width, lienzo.current.height];
+    const base = Math.floor(pos);
+    const { cuadros } = serie.current;
+    const [a, b, mezcla] = [lista(base), lista(Math.min(cuadros - 1, base + 1)), pos - base];
+
+    if (a && b) {
+      // Los dos cuadros vecinos ya están: se funde uno con el otro
+      ctx.globalAlpha = 1;
+      ctx.drawImage(a, 0, 0, w, h);
+      if (mezcla > 0.01 && b !== a) { ctx.globalAlpha = mezcla; ctx.drawImage(b, 0, 0, w, h); ctx.globalAlpha = 1; }
+      dibujado.current = pos;
+      return;
     }
-    if (!img || dibujado.current === img) return;
-    dibujado.current = img;
-    ctx.drawImage(img, 0, 0, lienzo.current.width, lienzo.current.height);
+
+    // Todavía están bajando: el más cercano que haya
+    for (let d = 0; d < cuadros; d += 1) {
+      const img = lista(Math.round(pos) - d) ?? lista(Math.round(pos) + d);
+      if (img) { if (dibujado.current !== img) { ctx.drawImage(img, 0, 0, w, h); dibujado.current = img; } return; }
+    }
   };
 
   useEffect(() => {
     if (quieto) return undefined;
-    const chico = window.matchMedia('(max-width: 640px)').matches;
-    const carpeta = chico ? 'secuencia-m' : 'secuencia';
-    lienzo.current.width = lienzo.current.height = chico ? LADO.chico : LADO.grande;
+    serie.current = window.matchMedia('(max-width: 640px)').matches ? SERIES.chico : SERIES.grande;
+    const { carpeta, lado, cuadros } = serie.current;
+    lienzo.current.width = lienzo.current.height = lado;
 
-    imagenes.current = Array.from({ length: CUADROS }, (_, i) => {
+    imagenes.current = [];
+    ordenDe(cuadros).forEach((i) => {
       const img = new Image();
       img.decoding = 'async';
-      img.onload = () => dibujar(cuadroDe(scrollYProgress.get()));
+      img.onload = () => dibujar(posicionDe(recorrido.get(), cuadros));
       img.src = ruta(i, carpeta);
-      return img;
+      imagenes.current[i] = img;
     });
 
-    return () => { imagenes.current.forEach((img) => { img.onload = null; }); imagenes.current = []; };
+    return () => { imagenes.current.forEach((img) => { if (img) img.onload = null; }); imagenes.current = []; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quieto]);
 
+  useMotionValueEvent(recorrido, 'change', (p) => dibujar(posicionDe(p, serie.current.cuadros)));
+
+  // Los textos siguen al scroll real, sin inercia
   useMotionValueEvent(scrollYProgress, 'change', (p) => {
-    dibujar(cuadroDe(p));
     const pieza = piezaDe(p, piezas.length);
     setActiva((antes) => (antes === pieza ? antes : pieza));
     setTramo(tramoDe(p));
@@ -140,7 +171,7 @@ export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPi
       <section className="bg-black">
         <div className="mx-auto grid w-full max-w-[1224px] items-center gap-8 px-4 py-12 sm:px-7 md:px-10 lg:grid-cols-2">
           <div><Portada titulo={titulo} bajada={bajada} waUrl={waUrl} /></div>
-          <img src={ruta(CUADROS - 1, 'secuencia')} alt="Un iPhone desarmado: pantalla, batería, placa, cámaras y carcasa" className="w-full" />
+          <img src={ruta(SERIES.grande.cuadros - 1, SERIES.grande.carpeta)} alt="Un iPhone desarmado: pantalla, batería, placa, cámaras y carcasa" className="w-full" />
           <div className="lg:col-span-2">
             <h2 className="mb-4 text-2xl font-black tracking-tight text-white">{tituloPiezas}</h2>
             <ListaDePiezas piezas={piezas} activa={null} />

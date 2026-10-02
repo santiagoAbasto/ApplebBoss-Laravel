@@ -598,9 +598,11 @@ export function useWhatsApp() {
 // El botón vive en Components/Store/WhatsAppFlotante.jsx; acá solo se arma el enlace con lo de Configuración.
 function WhatsAppDeLaTienda() {
     const wa = useWhatsApp();
+    const { component } = usePage();
     if (!wa.enabled || !wa.number) return null;
 
-    return <WhatsAppFlotante url={wa.url(wa.mensaje)} />;
+    // En servicio técnico el saludo taparía el equipo de la portada: ahí queda solo el botón
+    return <WhatsAppFlotante url={wa.url(wa.mensaje)} saludar={component !== 'Store/ServicioTecnico'} />;
 }
 
 // ─── Newsletter bar ───────────────────────────────────────────────────────────
