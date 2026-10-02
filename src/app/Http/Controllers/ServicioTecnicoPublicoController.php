@@ -38,14 +38,14 @@ class ServicioTecnicoPublicoController extends Controller
             'id'     => 'reparaciones',
             'titulo' => 'Lo que más reparamos',
             'texto'  => 'Si tu equipo tiene otra falla, descríbela en el formulario: se revisa en el diagnóstico.',
-            // En el orden en que aparecen las piezas del equipo desarmado en la portada
+            // En el orden en que salen las piezas cuando la portada desarma el equipo (SecuenciaDesarme.jsx)
             'items'  => [
                 ['titulo' => 'Pantalla', 'texto' => 'Vidrio roto, manchas, líneas o un táctil que no responde.'],
                 ['titulo' => 'Batería', 'texto' => 'Se descarga rápido, el equipo se apaga solo o la batería está hinchada.'],
                 ['titulo' => 'Placa', 'texto' => 'El equipo no enciende o se reinicia.'],
+                ['titulo' => 'Puerto de carga', 'texto' => 'No carga o el cable funciona solo en cierta posición.'],
                 ['titulo' => 'Cámara', 'texto' => 'Fotos borrosas, no enfoca o la cámara no abre.'],
                 ['titulo' => 'Tapa trasera', 'texto' => 'Vidrio trasero roto o rajado.'],
-                ['titulo' => 'Puerto de carga', 'texto' => 'No carga o el cable funciona solo en cierta posición.'],
             ],
         ],
         [
