@@ -1,46 +1,81 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMotionValueEvent, useReducedMotion, useScroll, useSpring } from 'framer-motion';
+import { useMotionValueEvent, useReducedMotion, useScroll } from 'framer-motion';
 import { ArrowRight, ChevronDown, MessageCircle } from '@/Components/Store/Icons';
 
-// La portada de servicio técnico: un iPhone que se desarma al bajar y se vuelve a armar al final, como las páginas de
-// producto de Apple. La sección queda fija mientras se recorre y el scroll elige el cuadro de una secuencia de imágenes
-// (public/images/servicio/secuencia) que se dibuja en un <canvas>. Con «reducir movimiento» no se fija nada: se muestra
-// el equipo desarmado, quieto, con la lista de piezas.
+// La portada de servicio técnico: un iPhone 17 Pro Max que se desarma al bajar y se vuelve a armar al final, como las
+// páginas de producto de Apple. La sección queda fija mientras se recorre; el scroll dice hasta dónde tiene que llegar
+// el desarme y la animación va hacia ahí a su propio ritmo, lento y parejo, sin importar si la rueda avanza de golpe.
+//
+// No es un video: son las seis piezas del equipo recortadas (public/images/servicio/piezas-1) y cada una se desliza
+// rígida, de costado, desde su lugar dentro de la carcasa hasta su lugar en la fila. Así ninguna se deforma ni cambia
+// de tamaño por el camino. Con «reducir movimiento» no se fija nada: se muestra el equipo desarmado, quieto.
 
-// Dos juegos de cuadros (armado → desarmado): el de escritorio y uno más liviano para celulares
-const SERIES = {
-  grande: { carpeta: 'secuencia', lado: 1080, cuadros: 121 },
-  chico: { carpeta: 'secuencia-m', lado: 600, cuadros: 61 },
-};
-const ruta = (i, carpeta) => `/images/servicio/${carpeta}/${String(i).padStart(3, '0')}.webp`;
+// Las piezas, del fondo al frente, en píxeles de la imagen de origen (una fila de 2688 px de ancho). `x` e `y` son su
+// lugar desarmada; `casa`, cuánto a la derecha del borde de la carcasa va cuando está colocada; `sale`, en qué parte
+// del desarme deja la carcasa; `item`, qué renglón de «Lo que más reparamos» la señala.
+const CARPETA = '/images/servicio/piezas-1';
+const PIEZAS_EQUIPO = [
+  { id: 'carcasa', w: 529, h: 1275, x: 2057, y: 124, item: 4 },
+  { id: 'camaras', w: 339, h: 547, x: 1660, y: 228, casa: 160, sale: [0.58, 0.96], item: 3 },
+  { id: 'puerto', w: 405, h: 206, x: 1157, y: 1099, casa: 62, sale: [0.48, 0.86], item: 5 },
+  { id: 'placa', w: 404, h: 467, x: 1153, y: 218, casa: 30, sale: [0.48, 0.86], item: 2 },
+  { id: 'bateria', w: 369, h: 722, x: 674, y: 500, casa: 80, sale: [0.36, 0.74], item: 1 },
+  { id: 'pantalla', w: 478, h: 1240, x: 100, y: 145, casa: 25, item: 0 },
+];
+const CARCASA = PIEZAS_EQUIPO[0];
+const PANTALLA = PIEZAS_EQUIPO[PIEZAS_EQUIPO.length - 1];
+const FILA = { centro: 1344, medio: 761 };   // el centro de la fila desarmada
+const ABIERTO = 0.34;                        // hasta acá se separa la pantalla; después salen las piezas
+const SEPARA = 290;                          // cuánto se aparta cada mitad al abrir
 
 // En qué parte del recorrido pasa cada cosa (0 = arriba de la sección, 1 = el final)
 const ABRE = [0.07, 0.44];
 const PIEZAS = [0.46, 0.80];
 const CIERRA = [0.82, 0.96];
 
-// La posición dentro de la secuencia, con decimales: 12,4 es el cuadro 12 con un 40 % del 13 encima. Cada tramo arranca
-// y frena suave, y entre cuadro y cuadro se funde, así el movimiento no va a saltos.
-const suave = (t) => t * t * (3 - 2 * t);
+const suave = (t) => { const u = Math.min(1, Math.max(0, t)); return u * u * (3 - 2 * u); };
+const entre = (a, b, t) => a + (b - a) * t;
 
-function posicionDe(p, cuadros) {
-  const ultimo = cuadros - 1;
+// Cuánto del desarme corresponde a cada punto del recorrido: 0 es armado y 1, desarmado del todo
+function avanceDe(p) {
   if (p <= ABRE[0]) return 0;
-  if (p < ABRE[1]) return suave((p - ABRE[0]) / (ABRE[1] - ABRE[0])) * ultimo;
-  if (p <= CIERRA[0]) return ultimo;
-  if (p < CIERRA[1]) return (1 - suave((p - CIERRA[0]) / (CIERRA[1] - CIERRA[0]))) * ultimo;
+  if (p < ABRE[1]) return suave((p - ABRE[0]) / (ABRE[1] - ABRE[0]));
+  if (p <= CIERRA[0]) return 1;
+  if (p < CIERRA[1]) return 1 - suave((p - CIERRA[0]) / (CIERRA[1] - CIERRA[0]));
   return 0;
 }
 
-// En qué orden se piden los cuadros: primero uno de cada ocho, para que la secuencia entera se pueda recorrer enseguida,
-// y después los del medio
-const ordenDe = (cuadros) => [8, 4, 2, 1].flatMap((paso, n) => Array.from({ length: cuadros }, (_, i) => i).filter((i) => i % paso === 0 && (n === 0 || i % (paso * 2) !== 0)));
+// El ritmo: desarmarse (o armarse) entero lleva como mínimo estos segundos, aunque el scroll llegue antes. Cerca de la
+// meta frena solo, y la velocidad cambia de a poco para que no arranque ni pare de golpe.
+const SEGUNDOS = 6;
+const FRENO = 4;
+const ARRANQUE = 7;
 
-// Qué texto está a la vista en cada parte del recorrido
-const tramoDe = (p) => {
-  if (p < ABRE[0]) return 'portada';
-  if (p >= PIEZAS[0] - 0.03 && p <= PIEZAS[1]) return 'piezas';
-  if (p >= CIERRA[1] - 0.03) return 'cierre';
+// Dónde va cada pieza (borde izquierdo, en píxeles de origen) para un avance dado. `junta` acerca las piezas de la fila
+// en pantallas angostas, donde no entran una al lado de la otra.
+function lugares(avance, junta) {
+  const final = (pieza) => FILA.centro + (pieza.x + pieza.w / 2 - FILA.centro) * junta - pieza.w / 2;
+  const armada = FILA.centro - CARCASA.w / 2;
+  const abre = suave(avance / ABIERTO);
+  const sigue = suave((avance - ABIERTO) / (1 - ABIERTO));
+
+  const carcasa = avance <= ABIERTO ? entre(armada, armada + SEPARA * junta, abre) : entre(armada + SEPARA * junta, final(CARCASA), sigue);
+  const pantalla = avance <= ABIERTO
+    ? entre(armada + PANTALLA.casa, armada + PANTALLA.casa - SEPARA * junta, abre)
+    : entre(armada + PANTALLA.casa - SEPARA * junta, final(PANTALLA), sigue);
+
+  return PIEZAS_EQUIPO.map((pieza) => {
+    if (pieza === CARCASA) return carcasa;
+    if (pieza === PANTALLA) return pantalla;
+    return entre(carcasa + pieza.casa, final(pieza), suave((avance - pieza.sale[0]) / (pieza.sale[1] - pieza.sale[0])));
+  });
+}
+
+// Qué texto está a la vista: lo decide el recorrido, pero espera a que el equipo termine de armarse o desarmarse
+const tramoDe = (p, avance) => {
+  if (p < ABRE[0] && avance < 0.04) return 'portada';
+  if (p >= PIEZAS[0] - 0.03 && p <= PIEZAS[1] && avance > 0.93) return 'piezas';
+  if (p >= CIERRA[1] - 0.03 && avance < 0.06) return 'cierre';
   return null;
 };
 
@@ -83,7 +118,7 @@ function ListaDePiezas({ piezas, activa }) {
           <li key={pieza.titulo} className="border-l-2 py-1.5 pl-4 transition-all duration-300"
             style={{ borderColor: activa === i ? 'var(--ab-lime)' : 'rgba(255,255,255,0.16)', opacity: encendida ? 1 : 0.38 }}>
             <p className="text-lg font-extrabold text-white sm:text-xl">{pieza.titulo}</p>
-            <p className={`overflow-hidden text-sm leading-relaxed text-white/75 transition-all duration-300 ${activa === i || activa === null ? 'max-h-24' : 'max-h-0'}`}>
+            <p className={`overflow-hidden text-sm leading-relaxed text-white/75 transition-all duration-300 ${encendida ? 'max-h-24' : 'max-h-0'}`}>
               {pieza.texto}
             </p>
           </li>
@@ -93,73 +128,122 @@ function ListaDePiezas({ piezas, activa }) {
   );
 }
 
+// Las piezas dibujadas. `activa` es el renglón señalado de la lista: su pieza queda encendida y las demás se apagan.
+function Equipo({ escena, capas, activa }) {
+  return (
+    <div ref={escena} role="img" aria-label="Un iPhone 17 Pro Max que se desarma: pantalla, batería, placa, cámaras, puerto de carga y carcasa"
+      className="relative h-full min-h-0 w-full">
+      {PIEZAS_EQUIPO.map((pieza, i) => (
+        <div key={pieza.id} ref={(el) => { capas.current[i] = el; }} className="absolute left-0 top-0 origin-top-left will-change-transform"
+          style={{ width: pieza.w, height: pieza.h }}>
+          <img src={`${CARPETA}/${pieza.id}.webp`} alt="" width={pieza.w} height={pieza.h} draggable="false" decoding="async"
+            className="block h-full w-full select-none transition-[filter] duration-300"
+            style={{ filter: activa >= 0 && activa !== pieza.item ? 'brightness(0.35)' : 'none' }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPiezas, waUrl = null }) {
   const quieto = useReducedMotion();
   const seccion = useRef(null);
-  const lienzo = useRef(null);
-  const imagenes = useRef([]);
-  const dibujado = useRef(null);
-  const serie = useRef(SERIES.grande);
+  const escena = useRef(null);
+  const capas = useRef([]);
   const [activa, setActiva] = useState(-1);
   const [tramo, setTramo] = useState('portada');   // qué texto está a la vista: solo ese recibe los clics
 
   const { scrollYProgress } = useScroll({ target: seccion, offset: ['start start', 'end end'] });
 
-  // El scroll con inercia: la rueda del mouse avanza a saltos y esto los convierte en un movimiento continuo
-  const recorrido = useSpring(scrollYProgress, { stiffness: 70, damping: 22, mass: 0.6, restDelta: 0.0002 });
+  // Hasta dónde pide llegar el scroll (meta), dónde va la animación (avance) y a qué velocidad
+  const estado = useRef({ p: 0, meta: 0, avance: 0, velocidad: 0, tiempo: 0, cuadro: 0 });
 
-  const lista = (i) => { const img = imagenes.current[i]; return img?.complete && img.naturalWidth ? img : null; };
+  // Pone cada pieza en su lugar para un avance dado. Armado, el equipo se ve grande; al desarmarse la vista se aleja
+  // hasta que entra la fila entera.
+  const colocar = (avance) => {
+    const caja = escena.current;
+    if (!caja) return;
+    const [ancho, alto] = [caja.clientWidth, caja.clientHeight];
+    if (!ancho || !alto) return;
 
-  const dibujar = (pos) => {
-    const ctx = lienzo.current?.getContext('2d');
-    if (!ctx) return;
-    const [w, h] = [lienzo.current.width, lienzo.current.height];
-    const base = Math.floor(pos);
-    const { cuadros } = serie.current;
-    const [a, b, mezcla] = [lista(base), lista(Math.min(cuadros - 1, base + 1)), pos - base];
+    const junta = ancho < 560 ? 0.6 : 0.92;
+    const finales = lugares(1, junta);
+    const fila = [finales[finales.length - 1], finales[0] + CARCASA.w];   // de la pantalla a la carcasa
+    const lejos = Math.min(ancho / (fila[1] - fila[0] + 90), alto / (CARCASA.h + 130));
+    const cerca = Math.min((alto * 0.9) / CARCASA.h, (ancho * 0.86) / CARCASA.w, lejos * 2);
 
-    if (a && b) {
-      // Los dos cuadros vecinos ya están: se funde uno con el otro
-      ctx.globalAlpha = 1;
-      ctx.drawImage(a, 0, 0, w, h);
-      if (mezcla > 0.01 && b !== a) { ctx.globalAlpha = mezcla; ctx.drawImage(b, 0, 0, w, h); ctx.globalAlpha = 1; }
-      dibujado.current = pos;
-      return;
-    }
+    const aleja = suave(avance / 0.6);
+    const escala = entre(cerca, lejos, aleja);
+    const centro = entre(FILA.centro, (fila[0] + fila[1]) / 2, aleja);
+    const x = lugares(avance, junta);
 
-    // Todavía están bajando: el más cercano que haya
-    for (let d = 0; d < cuadros; d += 1) {
-      const img = lista(Math.round(pos) - d) ?? lista(Math.round(pos) + d);
-      if (img) { if (dibujado.current !== img) { ctx.drawImage(img, 0, 0, w, h); dibujado.current = img; } return; }
-    }
+    PIEZAS_EQUIPO.forEach((pieza, i) => {
+      const capa = capas.current[i];
+      if (!capa) return;
+      capa.style.transform = `translate3d(${ancho / 2 + (x[i] - centro) * escala}px, ${alto / 2 + (pieza.y - FILA.medio) * escala}px, 0) scale(${escala})`;
+      // Armado solo se ve la pantalla: lo de adentro aparece recién cuando empieza a abrirse
+      capa.style.opacity = pieza === PANTALLA ? 1 : Math.min(1, avance / 0.05);
+    });
+  };
+
+  const textos = () => {
+    const { p, avance } = estado.current;
+    const cual = tramoDe(p, avance);
+    const pieza = cual === 'piezas' ? piezaDe(p, piezas.length) : -1;
+    setTramo((antes) => (antes === cual ? antes : cual));
+    setActiva((antes) => (antes === pieza ? antes : pieza));
+  };
+
+  // Un paso de la animación: se acerca a la meta sin pasar la velocidad máxima y mueve las piezas a donde quedó
+  const paso = (ahora) => {
+    const e = estado.current;
+    const dt = Math.min(0.05, Math.max(0.001, (ahora - e.tiempo) / 1000));
+    e.tiempo = ahora;
+
+    const falta = e.meta - e.avance;
+    const deseada = Math.max(-1 / SEGUNDOS, Math.min(1 / SEGUNDOS, falta * FRENO));
+    e.velocidad += (deseada - e.velocidad) * Math.min(1, dt * ARRANQUE);
+    e.avance = Math.max(0, Math.min(1, e.avance + e.velocidad * dt));
+
+    const llego = Math.abs(falta) < 0.0004 && Math.abs(e.velocidad) < 0.0004;
+    if (llego) { e.avance = e.meta; e.velocidad = 0; }
+    colocar(e.avance);
+    textos();
+    e.cuadro = llego ? 0 : requestAnimationFrame(paso);
+  };
+
+  const andar = () => {
+    const e = estado.current;
+    if (e.cuadro) return;
+    e.tiempo = performance.now();
+    e.cuadro = requestAnimationFrame(paso);
   };
 
   useEffect(() => {
-    if (quieto) return undefined;
-    serie.current = window.matchMedia('(max-width: 640px)').matches ? SERIES.chico : SERIES.grande;
-    const { carpeta, lado, cuadros } = serie.current;
-    lienzo.current.width = lienzo.current.height = lado;
+    const e = estado.current;
+    // Sin movimiento queda desarmado. Si la página se abre ya bajada, arranca donde corresponde, sin animar hasta ahí.
+    e.p = quieto ? 0 : scrollYProgress.get();
+    e.meta = e.avance = quieto ? 1 : avanceDe(e.p);
+    colocar(e.avance);
+    if (!quieto) textos();
 
-    imagenes.current = [];
-    ordenDe(cuadros).forEach((i) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.onload = () => dibujar(posicionDe(recorrido.get(), cuadros));
-      img.src = ruta(i, carpeta);
-      imagenes.current[i] = img;
-    });
+    const alCambiarTamano = new ResizeObserver(() => colocar(estado.current.avance));
+    if (escena.current) alCambiarTamano.observe(escena.current);
 
-    return () => { imagenes.current.forEach((img) => { if (img) img.onload = null; }); imagenes.current = []; };
+    return () => {
+      alCambiarTamano.disconnect();
+      cancelAnimationFrame(estado.current.cuadro);
+      estado.current.cuadro = 0;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quieto]);
 
-  useMotionValueEvent(recorrido, 'change', (p) => dibujar(posicionDe(p, serie.current.cuadros)));
-
-  // Los textos siguen al scroll real, sin inercia
   useMotionValueEvent(scrollYProgress, 'change', (p) => {
-    const pieza = piezaDe(p, piezas.length);
-    setActiva((antes) => (antes === pieza ? antes : pieza));
-    setTramo(tramoDe(p));
+    if (quieto) return;
+    estado.current.p = p;
+    estado.current.meta = avanceDe(p);
+    textos();
+    andar();
   });
 
   // Cada texto aparece y se va con una transición propia: el scroll solo decide cuál toca
@@ -169,13 +253,11 @@ export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPi
   if (quieto) {
     return (
       <section className="bg-black">
-        <div className="mx-auto grid w-full max-w-[1224px] items-center gap-8 px-4 py-12 sm:px-7 md:px-10 lg:grid-cols-2">
-          <div><Portada titulo={titulo} bajada={bajada} waUrl={waUrl} /></div>
-          <img src={ruta(SERIES.grande.cuadros - 1, SERIES.grande.carpeta)} alt="Un iPhone desarmado: pantalla, batería, placa, cámaras y carcasa" className="w-full" />
-          <div className="lg:col-span-2">
-            <h2 className="mb-4 text-2xl font-black tracking-tight text-white">{tituloPiezas}</h2>
-            <ListaDePiezas piezas={piezas} activa={null} />
-          </div>
+        <div className="mx-auto w-full max-w-[1224px] px-4 py-12 sm:px-7 md:px-10">
+          <Portada titulo={titulo} bajada={bajada} waUrl={waUrl} />
+          <div className="mt-10 h-[46vh] min-h-[280px]"><Equipo escena={escena} capas={capas} activa={-1} /></div>
+          <h2 className="mb-4 mt-10 text-2xl font-black tracking-tight text-white">{tituloPiezas}</h2>
+          <ListaDePiezas piezas={piezas} activa={null} />
         </div>
       </section>
     );
@@ -185,11 +267,11 @@ export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPi
     <section ref={seccion} className="relative bg-black" style={{ height: '420vh' }}>
       <div className="sticky overflow-hidden h-[calc(100vh-var(--alto-header,0px))] supports-[height:100svh]:h-[calc(100svh-var(--alto-header,0px))]"
         style={{ top: 'var(--alto-header, 0px)' }}>
-        <div className="mx-auto grid h-full w-full max-w-[1224px] grid-rows-[auto_minmax(0,1fr)] px-4 sm:px-7 md:px-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-1 lg:items-center lg:gap-6">
+        <div className="mx-auto grid h-full w-full max-w-[1224px] grid-rows-[auto_minmax(0,1fr)] px-4 sm:px-7 md:px-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:grid-rows-1 lg:items-center lg:gap-6">
 
           {/* Los textos se turnan en el mismo lugar: la portada, las piezas y el cierre */}
           <div className="relative z-10 h-[46vh] pt-8 lg:h-[70vh] lg:pt-0">
-            <div style={turno('portada')} className="absolute inset-x-0 top-8 lg:top-[15vh]">
+            <div style={turno('portada')} className="absolute inset-x-0 top-8 lg:top-[13vh] lg:w-[130%]">
               <Portada titulo={titulo} bajada={bajada} waUrl={waUrl} />
             </div>
 
@@ -198,15 +280,14 @@ export default function SecuenciaDesarme({ titulo, bajada, piezas = [], tituloPi
               <ListaDePiezas piezas={piezas} activa={activa} />
             </div>
 
-            <div style={turno('cierre')} className="absolute inset-x-0 top-8 lg:top-[18vh]">
+            <div style={turno('cierre')} className="absolute inset-x-0 top-8 lg:top-[18vh] lg:w-[130%]">
               <p className="text-3xl font-black leading-tight tracking-tight text-white sm:text-5xl">Lo desarmamos, lo revisamos y lo volvemos a armar.</p>
               <Botones waUrl={waUrl} />
             </div>
           </div>
 
-          <div className="relative flex min-h-0 items-center justify-center">
-            <canvas ref={lienzo} role="img" aria-label="Un iPhone que se desarma por capas: pantalla, batería, placa, cámaras y carcasa"
-              className="aspect-square h-full max-h-[min(86vh,100vw)] w-auto max-w-none lg:max-h-[min(84vh,56vw)]" />
+          <div className="relative h-full min-h-0 lg:h-[88%]">
+            <Equipo escena={escena} capas={capas} activa={tramo === 'piezas' ? activa : -1} />
           </div>
         </div>
 
