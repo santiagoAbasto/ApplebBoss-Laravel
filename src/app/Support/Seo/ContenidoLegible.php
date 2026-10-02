@@ -37,6 +37,8 @@ class ContenidoLegible
             self::pagina($p['page'] ?? null),
             self::novedad($p['novedad'] ?? null),
             self::comparativa($p),
+            self::modelo($p),
+            self::servicioTecnico($p['servicio'] ?? null),
             self::secciones($p['sections'] ?? null),
             self::lista('Destacados', $p['featured'] ?? null, empty($p['sections'])),
             self::lista('Productos disponibles', $p['products'] ?? null),
@@ -44,6 +46,7 @@ class ContenidoLegible
             self::lista('Seminuevos', $p['usados'] ?? null),
             self::lista('Fundas y accesorios MYSKIN', is_array($p['myskin'] ?? null) ? $p['myskin'] : null),
             self::lista('También te puede interesar', array_merge((array) ($p['related'] ?? []), (array) ($p['crossSell'] ?? []))),
+            self::fichas($p['fichas'] ?? null),
             self::categorias($p['categories'] ?? null),
             self::servicios($p['services'] ?? null),
             self::novedades($p['novedades'] ?? null),
@@ -60,7 +63,7 @@ class ContenidoLegible
     private static function titulo(array $p, array $seo, string $nombre): string
     {
         $h1 = $p['product']['name'] ?? $p['page']['title'] ?? $p['novedad']['title'] ?? $p['novedad']['titulo']
-            ?? $p['familia']['titulo'] ?? $p['categoria']['name'] ?? null;
+            ?? $p['modelo']['titulo'] ?? $p['familia']['titulo'] ?? $p['categoria']['name'] ?? $p['servicio']['titulo'] ?? null;
 
         // Sin título propio, el de la página sin el sufijo de la marca («Catálogo — Apple Boss Cochabamba»)
         $h1 = $h1 ?: trim(preg_split('/\s+[—|-]\s+' . preg_quote($nombre, '/') . '/u', (string) ($seo['title'] ?? $nombre))[0]) ?: $nombre;
@@ -163,6 +166,64 @@ class ContenidoLegible
         return $html;
     }
 
+    /** La página de un modelo: lo que hay hoy, su ficha técnica completa y los enlaces a la comparativa y a los modelos vecinos. */
+    private static function modelo(array $p): string
+    {
+        $m = $p['modelo'] ?? null;
+        if (! is_array($m) || empty($m['nombre'])) {
+            return '';
+        }
+
+        $html = ! empty($m['oferta']['desde'])
+            ? '<p>Hoy en Apple Boss: ' . e((string) $m['oferta']['unidades']) . ' ' . ($m['oferta']['unidades'] == 1 ? 'disponible' : 'disponibles')
+                . ', desde ' . self::bs($m['oferta']['desde'])
+                . (! empty($m['oferta']['condiciones']) ? ' (' . e(implode(', ', (array) $m['oferta']['condiciones'])) . ')' : '') . '.</p>'
+            : '<p>Hoy no tenemos ' . e($m['nombre']) . ' en stock. Escríbenos y te decimos si lo podemos conseguir.</p>';
+
+        $html .= '<h2>Ficha técnica del ' . e($m['nombre']) . '</h2>' . self::definiciones(self::conEtiquetas((array) ($m['specs'] ?? [])));
+
+        if (! empty($p['comparar']) && is_string($p['comparar'])) {
+            $html .= '<p><a href="' . e($p['comparar']) . '">Comparar ' . e($m['nombre']) . ' con otros modelos</a></p>';
+        }
+
+        $otros = array_filter((array) ($p['otros'] ?? []), fn ($o) => is_array($o) && ! empty($o['nombre']) && ! empty($o['url']));
+        if ($otros) {
+            $html .= '<h2>Otros modelos</h2><ul>';
+            foreach ($otros as $o) {
+                $html .= '<li><a href="' . e($o['url']) . '">' . e($o['nombre']) . '</a>' . (! empty($o['en_tienda']) ? ', disponible en la tienda' : '') . '</li>';
+            }
+            $html .= '</ul>';
+        }
+
+        return $html;
+    }
+
+    /** La página de servicio técnico: qué se atiende, cómo es el proceso y cómo pedir la revisión. Los textos son los mismos que dibuja la página. */
+    private static function servicioTecnico(mixed $x): string
+    {
+        if (! is_array($x)) {
+            return '';
+        }
+
+        $html = '';
+        foreach ((array) ($x['bloques'] ?? []) as $bloque) {
+            if (! is_array($bloque) || empty($bloque['titulo'])) {
+                continue;
+            }
+            $html .= '<h2>' . e($bloque['titulo']) . '</h2>' . (! empty($bloque['texto']) ? '<p>' . e($bloque['texto']) . '</p>' : '');
+            $items = array_filter((array) ($bloque['items'] ?? []), 'is_array');
+            if ($items) {
+                $html .= '<ul>';
+                foreach ($items as $i) {
+                    $html .= '<li><strong>' . e($i['titulo'] ?? '') . '</strong>' . (! empty($i['texto']) ? ': ' . e($i['texto']) : '') . '</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
+
+        return $html . '<p><a href="#solicitud">Pedir la revisión de tu equipo</a></p>';
+    }
+
     /** Las secciones del inicio que muestran productos, con su título. */
     private static function secciones(mixed $secciones): string
     {
@@ -189,6 +250,22 @@ class ContenidoLegible
         foreach ($productos as $x) {
             $detalle = array_filter([self::precio($x), $x['condition'] ?? null, ...array_filter((array) ($x['specs'] ?? []), 'is_string')]);
             $html .= '<li><a href="' . e($x['url']) . '">' . e($x['name']) . '</a>' . ($detalle ? ': ' . e(implode(', ', $detalle)) : '') . '</li>';
+        }
+
+        return $html . '</ul>';
+    }
+
+    /** Los modelos de la familia con su página propia (los hubs de iPhone y de Mac). */
+    private static function fichas(mixed $fichas): string
+    {
+        $fichas = array_filter((array) $fichas, fn ($f) => is_array($f) && ! empty($f['nombre']) && ! empty($f['url']));
+        if (! $fichas) {
+            return '';
+        }
+
+        $html = '<h2>Todos los modelos</h2><ul>';
+        foreach ($fichas as $f) {
+            $html .= '<li><a href="' . e($f['url']) . '">' . e($f['nombre']) . '</a></li>';
         }
 
         return $html . '</ul>';

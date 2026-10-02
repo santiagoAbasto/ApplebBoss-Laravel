@@ -63,16 +63,8 @@ class ComparadorModelosController extends Controller
     {
         $config = self::FAMILIAS[$familia];
         $esAccesorio = $config['tipo'] === 'producto_general';
-        $modelos = ModeloReferencia::delTipo($config['tipo']);
-        if ($config['familia'] !== null) {
-            $modelos = $modelos->where('familia', $config['familia'])->values();
-        }
-        $modelos = $modelos->reject(fn (ModeloReferencia $m) => in_array($m->familia, $config['excluir'] ?? [], true))->values();
-        // Los accesorios van en el orden de su base (primero los originales); los productos Apple, por tipo y en ese orden
-        if ($esAccesorio || $config['tipo'] === 'producto_apple') {
-            $modelos = $modelos->sortBy('orden')->values();
-        }
-        $ofertas = $this->ofertas($modelos, $config['categoria']);
+        $modelos = self::modelosDe($familia);
+        $ofertas = self::ofertas($modelos, $config['categoria']);
 
         $pedidos = is_string($request->query('modelos')) ? explode(',', $request->query('modelos')) : [];
         $slugs = collect($pedidos)
@@ -114,21 +106,35 @@ class ComparadorModelosController extends Controller
                 'slug'      => $m->slug,
                 'nombre'    => $m->nombre,
                 'anio'      => $m->anio,
-                'grupo'     => $this->grupo($m),
+                'grupo'     => self::grupo($m),
                 'en_tienda' => isset($ofertas[$m->id]),
             ])->values(),
-            'seleccion' => $slugs->map(fn (string $slug) => $this->modelo($modelos->firstWhere('slug', $slug), $ofertas))->values(),
+            'seleccion' => $slugs->map(fn (string $slug) => self::ficha($modelos->firstWhere('slug', $slug), $ofertas))->values(),
         ]);
     }
 
+    /** Los modelos de una familia de FAMILIAS, en el orden en que se muestran. Lo usan la comparativa y la página de cada modelo. */
+    public static function modelosDe(string $familia): Collection
+    {
+        $config  = self::FAMILIAS[$familia];
+        $modelos = ModeloReferencia::delTipo($config['tipo']);
+        if ($config['familia'] !== null) {
+            $modelos = $modelos->where('familia', $config['familia'])->values();
+        }
+        $modelos = $modelos->reject(fn (ModeloReferencia $m) => in_array($m->familia, $config['excluir'] ?? [], true))->values();
+
+        // Los accesorios van en el orden de su base (primero los originales); los productos Apple, por tipo y en ese orden
+        return in_array($config['tipo'], ['producto_general', 'producto_apple'], true) ? $modelos->sortBy('orden')->values() : $modelos;
+    }
+
     /** Textos de la ficha, foto (la sube el admin) o medidas para la ilustración, y lo que hay en tienda. */
-    private function modelo(ModeloReferencia $m, array $ofertas): array
+    public static function ficha(ModeloReferencia $m, array $ofertas): array
     {
         return [
             'slug'     => $m->slug,
             'nombre'   => $m->nombre,
             'anio'     => $m->anio,
-            'etiqueta' => $this->grupo($m),
+            'etiqueta' => self::grupo($m),
             'imagen'   => $m->urlFoto('card'),
             'specs'    => $m->specs ?? [],
             'visual'   => $m->visual(),
@@ -147,7 +153,7 @@ class ComparadorModelosController extends Controller
     }
 
     /** Con qué se agrupa en el selector: el año en los equipos; en los accesorios, su grupo («Originales de Apple»); en los productos Apple, su tipo («iPad», «AirPods»). */
-    private function grupo(ModeloReferencia $m): string
+    private static function grupo(ModeloReferencia $m): string
     {
         return match ($m->tipo) {
             'producto_general' => $m->datos['sistema']['grupo'] ?? 'Otros',
@@ -172,7 +178,7 @@ class ComparadorModelosController extends Controller
      *
      * @return array<int, array{unidades: int, desde: float, condiciones: array, url: string}>
      */
-    private function ofertas(Collection $modelos, string $categoria): array
+    public static function ofertas(Collection $modelos, string $categoria): array
     {
         $pubs = CatalogoPublicacion::query()
             ->publicadoAhora()

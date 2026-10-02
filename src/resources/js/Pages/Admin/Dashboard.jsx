@@ -50,6 +50,7 @@ const notificationTarget = (n) => {
   // Un servicio que registró un vendedor sin costo: la lista se abre con los pendientes
   if (n?.type === 'servicio_sin_costo') return route('admin.servicios.index', { pendientes: 1 });
   if (n?.type === 'trade_in') return n?.trade_in_id ? route('admin.trade-in.show', n.trade_in_id) : route('admin.trade-in.index');
+  if (n?.type === 'solicitud_servicio') return route('admin.solicitudes-servicio.index');
   return route('admin.dashboard');
 };
 
@@ -61,6 +62,7 @@ const NOTIF_META = {
   servicio_sin_costo: { label: 'Falta el costo', color: '#B45309', bg: '#FEF3C7', action: 'Cargar costo', icon: Hammer },
   stock:     { label: 'Stock',         color: '#BE123C', bg: '#FFE4E6', action: 'Ver resumen', icon: Boxes },
   trade_in:  { label: 'Trade-In',      color: '#3F4585', bg: '#E8E9F5', action: 'Ver solicitud', icon: Repeat },
+  solicitud_servicio: { label: 'Servicio técnico', color: '#0369A1', bg: '#E0F2FE', action: 'Ver solicitud', icon: Hammer },
 };
 const notificationMeta = (n) => NOTIF_META[n?.type] ?? { label: 'Sistema', color: '#475569', bg: '#F1F5F9', action: 'Ver', icon: Bell };
 

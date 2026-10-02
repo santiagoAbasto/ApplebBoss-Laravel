@@ -1,4 +1,4 @@
-import { ChevronDown, House, Package, ScanLine, Smartphone } from 'lucide-react';
+import { ChevronDown, House, Package, ScanLine, Smartphone, Wrench } from 'lucide-react';
 
 // Piezas que comparten el listado y el editor de Tienda online → Preguntas frecuentes.
 
@@ -8,6 +8,7 @@ export const ICONOS = {
   producto: Package,
   iphone: Smartphone,
   seminuevos: ScanLine,
+  servicio: Wrench,
 };
 
 export const iconoDe = (clave) => ICONOS[clave] ?? House;

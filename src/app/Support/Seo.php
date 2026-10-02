@@ -30,12 +30,14 @@ class Seo
         'hub.myskin'            => ['title' => 'Fundas MYSKIN — Apple Boss Cochabamba', 'description' => 'Fundas MYSKIN para iPhone en Apple Boss. Protección con diseño. Encuentra la funda para tu modelo.'],
         'hub.seminuevos'        => ['title' => 'Seminuevos — Apple Boss Cochabamba', 'description' => 'iPhone y Mac seminuevos en Apple Boss. Equipos revisados, con condición y estado de batería informados. Cochabamba, Bolivia.'],
         'trade-in.index'        => ['title' => 'Trade-In: cotiza tu equipo — Apple Boss Cochabamba', 'description' => 'Usa tu equipo actual como parte de pago en Apple Boss: iPhone, Mac y todo Apple, celulares Android, laptops, PC gamer, consolas y más. Cotiza en línea, sin costo y sin compromiso.'],
+        'servicio-tecnico.index' => ['title' => 'Servicio técnico de iPhone y Mac en Cochabamba — Apple Boss', 'description' => 'Diagnóstico sin costo y reparación de iPhone y Mac en Apple Boss, Cochabamba: pantalla, batería, puerto de carga, tapa trasera y cámara. Pide la revisión en línea.'],
         'novedades.index'       => ['title' => 'Novedades — Apple Boss Cochabamba', 'description' => 'Lo último que publicamos en Apple Boss, Cochabamba.'],
         'store.compare'         => ['title' => 'Comparar productos — Apple Boss'],
         'store.compare.modelos' => ['title' => 'Comparar {titulo} — Apple Boss Cochabamba', 'description' => 'Compara hasta 4 modelos lado a lado: pantalla, chip, cámaras, batería y más, con los datos técnicos de Apple y el precio y stock de Apple Boss.'],
         'trade-in.confirmacion' => ['title' => 'Solicitud de Trade-In recibida — Apple Boss Cochabamba'],
         'newsletter.baja'       => ['title' => 'Darse de baja del newsletter — Apple Boss'],
         'store.product'         => ['title' => '{titulo} — Apple Boss Cochabamba', 'type' => 'product'],
+        'store.modelo'          => ['title' => '{titulo}: precio y ficha técnica'],
         'novedades.show'        => ['title' => '{titulo} — Apple Boss Cochabamba', 'type' => 'article'],
         'store.page'            => ['title' => '{titulo} — Apple Boss'],
         'store.collection'      => ['title' => '{titulo} — Apple Boss Cochabamba'],
@@ -53,6 +55,12 @@ class Seo
             $this->context,
             array_filter($data, fn ($v) => $v !== null && $v !== '')
         );
+    }
+
+    /** Un dato del contexto que no es una metaetiqueta (lo leen los datos estructurados). */
+    public function dato(string $clave): mixed
+    {
+        return $this->context[$clave] ?? null;
     }
 
     public static function isPublicRoute(?string $name): bool

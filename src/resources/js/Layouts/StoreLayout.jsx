@@ -1,6 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShoppingBag, Trash2, X } from '@/Components/Store/Icons';
+import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShoppingBag, Trash2, Wrench, X } from '@/Components/Store/Icons';
 import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ProductVisual from '@/Components/Store/ProductVisual';
 import SearchOverlay from '@/Components/Store/SearchOverlay';
@@ -224,6 +224,7 @@ const ACCESOS_RAPIDOS = [
     { href: COMPARAR_CARGADORES_HREF, label: 'Comparar cargadores', Icon: GitCompare },
     { href: COMPARAR_VIDRIOS_HREF, label: 'Comparar vidrios', Icon: GitCompare },
     { href: '/trade-in', label: 'Trade-In', Icon: Exchange },
+    { href: '/servicio-tecnico', label: 'Servicio técnico', Icon: Wrench },
 ];
 // En la barra de escritorio las comparativas van juntas en «Comparar», para que la barra entre en una sola línea
 const ACCESOS_BARRA = [
@@ -235,6 +236,7 @@ const ACCESOS_BARRA = [
         { label: 'Comparar vidrios templados', href: COMPARAR_VIDRIOS_HREF },
     ] },
     { href: '/trade-in', label: 'Trade-In', Icon: Exchange },
+    { href: '/servicio-tecnico', label: 'Servicio técnico', Icon: Wrench },
 ];
 
 // ─── Header ──────────────────────────────────────────────────────────────────
@@ -807,7 +809,7 @@ function StoreFooter() {
                             {/* Comprar */}
                             <div>
                                 <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,1)' }}>Comprar</p>
-                                {[['iPhone','/iphone'],['Mac','/mac'],['Fundas MYSKIN','/myskin'],['Accesorios','/catalogo?categoria=accesorios'],['Seminuevos','/seminuevos'],['Trade-In','/trade-in'],['Comparar iPhone', COMPARAR_HREF],['Comparar Mac', COMPARAR_MAC_HREF],['Comparar productos Apple', COMPARAR_APPLE_HREF],['Comparar cargadores', COMPARAR_CARGADORES_HREF],['Comparar vidrios', COMPARAR_VIDRIOS_HREF],['Todo el catálogo','/catalogo']].map(([label,href]) => (
+                                {[['iPhone','/iphone'],['Mac','/mac'],['Fundas MYSKIN','/myskin'],['Accesorios','/catalogo?categoria=accesorios'],['Seminuevos','/seminuevos'],['Trade-In','/trade-in'],['Servicio técnico','/servicio-tecnico'],['Comparar iPhone', COMPARAR_HREF],['Comparar Mac', COMPARAR_MAC_HREF],['Comparar productos Apple', COMPARAR_APPLE_HREF],['Comparar cargadores', COMPARAR_CARGADORES_HREF],['Comparar vidrios', COMPARAR_VIDRIOS_HREF],['Todo el catálogo','/catalogo']].map(([label,href]) => (
                                     <Link key={href} href={href} className="mt-3 block text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>{label}</Link>
                                 ))}
                             </div>

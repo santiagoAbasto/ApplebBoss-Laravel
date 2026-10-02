@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import StoreLayout, { useStoreCart } from '@/Layouts/StoreLayout';
 import ProductCard from '@/Components/Store/ProductCard';
+import FichasDeModelos from '@/Components/Store/FichasDeModelos';
 import { useNombreTienda } from '@/Components/Store/tienda';
 
 // El carrito vive dentro de StoreLayout: el contenido que usa useStoreCart va en un componente hijo.
@@ -12,7 +13,7 @@ export default function MacHub(props) {
     );
 }
 
-function MacHubContent({ nuevas, usadas, total }) {
+function MacHubContent({ nuevas, usadas, total, fichas = [] }) {
     const { add } = useStoreCart();
     const nombre = useNombreTienda();
 
@@ -83,6 +84,8 @@ function MacHubContent({ nuevas, usadas, total }) {
                         <p className="text-lg font-semibold">No hay Mac disponibles en este momento.</p>
                     </div>
                 )}
+
+                <FichasDeModelos titulo="Todos los modelos de Mac" fichas={fichas} />
             </div>
         </>
     );

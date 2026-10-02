@@ -86,6 +86,9 @@ class RobotsController extends Controller
             '- [Seminuevos](' . $u('seminuevos') . '): equipos revisados, con la salud de batería a la vista.',
             '- [Fundas MYSKIN](' . $u('myskin') . ')',
             '- [Trade-In](' . $u('trade-in') . '): cotiza tu equipo usado como parte de pago.',
+            '',
+            '## Servicio técnico',
+            '- [Servicio técnico](' . $u('servicio-tecnico') . '): diagnóstico y reparación de iPhone, Mac y otros equipos en Cochabamba; la revisión se pide desde la página.',
         ]);
 
         $publicaciones = \App\Models\CatalogoPublicacion::publicadoAhora()->orderByDesc('updated_at')->limit(200)->get();
@@ -106,6 +109,15 @@ class RobotsController extends Controller
         $lineas[] = '## Comparar modelos';
         foreach (ComparadorModelosController::FAMILIAS as $slug => $familia) {
             $lineas[] = '- [Comparar ' . ($familia['nombre'] ?? $slug) . '](' . $u('comparar/' . $slug) . '): fichas técnicas lado a lado, con precio y stock de la tienda.';
+        }
+
+        // Una página por modelo: ficha técnica completa y, del inventario, precio y stock de hoy
+        foreach (['iphone' => 'iPhone', 'mac' => 'Mac', 'apple' => 'iPad, Apple Watch, AirPods y accesorios Apple'] as $slug => $nombre) {
+            $lineas[] = '';
+            $lineas[] = '## Modelos de ' . $nombre;
+            foreach (HubController::paginasDeModelos($slug) as $modelo) {
+                $lineas[] = '- [' . $modelo['nombre'] . '](' . $u(ltrim((string) parse_url($modelo['url'], PHP_URL_PATH), '/')) . ')';
+            }
         }
 
         $paginas = \App\Models\Page::active()->orderBy('sort_order')->get(['slug', 'title']);

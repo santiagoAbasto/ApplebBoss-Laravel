@@ -12,6 +12,7 @@ export const DESTINOS = [
     ['/catalogo?categoria=accesorios', 'Accesorios'],
     ['/seminuevos', 'Seminuevos'],
     ['/trade-in', 'Trade-In (entregar tu equipo)'],
+    ['/servicio-tecnico', 'Servicio técnico (pedir la revisión)'],
     ['/novedades', 'Novedades'],
 ];
 

@@ -15,6 +15,7 @@ class SystemNotification extends Model
         'sale_id',
         'trade_in_id',
         'servicio_tecnico_id',
+        'solicitud_servicio_id',
 
     ];
 

@@ -39,7 +39,7 @@ class Permisos
         'tienda'       => ['Tienda online',        'Tienda online',       [
             'admin.catalogo', 'admin.modelos', 'admin.categories', 'admin.collections', 'admin.home-builder',
             'admin.menus', 'admin.pages', 'admin.faqs', 'admin.resenas', 'admin.services', 'admin.locations', 'admin.novedades',
-            'admin.trade-in', 'admin.configuracion',
+            'admin.trade-in', 'admin.solicitudes-servicio', 'admin.configuracion',
         ]],
 
         'marketing'    => ['Marketing y Google',   'Marketing y Google',  ['admin.newsletter', 'admin.seo']],

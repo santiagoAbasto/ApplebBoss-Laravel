@@ -153,8 +153,13 @@ class TradeInSolicitud extends Model
     /** El número para abrir WhatsApp: solo dígitos y con código de país (un celular boliviano de 8 dígitos suma 591). */
     public function whatsapp(): ?string
     {
-        $telefono = trim((string) $this->telefono_contacto);
-        $digitos = preg_replace('/\D/', '', $telefono);
+        return self::numeroWhatsapp($this->telefono_contacto);
+    }
+
+    /** Lo mismo para cualquier teléfono que escribió un cliente (lo usan también las solicitudes de servicio técnico). */
+    public static function numeroWhatsapp(?string $telefono): ?string
+    {
+        $digitos = preg_replace('/\D/', '', trim((string) $telefono));
 
         if (str_starts_with($digitos, '00')) {
             $digitos = substr($digitos, 2);

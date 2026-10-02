@@ -43,6 +43,7 @@ const NAV = [
     { r: 'admin.locations.index', icon: MapPin, label: 'Ubicaciones', modulo: 'tienda' },
     { r: 'admin.novedades.index', icon: Newspaper, label: 'Novedades', modulo: 'tienda' },
     { r: 'admin.trade-in.index', icon: Repeat, label: 'Trade-In', aviso: 'trade_in', modulo: 'tienda' },
+    { r: 'admin.solicitudes-servicio.index', icon: Wrench, label: 'Solicitudes de servicio', aviso: 'solicitud_servicio', modulo: 'tienda' },
     { r: 'admin.configuracion.tienda.edit', icon: Settings, label: 'Configuración', modulo: 'tienda' },
   ] },
   { key: 'marketing', label: 'Marketing y Google', items: [

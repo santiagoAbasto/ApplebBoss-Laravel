@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import StoreLayout, { useStoreCart } from '@/Layouts/StoreLayout';
 import ProductCard from '@/Components/Store/ProductCard';
+import FichasDeModelos from '@/Components/Store/FichasDeModelos';
 import { ChevronDown, GitCompare } from '@/Components/Store/Icons';
 import { useNombreTienda } from '@/Components/Store/tienda';
 
@@ -28,7 +29,7 @@ export default function IPhoneHub(props) {
     );
 }
 
-function IPhoneHubContent({ nuevos, usados, myskin, modelos, totalNuevos, totalUsados, faqs = [] }) {
+function IPhoneHubContent({ nuevos, usados, myskin, modelos, fichas = [], totalNuevos, totalUsados, faqs = [] }) {
     const { add } = useStoreCart();
     const nombre = useNombreTienda();
 
@@ -157,6 +158,8 @@ function IPhoneHubContent({ nuevos, usados, myskin, modelos, totalNuevos, totalU
                         </div>
                     </section>
                 )}
+
+                <FichasDeModelos titulo="Todos los modelos de iPhone" fichas={fichas} />
 
                 {/* Preguntas: se cargan en el panel; sin preguntas, la sección no se dibuja */}
                 {faqs.length > 0 && (

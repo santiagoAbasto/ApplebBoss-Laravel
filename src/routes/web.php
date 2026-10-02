@@ -75,6 +75,9 @@ Route::get('/novedades/{slug}', [NovedadPublicController::class, 'show'])->name(
 Route::get('/trade-in', [TradeInController::class, 'index'])->name('trade-in.index');
 Route::post('/trade-in', [TradeInController::class, 'store'])->name('trade-in.store')->middleware('throttle:10,1');
 Route::get('/trade-in/confirmacion/{codigo}', [TradeInController::class, 'confirmacion'])->name('trade-in.confirmacion');
+// 🔧 Servicio técnico: la página pública y el pedido de revisión
+Route::get('/servicio-tecnico', [\App\Http\Controllers\ServicioTecnicoPublicoController::class, 'index'])->name('servicio-tecnico.index');
+Route::post('/servicio-tecnico', [\App\Http\Controllers\ServicioTecnicoPublicoController::class, 'store'])->name('servicio-tecnico.store')->middleware('throttle:10,1');
 Route::post('/newsletter', [\App\Http\Controllers\NewsletterController::class, 'store'])->name('newsletter.store')->middleware('throttle:5,1');
 // Baja del newsletter: GET muestra confirmación (evita bajas por escáneres de links), POST confirma (también "un clic" de Gmail/Outlook)
 Route::get('/newsletter/baja/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeShow'])->name('newsletter.baja')->middleware('throttle:30,1');
@@ -97,6 +100,11 @@ Route::get('/iphone',       [HubController::class, 'iphone'])->name('hub.iphone'
 Route::get('/mac',          [HubController::class, 'mac'])->name('hub.mac');
 Route::get('/myskin',       [HubController::class, 'myskin'])->name('hub.myskin');
 Route::get('/seminuevos',   [HubController::class, 'seminuevos'])->name('hub.seminuevos');
+// La página permanente de cada modelo: /iphone/iphone-15-pro-max, /mac/macbook-air-13-m5, /apple/ipad-a16-wifi
+Route::get('/{familia}/{slug}', [HubController::class, 'modelo'])
+    ->whereIn('familia', HubController::FAMILIAS_CON_PAGINA)
+    ->where('slug', '[a-z0-9-]+')
+    ->name('store.modelo');
 // Redirige a catálogo mientras no tengan hub propio
 Route::get('/apple',        fn () => redirect('/catalogo?categoria=productos-apple', 302))->name('hub.apple');
 Route::get('/accesorios',   fn () => redirect('/catalogo?categoria=accesorios', 302))->name('hub.accesorios');
@@ -710,6 +718,16 @@ Route::middleware(['auth', 'verified', 'permiso'])
 
         Route::get('/egresos/exportar/pdf', [EgresoController::class, 'exportarPDF'])
             ->name('egresos.exportar-pdf');
+
+        // ========================
+        // 🔧 SOLICITUDES DE SERVICIO TÉCNICO (llegan desde /servicio-tecnico)
+        // ========================
+        Route::get('/solicitudes-servicio', [\App\Http\Controllers\Admin\SolicitudServicioController::class, 'index'])
+            ->name('solicitudes-servicio.index');
+        Route::patch('/solicitudes-servicio/{solicitud}', [\App\Http\Controllers\Admin\SolicitudServicioController::class, 'update'])
+            ->name('solicitudes-servicio.update');
+        Route::delete('/solicitudes-servicio/{solicitud}', [\App\Http\Controllers\Admin\SolicitudServicioController::class, 'destroy'])
+            ->name('solicitudes-servicio.destroy');
 
         // ========================
         // 🔄 TRADE-IN

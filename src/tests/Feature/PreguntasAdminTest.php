@@ -88,7 +88,7 @@ class PreguntasAdminTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Faqs/Index')
-                ->has('lugares', 4)
+                ->has('lugares', 5)
                 ->where('lugares.0.clave', 'general')
                 ->where('lugares.0.total', 2)
                 ->where('lugares.0.visibles', 1)

@@ -40,7 +40,7 @@ class SitemapController extends Controller
         $urls->push(['loc' => $base . '/catalogo', 'priority' => '0.9', 'changefreq' => 'daily', 'lastmod' => $ultimoCambio]);
 
         // Hubs fijos + Trade-In
-        foreach (['/iphone', '/mac', '/seminuevos', '/myskin', '/trade-in'] as $hub) {
+        foreach (['/iphone', '/mac', '/seminuevos', '/myskin', '/trade-in', '/servicio-tecnico'] as $hub) {
             $urls->push(['loc' => $base . $hub, 'priority' => '0.8', 'changefreq' => 'weekly', 'lastmod' => $ultimoCambio]);
         }
 
@@ -52,6 +52,20 @@ class SitemapController extends Controller
         // Comparativas de modelos (una por familia con base de modelos de referencia)
         foreach (array_keys(ComparadorModelosController::FAMILIAS) as $familia) {
             $urls->push(['loc' => $base . '/comparar/' . $familia, 'priority' => '0.7', 'changefreq' => 'weekly']);
+        }
+
+        // La página de cada modelo (ficha técnica + lo que hay hoy): cambia cuando cambia lo publicado de ese modelo
+        $cambioPorModelo = CatalogoPublicacion::publicadoAhora()->whereNotNull('modelo_referencia_id')
+            ->selectRaw('modelo_referencia_id, max(updated_at) as cambio')->groupBy('modelo_referencia_id')->pluck('cambio', 'modelo_referencia_id');
+        foreach (\App\Http\Controllers\HubController::FAMILIAS_CON_PAGINA as $familia) {
+            foreach (ComparadorModelosController::modelosDe($familia) as $modelo) {
+                $urls->push([
+                    'loc'        => $base . "/{$familia}/{$modelo->slug}",
+                    'priority'   => isset($cambioPorModelo[$modelo->id]) ? '0.8' : '0.6',
+                    'changefreq' => 'weekly',
+                    'lastmod'    => Carbon::parse($cambioPorModelo[$modelo->id] ?? $modelo->updated_at)->toAtomString(),
+                ]);
+            }
         }
 
         // Páginas de las categorías con productos publicados: su portada y su título en Google (Tienda online → Categorías)

@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Una pregunta frecuente de la tienda.
  *
- * Cada pregunta se muestra en un solo lugar (la columna `scope`), y esos lugares son los cuatro que la tienda
- * dibuja de verdad: el final del inicio, la ficha de todos los productos, la página de iPhone y la de Seminuevos.
+ * Cada pregunta se muestra en un solo lugar (la columna `scope`), y esos lugares son los que la tienda dibuja de
+ * verdad: el final del inicio, la ficha de todos los productos y las páginas de iPhone, Seminuevos y servicio técnico.
  * Si un lugar se queda sin preguntas encendidas, esa sección no se dibuja.
  */
 class Faq extends Model
@@ -34,6 +34,11 @@ class Faq extends Model
             'label' => 'En la página de Seminuevos',
             'donde' => 'El final de la página /seminuevos.',
             'url'   => '/seminuevos',
+        ],
+        'servicio' => [
+            'label' => 'En la página de servicio técnico',
+            'donde' => 'El final de la página /servicio-tecnico.',
+            'url'   => '/servicio-tecnico',
         ],
     ];
 

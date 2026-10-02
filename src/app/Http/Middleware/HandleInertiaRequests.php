@@ -76,7 +76,7 @@ class HandleInertiaRequests extends Middleware
             'tipoCambio' => fn () => \App\Support\Pagos\TipoDeCambio::paraLaVista(),
             'tienda'  => fn () => static::publicStoreSettings(),
             'navMenu' => fn () => static::navMenuData(),
-            // Contadores del menú del panel (solo para administradores): solicitudes de Trade-In sin responder
+            // Contadores del menú del panel (solo para administradores): solicitudes de Trade-In y de servicio técnico sin responder
             'avisosAdmin' => fn () => $request->user()?->rol === 'admin' ? static::avisosAdmin() : null,
             // Páginas informativas activas (Nosotros, Garantía…) para el pie de página: solo título y dirección
             'paginas' => fn () => static::paginasData(),
@@ -92,7 +92,10 @@ class HandleInertiaRequests extends Middleware
     private static function avisosAdmin(): array
     {
         try {
-            return ['trade_in' => \App\Models\TradeInSolicitud::where('estado', 'nuevo')->count()];
+            return [
+                'trade_in'           => \App\Models\TradeInSolicitud::where('estado', 'nuevo')->count(),
+                'solicitud_servicio' => \App\Models\SolicitudServicio::where('estado', 'nuevo')->count(),
+            ];
         } catch (\Throwable) {
             return [];
         }

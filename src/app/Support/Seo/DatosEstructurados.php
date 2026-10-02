@@ -34,6 +34,10 @@ class DatosEstructurados
             }
         }
 
+        if ($ruta === 'store.modelo' && ($modelo = self::modelo((array) app(\App\Support\Seo::class)->dato('modelo'), $seo))) {
+            $grafo[] = $modelo;
+        }
+
         if ($migas = self::migas($request, $seo)) {
             $grafo[] = $migas;
         }
@@ -223,6 +227,35 @@ class DatosEstructurados
         return array_filter($datos, fn ($v) => $v !== null && $v !== []);
     }
 
+    /**
+     * La página de un modelo (/iphone/iphone-15-pro-max). Es un producto solo cuando hoy hay equipos a la venta: el
+     * precio «desde» y la cantidad salen del inventario. Sin stock no se emite nada: no se inventa una oferta.
+     */
+    public static function modelo(array $modelo, array $seo): ?array
+    {
+        if (empty($modelo['oferta']['desde']) || empty($modelo['nombre'])) {
+            return null;
+        }
+
+        return array_filter([
+            '@type'       => 'Product',
+            '@id'         => $seo['url'] . '#modelo',
+            'name'        => $modelo['nombre'],
+            'url'         => $seo['url'],
+            'description' => $seo['description'] ?? null,
+            'image'       => $seo['image'] ?? null,
+            'brand'       => ['@type' => 'Brand', 'name' => 'Apple'],
+            'offers'      => [
+                '@type'         => 'AggregateOffer',
+                'priceCurrency' => 'BOB',
+                'lowPrice'      => number_format((float) $modelo['oferta']['desde'], 2, '.', ''),
+                'offerCount'    => (int) $modelo['oferta']['unidades'],
+                'availability'  => 'https://schema.org/InStock',
+                'seller'        => ['@id' => UrlPublica::de() . '#tienda'],
+            ],
+        ]);
+    }
+
     /** Migas de pan: ayudan a Google a entender la jerarquía y salen en el resultado. */
     public static function migas(Request $request, array $seo): ?array
     {
@@ -236,6 +269,7 @@ class DatosEstructurados
             'hub.seminuevos' => [['Seminuevos', 'seminuevos']],
             'novedades.index'=> [['Novedades', 'novedades']],
             'trade-in.index' => [['Trade-In', 'trade-in']],
+            'servicio-tecnico.index' => [['Servicio técnico', 'servicio-tecnico']],
         ];
 
         $ruta_migas = $mapa[$ruta] ?? null;
@@ -249,6 +283,13 @@ class DatosEstructurados
             $ruta_migas = [
                 ['Catálogo', 'catalogo'],
                 [$nombre, ltrim($request->path(), '/')],
+            ];
+        }
+
+        if ($ruta === 'store.modelo' && ($modelo = app(\App\Support\Seo::class)->dato('modelo'))) {
+            $ruta_migas = [
+                $modelo['familia'] === 'apple' ? ['Catálogo', 'catalogo'] : [$modelo['familia_nombre'], $modelo['familia']],
+                [$modelo['nombre'], ltrim($request->path(), '/')],
             ];
         }
 
