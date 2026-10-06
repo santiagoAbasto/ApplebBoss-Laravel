@@ -9,7 +9,7 @@ import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 import {
   Badge, Button, EmptyState, Modal, PageHeader, Toast, bsFmt, buttonCls, inputCls, useToast,
 } from '@/Components/Admin/ui';
-import { fmtTelefono, numeroCotizacion, totalesDe } from '@/Components/Admin/cotizacion';
+import { fmtMonto, fmtTelefono, numeroCotizacion, totalesDe } from '@/Components/Admin/cotizacion';
 
 const TZ = 'America/La_Paz';
 const normalizar = (v) => String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -175,14 +175,20 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
   const alternar = (id) => setSeleccion((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const alternarTodas = () => setSeleccion(todasMarcadas ? [] : filtradas.map((c) => c.id));
 
-  const totalCon = filtradas.reduce((a, c) => a + c.conFactura, 0);
-  const totalSin = filtradas.reduce((a, c) => a + c.sinFactura, 0);
+  // Bolivianos y dólares no se suman: los totales son de las cotizaciones en Bs y las en dólares se informan aparte
+  const enBs = filtradas.filter((c) => c.moneda !== 'USD');
+  const totalCon = enBs.reduce((a, c) => a + c.conFactura, 0);
+  const totalSin = enBs.reduce((a, c) => a + c.sinFactura, 0);
+  const totalUsd = filtradas.filter((c) => c.moneda === 'USD').reduce((a, c) => a + c.conFactura, 0);
+  const masUsd = totalUsd > 0 ? ` · y ${fmtMonto(totalUsd, 'USD')} en dólares` : '';
   const unidades = filtradas.reduce((a, c) => a + c.unidades, 0);
-  const promedio = filtradas.length ? totalCon / filtradas.length : 0;
+  const promedio = enBs.length ? totalCon / enBs.length : 0;
   const porCorreo = filtradas.filter((c) => c.enviado_por_correo).length;
   const porWhatsapp = filtradas.filter((c) => c.enviado_por_whatsapp).length;
   const enviadas = filtradas.filter((c) => c.enviado_por_correo || c.enviado_por_whatsapp).length;
-  const totalSeleccion = seleccionadas.reduce((a, c) => a + c.conFactura, 0);
+  const totalSeleccion = ['BOB', 'USD']
+    .map((m) => [m, seleccionadas.filter((c) => (c.moneda === 'USD' ? 'USD' : 'BOB') === m).reduce((a, c) => a + c.conFactura, 0)])
+    .filter(([, total]) => total > 0).map(([m, total]) => fmtMonto(total, m)).join(' + ') || fmtMonto(0);
   const hayFiltros = Boolean(q) || periodo !== 'todo' || envio !== 'todas' || creador !== 'todos';
   const limpiar = () => { setTexto(''); setPeriodo('todo'); setEnvio('todas'); setCreador('todos'); };
 
@@ -222,7 +228,7 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat icon={Receipt} label="Cotizaciones" value={filtradas.length.toLocaleString('es-BO')}
             hint={`${unidades.toLocaleString('es-BO')} ${unidades === 1 ? 'unidad cotizada' : 'unidades cotizadas'}`} />
-          <Stat icon={Wallet} label="Total con factura" value={bsFmt(totalCon)} hint={`Sin factura: ${bsFmt(totalSin)}`} tone="lila" />
+          <Stat icon={Wallet} label="Total con factura" value={bsFmt(totalCon)} hint={`Sin factura: ${bsFmt(totalSin)}${masUsd}`} tone="lila" />
           <Stat icon={TrendingUp} label="Promedio por cotización" value={bsFmt(promedio)} hint="Con factura" tone="amber" />
           <Stat icon={Send} label="Enviadas" value={enviadas.toLocaleString('es-BO')} hint={`${porCorreo} por correo · ${porWhatsapp} por WhatsApp`} tone="emerald" />
         </div>
@@ -336,8 +342,8 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
                               {c.items.length > 1 ? `y ${c.items.length - 1} más · ` : ''}{c.unidades} {c.unidades === 1 ? 'unidad' : 'unidades'}
                             </p>
                           </td>
-                          <td className="px-4 py-3 text-right font-bold tabular-nums text-slate-900">{bsFmt(c.conFactura)}</td>
-                          <td className="px-4 py-3 text-right tabular-nums text-slate-500">{bsFmt(c.sinFactura)}</td>
+                          <td className="px-4 py-3 text-right font-bold tabular-nums text-slate-900">{fmtMonto(c.conFactura, c.moneda)}</td>
+                          <td className="px-4 py-3 text-right tabular-nums text-slate-500">{fmtMonto(c.sinFactura, c.moneda)}</td>
                           <td className="px-4 py-3"><EnvioEstado c={c} /></td>
                           <td className="px-5 py-3"><Acciones c={c} onReenviar={setReenviar} prefijo={prefijo} /></td>
                         </tr>
@@ -347,7 +353,7 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
                   <tfoot>
                     <tr className="border-t border-slate-200 bg-slate-50/70 text-[13px]">
                       <td className="px-5 py-3 font-bold text-slate-900" colSpan={4}>
-                        Total {hayFiltros ? 'filtrado' : 'general'} · {filtradas.length.toLocaleString('es-BO')} {filtradas.length === 1 ? 'cotización' : 'cotizaciones'}
+                        Total {hayFiltros ? 'filtrado' : 'general'} · {filtradas.length.toLocaleString('es-BO')} {filtradas.length === 1 ? 'cotización' : 'cotizaciones'}{masUsd}
                       </td>
                       <td className="px-4 py-3 text-right font-extrabold tabular-nums text-slate-900">{bsFmt(totalCon)}</td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-600">{bsFmt(totalSin)}</td>
@@ -378,8 +384,8 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
                         {c.items.length > 1 && <span className="text-slate-400"> y {c.items.length - 1} más</span>}
                       </p>
                       <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3 text-center">
-                        <div><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Con factura</p><p className="text-sm font-bold tabular-nums text-slate-900">{bsFmt(c.conFactura)}</p></div>
-                        <div><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Sin factura</p><p className="text-sm font-semibold tabular-nums text-slate-600">{bsFmt(c.sinFactura)}</p></div>
+                        <div><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Con factura</p><p className="text-sm font-bold tabular-nums text-slate-900">{fmtMonto(c.conFactura, c.moneda)}</p></div>
+                        <div><p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Sin factura</p><p className="text-sm font-semibold tabular-nums text-slate-600">{fmtMonto(c.sinFactura, c.moneda)}</p></div>
                       </div>
                       <Acciones c={c} onReenviar={setReenviar} prefijo={prefijo} />
                     </li>
@@ -406,7 +412,7 @@ export default function CotizacionesIndex({ cotizaciones = [], Layout, prefijo =
                 {seleccionadas.length} {seleccionadas.length === 1 ? 'seleccionada' : 'seleccionadas'}
               </p>
               <p className="text-sm text-white/70">
-                Con factura <span className="font-semibold tabular-nums text-white">{bsFmt(totalSeleccion)}</span>
+                Con factura <span className="font-semibold tabular-nums text-white">{totalSeleccion}</span>
               </p>
               <div className="ml-auto flex gap-2">
                 <button type="button" onClick={() => setSeleccion([])}

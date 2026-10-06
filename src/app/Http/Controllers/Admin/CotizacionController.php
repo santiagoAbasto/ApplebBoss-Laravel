@@ -95,6 +95,7 @@ class CotizacionController extends Controller
             'telefono_completo' => 'required|string|regex:/^\+\d{8,15}$/',
             'correo_cliente' => 'nullable|email|max:255',
             'fecha_cotizacion' => 'required|date',
+            'moneda' => 'nullable|in:' . implode(',', array_keys(Cotizacion::MONEDAS)),
             'items' => 'required|array|min:1',
             'items.*.nombre' => 'required|string',
             'items.*.tipo' => 'nullable|string|in:celular,computadora,producto_general,producto_apple',
@@ -181,6 +182,7 @@ class CotizacionController extends Controller
             'notas_adicionales' => $request->notas_adicionales ?? '',
             'items' => $items,
             'total' => $total,
+            'moneda' => $request->input('moneda') ?: 'BOB',
         ]);
 
         $driveUrl = $this->exportarPDFYGuardar($cotizacion->id);
@@ -288,7 +290,7 @@ class CotizacionController extends Controller
     {
         return "Hola {$cotizacion->nombre_cliente}, gracias por confiar en Apple Boss.\n\n"
             . "*Cotización N.º COT-{$cotizacion->id}*\n"
-            . 'Total: Bs ' . number_format((float) $cotizacion->total, 2) . "\n"
+            . 'Total: ' . $cotizacion->simboloMoneda() . ' ' . number_format((float) $cotizacion->total, 2) . "\n"
             . 'Ver PDF: ' . $this->urlPDF($cotizacion);
     }
 
@@ -362,7 +364,7 @@ class CotizacionController extends Controller
                 'cotizacion_id' => $cotizacion->id,
                 'nombre' => $cotizacion->nombre_cliente,
                 'telefono' => $numero,
-                'total' => number_format((float) $cotizacion->total, 2),
+                'total' => $cotizacion->simboloMoneda() . ' ' . number_format((float) $cotizacion->total, 2),
                 'pdf' => $this->urlPDF($cotizacion),
                 'mensaje' => $mensaje,
                 'link' => "https://wa.me/{$numero}?text=" . rawurlencode($mensaje),

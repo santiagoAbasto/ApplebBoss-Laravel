@@ -19,11 +19,17 @@ class MontoEnLetras
 
     public static function bolivianos(float|int|string $monto): string
     {
+        return self::enLetras($monto, 'bolivianos');
+    }
+
+    /** El mismo monto en letras con otra moneda: «Setecientos veinte 00/100 dólares estadounidenses». */
+    public static function enLetras(float|int|string $monto, string $moneda): string
+    {
         $monto    = round((float) $monto, 2);
         $entero   = (int) floor(abs($monto));
         $centavos = (int) round((abs($monto) - $entero) * 100);
 
-        return ucfirst(self::entero($entero)) . ' ' . str_pad((string) $centavos, 2, '0', STR_PAD_LEFT) . '/100 bolivianos';
+        return ucfirst(self::entero($entero)) . ' ' . str_pad((string) $centavos, 2, '0', STR_PAD_LEFT) . "/100 {$moneda}";
     }
 
     public static function entero(int $n): string

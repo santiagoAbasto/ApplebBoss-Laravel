@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import PremiumNotice from '@/Components/PremiumNotice';
 import { Field, Input, StepCard, bsFmt, buttonCls } from '@/Components/Admin/ui';
+import { fmtMonto } from '@/Components/Admin/cotizacion';
 
 const TZ = 'America/La_Paz';
 
@@ -216,7 +217,7 @@ export default function ClienteForm({ cliente, actividad = {}, Layout, prefijo =
                           </span>
                           <span className="block truncate text-xs text-slate-500">{fmtFecha(m.fecha)}{m.detalle ? ` · ${m.detalle}` : ''}</span>
                         </span>
-                        <span className="shrink-0 text-sm font-bold tabular-nums text-slate-900">{bsFmt(m.monto)}</span>
+                        <span className="shrink-0 text-sm font-bold tabular-nums text-slate-900">{fmtMonto(m.monto, m.moneda)}</span>
                         {m.externo
                           ? <ExternalLink className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-600" />
                           : <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-600" />}

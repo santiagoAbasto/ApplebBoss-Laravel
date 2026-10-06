@@ -28,6 +28,7 @@ class Permisos
         'pedidos'      => ['Pedidos de la tienda', 'Ventas y operación',  ['admin.pedidos', 'admin.cuentas-tienda']],
         'reservas'     => ['Reservas',             'Ventas y operación',  ['admin.reservas']],
         'servicios'    => ['Servicio técnico',     'Ventas y operación',  ['admin.servicios']],
+        'diagnosticos' => ['Diagnósticos',         'Ventas y operación',  ['admin.diagnosticos']],
         'cotizaciones' => ['Cotizaciones',         'Ventas y operación',  ['admin.cotizaciones']],
         'egresos'      => ['Egresos',              'Ventas y operación',  ['admin.egresos']],
         'reportes'     => ['Reportes',             'Ventas y operación',  ['admin.reportes', 'admin.automation']],

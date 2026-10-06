@@ -10,7 +10,7 @@ import {
 import PremiumNotice from '@/Components/PremiumNotice';
 import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
 import { Badge, Field, Input, Segmented, StepCard, Textarea, bsFmt, buttonCls } from '@/Components/Admin/ui';
-import { calcularLinea, fmtTelefono, totalesDe } from '@/Components/Admin/cotizacion';
+import { calcularLinea, fmtMonto, fmtTelefono, totalesDe } from '@/Components/Admin/cotizacion';
 
 const TIPOS = [
   { value: 'celular', label: 'Celular', icon: Smartphone },
@@ -126,6 +126,8 @@ export default function CotizacionesForm({
   const [telefonoGuardado, setTelefonoGuardado] = useState('');
   const [items, setItems] = useState([]);
   const [notas, setNotas] = useState('');
+  const [moneda, setMoneda] = useState('BOB');
+  const fmt = (n) => fmtMonto(n, moneda);
   const [verPrevia, setVerPrevia] = useState(false);
   const [tipo, setTipo] = useState('celular');
   const [busqueda, setBusqueda] = useState('');
@@ -231,7 +233,9 @@ export default function CotizacionesForm({
       return;
     }
     setItems((xs) => [...xs, {
-      key: nuevaClave(), origen, ...aItem(tipo, p), cantidad: '1', precio: String(Number(p.precio_venta || 0)), descuento: '',
+      key: nuevaClave(), origen, ...aItem(tipo, p), cantidad: '1',
+      // El inventario está en bolivianos: en una cotización en dólares el precio se escribe a mano
+      precio: moneda === 'BOB' ? String(Number(p.precio_venta || 0)) : '', descuento: '',
     }]);
     quitarErrores('items');
   };
@@ -292,6 +296,7 @@ export default function CotizacionesForm({
       telefono_completo: telefono,
       correo_cliente: cliente.correo.trim(),
       fecha_cotizacion: cliente.fecha,
+      moneda,
       notas_adicionales: notas,
       items: lineas.map((i) => ({
         nombre: i.nombre.trim(),
@@ -403,6 +408,12 @@ export default function CotizacionesForm({
                 <Field label="Fecha de la cotización" error={errores.fecha_cotizacion} hint="Aparece en el PDF.">
                   <Input type="date" value={cliente.fecha} onChange={(e) => cambiarCliente('fecha', e.target.value, 'fecha_cotizacion')} />
                 </Field>
+
+                <Field label="Moneda" error={errores.moneda}
+                  hint={moneda === 'USD' ? 'Los precios del inventario están en bolivianos: escribe el precio en dólares de cada producto.' : 'Los precios del inventario se cargan solos.'}>
+                  <Segmented ariaLabel="Moneda de la cotización" value={moneda} onChange={setMoneda}
+                    options={[{ value: 'BOB', label: 'Bolivianos (Bs)' }, { value: 'USD', label: 'Dólares ($us)' }]} />
+                </Field>
               </div>
             </StepCard>
 
@@ -500,8 +511,8 @@ export default function CotizacionesForm({
                             </label>
                             <div className="text-right">
                               <span className={labelCls}>Con factura</span>
-                              <p className="mt-1 text-lg font-extrabold leading-tight tabular-nums text-slate-900">{bsFmt(i.calc.total)}</p>
-                              <p className="text-[11px] tabular-nums text-slate-400">Sin factura {bsFmt(i.calc.neto)}</p>
+                              <p className="mt-1 text-lg font-extrabold leading-tight tabular-nums text-slate-900">{fmt(i.calc.total)}</p>
+                              <p className="text-[11px] tabular-nums text-slate-400">Sin factura {fmt(i.calc.neto)}</p>
                             </div>
                           </div>
                           {error && <p className="mt-2 text-xs font-semibold text-rose-600 sm:pl-11">{error}</p>}
@@ -551,17 +562,17 @@ export default function CotizacionesForm({
                 </dl>
 
                 <dl className="space-y-1.5 border-t border-slate-100 pt-4 text-sm">
-                  <Importe label="Subtotal sin factura" valor={bsFmt(totales.subtotal)} />
-                  <Importe label="Descuentos" valor={totales.descuentos > 0 ? `−${bsFmt(totales.descuentos)}` : bsFmt(0)}
+                  <Importe label="Subtotal sin factura" valor={fmt(totales.subtotal)} />
+                  <Importe label="Descuentos" valor={totales.descuentos > 0 ? `−${fmt(totales.descuentos)}` : fmt(0)}
                     className={totales.descuentos > 0 ? 'text-rose-600' : 'text-slate-900'} />
-                  <Importe label="Importe neto sin factura" valor={bsFmt(totales.sinFactura)} fuerte />
-                  <Importe label="IVA 13 %" valor={bsFmt(totales.iva)} />
-                  <Importe label="IT 3 %" valor={bsFmt(totales.it)} />
+                  <Importe label="Importe neto sin factura" valor={fmt(totales.sinFactura)} fuerte />
+                  <Importe label="IVA 13 %" valor={fmt(totales.iva)} />
+                  <Importe label="IT 3 %" valor={fmt(totales.it)} />
                 </dl>
 
                 <div className="rounded-xl bg-[#011446] px-4 py-3.5 text-white">
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">Importe neto con factura</p>
-                  <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{bsFmt(totales.conFactura)}</p>
+                  <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight tabular-nums">{fmt(totales.conFactura)}</p>
                   <p className="mt-1.5 text-xs text-white/60">Es el total que ve el cliente en el PDF.</p>
                 </div>
 

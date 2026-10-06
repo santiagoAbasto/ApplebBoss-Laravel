@@ -1,9 +1,9 @@
 @php
   use App\Support\IconoPdf;
-  use App\Support\MontoEnLetras;
   use App\Support\TextoEnriquecido;
 
-  $bs    = fn ($n) => 'Bs ' . number_format((float) $n, 2);
+  // Bolivianos o dólares, según la cotización
+  $bs    = fn ($n) => $cotizacion->simboloMoneda() . ' ' . number_format((float) $n, 2);
   // La fecha de la cotización no guarda hora: la hora es la del registro
   $fecha = optional($cotizacion->fecha_cotizacion ?? $cotizacion->created_at)->timezone(config('app.timezone'));
   $hora  = optional($cotizacion->created_at)->timezone(config('app.timezone'))?->format('H:i');
@@ -146,7 +146,7 @@
     <tr>
       <td class="letras">
         <div class="gris">Son</div>
-        <div><b>{{ MontoEnLetras::bolivianos($suma['total']) }}</b></div>
+        <div><b>{{ $cotizacion->montoEnLetras($suma['total']) }}</b></div>
         <div class="gris" style="margin-top: 5px;">Precio sin factura: <b>{{ $bs($sinFactura) }}</b>. Documento sin valor fiscal, cotización referencial.</div>
       </td>
       <td class="totales">

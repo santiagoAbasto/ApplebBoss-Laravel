@@ -1,7 +1,8 @@
 import {
   CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
-  ShoppingCart, SlidersHorizontal, Smartphone, Star, Store, Tablet, Tag, Truck, UserRound, Users, Wallet, Wrench,
+  ShoppingCart, SlidersHorizontal, Smartphone, Star, Stethoscope, Store, Tablet, Tag, Truck, UserRound, Users, Wallet,
+  Wrench,
 } from 'lucide-react';
 import IconoUsuarios from '@/Components/Admin/IconoUsuarios';
 import PanelShell, { AB, DISPLAY_FONT } from '@/Layouts/PanelShell';
@@ -17,6 +18,7 @@ const NAV = [
     { r: 'admin.cuentas-tienda.index', icon: UserRound, label: 'Usuarios de la tienda', modulo: 'pedidos' },
     { r: 'admin.reservas.index', icon: CalendarCheck, label: 'Reservas', modulo: 'reservas' },
     { r: 'admin.servicios.index', icon: Hammer, label: 'Servicio técnico', modulo: 'servicios' },
+    { r: 'admin.diagnosticos.index', icon: Stethoscope, label: 'Diagnósticos', modulo: 'diagnosticos' },
     { r: 'admin.cotizaciones.index', icon: Receipt, label: 'Cotizaciones', modulo: 'cotizaciones' },
     { r: 'admin.egresos.index', icon: Wallet, label: 'Egresos', modulo: 'egresos' },
     { r: 'admin.reportes.index', icon: ChartLine, label: 'Reportes', modulo: 'reportes' },

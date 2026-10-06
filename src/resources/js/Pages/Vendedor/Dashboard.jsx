@@ -6,6 +6,7 @@ import {
   Boxes, CalendarCheck, Hammer, PlusCircle, Receipt, ShoppingCart, Tag, TrendingUp, Wallet,
 } from 'lucide-react';
 import { PageHeader, Toast, bsFmt, buttonCls, useToast } from '@/Components/Admin/ui';
+import { fmtMonto } from '@/Components/Admin/cotizacion';
 import AdminGuide from '@/Components/Admin/AdminGuide';
 import {
   AccesoRapido, CONSEJOS_VENDEDOR, Entrada, ListaReciente, Numero, TarjetaMeta, animoDelDia, useEntrada,
@@ -173,7 +174,7 @@ export default function Dashboard({ resumen = {}, ultimasVentas = [], ultimasCot
                   <span className="block truncate text-[14px] font-semibold text-slate-800">{c.cliente || 'Sin nombre'}</span>
                   <span className="block text-[11px] text-slate-400">{fechaCorta(c.fecha)}</span>
                 </span>
-                <span className="shrink-0 text-[14px] font-bold tabular-nums text-slate-900">{bsFmt(c.total)}</span>
+                <span className="shrink-0 text-[14px] font-bold tabular-nums text-slate-900">{fmtMonto(c.total, c.moneda)}</span>
               </>
             )}
           />

@@ -149,7 +149,7 @@ class CotizacionesTest extends TestCase
                 ->component('Admin/Cotizaciones/WhatsappLote')
                 ->has('links', 1)
                 ->where('links.0.cotizacion_id', $conNumero->id)
-                ->where('links.0.total', '2,204.00')
+                ->where('links.0.total', 'Bs 2,204.00')
                 ->where('links.0.mensaje', fn ($mensaje) => str_contains($mensaje, 'COT-' . $conNumero->id))
                 ->where('omitidas', ['Sin Número']));
     }

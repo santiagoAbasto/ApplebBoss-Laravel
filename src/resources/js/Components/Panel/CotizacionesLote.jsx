@@ -72,7 +72,7 @@ export default function CotizacionesLote({ links = [], omitidas = [], Layout, pr
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-base font-bold text-slate-900">{item.nombre}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{fmtTelefono(item.telefono)} · Bs {item.total}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{fmtTelefono(item.telefono)} · {item.total}</p>
                     </div>
                     <Badge tone="lila" className="font-mono">{numeroCotizacion(item.id)}</Badge>
                   </div>

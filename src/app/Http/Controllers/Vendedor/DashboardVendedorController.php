@@ -90,6 +90,7 @@ class DashboardVendedorController extends Controller
                     'id'      => $c->id,
                     'cliente' => $c->nombre_cliente,
                     'total'   => round((float) $c->total, 2),
+                    'moneda'  => $c->moneda,
                     'fecha'   => $c->created_at?->toDateString(),
                 ])->values(),
 

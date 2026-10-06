@@ -42,7 +42,7 @@ class ActividadDelCliente
 
         $cotizaciones = $mio(Cotizacion::where('cliente_id', $cliente->id))
             ->latest()
-            ->get(['id', 'total', 'drive_url', 'created_at']);
+            ->get(['id', 'total', 'moneda', 'drive_url', 'created_at']);
 
         $recientes = collect()
             ->concat($ventas->map(fn ($v) => [
@@ -70,6 +70,7 @@ class ActividadDelCliente
                 'codigo'  => 'COT-' . $c->id,
                 'fecha'   => $c->created_at,
                 'monto'   => (float) $c->total,
+                'moneda'  => $c->moneda,
                 'url'     => $c->drive_url ?: route("{$prefijo}.cotizaciones.pdf", $c->id),
                 'externo' => true,
             ]))

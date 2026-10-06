@@ -32,6 +32,7 @@ class Cotizacion extends Model
         // totales
         'descuento',
         'total',
+        'moneda',
 
         // extras
         'notas_adicionales',
@@ -58,6 +59,22 @@ class Cotizacion extends Model
     /* ===============================
      | RELACIONES
      =============================== */
+
+    /** En qué moneda está la cotización: el símbolo y cómo se escribe el monto en letras. Las de siempre, en bolivianos. */
+    public const MONEDAS = [
+        'BOB' => ['simbolo' => 'Bs', 'letras' => 'bolivianos'],
+        'USD' => ['simbolo' => '$us', 'letras' => 'dólares estadounidenses'],
+    ];
+
+    public function simboloMoneda(): string
+    {
+        return (self::MONEDAS[$this->moneda] ?? self::MONEDAS['BOB'])['simbolo'];
+    }
+
+    public function montoEnLetras(float $monto): string
+    {
+        return \App\Support\MontoEnLetras::enLetras($monto, (self::MONEDAS[$this->moneda] ?? self::MONEDAS['BOB'])['letras']);
+    }
 
     // 👤 Usuario que creó la cotización (admin o vendedor)
     public function usuario()

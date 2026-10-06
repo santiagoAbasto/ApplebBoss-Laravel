@@ -2,6 +2,12 @@
 // (resources/views/pdf/cotizacion.blade.php). Si cambia allá, cambia aquí.
 
 export const IVA = 0.13;
+
+// Las cotizaciones pueden ir en bolivianos (las de siempre) o en dólares
+export const MONEDAS = { BOB: 'Bs', USD: '$us' };
+
+export const fmtMonto = (n, moneda = 'BOB') =>
+  `${MONEDAS[moneda] ?? 'Bs'} ${(Number(n) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const IT = 0.03;
 
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;

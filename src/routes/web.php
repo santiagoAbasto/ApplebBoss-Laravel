@@ -431,6 +431,16 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->name('servicios.costo');
 
         // ========================
+        // 🩺 Diagnósticos: el informe técnico firmado de un equipo
+        // ========================
+        Route::resource('diagnosticos', \App\Http\Controllers\Admin\DiagnosticoController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->names('diagnosticos');
+
+        Route::get('/diagnosticos/{diagnostico}/pdf', [\App\Http\Controllers\Admin\DiagnosticoController::class, 'pdf'])
+            ->name('diagnosticos.pdf');
+
+        // ========================
         // 📊 Reportes
         // ========================
         Route::get('/reportes', [ReporteController::class, 'index'])
