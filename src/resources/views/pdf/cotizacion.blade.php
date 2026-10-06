@@ -80,7 +80,7 @@
 
 <body>
   @include('pdf.partials.membrete', ['tipo' => 'COTIZACIÓN', 'codigo' => 'COT-' . $cotizacion->id,
-      'cuando' => $fecha?->format('d/m/Y') . ($hora ? ' &nbsp; ' . $hora : '') . ' &nbsp;|&nbsp; Precios en bolivianos'])
+      'cuando' => $fecha?->format('d/m/Y') . ($hora ? ' &nbsp; ' . $hora : '') . ' &nbsp;|&nbsp; Precios en ' . ($cotizacion->moneda === 'USD' ? 'dólares' : 'bolivianos')])
 
   {{-- Datos del cliente --}}
   <table class="tarjetas">

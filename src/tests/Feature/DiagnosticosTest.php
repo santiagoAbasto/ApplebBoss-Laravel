@@ -111,6 +111,7 @@ class DiagnosticosTest extends TestCase
         $html = view('pdf.cotizacion', compact('cotizacion'))->render();
         $this->assertStringContainsString('$us 720.00', $html);
         $this->assertStringContainsString('dólares estadounidenses', $html);
+        $this->assertStringContainsString('Precios en dólares', $html);
         $this->assertStringNotContainsString('Bs ', $html);
     }
 }
