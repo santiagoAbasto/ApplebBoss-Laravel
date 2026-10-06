@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { useState } from 'react';
-import { BadgeCheck, CircleAlert, MessageSquareQuote, Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import { BadgeCheck, CircleAlert, ExternalLink, MessageSquareQuote, Pencil, Plus, RefreshCw, Star, Trash2, Unplug } from 'lucide-react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Badge, Button, EmptyState, Field, Input, Modal, PageHeader, Select, Switch, Textarea, Toast, fmtDate, useToast } from '@/Components/Admin/ui';
 
@@ -17,6 +17,69 @@ function Estrellas({ n, onElegir, tam = 'h-4 w-4' }) {
                     : <span key={i}>{icono}</span>;
             })}
         </span>
+    );
+}
+
+// Las reseñas del perfil de Google: la cuenta dueña del perfil conecta una vez y llegan solas cada día
+function ConexionGoogle({ google }) {
+    const opciones = { preserveScroll: true };
+    const ultima = google.ultima
+        ? new Date(google.ultima).toLocaleString('es-BO', { timeZone: 'America/La_Paz', dateStyle: 'medium', timeStyle: 'short' })
+        : null;
+    const desconectar = () => {
+        if (window.confirm('¿Desconectar Google? Las reseñas que ya se trajeron se quedan, pero dejan de llegar las nuevas.')) {
+            router.delete(route('admin.resenas.google.desconectar'), opciones);
+        }
+    };
+
+    return (
+        <section className="mt-6 rounded-2xl border border-slate-200/80 bg-white p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 text-base font-bold text-slate-900">
+                        Reseñas de Google
+                        {google.conectado ? <Badge tone="emerald">Conectado</Badge> : <Badge tone="slate">Sin conectar</Badge>}
+                    </p>
+                    {google.conectado ? (
+                        <p className="mt-1 text-sm text-slate-600">
+                            {google.total ? <><b>{String(google.promedio).replace('.', ',')}</b> de 5 con <b>{google.total}</b> reseñas en Google · </> : null}
+                            Llegan solas cada mañana{ultima ? `; última vez: ${ultima}` : ''}.
+                            {google.cuenta ? <span className="text-slate-400"> Cuenta: {google.cuenta}.</span> : null}
+                        </p>
+                    ) : (
+                        <p className="mt-1 text-sm text-slate-600">
+                            Conecta una sola vez la cuenta dueña del perfil de Google de la tienda y las reseñas llegan solas cada día, esperando tu aprobación.
+                        </p>
+                    )}
+                    {google.error && <p className="mt-2 text-sm font-semibold text-rose-600">Último intento: {google.error}</p>}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {google.conectado ? (
+                        <>
+                            {google.pendientes > 0 && (
+                                <Button variant="primary" onClick={() => router.post(route('admin.resenas.google.publicar'), {}, opciones)}>
+                                    Publicar las {google.pendientes} de Google
+                                </Button>
+                            )}
+                            <Button onClick={() => router.post(route('admin.resenas.google.sincronizar'), {}, opciones)}>
+                                <RefreshCw className="mr-1.5 h-4 w-4" /> Traer ahora
+                            </Button>
+                            {google.enlace && (
+                                <a href={google.enlace} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                                    <ExternalLink className="h-4 w-4" /> Ver en Google
+                                </a>
+                            )}
+                            <Button onClick={desconectar}><Unplug className="mr-1.5 h-4 w-4" /> Desconectar</Button>
+                        </>
+                    ) : (
+                        // Navegación completa: Google no se abre dentro de Inertia
+                        <a href={route('admin.resenas.google.conectar')} className="inline-flex items-center gap-1.5 rounded-xl bg-[#011446] px-4 py-2 text-sm font-semibold text-white hover:bg-[#011446]/90">
+                            Conectar Google
+                        </a>
+                    )}
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -111,7 +174,7 @@ function Formulario({ resena, fuentes, fuentesAMano, onClose }) {
     );
 }
 
-export default function Index({ resenas = [], fuentes = [], fuentesAMano = [], resumen = {}, bloqueInicio = true }) {
+export default function Index({ resenas = [], fuentes = [], fuentesAMano = [], resumen = {}, bloqueInicio = true, google = null }) {
     const [toast] = useToast();
     const [editar, setEditar] = useState(null);   // null | 'nueva' | reseña
     const [borrar, setBorrar] = useState(null);
@@ -136,6 +199,8 @@ export default function Index({ resenas = [], fuentes = [], fuentesAMano = [], r
                     La sección «Reseñas» está apagada en <Link href={route('admin.home-builder.index')} className="font-bold underline">Portada</Link>: aunque publiques, no se ve en la tienda.
                 </p>
             )}
+
+            {google && <ConexionGoogle google={google} />}
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
                 <Resumen label="Publicadas" valor={resumen.publicadas ?? 0} tono="text-slate-900" />

@@ -95,7 +95,7 @@ export default function CarruselResenas({ resenas, resumen }) {
 
     return (
         <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,300px)_1fr] lg:gap-14">
-            {/* Promedio y cantidad: solo de lo aprobado */}
+            {/* Promedio y cantidad: los oficiales de Google si está conectado; si no, los de lo aprobado */}
             <div>
                 <div className="flex items-end gap-3">
                     <span className="text-5xl font-black leading-none tabular-nums" style={{ color: 'var(--ab-navy)' }}>
@@ -104,7 +104,12 @@ export default function CarruselResenas({ resenas, resumen }) {
                     <div className="pb-1">
                         <Estrellas n={resumen.promedio} />
                         <p className="mt-1 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
-                            {resumen.total === 1 ? '1 opinión publicada' : `${resumen.total} opiniones publicadas`}
+                            {resumen.fuente === 'google' ? (
+                                // El promedio oficial del perfil de Google, con el enlace para comprobarlo
+                                <a href={resumen.enlace || undefined} target="_blank" rel="noopener noreferrer" className={resumen.enlace ? 'underline-offset-2 hover:underline' : ''}>
+                                    {resumen.total === 1 ? '1 reseña en Google' : `${resumen.total.toLocaleString('es-BO')} reseñas en Google`}
+                                </a>
+                            ) : (resumen.total === 1 ? '1 opinión publicada' : `${resumen.total} opiniones publicadas`)}
                         </p>
                     </div>
                 </div>

@@ -626,6 +626,16 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::patch('/sitio/resenas/{resena}', [App\Http\Controllers\Admin\ResenaController::class, 'update'])->name('resenas.update');
         Route::delete('/sitio/resenas/{resena}', [App\Http\Controllers\Admin\ResenaController::class, 'destroy'])->name('resenas.destroy');
 
+        // Reseñas del perfil de Google: se conecta una vez y llegan solas cada día.
+        // «volver» es la dirección registrada en el cliente OAuth de Google Cloud: no cambiarla sin cambiarla allá.
+        Route::controller(App\Http\Controllers\Admin\ResenaGoogleController::class)->prefix('resenas/google')->name('resenas.google.')->group(function () {
+            Route::get('/conectar', 'conectar')->name('conectar');
+            Route::get('/volver', 'volver')->name('volver');
+            Route::post('/sincronizar', 'sincronizar')->middleware('throttle:6,1')->name('sincronizar');
+            Route::post('/publicar', 'publicarTodas')->name('publicar');
+            Route::delete('/', 'desconectar')->name('desconectar');
+        });
+
         // ========================
         // 📄 Pages CMS
         // ========================

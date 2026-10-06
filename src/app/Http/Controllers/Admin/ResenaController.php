@@ -53,6 +53,10 @@ class ResenaController extends Controller
             ],
             // La sección del inicio se enciende en Portada: si está apagada, las aprobadas no se ven
             'bloqueInicio' => $seccion === null || $seccion->active,
+            // Las del perfil de Google llegan solas una vez conectada la cuenta dueña del perfil
+            'google' => \App\Http\Controllers\Tienda\GoogleLoginController::configurado()
+                ? \App\Support\ResenasDeGoogle::estado() + ['pendientes' => $todas->whereNotNull('google_id')->where('publicada', false)->count()]
+                : null,
         ]);
     }
 

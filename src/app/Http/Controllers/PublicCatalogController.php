@@ -94,7 +94,10 @@ class PublicCatalogController extends Controller
             'locations'      => $locations,
             'novedades'      => $novedades,
             'resenas'        => $resenas,
-            'resenasResumen' => $conResenas && $resenas !== [] ? \App\Models\Resena::resumenPublico() : null,
+            // Con Google conectado, el promedio y la cantidad son los oficiales del perfil de Google
+            'resenasResumen' => $conResenas && $resenas !== []
+                ? (\App\Support\ResenasDeGoogle::resumen() ?? \App\Models\Resena::resumenPublico())
+                : null,
         ]);
     }
 
