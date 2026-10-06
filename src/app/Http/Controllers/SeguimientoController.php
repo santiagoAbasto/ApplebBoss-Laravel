@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pedido;
 use App\Models\Resena;
+use App\Support\Checkout\Entrega;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,16 +82,27 @@ class SeguimientoController extends Controller
             return back()->with('error', 'Ya nos dejaste tu opinión sobre este pedido. ¡Gracias!');
         }
 
+        // La entrega se califica solo si se le llevó el pedido; si lo retiró en la tienda, no hay entrega que calificar
+        $conEntrega = Entrega::aDomicilio($pedido->tipo_entrega);
+
         $datos = $request->validate([
-            'calificacion' => ['required', 'integer', 'between:1,5'],
-            'texto'        => ['required', 'string', 'min:10', 'max:1000'],
+            'calificacion'       => ['required', 'integer', 'between:1,5'],
+            'aspectos'           => ['required', 'array'],
+            'aspectos.producto'  => ['required', 'integer', 'between:1,5'],
+            'aspectos.entrega'   => [$conEntrega ? 'required' : 'prohibited', 'integer', 'between:1,5'],
+            'aspectos.atencion'  => ['required', 'integer', 'between:1,5'],
+            'texto'              => ['required', 'string', 'min:10', 'max:1000'],
         ], [
-            'texto.min' => 'Cuéntanos un poco más: al menos 10 letras.',
+            'texto.min'                  => 'Cuéntanos un poco más: al menos 10 letras.',
+            'aspectos.producto.required' => 'Califica el producto.',
+            'aspectos.entrega.required'  => 'Califica la entrega.',
+            'aspectos.atencion.required' => 'Califica la atención.',
         ], ['calificacion' => 'calificación', 'texto' => 'opinión']);
 
         Resena::create([
             'nombre'       => $pedido->nombre_cliente,
             'calificacion' => $datos['calificacion'],
+            'aspectos'     => array_map('intval', array_intersect_key($datos['aspectos'], Resena::ASPECTOS)),
             'texto'        => trim(strip_tags($datos['texto'])),
             'fuente'       => 'web',
             'producto'     => $pedido->items->first()?->nombre,

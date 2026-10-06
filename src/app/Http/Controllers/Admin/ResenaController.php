@@ -36,6 +36,7 @@ class ResenaController extends Controller
                 'nombre'       => $r->nombre,
                 'firma'        => $r->firma(),
                 'calificacion' => $r->calificacion,
+                'aspectos'     => collect($r->aspectos ?? [])->map(fn ($nota, $clave) => ['etiqueta' => Resena::ASPECTOS[$clave] ?? $clave, 'nota' => $nota])->values()->all(),
                 'texto'        => $r->texto,
                 'fuente'       => $r->fuente,
                 'enlace'       => $r->enlace,

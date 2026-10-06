@@ -64,6 +64,8 @@ final class ResenasDeGoogle
             'promedio' => round((float) ConfiguracionTienda::get('google_resenas_promedio'), 1),
             'total'    => $total,
             'enlace'   => ConfiguracionTienda::get('google_resenas_enlace'),
+            // Abre directo el cuadro de Google para escribir una reseña
+            'escribir' => ConfiguracionTienda::get('google_resenas_escribir'),
         ];
     }
 
@@ -75,7 +77,7 @@ final class ResenasDeGoogle
     {
         try {
             $acceso = self::tokenDeAcceso();
-            [$ubicacion, $enlace] = self::ubicacion($acceso);
+            [$ubicacion, $enlace, $escribir] = self::ubicacion($acceso);
             [$resenas, $promedio, $total] = self::resenas($acceso, $ubicacion);
         } catch (\Throwable $e) {
             ConfiguracionTienda::set('google_resenas_error', mb_substr($e->getMessage(), 0, 300));
@@ -113,6 +115,7 @@ final class ResenasDeGoogle
         ConfiguracionTienda::set('google_resenas_promedio', (string) $promedio);
         ConfiguracionTienda::set('google_resenas_total', (string) $total);
         ConfiguracionTienda::set('google_resenas_enlace', $enlace);
+        ConfiguracionTienda::set('google_resenas_escribir', $escribir);
         ConfiguracionTienda::set('google_resenas_ultima', now()->toIso8601String());
         ConfiguracionTienda::set('google_resenas_error', null);
 
@@ -141,16 +144,11 @@ final class ResenasDeGoogle
     }
 
     /**
-     * El perfil de la tienda: el primero cuyo nombre dice «Apple Boss», o el único que haya.
-     * Se recuerda para no buscarlo cada día.
+     * El perfil de la tienda: el primero cuyo nombre dice «Apple Boss», o el único que haya. Se busca en cada
+     * importación (son dos consultas al día) para que el enlace al perfil y el de «escribir una reseña» sigan al día.
      */
     private static function ubicacion(string $acceso): array
     {
-        $guardada = ConfiguracionTienda::get('google_resenas_ubicacion');
-        if ($guardada) {
-            return [$guardada, ConfiguracionTienda::get('google_resenas_enlace')];
-        }
-
         $perfiles = [];
         $cuentas = Http::withToken($acceso)->get('https://mybusinessaccountmanagement.googleapis.com/v1/accounts')->throw()->json('accounts') ?? [];
 
@@ -160,7 +158,13 @@ final class ResenasDeGoogle
                 ->throw()->json('locations') ?? [];
 
             foreach ($ubicaciones as $u) {
-                $perfiles[] = ['ruta' => "{$cuenta['name']}/{$u['name']}", 'titulo' => $u['title'] ?? '', 'enlace' => $u['metadata']['mapsUri'] ?? null];
+                $lugar = $u['metadata']['placeId'] ?? null;
+                $perfiles[] = [
+                    'ruta'     => "{$cuenta['name']}/{$u['name']}",
+                    'titulo'   => $u['title'] ?? '',
+                    'enlace'   => $u['metadata']['mapsUri'] ?? null,
+                    'escribir' => $u['metadata']['newReviewUri'] ?? ($lugar ? "https://search.google.com/local/writereview?placeid={$lugar}" : null),
+                ];
             }
         }
 
@@ -171,7 +175,7 @@ final class ResenasDeGoogle
 
         ConfiguracionTienda::set('google_resenas_ubicacion', $perfil['ruta']);
 
-        return [$perfil['ruta'], $perfil['enlace']];
+        return [$perfil['ruta'], $perfil['enlace'], $perfil['escribir']];
     }
 
     /** Todas las páginas de reseñas, ya con la forma de la tabla. */

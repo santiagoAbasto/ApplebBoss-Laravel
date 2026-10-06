@@ -94,7 +94,7 @@ class EstadoDePedido extends Mailable implements ShouldQueue
         $enlace = route('seguimiento.ver', [
             'codigo' => $this->pedido->codigo,
             't'      => $this->pedido->token_seguimiento,
-        ]);
+        ]) . ($this->pedido->estado === Pedido::ENTREGADO ? '#opinar' : ''); // entregado: directo a calificar
 
         return new Content(view: 'emails.pedido-estado', with: [
             'pedido' => $this->pedido,

@@ -231,6 +231,15 @@ export default function Index({ resenas = [], fuentes = [], fuentesAMano = [], r
                                     {!r.publicada && <Badge tone={r.pedido ? 'violet' : 'amber'}>{r.pedido ? 'Espera tu aprobación' : 'Oculta'}</Badge>}
                                 </div>
                                 <p className="mt-3 text-[15px] leading-relaxed text-slate-800">“{r.texto}”</p>
+                                {r.aspectos?.length > 0 && (
+                                    <p className="mt-2 flex flex-wrap gap-2">
+                                        {r.aspectos.map((a) => (
+                                            <span key={a.etiqueta} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                {a.etiqueta} <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {a.nota}
+                                            </span>
+                                        ))}
+                                    </p>
+                                )}
                                 <p className="mt-3 text-xs text-slate-500">
                                     <span className="font-bold text-slate-700">{r.nombre}</span>
                                     {' · en la tienda sale como '}<span className="font-semibold">«{r.firma}»</span>

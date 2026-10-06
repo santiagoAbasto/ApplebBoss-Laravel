@@ -76,6 +76,7 @@ class CuentaController extends Controller
     {
         $pedidos = $request->user()->pedidos()
             ->with('items:id,pedido_id,nombre,cantidad')
+            ->withExists('resena')
             ->paginate(10)
             ->through(fn ($p) => [
                 'codigo'    => $p->codigo,
@@ -86,6 +87,8 @@ class CuentaController extends Controller
                 'articulos' => $p->items->pluck('nombre')->all(),
                 'creado_en' => $p->created_at?->toIso8601String(),
                 'pago_confirmado' => $p->pagoConfirmado(),
+                // Ya lo recibió y todavía no lo calificó
+                'por_calificar' => $p->estado === \App\Models\Pedido::ENTREGADO && ! $p->resena_exists,
             ]);
 
         return Inertia::render('Store/Cuenta/Index', [

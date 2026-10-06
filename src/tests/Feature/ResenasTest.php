@@ -36,8 +36,35 @@ class ResenasTest extends TestCase
     {
         return $this->post("/seguimiento/{$pedido->codigo}/opinion?t=" . ($token ?? $pedido->token_seguimiento), array_merge([
             'calificacion' => 5,
+            'aspectos'     => ['producto' => 5, 'atencion' => 5],
             'texto'        => 'Excelente atención y el equipo llegó perfecto.',
         ], $datos));
+    }
+
+    public function test_califica_por_partes_y_la_entrega_solo_si_se_le_llevo_el_pedido(): void
+    {
+        // Retiro en tienda: no hay entrega que calificar
+        $retiro = $this->pedido();
+        $this->opinar($retiro, ['aspectos' => ['producto' => 5, 'entrega' => 4, 'atencion' => 5]])->assertSessionHasErrors('aspectos.entrega');
+        $this->opinar($retiro, ['aspectos' => ['producto' => 4]])->assertSessionHasErrors('aspectos.atencion');
+
+        // A domicilio: la entrega es obligatoria y se guarda con las demás
+        $delivery = $this->pedido();
+        $delivery->update(['tipo_entrega' => 'delivery']);
+        $this->opinar($delivery)->assertSessionHasErrors('aspectos.entrega');
+        $this->opinar($delivery, ['aspectos' => ['producto' => 5, 'entrega' => 3, 'atencion' => 4]])->assertSessionHasNoErrors();
+
+        $resena = Resena::where('pedido_id', $delivery->id)->firstOrFail();
+        $this->assertSame(['producto' => 5, 'entrega' => 3, 'atencion' => 4], $resena->aspectos);
+
+        // Recién publicada cuenta en los promedios de la tienda
+        $this->assertSame([], Resena::promediosDeAspectos());
+        $resena->update(['publicada' => true]);
+        $this->assertSame([
+            ['clave' => 'producto', 'etiqueta' => 'El producto', 'promedio' => 5.0, 'total' => 1],
+            ['clave' => 'entrega', 'etiqueta' => 'La entrega', 'promedio' => 3.0, 'total' => 1],
+            ['clave' => 'atencion', 'etiqueta' => 'La atención', 'promedio' => 4.0, 'total' => 1],
+        ], Resena::promediosDeAspectos());
     }
 
     /* ─── La opinión del cliente ─────────────────────────────────────────── */

@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { MailWarning, Package, ShoppingBag } from 'lucide-react';
+import { MailWarning, Package, ShoppingBag, Star } from 'lucide-react';
 import StoreLayout, { StoreContainer, money } from '@/Layouts/StoreLayout';
 
 const TONO = {
@@ -54,7 +54,7 @@ function MiCuenta({ pedidos, perfil }) {
                             return (
                                 <li key={p.codigo}>
                                     <Link
-                                        href={route('seguimiento.ver', { codigo: p.codigo, t: p.token })}
+                                        href={route('seguimiento.ver', { codigo: p.codigo, t: p.token }) + (p.por_calificar ? '#opinar' : '')}
                                         className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-5 transition-shadow hover:shadow-md"
                                         style={{ borderColor: 'var(--border-light)' }}
                                     >
@@ -73,9 +73,17 @@ function MiCuenta({ pedidos, perfil }) {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>{money(p.total)}</p>
-                                            <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold" style={{ color: 'var(--ab-navy)' }}>
-                                                <Package className="h-3.5 w-3.5" /> Ver seguimiento
-                                            </span>
+                                            {p.por_calificar ? (
+                                                // Ya lo recibió: lo invitamos a calificar el producto, la entrega y la atención
+                                                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-black"
+                                                    style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}>
+                                                    <Star className="h-3.5 w-3.5" /> Califica tu compra
+                                                </span>
+                                            ) : (
+                                                <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-bold" style={{ color: 'var(--ab-navy)' }}>
+                                                    <Package className="h-3.5 w-3.5" /> Ver seguimiento
+                                                </span>
+                                            )}
                                         </div>
                                     </Link>
                                 </li>

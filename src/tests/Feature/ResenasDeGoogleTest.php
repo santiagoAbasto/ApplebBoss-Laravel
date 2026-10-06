@@ -51,7 +51,7 @@ class ResenasDeGoogleTest extends TestCase
             'oauth2.googleapis.com/token' => Http::response(['access_token' => 'acceso']),
             'mybusinessaccountmanagement.googleapis.com/*' => Http::response(['accounts' => [['name' => 'accounts/1']]]),
             'mybusinessbusinessinformation.googleapis.com/*' => Http::response(['locations' => [
-                ['name' => 'locations/9', 'title' => 'Apple Boss', 'metadata' => ['mapsUri' => 'https://maps.google.com/?cid=9']],
+                ['name' => 'locations/9', 'title' => 'Apple Boss', 'metadata' => ['mapsUri' => 'https://maps.google.com/?cid=9', 'newReviewUri' => 'https://g.page/r/abc/review']],
             ]]),
             'mybusiness.googleapis.com/v4/accounts/1/locations/9/reviews*' => $resenas,
         ]);
@@ -77,7 +77,8 @@ class ResenasDeGoogleTest extends TestCase
         $this->assertSame('Cliente de Google', $anonima->nombre);
         $this->assertNull(Resena::where('google_id', 'r2')->first());
 
-        $this->assertSame(['fuente' => 'google', 'promedio' => 4.8, 'total' => 72, 'enlace' => 'https://maps.google.com/?cid=9'], ResenasDeGoogle::resumen());
+        $this->assertSame(['fuente' => 'google', 'promedio' => 4.8, 'total' => 72, 'enlace' => 'https://maps.google.com/?cid=9',
+            'escribir' => 'https://g.page/r/abc/review'], ResenasDeGoogle::resumen());
         $this->assertSame('accounts/1/locations/9', ConfiguracionTienda::get('google_resenas_ubicacion'));
         Http::assertSent(fn ($r) => str_contains($r->url(), 'pageToken=p2'));
     }

@@ -95,8 +95,9 @@ class PublicCatalogController extends Controller
             'novedades'      => $novedades,
             'resenas'        => $resenas,
             // Con Google conectado, el promedio y la cantidad son los oficiales del perfil de Google
+            // y siempre van los promedios de producto, entrega y atención de las compras verificadas
             'resenasResumen' => $conResenas && $resenas !== []
-                ? (\App\Support\ResenasDeGoogle::resumen() ?? \App\Models\Resena::resumenPublico())
+                ? (\App\Support\ResenasDeGoogle::resumen() ?? \App\Models\Resena::resumenPublico()) + ['aspectos' => \App\Models\Resena::promediosDeAspectos()]
                 : null,
         ]);
     }

@@ -935,10 +935,9 @@ function ResenasSection({ resenas, resumen, settings = {}, tone }) {
     const nombre = useNombreTienda();
     return (
         <Section tone={tone} id="resenas" labelledBy="home-resenas">
-            <SectionHeading id="home-resenas" eyebrow="Opiniones reales"
-                title={settings.titulo || 'Lo que dicen nuestros clientes'}
-                subtitle={settings.subtitle || `Opiniones de personas que ya compraron en ${nombre}.`} />
-            <CarruselResenas resenas={resenas} resumen={resumen} />
+            <CarruselResenas resenas={resenas} resumen={resumen}
+                titulo={settings.titulo || 'Lo que dicen nuestros clientes'}
+                subtitulo={settings.subtitle || `Opiniones de personas que ya compraron en ${nombre}.`} />
         </Section>
     );
 }

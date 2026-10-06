@@ -21,6 +21,7 @@ class Resena extends Model
 
     protected $casts = [
         'calificacion' => 'integer',
+        'aspectos'     => 'array',
         'fecha'        => 'date',
         'publicada'    => 'boolean',
         'orden'        => 'integer',
@@ -42,6 +43,13 @@ class Resena extends Model
         'instagram' => 'Instagram',
         'whatsapp'  => 'WhatsApp',
         'tienda'    => 'En la tienda',
+    ];
+
+    /** Lo que califica por separado quien recibió su pedido. La entrega, solo si se le llevó a domicilio. */
+    public const ASPECTOS = [
+        'producto' => 'El producto',
+        'entrega'  => 'La entrega',
+        'atencion' => 'La atención',
     ];
 
     public function pedido(): BelongsTo
@@ -72,8 +80,28 @@ class Resena extends Model
         return ['promedio' => round((float) $q->avg('calificacion'), 1), 'total' => $q->count()];
     }
 
+    /** El promedio de cada aspecto entre las publicadas que lo calificaron: «La entrega 4,9 (12)». */
+    public static function promediosDeAspectos(): array
+    {
+        $sumas = [];
+        foreach (static::publicadas()->whereNotNull('aspectos')->pluck('aspectos') as $aspectos) {
+            foreach (array_intersect_key((array) $aspectos, self::ASPECTOS) as $clave => $nota) {
+                $sumas[$clave][] = (int) $nota;
+            }
+        }
+
+        return collect(self::ASPECTOS)
+            ->filter(fn ($_, $clave) => ! empty($sumas[$clave]))
+            ->map(fn ($etiqueta, $clave) => [
+                'clave'    => $clave,
+                'etiqueta' => $etiqueta,
+                'promedio' => round(array_sum($sumas[$clave]) / count($sumas[$clave]), 1),
+                'total'    => count($sumas[$clave]),
+            ])->values()->all();
+    }
+
     /** Lo que ve la tienda: sin pedido, sin correo, sin nombre completo. */
-    public static function paraLaTienda(int $limite = 20): array
+    public static function paraLaTienda(int $limite = 30): array
     {
         return static::publicadas()
             ->orderBy('orden')->orderByDesc('fecha')->orderByDesc('id')
@@ -82,6 +110,7 @@ class Resena extends Model
                 'id'           => $r->id,
                 'firma'        => $r->firma(),
                 'calificacion' => $r->calificacion,
+                'aspectos'     => $r->aspectos,
                 'texto'        => $r->texto,
                 'fuente'       => $r->fuente,
                 'fuente_label' => self::FUENTES[$r->fuente] ?? $r->fuente,
