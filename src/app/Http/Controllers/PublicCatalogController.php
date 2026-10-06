@@ -44,6 +44,11 @@ class PublicCatalogController extends Controller
                 ? HomeSection::filtrar($s->type, $settings, $available, $coleccion?->publicaciones->pluck('id'))->take($limit)->values()
                 : null;
 
+            // Portada grande: solo las direcciones de las fotos cargadas, nunca los nombres ni los originales
+            if ($s->type === 'hero') {
+                $settings['pantallas'] = \App\Services\ImagenPortadaService::urls($settings);
+            }
+
             return [
                 'id'        => $s->id,
                 'type'      => $s->type,

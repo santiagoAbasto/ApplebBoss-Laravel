@@ -14,7 +14,7 @@ import { Badge } from '@/Components/Admin/ui';
 export const TIPOS = {
   hero: {
     Icon: Store, nombre: 'Portada grande',
-    ayuda: 'La parte de arriba, con los equipos que van pasando.',
+    ayuda: 'La parte de arriba: la MacBook con las fotos de cada categoría y el destacado de la tienda.',
   },
   trust: {
     Icon: ShieldCheck, nombre: 'Franja de confianza',

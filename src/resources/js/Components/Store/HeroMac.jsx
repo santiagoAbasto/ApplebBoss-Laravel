@@ -20,8 +20,10 @@ import { useNombreTienda } from '@/Components/Store/tienda';
  * cargadores), y siguen al mouse y al scroll por capas.
  *
  * Las imágenes (public/images/hero-mac-1) se generaron en Higgsfield y se recortaron: la pantalla de la MacBook es un
- * hueco transparente y lo de adentro se dibuja detrás, así la muesca y los bordes quedan encima. Si cambian, van en una
- * carpeta nueva: Cloudflare guarda los estáticos varias horas.
+ * hueco transparente y lo de adentro se dibuja detrás, así la muesca y los bordes quedan encima. La foto de cada
+ * categoría se cambia en Tienda online → Portada → «Portada grande» (ImagenPortadaService); la de la carpeta es la que
+ * va si no hay una cargada. Si cambian las de la carpeta, van en una carpeta nueva: Cloudflare guarda los estáticos
+ * varias horas.
  *
  * Lo que se lee sale de la tienda: el destacado, el texto de Portada → «Portada grande» y la frase de cada categoría.
  * Con «reducir movimiento» no hay arranque, cursor, vuelo, parallax ni avance automático.
@@ -213,7 +215,7 @@ const Bateria = ({ s }) => <svg viewBox="0 0 28 14" width={s * 1.8} height={s} f
 const Lupa = ({ s }) => <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></svg>;
 
 /* Una ventana de Safari con la foto de la categoría. Se abre desde su ícono del Dock y vuelve a él al cerrarse. */
-function Ventana({ lamina, indice, total, quieto, chica, px }) {
+function Ventana({ lamina, indice, total, quieto, chica, px, foto }) {
     const c = centroIcono(indice, total);
     const desdeElDock = { opacity: 0, scale: 0.05, x: `${((c.x - 50) / VENTANA.ancho) * 100}%`, y: `${((c.y - CENTRO_VENTANA) / ALTO_VENTANA) * 100}%` };
     return (
@@ -233,14 +235,14 @@ function Ventana({ lamina, indice, total, quieto, chica, px }) {
                 </span>
                 <span style={{ width: px(4.6) }} />
             </div>
-            <img src={`${CARPETA}/pantalla-${lamina.clave}${chica ? '-chica' : ''}.webp`} alt="" draggable="false"
+            <img src={foto(lamina.clave, chica ? 'chica' : 'grande')} alt="" draggable="false"
                 className="block w-full object-cover" style={{ aspectRatio: '3 / 2' }} />
         </motion.div>
     );
 }
 
 /* Lo que se ve en la pantalla de la MacBook: un escritorio de Mac */
-function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre }) {
+function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre, foto }) {
     const caja = useRef(null);
     const u = useUnidad(caja);
     const px = (n) => `${(n * u).toFixed(2)}px`;
@@ -256,7 +258,7 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre }
             style={{ left: `${PANTALLA.left}%`, top: `${PANTALLA.top}%`, width: `${PANTALLA.width}%`, height: `${PANTALLA.height}%` }}>
             {/* Fondo de escritorio: la misma foto, desenfocada */}
             <AnimatePresence initial={false}>
-                <motion.img key={`fondo-${lamina.clave}`} src={`${CARPETA}/pantalla-${lamina.clave}-chica.webp`} alt="" draggable="false"
+                <motion.img key={`fondo-${lamina.clave}`} src={foto(lamina.clave, 'chica')} alt="" draggable="false"
                     className="absolute inset-0 h-full w-full scale-125 object-cover" style={{ filter: 'blur(18px) brightness(0.6) saturate(1.4)' }}
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1 }} />
             </AnimatePresence>
@@ -279,7 +281,7 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre }
 
             {/* La ventana, con la foto entera */}
             <AnimatePresence initial={false}>
-                <Ventana key={lamina.clave} lamina={lamina} indice={activa} total={total} quieto={quieto} chica={chica} px={px} />
+                <Ventana key={lamina.clave} lamina={lamina} indice={activa} total={total} quieto={quieto} chica={chica} px={px} foto={foto} />
             </AnimatePresence>
 
             {/* Dock: el ícono activo rebota, como al abrir una app */}
@@ -291,7 +293,7 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre }
                         style={{ width: px(DOCK.icono), height: px(DOCK.icono) }}
                         animate={i === activa && !quieto ? { y: [0, -2.6 * u, 0, -1.2 * u, 0] } : { y: 0 }}
                         transition={{ duration: 0.9, ease: 'easeOut' }}>
-                        <img src={`${CARPETA}/pantalla-${l.clave}-chica.webp`} alt="" className="h-full w-full object-cover"
+                        <img src={foto(l.clave, 'chica')} alt="" className="h-full w-full object-cover"
                             style={{ borderRadius: px(1.2), boxShadow: '0 2px 6px rgba(0,0,0,0.35)' }} />
                         <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-white transition-opacity"
                             style={{ bottom: px(-0.65), width: px(0.45), height: px(0.45), opacity: i === activa ? 0.9 : 0 }} />
@@ -332,7 +334,7 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre }
 }
 
 /* El destacado real de la categoría: foto, nombre, datos y precio. Sin producto, el enlace a la categoría. */
-function Destacado({ lamina, producto, quieto, vidrio, tinta, tintaSuave }) {
+function Destacado({ lamina, producto, quieto, vidrio, tinta, tintaSuave, fotoPantalla }) {
     const foto = fotoDe(producto);
     const precio = producto?.promo_price ?? producto?.price;
     return (
@@ -343,7 +345,7 @@ function Destacado({ lamina, producto, quieto, vidrio, tinta, tintaSuave }) {
                 initial={quieto ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={quieto ? { opacity: 0 } : { opacity: 0, y: -8 }} transition={{ duration: 0.28, ease: SUAVE }}>
                 <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white">
-                    <img src={foto ?? `${CARPETA}/pantalla-${lamina.clave}-chica.webp`} alt="" className="h-full w-full object-cover" />
+                    <img src={foto ?? fotoPantalla(lamina.clave, 'chica')} alt="" className="h-full w-full object-cover" />
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="block text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: lamina.acento }}>
@@ -370,6 +372,10 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
     const nombre = useNombreTienda();
     const tituloPagina = usePage().props.seo?.title;
 
+    // Las fotos de la MacBook se cambian en Tienda online → Portada → «Portada grande»; sin foto cargada, la original
+    const pantallas = cmsSettings.pantallas ?? {};
+    const foto = (clave, tam) => pantallas[clave]?.[tam] ?? `${CARPETA}/pantalla-${clave}${tam === 'chica' ? '-chica' : ''}.webp`;
+
     const volanta = (cmsSettings.eyebrow ?? '').trim() || `${nombre} · Cochabamba`;
     const titulo = (cmsSettings.titulo ?? '').trim();
     const texto = (cmsSettings.descripcion ?? '').trim();
@@ -395,9 +401,9 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
     // La Mac arranca (logo y barra de carga) mientras entra; después se precargan las otras fotos
     useEffect(() => {
         const t = setTimeout(() => setEncendida(true), quieto ? 0 : 1900);
-        const p = setTimeout(() => LAMINAS.forEach((l) => { new Image().src = `${CARPETA}/pantalla-${l.clave}${chica ? '-chica' : ''}.webp`; }), 2400);
+        const p = setTimeout(() => LAMINAS.forEach((l) => { new Image().src = foto(l.clave, chica ? 'chica' : 'grande'); }), 2400);
         return () => { clearTimeout(t); clearTimeout(p); };
-    }, [quieto, chica]);
+    }, [quieto, chica]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Mouse: la MacBook gira apenas y las siluetas se mueven por capas (profundidad)
     const seccion = useRef(null);
@@ -473,7 +479,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
 
             {ancha && (
                 <motion.div {...entra(0.45, { y: 16 })} className="mt-8 w-full">
-                    <Destacado lamina={lamina} producto={productos[activa]} quieto={quieto} vidrio={vidrio} tinta={tinta} tintaSuave={tintaSuave} />
+                    <Destacado lamina={lamina} producto={productos[activa]} quieto={quieto} vidrio={vidrio} tinta={tinta} tintaSuave={tintaSuave} fotoPantalla={foto} />
                 </motion.div>
             )}
         </motion.div>
@@ -529,7 +535,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                     <motion.div aria-hidden="true" className="absolute inset-x-[8%] bottom-[-6%] h-[22%] rounded-[50%] blur-3xl"
                         animate={{ background: lamina.glow, opacity: tema.oscuro ? 0.65 : 0.3 }} transition={{ duration: 1.2 }} />
                     <div className="relative" style={{ aspectRatio: '1813 / 1081' }}>
-                        <Pantalla laminas={laminas} activa={activa} onElegir={setActiva} quieto={quieto} encendida={encendida} chica={chica} corre={corre} />
+                        <Pantalla laminas={laminas} activa={activa} onElegir={setActiva} quieto={quieto} encendida={encendida} chica={chica} corre={corre} foto={foto} />
                         <img src={`${CARPETA}/${chica ? 'macbook-chica' : 'macbook'}.webp`} alt="" width="1600" height="954"
                             fetchpriority="high" className="pointer-events-none relative block h-auto w-full select-none" draggable="false"
                             style={{ filter: 'drop-shadow(0 40px 60px rgba(0,0,0,0.6))' }} />
@@ -606,7 +612,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                     {bloqueTexto}
                     <div className="mt-10 w-full max-w-[760px]">{escenario}</div>
                     <div className="mt-12 flex w-full max-w-[420px] justify-center">
-                        <Destacado lamina={lamina} producto={productos[activa]} quieto={quieto} vidrio={vidrio} tinta={tinta} tintaSuave={tintaSuave} />
+                        <Destacado lamina={lamina} producto={productos[activa]} quieto={quieto} vidrio={vidrio} tinta={tinta} tintaSuave={tintaSuave} fotoPantalla={foto} />
                     </div>
                     {pestanas}
                 </div>

@@ -11,10 +11,12 @@ use App\Models\HomeSection;
 use App\Models\Novedad;
 use App\Models\StoreLocation;
 use App\Models\StoreService;
+use App\Services\ImagenPortadaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -93,6 +95,11 @@ class HomeSectionController extends Controller
 
         if (isset($validated['settings'])) {
             $validated['settings'] = $this->sanitizeSettings($homeSection->type, $validated['settings']);
+
+            // Las fotos de la MacBook se cargan aparte (subirPantalla): guardar los textos no las toca
+            if (! empty($homeSection->settings['pantallas'])) {
+                $validated['settings']['pantallas'] = $homeSection->settings['pantallas'];
+            }
         }
 
         $homeSection->update($validated);
@@ -103,6 +110,40 @@ class HomeSectionController extends Controller
             : 'Sección guardada.';
 
         return back()->with('success', $mensaje);
+    }
+
+    /** Portada grande: la foto de una categoría en la MacBook (ventana, Dock, fondo y cuadrito del destacado). */
+    public function subirPantalla(Request $request, HomeSection $homeSection, string $clave, ImagenPortadaService $imagenes): RedirectResponse
+    {
+        abort_unless($homeSection->type === 'hero' && isset(ImagenPortadaService::CLAVES[$clave]), 404);
+
+        $request->validate([
+            'foto' => 'required|file|mimes:jpg,jpeg,png,webp|max:' . ImagenPortadaService::MAX_KB
+                . '|dimensions:min_width=' . ImagenPortadaService::MIN_ANCHO,
+        ], [
+            'foto.required'   => 'Elige una foto.',
+            'foto.file'       => 'No se pudo subir la foto. Prueba otra vez.',
+            'foto.mimes'      => 'La foto debe ser JPG, PNG o WebP.',
+            'foto.max'        => 'La foto puede pesar hasta ' . intdiv(ImagenPortadaService::MAX_KB, 1024) . ' MB.',
+            'foto.dimensions' => 'La foto debe medir al menos ' . ImagenPortadaService::MIN_ANCHO . ' px de ancho: más chica se ve borrosa en la MacBook.',
+        ]);
+
+        try {
+            $imagenes->guardar($homeSection, $clave, $request->file('foto'));
+        } catch (\InvalidArgumentException $e) {
+            throw ValidationException::withMessages(['foto' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Se cambió la foto de ' . ImagenPortadaService::CLAVES[$clave] . ' en la portada.');
+    }
+
+    public function quitarPantalla(HomeSection $homeSection, string $clave, ImagenPortadaService $imagenes): RedirectResponse
+    {
+        abort_unless($homeSection->type === 'hero' && isset(ImagenPortadaService::CLAVES[$clave]), 404);
+
+        $imagenes->quitar($homeSection, $clave);
+
+        return back()->with('success', 'La portada volvió a la foto original de ' . ImagenPortadaService::CLAVES[$clave] . '.');
     }
 
     public function reorder(Request $request): RedirectResponse
@@ -132,6 +173,14 @@ class HomeSectionController extends Controller
             'active'         => $section->active,
             'orden'          => $section->orden,
             'settings'       => $section->settings ?? [],
+            // Portada grande: la foto de cada categoría (la cargada o la que trae la tienda) y si se puede volver a la original
+            'pantallas'      => $section->type === 'hero' ? collect(ImagenPortadaService::CLAVES)->map(fn ($nombre, $clave) => [
+                'clave'     => $clave,
+                'nombre'    => $nombre,
+                'url'       => ImagenPortadaService::urls($section->settings ?? [])[$clave]['grande'] ?? "/images/hero-mac-1/pantalla-{$clave}.webp",
+                'propia'    => isset(ImagenPortadaService::urls($section->settings ?? [])[$clave]),
+                'archivo'   => $section->settings['pantallas'][$clave]['nombre'] ?? null,
+            ])->values()->all() : null,
             'publicar_desde' => $section->publicar_desde?->toDateString(),
             'publicar_hasta' => $section->publicar_hasta?->toDateString(),
             'editable'       => ! empty(self::TYPE_SETTINGS[$section->type]),

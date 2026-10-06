@@ -573,6 +573,11 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->name('home-builder.update');
         Route::post('/home-builder/reorder', [HomeSectionController::class, 'reorder'])
             ->name('home-builder.reorder');
+        // Portada grande: la foto de cada categoría en la MacBook
+        Route::post('/home-builder/{homeSection}/pantallas/{clave}', [HomeSectionController::class, 'subirPantalla'])
+            ->name('home-builder.pantallas.subir');
+        Route::delete('/home-builder/{homeSection}/pantallas/{clave}', [HomeSectionController::class, 'quitarPantalla'])
+            ->name('home-builder.pantallas.quitar');
 
         // ========================
         // 🗂️ Categories CMS
