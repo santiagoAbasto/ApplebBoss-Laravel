@@ -220,34 +220,6 @@ class CatalogoPublicacion extends Model
             ->all();
     }
 
-    /** Tipos de inventario cuyo número de serie se muestra en la ficha pública. */
-    private const TIPOS_CON_SERIE_PUBLICA = ['celular', 'computadora'];
-
-    /**
-     * Número de serie del equipo para la ficha pública (solo celulares y computadoras).
-     * Nunca devuelve un IMEI: si el dato parece uno (15 dígitos) o coincide con sus IMEI, no se muestra.
-     */
-    public function numeroSeriePublico(): ?string
-    {
-        if (! in_array($this->producto_tipo, self::TIPOS_CON_SERIE_PUBLICA, true)) {
-            return null;
-        }
-
-        $m = $this->inventario();
-        $serie = trim((string) ($m->numero_serie ?? ''));
-        if ($serie === '' || in_array(mb_strtolower($serie), ['-', '0', 'permuta'], true)) {
-            return null;
-        }
-
-        $compacta = preg_replace('/[\s-]/', '', $serie);
-        $imeis = array_filter([$m->imei_1 ?? null, $m->imei_2 ?? null]);
-        if (preg_match('/^\d{15}$/', $compacta) || in_array($compacta, $imeis, true)) {
-            return null;
-        }
-
-        return mb_strtoupper($serie);
-    }
-
     public function estadoPublicacion(): string
     {
         $faltantes = $this->camposFaltantes();

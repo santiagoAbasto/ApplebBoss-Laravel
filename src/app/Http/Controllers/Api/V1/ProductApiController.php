@@ -153,7 +153,6 @@ class ProductApiController extends Controller
         $data['descripcion']   = $pub->descripcion;
         $data['que_incluye']   = $pub->que_incluye;
         $data['observaciones'] = $pub->observaciones;
-        $data['numero_serie']  = $pub->numeroSeriePublico(); // solo celulares y computadoras; nunca el IMEI
         $data['imagenes']      = $pub->imagenes->map(fn ($img) => [
             'url'          => $img->url,
             'alt'          => $img->alt_text ?? $pub->titulo,

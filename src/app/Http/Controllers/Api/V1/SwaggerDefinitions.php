@@ -63,7 +63,6 @@ namespace App\Http\Controllers\Api\V1;
  *     @OA\Property(property="descripcion",         type="string",      nullable=true,         description="Descripción completa del producto"),
  *     @OA\Property(property="que_incluye",         type="string",      nullable=true,         description="Contenido incluido en el paquete"),
  *     @OA\Property(property="observaciones",       type="string",      nullable=true,         description="Observaciones públicas"),
- *     @OA\Property(property="numero_serie",        type="string",      nullable=true,         example="C02XYZ123ABC", description="Número de serie del equipo (solo celulares y computadoras). Nunca es un IMEI."),
  *     @OA\Property(property="imagenes",            type="array",
  *         @OA\Items(
  *             @OA\Property(property="url",          type="string"),

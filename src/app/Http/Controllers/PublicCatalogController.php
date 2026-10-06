@@ -252,7 +252,7 @@ class PublicCatalogController extends Controller
         $product['promo_price']     = $pub->promocionActiva() ? $pub->precio_promocional : null;
         $product['promo_badge']     = $pub->badge;
         $product['battery']         = $product['atributos']['salud_bateria'] ?? null; // del inventario, o cargada a mano
-        $product['numero_serie']    = $pub->numeroSeriePublico(); // celulares y computadoras; nunca el IMEI
+        // El número de serie y el IMEI no salen en la ficha: son del comprador y se le muestran con el pago confirmado
         $product['comparar_modelo'] = $this->compararModelo($pub);
 
         // SEO: el SEO propio de la publicación manda; si no, plantilla "Producto" del admin

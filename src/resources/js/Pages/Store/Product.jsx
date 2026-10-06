@@ -254,7 +254,6 @@ function ProductJsonLd({ product }) {
             availability: product.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             url: typeof window !== 'undefined' ? window.location.href : '',
             ...(product.condition ? { itemCondition: conditionMap[product.condition] } : {}),
-            ...(product.numero_serie ? { serialNumber: product.numero_serie } : {}),
         },
     };
     return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
@@ -480,7 +479,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
 
     const compatibilidades = product.compatibilidades ?? {};
     const hasCompat = Object.keys(compatibilidades).length > 0;
-    const hasSpecs = Object.keys(product.atributos ?? {}).length > 0 || Boolean(product.numero_serie);
+    const hasSpecs = Object.keys(product.atributos ?? {}).length > 0;
 
     // Construir secciones dinámicas
     const sections = [
@@ -730,7 +729,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
                 {/* Especificaciones */}
                 {hasSpecs && (
                     <PdpSection id="especificaciones" title="Especificaciones técnicas">
-                        <FichaTecnica tipo={product.type} atributos={product.atributos} numeroSerie={product.numero_serie} />
+                        <FichaTecnica tipo={product.type} atributos={product.atributos} />
                         {product.comparar_modelo && (
                             <Link href={product.comparar_modelo.url}
                                 className="group mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl p-5 transition-colors sm:flex-row sm:items-center sm:p-6"

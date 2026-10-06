@@ -201,15 +201,15 @@ class PublicCatalogPrivacyTest extends TestCase
         $response->assertStatus(422);
     }
 
-    // ─── Número de serie: puede mostrarse, el IMEI nunca ──────────────────────
+    // ─── Número de serie e IMEI: ninguno sale en la ficha (se ven con el pago confirmado) ─
 
-    public function test_product_page_shows_serial_number_but_never_imei(): void
+    public function test_product_page_never_shows_serial_number_nor_imei(): void
     {
         $pub = $this->crearCelularConPublicacion(['numero_serie' => 'F2LXK1ABCD']);
 
         $content = $this->get("/productos/{$pub->slug}")->assertStatus(200)->getContent();
 
-        $this->assertStringContainsString('F2LXK1ABCD', $content);
+        $this->assertStringNotContainsString('F2LXK1ABCD', $content);
         $this->assertSensitiveFieldsAbsent($content);
     }
 

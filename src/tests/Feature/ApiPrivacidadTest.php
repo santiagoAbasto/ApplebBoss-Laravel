@@ -136,18 +136,17 @@ class ApiPrivacidadTest extends TestCase
         }
     }
 
-    public function test_el_detalle_muestra_el_numero_de_serie_de_celulares_y_computadoras_pero_nunca_un_imei(): void
+    // Regla del 17-09-2026: el número de serie y el IMEI son del comprador; se le muestran con el pago confirmado
+    public function test_el_detalle_no_muestra_el_numero_de_serie_ni_el_imei(): void
     {
         $celular = $this->celularPublicado();
         $mac = $this->computadoraPublicada();
 
-        $this->getJson("/api/v1/products/{$celular->slug}")->assertOk()->assertJsonPath('data.numero_serie', 'F2LXK1ABCD');
-        $this->getJson("/api/v1/products/{$mac->slug}")->assertOk()->assertJsonPath('data.numero_serie', 'C02XYZ123');
-        $this->get("/productos/{$mac->slug}")->assertOk()->assertSee('C02XYZ123');
-
-        // Un "número de serie" que en realidad es el IMEI no sale
-        Celular::whereKey($celular->producto_id)->update(['numero_serie' => self::IMEI_1]);
-        $respuesta = $this->getJson("/api/v1/products/{$celular->slug}")->assertOk()->assertJsonPath('data.numero_serie', null);
-        $this->assertSinDatosSensibles($respuesta->getContent());
+        foreach ([$celular, $mac] as $pub) {
+            $api = $this->getJson("/api/v1/products/{$pub->slug}")->assertOk()->assertJsonMissingPath('data.numero_serie');
+            $this->assertSinDatosSensibles($api->getContent());
+        }
+        $this->assertStringNotContainsString('F2LXK1ABCD', $this->getJson("/api/v1/products/{$celular->slug}")->getContent());
+        $this->assertStringNotContainsString('C02XYZ123', $this->get("/productos/{$mac->slug}")->assertOk()->getContent());
     }
 }

@@ -52,6 +52,19 @@ class TiendaSoloDisponibleTest extends TestCase
         ]);
     }
 
+    public function test_la_ficha_publica_y_la_api_no_muestran_el_numero_de_serie_ni_el_imei(): void
+    {
+        $celular = $this->celular();
+        $celular->update(['numero_serie' => 'F2LXK123ABCD']);
+        $pub = $this->publicar('celular', $celular->id);
+
+        foreach (["/productos/{$pub->slug}", "/api/v1/products/{$pub->slug}"] as $url) {
+            $respuesta = $this->get($url)->assertOk();
+            $this->assertStringNotContainsString('F2LXK123ABCD', $respuesta->getContent(), $url);
+            $this->assertStringNotContainsString($celular->imei_1, $respuesta->getContent(), $url);
+        }
+    }
+
     public function test_vender_un_equipo_lo_despublica(): void
     {
         $celular = $this->celular();
