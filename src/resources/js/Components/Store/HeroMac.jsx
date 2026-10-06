@@ -440,17 +440,19 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
 
     const bloqueTexto = (
         <motion.div style={{ y: subeTexto, opacity: opacidadTexto }}
-            className={`relative z-30 flex flex-col ${ancha ? 'items-start text-left' : 'items-center text-center'}`}>
+            className={`relative z-30 flex w-full flex-col ${ancha ? 'items-start text-left' : 'items-center text-center'}`}>
             <motion.span {...entra(0.05, { y: 14 })}
                 className="inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] backdrop-blur" style={vidrio}>
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--ab-lime)' }} />
                 {volanta}
             </motion.span>
 
-            <motion.div {...entra(0.15, { y: 24 })} className="mt-4 w-full" style={{ color: tinta }}>
+            {/* Los cuatro nombres van del mismo tamaño y ninguno se corta: «MYSKIN.», que no se parte en dos líneas, mide
+                3,75 veces su letra, así que la letra no pasa del 25% del ancho de la columna (cqw). */}
+            <motion.div {...entra(0.15, { y: 24 })} className="mt-4 w-full [container-type:inline-size]" style={{ color: tinta }}>
                 {titulo
                     ? <h1 className="text-[clamp(32px,4.6vw,64px)] font-black leading-[1.03] tracking-tight">{titulo}</h1>
-                    : <NombreQueCambia lamina={lamina} quieto={quieto} className="text-[clamp(52px,8.2vw,124px)] font-black leading-[1.02] tracking-[-0.04em]" />}
+                    : <NombreQueCambia lamina={lamina} quieto={quieto} className="text-[clamp(52px,8.2vw,124px)] font-black leading-[1.02] tracking-[-0.04em] supports-[width:1cqw]:text-[min(clamp(52px,8.2vw,124px),25cqw)]" />}
             </motion.div>
 
             <div className="relative mt-2 w-full">
