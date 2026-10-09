@@ -211,7 +211,8 @@ function NombreQueCambia({ lamina, quieto, className, style }) {
 
 /* Íconos de la barra de menús */
 const Wifi = ({ s }) => <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12.2a10 10 0 0 1 13 0M9 15.8a5 5 0 0 1 6 0" /><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none" /></svg>;
-const Bateria = ({ s }) => <svg viewBox="0 0 28 14" width={s * 1.8} height={s} fill="none"><rect x="1" y="1.5" width="23" height="11" rx="3" stroke="currentColor" strokeWidth="1.4" /><rect x="3" y="3.5" width="16" height="7" rx="1.6" fill="currentColor" /><path d="M26 5v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+// `s` llega como «12.34px»: se pasa a número antes de estirarlo (antes daba un ancho NaN en la consola)
+const Bateria = ({ s }) => <svg viewBox="0 0 28 14" width={`${(parseFloat(s) * 1.8).toFixed(2)}px`} height={s} fill="none"><rect x="1" y="1.5" width="23" height="11" rx="3" stroke="currentColor" strokeWidth="1.4" /><rect x="3" y="3.5" width="16" height="7" rx="1.6" fill="currentColor" /><path d="M26 5v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
 const Lupa = ({ s }) => <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></svg>;
 
 /* Una ventana de Safari con la foto de la categoría. Se abre desde su ícono del Dock y vuelve a él al cerrarse. */

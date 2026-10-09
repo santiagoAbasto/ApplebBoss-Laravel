@@ -293,8 +293,9 @@ class InventarioIntegracion
             // El que paga hoy quien compra: el de la promoción si está vigente (como en la tienda)
             'precio'      => $promo ? (float) $pub->precio_promocional : ($monto !== null ? (float) $monto : null),
             'actualizado' => $actualizadoEn,
+            // Sin el nombre de la categoría: «iPhone» es la etiqueta de todos los celulares y un Realme saldría al buscar «iphone»
             'texto'       => Str::ascii(mb_strtolower(implode(' ', array_filter([
-                $nombre, $titulo, $pub?->titulo, $json['category']['name'], ...self::planos($atributos),
+                $nombre, $titulo, $pub?->titulo, ...self::planos($atributos),
             ])))),
         ];
     }
