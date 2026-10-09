@@ -369,7 +369,8 @@ Modelo de procedencia sugerido. Es un ejemplo conceptual, no un producto real:
 - **Qué está hecho:** API v1 completa en el repositorio de la tienda (`ApplebBoss-Laravel`, carpeta `src/`), con panel
   de integraciones, 23 pruebas automáticas propias y la suite completa en verde. Auditoría de seguridad y de datos del
   09-10-2026 en `APPLE_BOSS_API_SECURITY.md`.
-- **Commit:** COMMIT_PENDIENTE en la rama `main` del repositorio de la tienda, sin push.
+- **Commit:** `5bb7f5c` (feat(api): API de integracion v1 de solo lectura para APPLE BOSS AI) en la rama `main` del
+  repositorio de la tienda, sin push. Producción sigue en `a2e21c3`, sin la API.
 - **Qué falta del lado de la tienda:** que el dueño autorice el push y el despliegue
   (`APPLE_BOSS_API_DEPLOYMENT.md`), y después crear la integración «APPLE BOSS AI» para obtener el token.
   Recomendado en el mismo despliegue: la corrección de IP real en Caddy (parte B de ese plan).
