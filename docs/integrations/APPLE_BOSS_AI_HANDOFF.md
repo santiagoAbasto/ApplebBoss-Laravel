@@ -2,9 +2,11 @@
 
 > Documento autónomo para el proyecto «APPLE BOSS AI» (ventas, WhatsApp, CRM) o para otra sesión de Claude Code que
 > no tenga acceso al repositorio de la tienda. Última revisión: 09-10-2026.
-> **Estado de la API:** **desplegada en producción el 09-10-2026** (commit `a0ff8ae`, que incluye `5bb7f5c`).
-> Verificada en producción: 401 sin token, 9 endpoints, 647 productos (302 en stock), fotos, permisos y límite de
-> pedidos. Todavía no existe la integración «APPLE BOSS AI»: la crea el dueño cuando este proyecto esté listo.
+> **Estado de la API:** **operativa en producción.** Commit desplegado: `cae9d9a` (incluye la API de `5bb7f5c` y la
+> corrección de búsqueda de `d42229b`). Verificada en producción el 09-10-2026 con una credencial temporal, ya revocada:
+> los 9 endpoints, 647 productos (302 en stock), fotos, permisos, privacidad y revocación (sección C).
+> Todavía no existe la integración «APPLE BOSS AI»: la crea el dueño cuando este proyecto esté listo.
+> **Mandar siempre `Accept: application/json`** (sección D).
 
 ## A. Identificación
 
@@ -45,9 +47,25 @@ Reglas de respuesta que se desprenden:
 
 ## C. Endpoints implementados y verificados
 
-Todos con `Authorization: Bearer <TOKEN>`. Solo GET. Verificados con pruebas automáticas y contra una copia de los
-datos reales en PostgreSQL. En producción se verifican durante el despliegue (pasos 7 a 14 de
-`APPLE_BOSS_API_DEPLOYMENT.md`).
+Todos con `Authorization: Bearer <TOKEN>` y `Accept: application/json`. Solo GET.
+
+**Verificación en producción del 09-10-2026** (commit `cae9d9a`, credencial temporal creada y revocada en el servidor):
+
+| Ruta | Resultado |
+|---|---|
+| `GET /health` | 200, `ok`, 6 permisos |
+| `GET /products` | 200: 302 en stock por defecto; 647 con `availability=all`, 7 páginas, 647 ids únicos. Filtros `category`, `search`, `kind`, `condition`, `min_price`/`max_price` y `sort` responden bien |
+| `GET /products/{id}` | 200 con publicación, atributos y procedencia |
+| `GET /products/{id}/images` | 200; las 5 direcciones de una foto (url y 4 tamaños) dan 200 `image/webp`; sin publicación, `[]` |
+| `GET /products/{id}/price` | 200, `BOB`, `list_price`; coincide con el inventario |
+| `GET /products/{id}/availability` | 200 en equipos y en artículos de accesorios; coincide con el inventario |
+| `GET /categories` | 200: celulares 19, computadoras 24, productos-apple 17, accesorios 242 disponibles |
+| `GET /exchange-rates` | 200: dólar paralelo, lado compra, `origin = live` |
+| `GET /changes` | 200 con `since` y con `cursor`; marca `upsert` y `tombstone` |
+| Rechazos | id inexistente 404, `brand` y `per_page=500` 422, `/changes` sin parámetros 422, POST y DELETE 405 |
+| Correspondencia | 20 productos al azar idénticos al inventario (precio y estado) |
+| Privacidad | 3.626 valores privados reales buscados (IMEI, series, procedencias, códigos, datos de clientes y usuarios): ninguno sale; 2 coincidencias eran palabras del propio nombre público |
+| Revocación | después de revocar, 401; el token no quedó en ningún registro |
 
 URL de producción: `https://appleboss.com.bo/api/v1/integration`. No hay entorno de pruebas público.
 
@@ -80,7 +98,10 @@ Detalle completo: `APPLE_BOSS_API_CONTRACT.md` y `APPLE_BOSS_API_OPENAPI.yaml`, 
   `APPLE BOSS AI`, elige los scopes. El token se muestra **una sola vez**.
 - **Dónde se guarda:** en el gestor de secretos o en las variables de entorno del servidor de APPLE BOSS AI
   (por ejemplo `APPLEBOSS_API_TOKEN`). Nunca en el código, el repositorio, el frontend, logs ni chats.
-- **Cómo se envía:** `Authorization: Bearer <TOKEN>`, solo por HTTPS, solo desde el servidor.
+- **Cómo se envía:** `Authorization: Bearer <TOKEN>` y `Accept: application/json`, solo por HTTPS, solo desde el
+  servidor. Con el commit `cae9d9a`, un pedido **sin** `Accept: application/json` y sin token válido recibe 404 en vez
+  de 401. Ya hay una corrección preparada en el repositorio de la tienda; mientras no se despliegue, mandar siempre esa
+  cabecera, que de todos modos es lo correcto para una API.
 - **Formato:** `<id>|abi_<…>`. Se manda completo, con el `|`.
 - **Scopes recomendados para la IA de ventas:** los seis.
 - **Rotación:** el dueño pulsa «Rotar token»; el anterior sigue 24 h. Cambiar la variable de entorno dentro de ese plazo.
@@ -224,13 +245,13 @@ export APPLEBOSS_API_TOKEN="<TOKEN>"
 **Probar la conexión**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/health"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/health"
 ```
 
 **Buscar un iPhone** (todas las palabras deben aparecer, sin importar tildes ni mayúsculas)
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?category=celulares&search=iphone%2015%20pro&sort=price_asc"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?category=celulares&search=iphone%2015%20pro&sort=price_asc"
 ```
 
 Si `meta.total` es 0, el inventario registrado no lo tiene. Consultar el catálogo de Drive y ofrecer «a pedido».
@@ -238,7 +259,7 @@ Si `meta.total` es 0, el inventario registrado no lo tiene. Consultar el catálo
 **Buscar una MacBook**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?category=computadoras&search=macbook%20air"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?category=computadoras&search=macbook%20air"
 ```
 
 Comparar `attributes.processor`, `attributes.ram` y `attributes.storage` de cada unidad.
@@ -246,7 +267,7 @@ Comparar `attributes.processor`, `attributes.ram` y `attributes.storage` de cada
 **Consultar disponibilidad antes de confirmar a un cliente**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/availability"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/availability"
 ```
 
 `available`: se puede ofrecer. `reserved`: está apartado y puede liberarse; no prometerlo. `sold` o `sold_out`: ya no.
@@ -254,7 +275,7 @@ curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products
 **Obtener fotografías para enviar por WhatsApp**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/images"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/images"
 ```
 
 Usar `sizes.medium` o `url`. Si `data` está vacío, el producto no tiene fotos publicadas: no generar ni inventar una.
@@ -262,7 +283,7 @@ Usar `sizes.medium` o `url`. Si `data` está vacío, el producto no tiene fotos 
 **Consultar el precio**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/price"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products/celular-22/price"
 ```
 
 Mostrar `promotional_amount` si no es null; si no, `amount`. Siempre en BOB.
@@ -270,7 +291,7 @@ Mostrar `promotional_amount` si no es null; si no, `amount`. Siempre en BOB.
 **«Variantes»: el mismo modelo en otras capacidades o colores.** No hay endpoint. Buscar el modelo y comparar unidades:
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?search=iphone%2014%20plus"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/products?search=iphone%2014%20plus"
 ```
 
 Cada resultado es una unidad con su capacidad, color, batería y precio. No agruparlas como si fueran intercambiables.
@@ -278,7 +299,7 @@ Cada resultado es una unidad con su capacidad, color, batería y precio. No agru
 **Tipo de cambio**
 
 ```bash
-curl -s -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/exchange-rates"
+curl -s -H "Accept: application/json" -H "Authorization: Bearer $APPLEBOSS_API_TOKEN" "$APPLEBOSS_API/exchange-rates"
 ```
 
 Si `meta.available` es `false`, no hay tasa: no inventar una. Los precios del inventario no se convierten; si se
@@ -369,7 +390,13 @@ Modelo de procedencia sugerido. Es un ejemplo conceptual, no un producto real:
 - **Qué está hecho:** API v1 completa en el repositorio de la tienda (`ApplebBoss-Laravel`, carpeta `src/`), con panel
   de integraciones, 23 pruebas automáticas propias y la suite completa en verde. Auditoría de seguridad y de datos del
   09-10-2026 en `APPLE_BOSS_API_SECURITY.md`.
-- **Commit:** `5bb7f5c` (la API) y `a0ff8ae` (este documento) en `main`, desplegados en producción el 09-10-2026.
+- **Commit desplegado:** `cae9d9a` en `main` (API en `5bb7f5c`, búsqueda corregida en `d42229b`). Verificado en
+  producción el 09-10-2026 (sección C).
+- **Limitaciones reales, verificadas:** el sistema no registra marcas, variantes, stock por sucursal ni historial de
+  borrados; las fotos existen solo para lo publicado (hoy 5 publicaciones, 1 con foto); la condición está vacía en casi
+  todos los celulares; hay un equipo para repuesto con «REPUESTO» en el nombre y un accesorio cargado con su código
+  como nombre; la tasa de cambio es la del dólar paralelo que usa la tienda, no una conversión de precios. En el panel
+  quedan 4 integraciones de prueba desactivadas y sin tokens (despliegue y verificación del 09-10-2026).
 - **Qué falta del lado de la tienda:** crear la integración «APPLE BOSS AI» para obtener el token. Aparte, con su
   propia autorización: la corrección de IP real en Caddy (parte B de `APPLE_BOSS_API_DEPLOYMENT.md`).
 - **Qué falta del lado de APPLE BOSS AI:** todo lo de las secciones G, I y J. Nada de eso va en el repositorio de la
