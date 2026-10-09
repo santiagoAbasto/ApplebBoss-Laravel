@@ -49,7 +49,7 @@ class PaginasAdminTest extends TestCase
     {
         $pagina = $this->pagina('Nosotros');
 
-        $this->get('/admin/sitio/paginas')->assertRedirect('/login');
+        $this->get('/admin/sitio/paginas')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/paginas')->assertForbidden();

@@ -22,7 +22,7 @@ export default function ResetPassword({ token, email }) {
             title="Crea una nueva contraseña"
             subtitle="Elige una contraseña que no uses en otros sitios."
             icon={ShieldCheck}
-            back={{ href: route('login'), label: 'Volver a iniciar sesión' }}
+            back={{ href: route('cuenta.entrar'), label: 'Volver a iniciar sesión' }}
         >
             <form onSubmit={submit} className="space-y-5" noValidate>
                 <AuthField

@@ -110,7 +110,7 @@ class UbicacionesAdminTest extends TestCase
     {
         $local = $this->local('Apple Boss Cochabamba');
 
-        $this->get('/admin/sitio/ubicaciones')->assertRedirect('/login');
+        $this->get('/admin/sitio/ubicaciones')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/ubicaciones')->assertForbidden();

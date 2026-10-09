@@ -159,10 +159,10 @@ class BusinessFlowTest extends TestCase
     public function test_guest_cannot_access_private_stock_endpoints(): void
     {
         $this->get(route('api.stock.celulares'))
-            ->assertRedirect(route('login'));
+            ->assertNotFound();
 
         $this->post('/api/permuta/celular', [])
-            ->assertRedirect(route('login'));
+            ->assertNotFound();
     }
 
     public function test_previewing_next_service_code_does_not_consume_the_sequence(): void

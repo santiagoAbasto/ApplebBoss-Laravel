@@ -79,11 +79,15 @@ class SeoTest extends TestCase
             ->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
     }
 
-    public function test_robots_disallows_admin(): void
+    public function test_robots_no_nombra_el_panel(): void
     {
         $content = $this->get('/robots.txt')->getContent();
 
-        $this->assertStringContainsString('Disallow: /admin', $content);
+        // Nombrarlo sería anunciarlo: sin sesión el panel responde 404
+        foreach (['/admin', '/vendedor', '/login', '/dashboard'] as $privado) {
+            $this->assertStringNotContainsString($privado, $content);
+        }
+        $this->assertStringContainsString('Disallow: /checkout', $content);
         $this->assertStringContainsString('Sitemap:', $content);
     }
 }

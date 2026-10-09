@@ -3,7 +3,7 @@ import { Lock, Mail } from 'lucide-react';
 import AuthShell from '@/Components/Auth/AuthShell';
 import { AuthAlert, AuthButton, AuthCheckbox, AuthField, linkCls } from '@/Components/Auth/AuthUI';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status, canResetPassword, accion }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -12,7 +12,8 @@ export default function Login({ status, canResetPassword }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('login'), { onFinish: () => reset('password') });
+        // /admin/login o /vendedor/login: la ruta no viaja en la lista de Ziggy del visitante, la manda el servidor
+        post(accion, { onFinish: () => reset('password') });
     };
 
     return (

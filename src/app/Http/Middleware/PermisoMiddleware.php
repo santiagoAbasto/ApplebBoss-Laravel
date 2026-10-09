@@ -23,7 +23,7 @@ class PermisoMiddleware
         $user = Auth::user();
 
         if (! $user) {
-            return redirect()->route('login');
+            abort(404); // el panel no se anuncia a quien no inició sesión
         }
 
         $ruta   = $request->route()?->getName();

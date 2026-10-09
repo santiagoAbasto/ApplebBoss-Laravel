@@ -82,7 +82,7 @@ class ServicioTecnicoPublicoTest extends TestCase
         $this->post('/servicio-tecnico', self::SOLICITUD);
         $solicitud = SolicitudServicio::sole();
 
-        $this->get('/admin/solicitudes-servicio')->assertRedirect('/login');
+        $this->get('/admin/solicitudes-servicio')->assertNotFound();
 
         $admin = User::factory()->create(['rol' => 'admin']);
 

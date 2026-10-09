@@ -55,9 +55,13 @@ class SeoTecnicoTest extends TestCase
         // Google tiene que poder descubrir el sitemap desde robots
         $this->assertStringContainsString('Sitemap: ' . self::DOMINIO . '/sitemap.xml', $txt);
 
-        // Nada del panel ni del flujo de compra privado debe rastrearse
-        foreach (['/admin', '/vendedor', '/checkout', '/pedido/', '/seguimiento/', '/api/'] as $privado) {
+        // El flujo de compra privado no se rastrea
+        foreach (['/checkout', '/pedido/', '/seguimiento/', '/api/'] as $privado) {
             $this->assertStringContainsString("Disallow: {$privado}", $txt, "robots.txt debería cerrar {$privado}");
+        }
+        // El panel ni se nombra: sin sesión responde 404 y su puerta va con noindex
+        foreach (['/admin', '/vendedor', '/login'] as $panel) {
+            $this->assertStringNotContainsString($panel, $txt);
         }
     }
 

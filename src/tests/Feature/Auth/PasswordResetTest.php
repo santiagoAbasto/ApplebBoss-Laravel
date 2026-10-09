@@ -60,7 +60,8 @@ class PasswordResetTest extends TestCase
                 'password_confirmation' => 'NewPass1!',
             ]);
 
-            $response->assertSessionHasNoErrors()->assertRedirect(route('login'));
+            // Vuelve a su puerta: el usuario de fábrica es vendedor
+            $response->assertSessionHasNoErrors()->assertRedirect(route('vendedor.login'));
             return true;
         });
     }

@@ -48,7 +48,7 @@ class MenusAdminTest extends TestCase
     {
         $enlace = $this->enlace('header', 'iPhone');
 
-        $this->get('/admin/sitio/menus')->assertRedirect('/login');
+        $this->get('/admin/sitio/menus')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/menus')->assertForbidden();

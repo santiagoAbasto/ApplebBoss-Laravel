@@ -67,7 +67,7 @@ class ServiciosTiendaAdminTest extends TestCase
     {
         $servicio = $this->servicio('Diagnóstico');
 
-        $this->get('/admin/sitio/servicios')->assertRedirect('/login');
+        $this->get('/admin/sitio/servicios')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/servicios')->assertForbidden();

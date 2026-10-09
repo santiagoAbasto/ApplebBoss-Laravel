@@ -28,6 +28,9 @@ return [
             '!vendedor.*',
             '!automation.*',
             '!api.integration.*',
+            // La puerta del equipo y lo que solo usa el equipo
+            '!login', '!login.*', '!register', '!dashboard', '!profile.*', '!verification.*',
+            '!password.confirm', '!password.update',
         ],
     ],
 

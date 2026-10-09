@@ -157,9 +157,9 @@ class IntegracionApiTest extends TestCase
         $admin = \App\Models\User::factory()->create(['rol' => 'admin']);
         [, $token] = $this->integracion();
 
-        // El token de integración no abre el panel (sin ninguna sesión previa en esta prueba)
-        $this->withToken($token)->get(route('admin.integraciones.index'))->assertRedirect(route('login'));
-        $this->withToken($token)->post(route('admin.integraciones.store'), ['nombre' => 'X', 'scopes' => ['integration.products.read']])->assertRedirect(route('login'));
+        // El token de integración no abre el panel (sin ninguna sesión previa en esta prueba): 404, como a cualquier visitante
+        $this->withToken($token)->get(route('admin.integraciones.index'))->assertNotFound();
+        $this->withToken($token)->post(route('admin.integraciones.store'), ['nombre' => 'X', 'scopes' => ['integration.products.read']])->assertNotFound();
         $this->assertSame(1, Integracion::count());
 
         // Sesión web del administrador, sin token: la API no la acepta
@@ -350,7 +350,12 @@ class IntegracionApiTest extends TestCase
         $this->api($token, '/products', ['availability' => 'all'])->assertJsonPath('meta.total', 4);
 
         $this->api($token, '/products', ['search' => 'iphone azul'])->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'IPHONE 13');
-        // El vidrio «para iPhone 15» también coincide: todas las palabras, sin tildes ni mayúsculas
+        // Buscar «iphone» no trae otros celulares por estar en la categoría que la tienda llama «iPhone»
+        $this->celular(['modelo' => 'REALME C35', 'capacidad' => '128 GB', 'color' => 'NEGRO', 'estado' => 'vendido']);
+        $this->api($token, '/products', ['search' => 'iphone', 'category' => 'celulares', 'availability' => 'all'])->assertJsonPath('meta.total', 3);
+        $this->api($token, '/products', ['search' => 'realme', 'availability' => 'all'])->assertJsonPath('meta.total', 1);
+
+                // El vidrio «para iPhone 15» también coincide: todas las palabras, sin tildes ni mayúsculas
         $this->api($token, '/products', ['search' => 'ÍPHONE   15'])->assertJsonPath('meta.total', 2);
         $this->api($token, '/products', ['search' => 'iphone 15 pro negro'])->assertJsonPath('meta.total', 1);
         $this->api($token, '/products', ['category' => 'accesorios'])->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.kind', 'article');

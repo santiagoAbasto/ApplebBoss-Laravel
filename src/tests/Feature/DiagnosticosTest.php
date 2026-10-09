@@ -89,7 +89,7 @@ class DiagnosticosTest extends TestCase
 
         $this->actingAs($encargado)->get('/admin/diagnosticos')->assertForbidden();
         $this->post('/logout');
-        $this->get('/admin/diagnosticos')->assertRedirect();
+        $this->get('/admin/diagnosticos')->assertNotFound();
     }
 
     public function test_una_cotizacion_en_dolares_se_imprime_en_dolares(): void

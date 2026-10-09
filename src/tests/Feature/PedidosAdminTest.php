@@ -58,7 +58,7 @@ class PedidosAdminTest extends TestCase
 
     public function test_sin_sesion_no_se_ven_los_pedidos(): void
     {
-        $this->get('/admin/pedidos')->assertRedirect('/login');
+        $this->get('/admin/pedidos')->assertNotFound();
     }
 
     public function test_un_vendedor_no_entra_a_los_pedidos(): void

@@ -47,7 +47,7 @@ class GoogleLoginController extends Controller
         } catch (\Throwable $e) {
             Log::warning('Falló el regreso de Google: ' . $e->getMessage());
 
-            return redirect()->route('login')->withErrors([
+            return redirect()->route('cuenta.entrar')->withErrors([
                 'email' => 'No pudimos completar el ingreso con Google. Intenta de nuevo.',
             ]);
         }
@@ -56,7 +56,7 @@ class GoogleLoginController extends Controller
         $verificado = (bool) ($google->user['email_verified'] ?? false);
 
         if (blank($correo) || ! $verificado) {
-            return redirect()->route('login')->withErrors([
+            return redirect()->route('cuenta.entrar')->withErrors([
                 'email' => 'Tu cuenta de Google no tiene un correo verificado.',
             ]);
         }
@@ -68,8 +68,8 @@ class GoogleLoginController extends Controller
         // Una cuenta del equipo no entra por Google: tiene que usar su contraseña,
         // que es donde se revisa el horario y el rol.
         if ($existente && ! $existente->esCliente()) {
-            return redirect()->route('login')->withErrors([
-                'email' => 'Esa cuenta es del equipo de Apple Boss. Ingresa con tu correo y contraseña.',
+            return redirect()->route('cuenta.entrar')->withErrors([
+                'email' => 'Con esa cuenta no se puede entrar con Google.',
             ]);
         }
 

@@ -17,8 +17,8 @@ export default function ForgotPassword({ status }) {
             title="¿Olvidaste tu contraseña?"
             subtitle="Escribe tu correo y te enviamos un enlace para crear una nueva."
             icon={KeyRound}
-            back={{ href: route('login'), label: 'Volver a iniciar sesión' }}
-            footer={<>¿Ya la recordaste? <Link href={route('login')} className={linkCls}>Inicia sesión</Link></>}
+            back={{ href: route('cuenta.entrar'), label: 'Volver a iniciar sesión' }}
+            footer={<>¿Ya la recordaste? <Link href={route('cuenta.entrar')} className={linkCls}>Inicia sesión</Link></>}
         >
             {status && <AuthAlert>{status}</AuthAlert>}
 

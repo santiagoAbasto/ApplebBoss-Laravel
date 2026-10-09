@@ -77,7 +77,7 @@ class GoogleLoginTest extends TestCase
         $this->googleDevuelve("{$rol}@gmail.com", "sub-{$rol}");
 
         $this->get('/auth/google/callback')
-            ->assertRedirect(route('login'))
+            ->assertRedirect(route('cuenta.entrar'))
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();
@@ -88,7 +88,7 @@ class GoogleLoginTest extends TestCase
     {
         $this->googleDevuelve('ana@gmail.com', verificado: false);
 
-        $this->get('/auth/google/callback')->assertRedirect(route('login'))->assertSessionHasErrors('email');
+        $this->get('/auth/google/callback')->assertRedirect(route('cuenta.entrar'))->assertSessionHasErrors('email');
 
         $this->assertGuest();
         $this->assertDatabaseCount('users', 0);

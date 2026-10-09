@@ -53,7 +53,7 @@ class ModelosFotosAdminTest extends TestCase
 
     public function test_solo_un_admin_entra(): void
     {
-        $this->get('/admin/modelos')->assertRedirect('/login');
+        $this->get('/admin/modelos')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/modelos')->assertForbidden();

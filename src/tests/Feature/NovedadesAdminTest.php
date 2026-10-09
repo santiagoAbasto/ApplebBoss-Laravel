@@ -60,8 +60,8 @@ class NovedadesAdminTest extends TestCase
 
     public function test_solo_un_admin_entra(): void
     {
-        $this->get(route('admin.novedades.index'))->assertRedirect('/login');
-        $this->post(route('admin.novedades.store'), ['titulo' => 'Hola'])->assertRedirect('/login');
+        $this->get(route('admin.novedades.index'))->assertNotFound();
+        $this->post(route('admin.novedades.store'), ['titulo' => 'Hola'])->assertNotFound();
         $this->assertSame(0, Novedad::count());
     }
 

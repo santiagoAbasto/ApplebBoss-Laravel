@@ -95,7 +95,7 @@ class NewsletterPanelTest extends TestCase
         $urls = ['/admin/newsletter/campanas', '/admin/newsletter/suscriptores', '/admin/newsletter/ajustes'];
 
         foreach ($urls as $url) {
-            $this->get($url)->assertRedirect('/login');
+            $this->get($url)->assertNotFound();
         }
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);

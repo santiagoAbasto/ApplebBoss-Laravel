@@ -53,6 +53,9 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
+    /** Lo que se responde ante cualquier rechazo de credenciales, sea cual sea la causa. */
+    public const CREDENCIALES_MALAS = 'Las credenciales no son correctas.';
+
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
@@ -61,7 +64,19 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey(), 300); // 5 minutos de decaimiento
 
             throw ValidationException::withMessages([
-                'email' => 'Las credenciales no son correctas.',
+                'email' => self::CREDENCIALES_MALAS,
+            ]);
+        }
+
+        // Cada puerta, para los suyos: por la de la tienda (/ingresar y el modal «Acceder») solo entra quien compra, y
+        // por las del equipo (/admin/login, /vendedor/login) solo el equipo. Va antes del horario: si no, un vendedor
+        // que probara la puerta de la tienda fuera de hora vería el aviso del horario y quedaría expuesto como equipo.
+        if ($this->routeIs('cuenta.entrar.enviar') !== Auth::user()->esCliente()) {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey(), 300);
+
+            throw ValidationException::withMessages([
+                'email' => self::CREDENCIALES_MALAS,
             ]);
         }
 

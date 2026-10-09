@@ -41,9 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Cada puerta manda a la suya: quien compra va a /ingresar (dentro de la tienda),
         // el equipo a /login. Antes el checkout escupía al cliente a la pantalla del panel.
+        // El panel no se anuncia: fuera de la compra y «Mi cuenta», quien no inició sesión recibe 404, no la puerta.
         $middleware->redirectGuestsTo(fn ($request) => $request->routeIs('checkout*', 'cuenta.*')
             ? route('cuenta.entrar')
-            : route('login'));
+            : abort(404));
 
         // Baja en un clic (List-Unsubscribe-Post) llega desde clientes de correo, sin sesión ni CSRF
         // Sin CSRF: llegan de afuera, sin sesión ni token.

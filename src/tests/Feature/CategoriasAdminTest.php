@@ -113,7 +113,7 @@ class CategoriasAdminTest extends TestCase
     {
         $categoria = $this->categoria('accesorios');
 
-        $this->get('/admin/sitio/categorias')->assertRedirect('/login');
+        $this->get('/admin/sitio/categorias')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/categorias')->assertForbidden();

@@ -42,7 +42,7 @@ class ConfiguracionTiendaAdminTest extends TestCase
 
     public function test_solo_un_admin_entra(): void
     {
-        $this->get('/admin/configuracion/tienda')->assertRedirect('/login');
+        $this->get('/admin/configuracion/tienda')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/configuracion/tienda')->assertForbidden();

@@ -38,11 +38,15 @@ Route::middleware(['auth', 'rol:admin'])
 // ── Rutas de invitados (no autenticados) ────────────────────────────────
 Route::middleware('guest')->group(function () {
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
-
-    Route::post('login', [AuthenticatedSessionController::class, 'store'])
-        ->middleware('throttle:10,1');
+    // La puerta del equipo no se anuncia en ninguna parte: no hay enlaces, no está en robots.txt ni en la lista de
+    // rutas que recibe un visitante, y quien no inició sesión recibe 404 en el panel. Se entra escribiendo la dirección.
+    // `/login` ya no existe. La de quien compra es /ingresar (y el modal «Acceder» de la tienda).
+    foreach (['admin' => 'login', 'vendedor' => 'vendedor.login'] as $prefijo => $nombre) {
+        Route::get("{$prefijo}/login", [AuthenticatedSessionController::class, 'create'])->name($nombre);
+        Route::post("{$prefijo}/login", [AuthenticatedSessionController::class, 'store'])
+            ->name("{$nombre}.enviar")
+            ->middleware('throttle:10,1');
+    }
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

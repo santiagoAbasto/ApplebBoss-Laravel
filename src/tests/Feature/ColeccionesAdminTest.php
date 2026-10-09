@@ -86,7 +86,7 @@ class ColeccionesAdminTest extends TestCase
     {
         $coleccion = $this->coleccionCon([]);
 
-        $this->get('/admin/sitio/colecciones')->assertRedirect('/login');
+        $this->get('/admin/sitio/colecciones')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/colecciones')->assertForbidden();

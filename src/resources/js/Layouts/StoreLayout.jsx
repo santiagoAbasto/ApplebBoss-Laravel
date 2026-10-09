@@ -9,6 +9,8 @@ import { CompareProvider } from '@/Components/Store/CompareContext';
 import CompareBar from '@/Components/Store/CompareBar';
 import { esExterno } from '@/Components/Store/enlaces';
 import WhatsAppFlotante from '@/Components/Store/WhatsAppFlotante';
+import AccesoModal from '@/Components/Store/AccesoModal';
+import { UserRound } from 'lucide-react';
 import { nombreTienda, saludoWhatsapp } from '@/Components/Store/tienda';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -71,7 +73,13 @@ export function StoreContainer({ children, className = '' }) {
 // Los enlaces del panel pueden apuntar a una página de la tienda, a otro sitio (WhatsApp, Instagram) o a nada.
 // Inertia solo sabe navegar dentro del sitio: lo de afuera va con <a> (ver esExterno) para que no se rompa.
 
+// Las puertas: la del equipo nunca se enlaza desde la tienda (aunque un menú cargado en el panel la tenga) y la de
+// quien compra se abre como el modal «Acceder».
+const PUERTAS_DEL_EQUIPO = ['/login', '/admin/login', '/vendedor/login'];
+const esPuerta = (href) => PUERTAS_DEL_EQUIPO.includes(href) || href === '/ingresar';
+
 function EnlaceMenu({ href, nuevaPestana = false, children, ...props }) {
+    if (PUERTAS_DEL_EQUIPO.includes(href)) return null;
     if (!href) return <span {...props}>{children}</span>;
     if (esExterno(href) || nuevaPestana) {
         return (
@@ -240,8 +248,10 @@ const ACCESOS_BARRA = [
 ];
 
 // ─── Header ──────────────────────────────────────────────────────────────────
-function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen }) {
+function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrirAcceso }) {
     const { auth, navMenu, tienda } = usePage().props;
+    // Con sesión: quien compra va a «Mi cuenta» y el equipo a su panel. Sin sesión, «Acceder» abre la cuenta de cliente.
+    const cuenta = auth?.user ? (auth.user.rol === 'cliente' ? { href: '/mi-cuenta', label: 'Mi cuenta' } : { href: '/dashboard', label: 'Mi panel' }) : null;
     const nombre  = nombreTienda(tienda);
     const anuncio = (tienda?.anuncio_barra ?? '').trim();
     const headerItems = (navMenu?.header?.length > 0) ? navMenu.header : MEGA_MENU_STATIC;
@@ -321,13 +331,17 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen }) {
 
                     <div className="ml-auto flex items-center gap-1 md:ml-2">
                         {/* Acceder — escritorio */}
-                        <Link
-                            href={auth?.user ? '/dashboard' : '/login'}
-                            className="mr-2 hidden text-sm font-semibold transition-opacity hover:opacity-70 lg:block"
-                            style={{ color: 'var(--text-secondary)' }}
-                        >
-                            {auth?.user ? 'Mi panel' : 'Acceder'}
-                        </Link>
+                        {cuenta ? (
+                            <Link href={cuenta.href} className="mr-2 hidden text-sm font-semibold transition-opacity hover:opacity-70 lg:block" style={{ color: 'var(--text-secondary)' }}>
+                                {cuenta.label}
+                            </Link>
+                        ) : (
+                            <button type="button" onClick={abrirAcceso}
+                                className="mr-2 hidden h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors hover:bg-black/[0.04] lg:inline-flex"
+                                style={{ color: 'var(--text-primary)', borderColor: 'var(--border-light)' }}>
+                                <UserRound className="h-4 w-4" /> Acceder
+                            </button>
+                        )}
 
                         {/* Buscar — celular */}
                         <button
@@ -445,14 +459,17 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen }) {
                             ))}
                         </div>
 
-                        <Link
-                            href={auth?.user ? '/dashboard' : '/login'}
-                            onClick={() => setMenuOpen(false)}
-                            className="mt-4 block text-center text-sm font-semibold"
-                            style={{ color: 'var(--text-secondary)' }}
-                        >
-                            {auth?.user ? 'Ir a mi panel' : 'Acceder'}
-                        </Link>
+                        {cuenta ? (
+                            <Link href={cuenta.href} onClick={() => setMenuOpen(false)} className="mt-4 block text-center text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                                {cuenta.label === 'Mi panel' ? 'Ir a mi panel' : 'Ir a mi cuenta'}
+                            </Link>
+                        ) : (
+                            <button type="button" onClick={() => { setMenuOpen(false); abrirAcceso(); }}
+                                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white"
+                                style={{ background: 'var(--ab-navy)' }}>
+                                <UserRound className="h-[18px] w-[18px]" /> Acceder a mi cuenta
+                            </button>
+                        )}
                     </StoreContainer>
                 </nav>
             )}
@@ -704,9 +721,9 @@ function NewsletterBar() {
 }
 
 // ─── Footer real ──────────────────────────────────────────────────────────────
-function StoreFooter() {
+function StoreFooter({ abrirAcceso }) {
     const wa = useWhatsApp();
-    const { tienda, navMenu, paginas } = usePage().props;
+    const { tienda, navMenu, paginas, auth } = usePage().props;
     const nombre = nombreTienda(tienda);
 
     // Group footer items by group label
@@ -794,7 +811,12 @@ function StoreFooter() {
                     {footerGroups ? footerGroups.map(({ group, links }) => (
                         <div key={group}>
                             <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,1)' }}>{group}</p>
-                            {links.map(item => (
+                            {links.map(item => esPuerta(item.href) ? (
+                                // «Acceder» cargado en el menú del pie: abre el modal (o «Mi cuenta» si ya entró)
+                                auth?.user?.rol === 'cliente'
+                                    ? <Link key={item.id} href="/mi-cuenta" className="mt-3 block text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>Mi cuenta</Link>
+                                    : !auth?.user && <button key={item.id} type="button" onClick={abrirAcceso} className="mt-3 block text-left text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>{item.label}</button>
+                            ) : (
                                 <EnlaceMenu
                                     key={item.id}
                                     href={item.href}
@@ -825,9 +847,10 @@ function StoreFooter() {
                             {/* La tienda */}
                             <div>
                                 <p className="mb-4 text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,1)' }}>{nombre}</p>
-                                {[['Nuestra tienda','/'],['Acceder','/login']].map(([label,href]) => (
-                                    <Link key={href} href={href} className="mt-3 block text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>{label}</Link>
-                                ))}
+                                <Link href="/" className="mt-3 block text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>Nuestra tienda</Link>
+                                {auth?.user?.rol === 'cliente'
+                                    ? <Link href="/mi-cuenta" className="mt-3 block text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>Mi cuenta</Link>
+                                    : !auth?.user && <button type="button" onClick={abrirAcceso} className="mt-3 block text-left text-sm transition-opacity hover:opacity-80" style={{ color: 'rgba(255,255,255,0.88)' }}>Acceder</button>}
                             </div>
                         </>
                     )}
@@ -868,7 +891,18 @@ export default function StoreLayout({ children }) {
     const [syncing, setSyncing] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [accesoAbierto, setAccesoAbierto] = useState(false);
+    const abrirAcceso = useCallback(() => setAccesoAbierto(true), []);
+    const cerrarAcceso = useCallback(() => setAccesoAbierto(false), []);
     const [ready, setReady] = useState(false);
+
+    // Con el menú del celular o el modal de acceso abiertos, el WhatsApp flotante se aparta: si no, tapa «Acceder»
+    useEffect(() => {
+        const b = document.body.dataset;
+        if (menuOpen) b.menuAbierto = ''; else delete b.menuAbierto;
+        if (accesoAbierto) b.acceso = ''; else delete b.acceso;
+        return () => { delete b.menuAbierto; delete b.acceso; };
+    }, [menuOpen, accesoAbierto]);
 
     useEffect(() => { setStored(loadStored()); setReady(true); }, []);
     useEffect(() => { if (ready) localStorage.setItem(CART_KEY, JSON.stringify(stored)); }, [stored, ready]);
@@ -938,20 +972,22 @@ export default function StoreLayout({ children }) {
 
                     <SeoHead />
 
-                    <StoreHeader cart={cart} cartOpen={cartOpen} setCartOpen={setCartOpen} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+                    <StoreHeader cart={cart} cartOpen={cartOpen} setCartOpen={setCartOpen} menuOpen={menuOpen} setMenuOpen={setMenuOpen} abrirAcceso={abrirAcceso} />
 
                     <main id="main-content">
                         {children}
                     </main>
 
                     <NewsletterBar />
-                    <StoreFooter />
+                    <StoreFooter abrirAcceso={abrirAcceso} />
 
                     <CartDrawer cart={cart} remove={remove} total={total} isOpen={cartOpen} onClose={() => setCartOpen(false)} syncing={syncing} />
 
                     <WhatsAppDeLaTienda />
 
                     <CompareBar />
+
+                    <AccesoModal abierto={accesoAbierto} onCerrar={cerrarAcceso} />
                 </div>
             </CompareProvider>
         </CartContext.Provider>

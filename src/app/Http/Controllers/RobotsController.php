@@ -18,14 +18,7 @@ class RobotsController extends Controller
     {
         $lineas = [
             'User-agent: *',
-            // Panel y cuentas
-            'Disallow: /admin',
-            'Disallow: /vendedor',
-            'Disallow: /dashboard',
-            'Disallow: /login',
-            'Disallow: /register',
-            'Disallow: /password',
-            'Disallow: /profile',
+            // El panel no se nombra acá (sería anunciarlo): sin sesión responde 404 y su puerta va con noindex
             // Flujo de compra: privado de cada cliente, nunca indexable
             'Disallow: /checkout',
             'Disallow: /pedido/',

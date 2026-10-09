@@ -243,13 +243,13 @@ class HomeSectionTest extends TestCase
 
     public function test_guest_cannot_access_home_builder(): void
     {
-        $this->get(route('admin.home-builder.index'))->assertRedirect(route('login'));
+        $this->get(route('admin.home-builder.index'))->assertNotFound();
     }
 
     public function test_guest_cannot_update_section(): void
     {
         $section = $this->section();
         $this->patch(route('admin.home-builder.update', $section), ['active' => false])
-            ->assertRedirect(route('login'));
+            ->assertNotFound();
     }
 }

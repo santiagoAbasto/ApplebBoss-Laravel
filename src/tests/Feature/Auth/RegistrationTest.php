@@ -31,6 +31,6 @@ class RegistrationTest extends TestCase
 
     public function test_admin_register_requires_authentication(): void
     {
-        $this->get('/admin/register')->assertRedirect('/login');
+        $this->get('/admin/register')->assertNotFound();
     }
 }

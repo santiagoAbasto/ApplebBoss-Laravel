@@ -168,6 +168,6 @@ class CompatibilityTargetTest extends TestCase
         $t   = $this->target();
 
         $this->post(route('admin.catalogo.compatibilidades.sync', $pub), ['target_ids' => [$t->id]])
-            ->assertRedirect(route('login'));
+            ->assertNotFound();
     }
 }

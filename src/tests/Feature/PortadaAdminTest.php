@@ -83,7 +83,7 @@ class PortadaAdminTest extends TestCase
     {
         $seccion = $this->seccion('featured');
 
-        $this->get('/admin/home-builder')->assertRedirect('/login');
+        $this->get('/admin/home-builder')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/home-builder')->assertForbidden();

@@ -18,9 +18,9 @@ class RolMiddleware
      */
     public function handle($request, Closure $next, string ...$roles)
     {
-        // 1. Sin sesión activa → login
+        // 1. Sin sesión activa → 404: el panel no se anuncia (la puerta del equipo solo se conoce por su dirección)
         if (! Auth::check()) {
-            return redirect()->route('login');
+            abort(404);
         }
 
         $userRol = Auth::user()->rol;

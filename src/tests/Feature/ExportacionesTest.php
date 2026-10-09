@@ -61,7 +61,7 @@ class ExportacionesTest extends TestCase
 
     public function test_solo_un_admin_entra(): void
     {
-        $this->get('/admin/exportar')->assertRedirect('/login');
+        $this->get('/admin/exportar')->assertNotFound();
         $this->actingAs(User::factory()->create(['rol' => 'vendedor']))->get('/admin/exportar')->assertForbidden();
     }
 

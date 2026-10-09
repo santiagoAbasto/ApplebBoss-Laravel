@@ -76,7 +76,7 @@ function CrearCuenta({ desdeCheckout = false }) {
 
                     <p className="mt-5 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
                         ¿Ya tienes cuenta?{' '}
-                        <Link href={route('login')} className="font-bold" style={{ color: 'var(--ab-navy)' }}>Inicia sesión</Link>
+                        <Link href={route('cuenta.entrar')} className="font-bold" style={{ color: 'var(--ab-navy)' }}>Inicia sesión</Link>
                     </p>
 
                     <ul className="mt-7 flex flex-col gap-2 border-t pt-5 text-xs" style={{ borderColor: 'var(--border-light)', color: 'var(--text-muted)' }}>

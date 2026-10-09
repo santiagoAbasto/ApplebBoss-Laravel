@@ -109,8 +109,9 @@ class CuentaClienteTest extends TestCase
 
     public function test_las_dos_puertas_estan_separadas(): void
     {
-        // La del equipo no ofrece crear cuenta; la de la tienda sí
-        $this->get('/login')->assertOk()
+        // La del equipo vive solo en /admin/login y /vendedor/login; /login ya no existe
+        $this->get('/login')->assertNotFound();
+        $this->get('/admin/login')->assertOk()
             ->assertInertia(fn ($page) => $page->component('Auth/Login'));
 
         $this->get('/ingresar')->assertOk()
@@ -131,7 +132,8 @@ class CuentaClienteTest extends TestCase
             User::factory()->create(['rol' => $rol, 'email' => "{$rol}@gmail.com"]);
 
             $r = $this->withHeader('X-Inertia', 'true')
-                ->post('/login', ['email' => "{$rol}@gmail.com", 'password' => 'password']);
+                ->post(route($rol === 'cliente' ? 'cuenta.entrar.enviar' : ($rol === 'vendedor' ? 'vendedor.login.enviar' : 'login.enviar')),
+                    ['email' => "{$rol}@gmail.com", 'password' => 'password']);
 
             $r->assertStatus(409);
             $this->assertNotEmpty($r->headers->get('X-Inertia-Location'),

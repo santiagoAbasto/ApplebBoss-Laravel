@@ -16,12 +16,14 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(Request $request): SymfonyResponse
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
-        ]);
+            // /admin/login o /vendedor/login: el formulario vuelve a la misma puerta por la que se entró
+            'accion' => route($request->route()->getName() . '.enviar'),
+        ])->toResponse($request)->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
     /**
@@ -47,6 +49,7 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // authenticate() ya rechazó a quien entró por la puerta que no es la suya (ver LoginRequest)
         $request->session()->regenerate();
 
         // Quien compra va a su cuenta, no al panel. Y no pasa por /dashboard a propósito:

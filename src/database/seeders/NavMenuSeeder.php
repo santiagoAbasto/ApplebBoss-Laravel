@@ -123,7 +123,7 @@ class NavMenuSeeder extends Seeder
                 'group' => 'Apple Boss',
                 'items' => [
                     ['label' => 'Nuestra tienda', 'url' => '/'],
-                    ['label' => 'Acceder',         'url' => '/login'],
+                    ['label' => 'Acceder',         'url' => '/ingresar'],  // la tienda lo abre como el modal; la puerta del equipo no se enlaza
                 ],
             ],
         ];

@@ -68,7 +68,7 @@ class PreguntasAdminTest extends TestCase
     {
         $faq = $this->pregunta('general', '¿Hacen envíos?');
 
-        $this->get('/admin/sitio/faq')->assertRedirect('/login');
+        $this->get('/admin/sitio/faq')->assertNotFound();
 
         $vendedor = User::factory()->create(['rol' => 'vendedor']);
         $this->actingAs($vendedor)->get('/admin/sitio/faq')->assertForbidden();

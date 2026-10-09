@@ -90,7 +90,7 @@ class SeoLegibleSinJavascriptTest extends TestCase
 
     public function test_el_panel_y_el_acceso_no_llevan_contenido_legible(): void
     {
-        $this->assertStringNotContainsString('id="lectura"', $this->get('/login')->getContent());
+        $this->assertStringNotContainsString('id="lectura"', $this->get('/admin/login')->getContent());
     }
 
     public function test_llms_txt_presenta_la_tienda_y_lo_disponible_hoy(): void

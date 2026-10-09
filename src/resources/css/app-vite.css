@@ -97,7 +97,9 @@
    Se frena en la línea del copyright con una traslación que calcula el componente. */
 
 /* Mientras el buscador está abierto, el botón de WhatsApp se aparta para no tapar el panel. */
-body[data-buscando] .ab-wa {
+body[data-buscando] .ab-wa,
+body[data-menu-abierto] .ab-wa,
+body[data-acceso] .ab-wa {
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease;
@@ -435,4 +437,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .ab-meta-aurora { animation: none; }
     .ab-barrido { display: none; }
+}
+
+/* Modal «Acceder»: dos luces que se mueven despacio en la cabecera azul */
+@keyframes ab-acceso-deriva {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(-18px, 14px, 0) scale(1.08); }
+}
+.ab-acceso-brillo   { animation: ab-acceso-deriva 9s ease-in-out infinite; }
+.ab-acceso-brillo-2 { animation: ab-acceso-deriva 11s ease-in-out infinite reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .ab-acceso-brillo, .ab-acceso-brillo-2 { animation: none; }
 }

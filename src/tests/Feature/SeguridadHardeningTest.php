@@ -41,7 +41,7 @@ class SeguridadHardeningTest extends TestCase
         $html = $this->get('/')->assertOk()->getContent();
 
         foreach (['"store.home"', '"store.catalog"', '"store.product"', '"checkout"',
-                  '"seguimiento"', '"login"', '"api.carrito.sync"'] as $publica) {
+                  '"seguimiento"', '"cuenta.entrar"', '"api.carrito.sync"'] as $publica) {
             $this->assertStringContainsString($publica, $html, "falta la ruta pública {$publica}");
         }
     }
@@ -114,7 +114,7 @@ class SeguridadHardeningTest extends TestCase
 
     private function intentarLogin(User $u): \Illuminate\Testing\TestResponse
     {
-        return $this->post('/login', ['email' => $u->email, 'password' => 'clave-secreta-123']);
+        return $this->post(route('login.enviar'), ['email' => $u->email, 'password' => 'clave-secreta-123']);
     }
 
     public function test_el_vendedor_entra_dentro_del_horario(): void

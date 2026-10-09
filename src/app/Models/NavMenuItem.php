@@ -50,17 +50,20 @@ class NavMenuItem extends Model
         $ocultas = Novedad::published()->exists() ? [] : ['/novedades'];
         $visible = fn ($item) => ! in_array(rtrim((string) parse_url((string) $item->url, PHP_URL_PATH), '/'), $ocultas, true);
 
+        // La puerta del equipo no viaja a la tienda: un «Acceder» cargado con /login se manda como la de quien compra
+        $puerta = fn ($url) => in_array(rtrim((string) parse_url((string) $url, PHP_URL_PATH), '/'), ['/login', '/admin/login', '/vendedor/login'], true) ? '/ingresar' : $url;
+
         return static::forSlot($slot)->filter($visible)->values()->map(fn ($item) => [
             'id'              => $item->id,
             'label'           => $item->label,
-            'href'            => $item->url,
+            'href'            => $puerta($item->url),
             'group'           => $item->group,
             'myskin'          => $item->myskin,
             'open_in_new_tab' => $item->open_in_new_tab,
             'items'           => $item->children->filter($visible)->values()->map(fn ($c) => [
                 'id'              => $c->id,
                 'label'           => $c->label,
-                'href'            => $c->url,
+                'href'            => $puerta($c->url),
                 'open_in_new_tab' => $c->open_in_new_tab,
             ])->all(),
         ])->all();

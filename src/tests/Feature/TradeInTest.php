@@ -265,7 +265,7 @@ class TradeInTest extends TestCase
         Storage::disk('local')->assertExists($solicitud->fotos[0]['ruta']);
         $this->assertStringStartsWith("trade-in/{$solicitud->codigo}/", $solicitud->fotos[0]['ruta']);
 
-        $this->get(route('admin.trade-in.foto', [$solicitud, 0]))->assertRedirect('/login');
+        $this->get(route('admin.trade-in.foto', [$solicitud, 0]))->assertNotFound();
 
         $admin = $this->admin();
         $this->actingAs($admin)->get(route('admin.trade-in.foto', [$solicitud, 1]))->assertOk();
@@ -283,9 +283,9 @@ class TradeInTest extends TestCase
     {
         $solicitud = $this->solicitud();
 
-        $this->get(route('admin.trade-in.index'))->assertRedirect('/login');
-        $this->get(route('admin.trade-in.show', $solicitud))->assertRedirect('/login');
-        $this->patch(route('admin.trade-in.update', $solicitud), ['estado' => 'rechazado'])->assertRedirect('/login');
+        $this->get(route('admin.trade-in.index'))->assertNotFound();
+        $this->get(route('admin.trade-in.show', $solicitud))->assertNotFound();
+        $this->patch(route('admin.trade-in.update', $solicitud), ['estado' => 'rechazado'])->assertNotFound();
         $this->assertSame('nuevo', $solicitud->fresh()->estado);
     }
 
