@@ -158,11 +158,12 @@ class BusinessFlowTest extends TestCase
 
     public function test_guest_cannot_access_private_stock_endpoints(): void
     {
+        // Bajo /api, sin sesión: 401 en JSON (no 404 ni una redirección a la puerta del equipo)
         $this->get(route('api.stock.celulares'))
-            ->assertNotFound();
+            ->assertUnauthorized();
 
         $this->post('/api/permuta/celular', [])
-            ->assertNotFound();
+            ->assertUnauthorized();
     }
 
     public function test_previewing_next_service_code_does_not_consume_the_sequence(): void

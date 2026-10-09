@@ -104,6 +104,14 @@ class IntegracionApiTest extends TestCase
 
     public function test_sin_token_o_con_uno_falso_responde_401_con_el_formato_de_error(): void
     {
+        // También sin Accept: application/json (curl, n8n, scripts): 401 en JSON, nunca 404 ni una redirección
+        $this->get('/api/v1/integration/health')->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
+        $this->get('/api/v1/integration/products', ['Authorization' => 'Bearer 1|abi_falso'])->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
+        // Y las otras rutas de /api con sesión tampoco mandan a la puerta del equipo
+        $r = $this->get('/api/automation/reports/latest');
+        $this->assertSame(401, $r->getStatusCode());
+        $this->assertStringNotContainsString('login', (string) $r->headers->get('Location'));
+
         $this->api(null, '/health')->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
         $this->api('1|abi_inventado', '/products')->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
         $this->api('basura', '/products')->assertStatus(401);
