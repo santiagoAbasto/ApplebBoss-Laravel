@@ -141,7 +141,7 @@ class CatalogoPublicacion extends Model
 
     /**
      * Atributos aptos para la tienda y la API pública: sin IMEI (ni su estado), costo, procedencia ni ganancia.
-     * El número de serie sí puede mostrarse.
+     * El número de serie tampoco sale: no se guarda en los atributos de la publicación.
      */
     public function modeloReferencia(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

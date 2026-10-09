@@ -1,7 +1,7 @@
 import {
   CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
-  ShoppingCart, SlidersHorizontal, Smartphone, Star, Stethoscope, Store, Tablet, Tag, Truck, UserRound, Users, Wallet,
+  Plug, ShoppingCart, SlidersHorizontal, Smartphone, Star, Stethoscope, Store, Tablet, Tag, Truck, UserRound, Users, Wallet,
   Wrench,
 } from 'lucide-react';
 import IconoUsuarios from '@/Components/Admin/IconoUsuarios';
@@ -60,6 +60,7 @@ const NAV = [
   ] },
   { key: 'sistema', label: 'Sistema', items: [
     { r: 'admin.usuarios.index', icon: IconoUsuarios, label: 'Usuarios y roles', modulo: 'usuarios' },
+    { r: 'admin.integraciones.index', icon: Plug, label: 'Integraciones API', modulo: 'integraciones' },
   ] },
 ];
 

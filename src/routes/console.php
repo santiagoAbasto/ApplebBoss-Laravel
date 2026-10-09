@@ -20,3 +20,6 @@ Artisan::command('resenas:google', function () {
 })->purpose('Trae las reseñas del perfil de Google de la tienda');
 
 \Illuminate\Support\Facades\Schedule::command('resenas:google')->dailyAt('07:00')->withoutOverlapping();
+
+// API de integración: el registro de solicitudes se guarda 90 días
+\Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class]])->dailyAt('03:30');

@@ -21,6 +21,31 @@ Route::prefix('v1')
 
 /*
 |--------------------------------------------------------------------------
+| 🔌 API DE INTEGRACIÓN v1 — solo lectura, para sistemas autorizados (la futura IA de Apple Boss)
+|--------------------------------------------------------------------------
+| Token: Authorization: Bearer <token> (Sistema → Integraciones API). Cada ruta pide su permiso.
+| Se anota cada llamada, también las rechazadas. Contrato: docs/integrations/APPLE_BOSS_API_CONTRACT.md
+| No hay POST, PUT, PATCH ni DELETE: esta API no cambia stock, precios ni productos.
+*/
+Route::prefix('v1/integration')
+    ->name('api.integration.')
+    ->middleware(['integracion.registro', 'throttle:integracion-ip', 'auth:sanctum', 'throttle:integracion'])
+    ->controller(\App\Http\Controllers\Api\Integracion\IntegracionController::class)
+    ->group(function () {
+        $id = '[a-z0-9-]{1,40}';
+        Route::get('/health', 'health')->middleware('integracion.scope')->name('health');
+        Route::get('/products', 'products')->middleware('integracion.scope:integration.products.read')->name('products');
+        Route::get('/products/{id}', 'product')->where('id', $id)->middleware('integracion.scope:integration.products.read')->name('product');
+        Route::get('/products/{id}/images', 'images')->where('id', $id)->middleware('integracion.scope:integration.products.read,integration.media.read')->name('product.images');
+        Route::get('/products/{id}/price', 'price')->where('id', $id)->middleware('integracion.scope:integration.products.read,integration.pricing.read')->name('product.price');
+        Route::get('/products/{id}/availability', 'availability')->where('id', $id)->middleware('integracion.scope:integration.products.read,integration.inventory.read')->name('product.availability');
+        Route::get('/categories', 'categories')->middleware('integracion.scope:integration.categories.read')->name('categories');
+        Route::get('/exchange-rates', 'exchangeRates')->middleware('integracion.scope:integration.exchange_rates.read')->name('exchange-rates');
+        Route::get('/changes', 'changes')->middleware('integracion.scope:integration.products.read')->name('changes');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | 🤖 RUTAS USADAS EXCLUSIVAMENTE POR n8n
 | Middleware: automation
 |--------------------------------------------------------------------------

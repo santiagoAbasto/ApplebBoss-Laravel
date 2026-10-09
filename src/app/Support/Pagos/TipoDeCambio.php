@@ -26,20 +26,34 @@ class TipoDeCambio
     private const FUENTE  = 'https://api.dolarbluebolivia.click/v1/officialRate';
     private const FRESCO  = 1800;      // media hora
     private const ULTIMO  = 'tc.blue.ultimo';
+    private const MOMENTO = 'tc.blue.momento';
 
     /** Bolivianos por 1 USDT. 0 si no hay forma de saberlo. */
     public static function bobPorUsdt(): float
     {
-        $tasa = Cache::remember('tc.blue', self::FRESCO, fn () => self::consultar());
+        return self::detalle()['tasa'] ?? 0.0;
+    }
 
+    /**
+     * La tasa, de dónde salió y cuándo se leyó: 'live' (la fuente, hace menos de media hora), 'last_known' (la fuente
+     * falló y vale el último valor bueno) o 'manual' (BINANCE_PAY_TASA_BOB). null si no hay ninguna.
+     */
+    public static function detalle(): ?array
+    {
+        $tasa = (float) Cache::remember('tc.blue', self::FRESCO, fn () => self::consultar());
         if ($tasa > 0) {
-            return $tasa;
+            return ['tasa' => $tasa, 'origen' => 'live', 'momento' => Cache::get(self::MOMENTO)];
         }
 
         // La fuente falló: el último valor bueno sirve más que quedarse sin cobrar
         $ultimo = (float) Cache::get(self::ULTIMO, 0);
+        if ($ultimo > 0) {
+            return ['tasa' => $ultimo, 'origen' => 'last_known', 'momento' => Cache::get(self::MOMENTO)];
+        }
 
-        return $ultimo > 0 ? $ultimo : (float) config('pagos.binance.tasa_bob', 0);
+        $manual = (float) config('pagos.binance.tasa_bob', 0);
+
+        return $manual > 0 ? ['tasa' => $manual, 'origen' => 'manual', 'momento' => null] : null;
     }
 
     /** Lo que hay que cobrar en USDT por un precio en bolivianos. */
@@ -89,6 +103,7 @@ class TipoDeCambio
         }
 
         Cache::put(self::ULTIMO, $tasa, now()->addDays(7));
+        Cache::put(self::MOMENTO, now()->toIso8601String(), now()->addDays(7));
 
         return $tasa;
     }

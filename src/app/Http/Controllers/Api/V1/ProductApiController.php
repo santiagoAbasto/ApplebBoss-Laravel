@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
  * REGLA: Frontend NUNCA es autoridad de precios. El precio sale siempre del inventario (backend).
  * NUNCA exponer: precio_costo, ganancia, IMEI (ni su estado), notas privadas,
  *               procedencia/proveedor, datos financieros internos, IDs sensibles.
- * El número de serie de celulares y computadoras sí va en el detalle (nunca un IMEI).
+ * Tampoco el número de serie: la serie y los datos de la unidad se dan recién con el pago confirmado.
  */
 class ProductApiController extends Controller
 {

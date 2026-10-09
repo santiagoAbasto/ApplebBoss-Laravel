@@ -1,0 +1,450 @@
+openapi: 3.0.3
+info:
+  title: Apple Boss — API de integración
+  version: 1.0.0
+  description: |
+    API REST de solo lectura sobre los datos que el sistema Apple Boss tiene registrados (inventario, precios en BOB,
+    disponibilidad, publicaciones y fotos). Es una fuente entre varias: que un producto no aparezca NO quiere decir
+    que la empresa no lo venda. Ver APPLE_BOSS_DATA_SOURCES.md y APPLE_BOSS_API_CONTRACT.md.
+servers:
+  - url: https://appleboss.com.bo/api/v1/integration
+    description: Producción
+security:
+  - bearerToken: []
+paths:
+  /health:
+    get:
+      summary: La API responde y el token sirve
+      operationId: health
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      status: { type: string, enum: [ok] }
+                      api_version: { type: string, example: v1 }
+                      integration:
+                        type: object
+                        properties:
+                          name: { type: string }
+                      scopes:
+                        type: array
+                        items: { type: string }
+                      server_time: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /products:
+    get:
+      summary: Lista paginada de productos del inventario
+      description: Scope integration.products.read. Por defecto solo lo que sigue en stock (disponible o reservado).
+      operationId: listProducts
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: category, in: query, schema: { type: string, enum: [celulares, computadoras, productos-apple, accesorios] } }
+        - { name: kind, in: query, schema: { type: string, enum: [unit, article] } }
+        - { name: condition, in: query, schema: { type: string, enum: [new, used, open_box, refurbished, unknown] } }
+        - name: availability
+          in: query
+          description: Distinto de in_stock pide integration.inventory.read.
+          schema: { type: string, enum: [in_stock, available, reserved, sold, sold_out, unavailable, all], default: in_stock }
+        - { name: min_price, in: query, description: BOB. Pide integration.pricing.read., schema: { type: number, minimum: 0 } }
+        - { name: max_price, in: query, description: BOB. Pide integration.pricing.read., schema: { type: number, minimum: 0 } }
+        - { name: currency, in: query, schema: { type: string, enum: [BOB] } }
+        - { name: updated_since, in: query, schema: { type: string, format: date-time } }
+        - name: sort
+          in: query
+          description: Por precio pide integration.pricing.read. Desempate por id.
+          schema: { type: string, enum: [updated_desc, updated_asc, name, price_asc, price_desc], default: updated_desc }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Product' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '422': { $ref: '#/components/responses/InvalidParameters' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /products/{id}:
+    get:
+      summary: Un producto
+      operationId: getProduct
+      parameters: [ { $ref: '#/components/parameters/ProductId' } ]
+      responses:
+        '200':
+          description: OK (también si está vendido o agotado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Product' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /products/{id}/images:
+    get:
+      summary: Fotos de la publicación visible en la tienda
+      description: Scopes integration.products.read e integration.media.read. Sin publicación visible devuelve [].
+      operationId: getProductImages
+      parameters: [ { $ref: '#/components/parameters/ProductId' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Image' }
+                  meta:
+                    type: object
+                    properties:
+                      product_id: { type: string }
+                      publication_status: { type: string, enum: [published, not_published, not_listed] }
+                      retrieved_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /products/{id}/price:
+    get:
+      summary: Precio de venta en BOB
+      description: Scopes integration.products.read e integration.pricing.read.
+      operationId: getProductPrice
+      parameters: [ { $ref: '#/components/parameters/ProductId' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - type: object
+                        properties:
+                          product_id: { type: string }
+                          source: { $ref: '#/components/schemas/Source' }
+                      - $ref: '#/components/schemas/Pricing'
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /products/{id}/availability:
+    get:
+      summary: Disponibilidad al momento del pedido
+      description: Scopes integration.products.read e integration.inventory.read. Leer justo antes de prometer stock.
+      operationId: getProductAvailability
+      parameters: [ { $ref: '#/components/parameters/ProductId' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - type: object
+                        properties:
+                          product_id: { type: string }
+                          source: { $ref: '#/components/schemas/Source' }
+                      - $ref: '#/components/schemas/Availability'
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /categories:
+    get:
+      summary: Categorías del inventario
+      description: Scope integration.categories.read. available_items pide además integration.inventory.read (si no, null).
+      operationId: listCategories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+  /exchange-rates:
+    get:
+      summary: Tipo de cambio que usa la tienda (dólar paralelo, lado compra)
+      description: Scope integration.exchange_rates.read. Si no hay ninguno, data es [] y meta.available es false.
+      operationId: listExchangeRates
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ExchangeRate' }
+                  meta:
+                    type: object
+                    properties:
+                      available: { type: boolean }
+                      source: { type: string, enum: [appleboss] }
+                      retrieved_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+  /changes:
+    get:
+      summary: Productos que cambiaron desde una fecha o un cursor
+      description: |
+        Scope integration.products.read. Manda since o cursor. Orden updated_at ascendente y luego id.
+        tombstone = vendido o agotado. Los registros borrados del inventario no se informan.
+      operationId: listChanges
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 100 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ChangeEvent' }
+                  meta:
+                    type: object
+                    properties:
+                      next_cursor: { type: string, nullable: true }
+                      has_more: { type: boolean }
+                      retrieved_at: { type: string, format: date-time }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/InsufficientScope' }
+        '422': { $ref: '#/components/responses/InvalidParameters' }
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: Token de Sistema → Integraciones API. Formato <id>|abi_<…>. Solo por HTTPS y desde un servidor.
+  parameters:
+    ProductId:
+      name: id
+      in: path
+      required: true
+      description: celular-{n}, computadora-{n}, producto-apple-{n} o accesorio-{16 hex}
+      schema: { type: string, pattern: '^[a-z0-9-]{1,40}$', example: celular-22 }
+  responses:
+    Unauthenticated:
+      description: Sin token, token inválido, revocado o vencido, o integración desactivada
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InsufficientScope:
+      description: Falta el permiso (error.details.required_scope)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: El sistema Apple Boss no tiene ese recurso (no quiere decir que la empresa no lo venda)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InvalidParameters:
+      description: Parámetros inválidos (error.details por campo)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Límite superado. Esperar Retry-After segundos.
+      headers:
+        Retry-After: { schema: { type: integer } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Meta:
+      type: object
+      properties:
+        retrieved_at: { type: string, format: date-time }
+    PageMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+        last_page: { type: integer }
+        sort: { type: string }
+        availability: { type: string }
+        source: { type: string, enum: [appleboss] }
+        retrieved_at: { type: string, format: date-time }
+    Product:
+      type: object
+      required: [id, kind, inventory_type, display_name, category, condition, attributes, publication, source]
+      properties:
+        id: { type: string, example: celular-22 }
+        kind: { type: string, enum: [unit, article], description: 'unit: un equipo físico. article: accesorios con el mismo nombre y precio.' }
+        inventory_type: { type: string, enum: [celular, computadora, producto_apple, producto_general] }
+        name: { type: string, nullable: true, description: Nombre tal como se cargó en el inventario }
+        display_name: { type: string, description: El mismo nombre con el formato de la tienda }
+        category:
+          type: object
+          properties:
+            id: { type: string, enum: [celulares, computadoras, productos-apple, accesorios] }
+            name: { type: string }
+        condition:
+          type: object
+          properties:
+            value: { type: string, nullable: true, enum: [new, used, open_box, refurbished] }
+            label: { type: string, nullable: true }
+        attributes:
+          type: object
+          description: Según inventory_type. Texto tal como se cargó, o null.
+          properties:
+            capacity: { type: string, nullable: true }
+            color: { type: string, nullable: true }
+            processor: { type: string, nullable: true }
+            ram: { type: string, nullable: true }
+            storage: { type: string, nullable: true }
+            battery: { $ref: '#/components/schemas/Battery' }
+            accessory_type:
+              type: object
+              nullable: true
+              properties:
+                id: { type: string }
+                name: { type: string, nullable: true }
+        availability: { $ref: '#/components/schemas/Availability' }
+        pricing: { $ref: '#/components/schemas/Pricing' }
+        publication: { $ref: '#/components/schemas/Publication' }
+        images:
+          type: array
+          nullable: true
+          description: null sin integration.media.read; [] sin publicación visible
+          items: { $ref: '#/components/schemas/Image' }
+        source: { $ref: '#/components/schemas/Source' }
+        created_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time, nullable: true }
+    Battery:
+      type: object
+      nullable: true
+      properties:
+        raw: { type: string, example: '100 SELLADO' }
+        health_percent: { type: integer, nullable: true }
+        cycles: { type: integer, nullable: true }
+        sealed: { type: boolean }
+    Availability:
+      type: object
+      nullable: true
+      description: null sin integration.inventory.read
+      properties:
+        status: { type: string, enum: [available, reserved, sold, sold_out, unavailable] }
+        quantity: { type: integer }
+        reserved_quantity: { type: integer }
+        reason: { type: string, nullable: true, enum: [reservation, pending_order, mixed] }
+        checked_at: { type: string, format: date-time }
+    Pricing:
+      type: object
+      nullable: true
+      description: null sin integration.pricing.read
+      properties:
+        currency: { type: string, enum: [BOB] }
+        amount: { type: string, nullable: true, example: '4500.00' }
+        price_type: { type: string, enum: [list_price] }
+        promotional_amount: { type: string, nullable: true }
+        promotion_starts_at: { type: string, format: date-time, nullable: true }
+        promotion_ends_at: { type: string, format: date-time, nullable: true }
+    Publication:
+      type: object
+      properties:
+        status: { type: string, enum: [published, not_published, not_listed] }
+        title: { type: string, nullable: true }
+        slug: { type: string, nullable: true }
+        url: { type: string, format: uri, nullable: true }
+        summary: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        includes: { type: string, nullable: true }
+        warranty: { type: string, nullable: true }
+        attributes: { type: object, nullable: true, additionalProperties: true }
+        updated_at: { type: string, format: date-time, nullable: true }
+    Image:
+      type: object
+      properties:
+        id: { type: string, example: imagen-1 }
+        url: { type: string, format: uri }
+        sizes:
+          type: object
+          properties:
+            thumb: { type: string, format: uri, nullable: true }
+            card: { type: string, format: uri, nullable: true }
+            medium: { type: string, format: uri, nullable: true }
+            detail: { type: string, format: uri, nullable: true }
+        alt: { type: string }
+        is_primary: { type: boolean }
+        position: { type: integer }
+        updated_at: { type: string, format: date-time, nullable: true }
+    Source:
+      type: object
+      properties:
+        system: { type: string, enum: [appleboss] }
+        source_type: { type: string, enum: [internal_inventory] }
+        record_id: { type: string }
+        retrieved_at: { type: string, format: date-time }
+    Category:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        inventory_type: { type: string }
+        available_items: { type: integer, nullable: true }
+        subcategories:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+              available_items: { type: integer, nullable: true }
+    ExchangeRate:
+      type: object
+      properties:
+        base: { type: string, enum: [USD] }
+        quote: { type: string, enum: [BOB] }
+        rate: { type: string, example: '9.87' }
+        rate_type: { type: string, enum: [parallel_buy] }
+        origin: { type: string, enum: [live, last_known, manual] }
+        provider: { type: string }
+        as_of: { type: string, format: date-time, nullable: true }
+        usage: { type: string }
+    ChangeEvent:
+      type: object
+      properties:
+        change_type: { type: string, enum: [upsert, tombstone] }
+        id: { type: string }
+        updated_at: { type: string, format: date-time, nullable: true }
+        product: { $ref: '#/components/schemas/Product' }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, enum: [unauthenticated, insufficient_scope, not_found, method_not_allowed, invalid_parameters, rate_limited, http_error, server_error] }
+            message: { type: string }
+            details: { type: object, additionalProperties: true }

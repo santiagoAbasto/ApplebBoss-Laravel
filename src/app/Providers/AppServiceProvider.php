@@ -30,6 +30,15 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\Pedido::observe(\App\Observers\PedidoObserver::class);
 
+        // ── API de integración ─────────────────────────────────────────────
+        // Un token solo sirve si su integración sigue activa (desactivarla corta todos sus tokens al instante)
+        \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(fn ($token, bool $valido) => $valido
+            && (! $token->tokenable instanceof \App\Models\Integracion || $token->tokenable->activa));
+        // Antes de mirar el token, por IP (frena a quien prueba tokens); después, por integración
+        \Illuminate\Support\Facades\RateLimiter::for('integracion-ip', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(300)->by('integracion-ip:' . $r->ip()));
+        \Illuminate\Support\Facades\RateLimiter::for('integracion', fn (\Illuminate\Http\Request $r) => \Illuminate\Cache\RateLimiting\Limit::perMinute(\App\Models\Integracion::LIMITE_POR_MINUTO)
+            ->by('integracion:' . ($r->user()?->getKey() ?? $r->ip())));
+
         if ($this->shouldUseBuiltAssetsInLocal()) {
             Vite::useHotFile(storage_path('framework/vite-disabled.hot'));
         }

@@ -68,6 +68,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Qué parte del panel puede abrir ese rol (Usuarios y roles)
             'permiso' => \App\Http\Middleware\PermisoMiddleware::class,
             'automation' => \App\Http\Middleware\AutomationTokenMiddleware::class,
+            // API de integración: permiso por ruta y registro de cada llamada
+            'integracion.scope'    => \App\Http\Middleware\IntegracionScope::class,
+            'integracion.registro' => \App\Http\Middleware\RegistrarSolicitudIntegracion::class,
         ]);
     })
 
@@ -77,7 +80,31 @@ return Application::configure(basePath: dirname(__DIR__))
     |--------------------------------------------------------------------------
     */
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // API de integración: todo error sale como {"error": {"code", "message", "details"}}, sin trazas ni datos internos
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (! $request->is('api/v1/integration', 'api/v1/integration/*')) {
+                return null;
+            }
+            $error = \App\Support\Integracion\ErrorApi::class;
+
+            return match (true) {
+                $e instanceof \Illuminate\Auth\AuthenticationException
+                    => $error::respuesta(401, 'unauthenticated', 'Falta un token de integración válido (Authorization: Bearer <token>).'),
+                $e instanceof \Illuminate\Validation\ValidationException
+                    => $error::respuesta(422, 'invalid_parameters', 'Hay parámetros inválidos.', $e->errors()),
+                $e instanceof \Illuminate\Http\Exceptions\ThrottleRequestsException
+                    => $error::respuesta(429, 'rate_limited', 'Demasiados pedidos. Espera los segundos de Retry-After.', null, $e->getHeaders()),
+                $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException,
+                $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+                    => $error::respuesta(404, 'not_found', 'Esa ruta o ese recurso no existe en la API de integración.'),
+                $e instanceof \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
+                    => $error::respuesta(405, 'method_not_allowed', 'La API de integración es de solo lectura: solo acepta GET.'),
+                $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                    => $error::respuesta($e->getStatusCode(), 'http_error', 'No se pudo atender el pedido.'),
+                default
+                    => $error::respuesta(500, 'server_error', 'Error interno. Ya quedó anotado; reintenta en unos minutos.'),
+            };
+        });
     })
 
     ->create();

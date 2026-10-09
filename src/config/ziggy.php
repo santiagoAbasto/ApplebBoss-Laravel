@@ -27,6 +27,7 @@ return [
             '!admin.*',
             '!vendedor.*',
             '!automation.*',
+            '!api.integration.*',
         ],
     ],
 

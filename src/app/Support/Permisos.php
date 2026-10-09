@@ -48,6 +48,7 @@ class Permisos
         'exportar'     => ['Exportar datos',       'Exportar datos',      ['admin.exportaciones', 'admin.exportar']],
 
         'usuarios'     => ['Usuarios y roles',     'Sistema',             ['admin.usuarios', 'admin.roles']],
+        'integraciones' => ['Integraciones API',   'Sistema',             ['admin.integraciones']],
     ];
 
     /** Los módulos agrupados como los muestra la pantalla de roles. */

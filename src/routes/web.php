@@ -497,6 +497,13 @@ Route::middleware(['auth', 'verified', 'permiso'])
         // ========================
         // 👥 SISTEMA: USUARIOS Y ROLES
         // ========================
+        // Sistema → Integraciones API (tokens de la API de integración de solo lectura)
+        Route::get('/integraciones', [\App\Http\Controllers\Admin\IntegracionController::class, 'index'])->name('integraciones.index');
+        Route::post('/integraciones', [\App\Http\Controllers\Admin\IntegracionController::class, 'store'])->name('integraciones.store');
+        Route::patch('/integraciones/{integracion}', [\App\Http\Controllers\Admin\IntegracionController::class, 'update'])->name('integraciones.update');
+        Route::post('/integraciones/{integracion}/tokens', [\App\Http\Controllers\Admin\IntegracionController::class, 'token'])->name('integraciones.token');
+        Route::delete('/integraciones/{integracion}/tokens/{token}', [\App\Http\Controllers\Admin\IntegracionController::class, 'revocar'])->whereNumber('token')->name('integraciones.revocar');
+
         Route::get('/usuarios', [\App\Http\Controllers\Admin\UsuarioController::class, 'index'])->name('usuarios.index');
         Route::post('/usuarios', [\App\Http\Controllers\Admin\UsuarioController::class, 'store'])->name('usuarios.store');
         Route::patch('/usuarios/{usuario}', [\App\Http\Controllers\Admin\UsuarioController::class, 'update'])->name('usuarios.update');
