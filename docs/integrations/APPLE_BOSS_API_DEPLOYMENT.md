@@ -1,6 +1,7 @@
 # Plan de despliegue de la API de integración v1
 
-> Preparado el 09-10-2026. **No ejecutado.** Cada parte necesita la autorización explícita del dueño.
+> Preparado el 09-10-2026. **Parte A ejecutada el 09-10-2026** con autorización del dueño (producción en `a0ff8ae`).
+> **Parte B sin autorizar.**
 > Producción hoy: commit `a2e21c3`, imagen `appleboss-app:production`, PostgreSQL 18, Caddy 2.11.4 detrás de Cloudflare.
 
 ## Qué cambia
@@ -186,14 +187,16 @@ la página se dibuje. Entrar al panel y abrir Inventario, Ventas y Catálogo.
 
 ## Reversión
 
+Regla: primero se recupera la tienda y se **conservan los datos**. Nunca `migrate:fresh`, nunca `git reset --hard` en el
+VPS y nunca borrar las tablas nuevas sin revisar qué tienen: pueden guardar integraciones, tokens y el registro de
+auditoría.
+
 | Situación | Qué hacer |
 |---|---|
 | La API falla pero la tienda anda | Desactivar todas las integraciones y corregir con calma: `dc exec -T app php artisan tinker --execute='App\Models\Integracion::query()->update(["activa" => false]);'` |
-| Algo de la tienda o el panel falla por el código nuevo | 1) Con el código nuevo todavía puesto: `dc exec -T app php artisan migrate:rollback --step=1`, que borra solo las tres tablas nuevas. 2) `docker tag appleboss-app:antes-api-a2e21c3 appleboss-app:production && dc up -d app queue scheduler`: vuelve la imagen anterior. 3) Cachés y reinicio como en el paso 6. 4) Dejar el código del VPS igual a la imagen: ver el párrafo de abajo |
+| La tienda o el panel fallan por el código nuevo | 1) `docker tag appleboss-app:antes-api-a2e21c3 appleboss-app:production && dc up -d app queue scheduler`: vuelve la imagen anterior. 2) Cachés y reinicio como en el paso 6. Las tres tablas nuevas **se quedan**: el código anterior no las usa. 3) En la Mac, `git revert` de los commits de la API, push y `git pull --ff-only` en el VPS, para que el código vuelva a coincidir con la imagen |
+| Hay que quitar las tablas nuevas | Solo después de revisar su contenido y respaldarlo: `pg_dump -t integraciones -t integracion_solicitudes -t personal_access_tokens`, y recién entonces `migrate:rollback --step=1` con el código nuevo todavía puesto |
 | Daño en datos (no esperado: la migración solo crea tablas) | Restaurar el respaldo del paso 1 con `pg_restore --clean` en una ventana de mantenimiento, después de guardar un respaldo del estado dañado |
-
-Para el punto 4, la opción segura es `git revert <commit de la API>` en la Mac, push y `git pull --ff-only` en el VPS.
-No usar `git reset --hard` en el VPS: borraría los cambios propios del servidor, como su `Caddyfile`.
 
 ## Parte B: IP real del cliente detrás de Cloudflare (aparte y opcional)
 

@@ -2,9 +2,9 @@
 
 > Documento autónomo para el proyecto «APPLE BOSS AI» (ventas, WhatsApp, CRM) o para otra sesión de Claude Code que
 > no tenga acceso al repositorio de la tienda. Última revisión: 09-10-2026.
-> **Estado de la API (09-10-2026):** implementada, auditada y guardada en Git en el repositorio de la tienda
-> (commit en la sección K), **sin push y sin desplegar**. Antes de conectarse, confirmar con el dueño que ya está
-> desplegada: `GET /health` sin token debe responder 401 en JSON, no 404.
+> **Estado de la API:** **desplegada en producción el 09-10-2026** (commit `a0ff8ae`, que incluye `5bb7f5c`).
+> Verificada en producción: 401 sin token, 9 endpoints, 647 productos (302 en stock), fotos, permisos y límite de
+> pedidos. Todavía no existe la integración «APPLE BOSS AI»: la crea el dueño cuando este proyecto esté listo.
 
 ## A. Identificación
 
@@ -369,11 +369,9 @@ Modelo de procedencia sugerido. Es un ejemplo conceptual, no un producto real:
 - **Qué está hecho:** API v1 completa en el repositorio de la tienda (`ApplebBoss-Laravel`, carpeta `src/`), con panel
   de integraciones, 23 pruebas automáticas propias y la suite completa en verde. Auditoría de seguridad y de datos del
   09-10-2026 en `APPLE_BOSS_API_SECURITY.md`.
-- **Commit:** `5bb7f5c` (feat(api): API de integracion v1 de solo lectura para APPLE BOSS AI) en la rama `main` del
-  repositorio de la tienda, sin push. Producción sigue en `a2e21c3`, sin la API.
-- **Qué falta del lado de la tienda:** que el dueño autorice el push y el despliegue
-  (`APPLE_BOSS_API_DEPLOYMENT.md`), y después crear la integración «APPLE BOSS AI» para obtener el token.
-  Recomendado en el mismo despliegue: la corrección de IP real en Caddy (parte B de ese plan).
+- **Commit:** `5bb7f5c` (la API) y `a0ff8ae` (este documento) en `main`, desplegados en producción el 09-10-2026.
+- **Qué falta del lado de la tienda:** crear la integración «APPLE BOSS AI» para obtener el token. Aparte, con su
+  propia autorización: la corrección de IP real en Caddy (parte B de `APPLE_BOSS_API_DEPLOYMENT.md`).
 - **Qué falta del lado de APPLE BOSS AI:** todo lo de las secciones G, I y J. Nada de eso va en el repositorio de la
   tienda.
 - **Contrato estable:** v1 no cambia nombres ni tipos. Si algo no cuadra con este documento, manda el OpenAPI
