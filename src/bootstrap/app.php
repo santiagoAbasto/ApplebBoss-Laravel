@@ -88,6 +88,31 @@ return Application::configure(basePath: dirname(__DIR__))
         // terminaría redirigiendo a la puerta del equipo y la revelaría.
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
 
+        // El panel, para quien no es del equipo: una página animada con el logo que dice que no tiene acceso, sin contar
+        // qué hay detrás ni dónde se entra. Visitante: 404 (como si no existiera). Cliente con sesión, o alguien del equipo
+        // sin el permiso de esa parte: 403. Si alguien del equipo pide algo que no existe, sigue viendo «no encontrado».
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->is('admin/login', 'vendedor/login')
+                || ! $request->is('admin', 'admin/*', 'vendedor', 'vendedor/*', 'dashboard', 'profile', 'register')) {
+                return null;
+            }
+            $estado = match (true) {
+                $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface => $e->getStatusCode(),
+                $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException => 404,
+                $e instanceof \Illuminate\Auth\Access\AuthorizationException => 403,
+                default => null,
+            };
+            $usuario = $request->user();
+            $delEquipo = $usuario && ! $usuario->esCliente();
+            if (! in_array($estado, [403, 404], true) || ($estado === 404 && $delEquipo)) {
+                return null;
+            }
+
+            return \Inertia\Inertia::render('Errores/AccesoRestringido')->toResponse($request)
+                ->setStatusCode($estado)
+                ->header('X-Robots-Tag', 'noindex, nofollow');
+        });
+
         // API de integración: todo error sale como {"error": {"code", "message", "details"}}, sin trazas ni datos internos
         $exceptions->render(function (\Throwable $e, Request $request) {
             if (! $request->is('api/v1/integration', 'api/v1/integration/*')) {

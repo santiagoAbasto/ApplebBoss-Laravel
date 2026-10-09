@@ -24,5 +24,6 @@ return [
         'email'                 => 'correo',
         'password'              => 'contraseña',
         'password_confirmation' => 'confirmación de contraseña',
+        'telefono'              => 'teléfono',
     ],
 ];

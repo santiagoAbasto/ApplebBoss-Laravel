@@ -39,6 +39,8 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Store/Cuenta/Entrar', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            // Si llegó desde el checkout, la tarjeta le dice por qué le pedimos la cuenta
+            'desdeCheckout' => str_contains((string) session('url.intended'), '/checkout'),
         ]);
     }
 

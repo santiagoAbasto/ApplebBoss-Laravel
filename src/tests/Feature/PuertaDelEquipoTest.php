@@ -77,4 +77,31 @@ class PuertaDelEquipoTest extends TestCase
         }
         $this->assertStringNotContainsString('/admin', $this->get('/robots.txt')->getContent());
     }
+
+    public function test_quien_encuentra_el_panel_ve_el_aviso_de_acceso_restringido(): void
+    {
+        // La puerta sigue respondiendo, y un 404 de la tienda no es «restringido»
+        $this->get('/admin/login')->assertOk();
+        $this->assertStringNotContainsString('AccesoRestringido', $this->get('/no-existe-en-la-tienda')->assertNotFound()->getContent());
+
+        // Visitante: 404 con la página animada, también en direcciones del panel que no existen
+        foreach (['/admin', '/admin/ventas', '/admin/no-existe', '/vendedor/dashboard', '/dashboard'] as $url) {
+            $this->get($url)->assertNotFound()
+                ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+                ->assertInertia(fn ($p) => $p->component('Errores/AccesoRestringido'));
+        }
+
+        // Un cliente con sesión: 403, la misma página
+        $cliente = User::factory()->create(['rol' => 'cliente']);
+        $this->actingAs($cliente)->get('/admin/ventas')->assertForbidden()
+            ->assertInertia(fn ($p) => $p->component('Errores/AccesoRestringido'));
+
+        // Alguien del equipo que pide algo que no existe no ve «restringido»
+        $this->app['auth']->forgetGuards();
+        $admin = User::factory()->create(['rol' => 'admin']);
+        $r = $this->actingAs($admin)->get('/admin/no-existe');
+        $r->assertNotFound();
+        $this->assertStringNotContainsString('AccesoRestringido', $r->getContent());
+
+    }
 }
