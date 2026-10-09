@@ -2,11 +2,11 @@
 
 > Documento autónomo para el proyecto «APPLE BOSS AI» (ventas, WhatsApp, CRM) o para otra sesión de Claude Code que
 > no tenga acceso al repositorio de la tienda. Última revisión: 09-10-2026.
-> **Estado de la API:** **operativa en producción.** Commit desplegado: `cae9d9a` (incluye la API de `5bb7f5c` y la
-> corrección de búsqueda de `d42229b`). Verificada en producción el 09-10-2026 con una credencial temporal, ya revocada:
-> los 9 endpoints, 647 productos (302 en stock), fotos, permisos, privacidad y revocación (sección C).
-> Todavía no existe la integración «APPLE BOSS AI»: la crea el dueño cuando este proyecto esté listo.
-> **Mandar siempre `Accept: application/json`** (sección D).
+> **Estado de la API:** **operativa en producción.** Commit desplegado: **`77e6805`** (incluye la API de `5bb7f5c`, la
+> búsqueda corregida de `d42229b` y el 401 en JSON de `df82166`). Verificada en producción el 09-10-2026 con
+> credenciales temporales, ya revocadas: los 9 endpoints, 647 productos (302 en stock), fotos, permisos, privacidad,
+> revocación y 401 en JSON sin token, con y sin `Accept: application/json` (sección C).
+> La integración «APPLE BOSS AI» la crea el dueño en el panel; el token va directo al gestor de secretos de este proyecto.
 
 ## A. Identificación
 
@@ -49,7 +49,8 @@ Reglas de respuesta que se desprenden:
 
 Todos con `Authorization: Bearer <TOKEN>` y `Accept: application/json`. Solo GET.
 
-**Verificación en producción del 09-10-2026** (commit `cae9d9a`, credencial temporal creada y revocada en el servidor):
+**Verificación en producción del 09-10-2026** (commits `cae9d9a` y `77e6805`, credenciales temporales creadas y revocadas
+en el servidor):
 
 | Ruta | Resultado |
 |---|---|
@@ -66,6 +67,8 @@ Todos con `Authorization: Bearer <TOKEN>` y `Accept: application/json`. Solo GET
 | Correspondencia | 20 productos al azar idénticos al inventario (precio y estado) |
 | Privacidad | 3.626 valores privados reales buscados (IMEI, series, procedencias, códigos, datos de clientes y usuarios): ninguno sale; 2 coincidencias eran palabras del propio nombre público |
 | Revocación | después de revocar, 401; el token no quedó en ningún registro |
+| Sin token (`77e6805`) | 401 `unauthenticated` en JSON en `/health`, `/products` y `/changes`, con y sin `Accept: application/json`; token falso, 401 |
+| Con token (`77e6805`) | los 9 endpoints responden igual con y sin `Accept: application/json` |
 
 URL de producción: `https://appleboss.com.bo/api/v1/integration`. No hay entorno de pruebas público.
 
@@ -99,9 +102,8 @@ Detalle completo: `APPLE_BOSS_API_CONTRACT.md` y `APPLE_BOSS_API_OPENAPI.yaml`, 
 - **Dónde se guarda:** en el gestor de secretos o en las variables de entorno del servidor de APPLE BOSS AI
   (por ejemplo `APPLEBOSS_API_TOKEN`). Nunca en el código, el repositorio, el frontend, logs ni chats.
 - **Cómo se envía:** `Authorization: Bearer <TOKEN>` y `Accept: application/json`, solo por HTTPS, solo desde el
-  servidor. Con el commit `cae9d9a`, un pedido **sin** `Accept: application/json` y sin token válido recibe 404 en vez
-  de 401. Ya hay una corrección preparada en el repositorio de la tienda; mientras no se despliegue, mandar siempre esa
-  cabecera, que de todos modos es lo correcto para una API.
+  servidor. Desde `77e6805` la API responde 401 en JSON aunque falte `Accept: application/json`; igual se recomienda
+  mandarla siempre.
 - **Formato:** `<id>|abi_<…>`. Se manda completo, con el `|`.
 - **Scopes recomendados para la IA de ventas:** los seis.
 - **Rotación:** el dueño pulsa «Rotar token»; el anterior sigue 24 h. Cambiar la variable de entorno dentro de ese plazo.
@@ -348,6 +350,9 @@ APPLE BOSS AI:
 - No debe inventar precios, condiciones, baterías ni especificaciones.
 - No debe duplicar registros sin conservar su procedencia (`source`).
 - No debe deducir marcas ni variantes desde el nombre como si fueran datos del sistema.
+- No debe recomendar como equipo listo para vender, sin una verificación comercial, una unidad marcada como disponible
+  cuya condición esté vacía (`condition.value = null`) o cuyo nombre indique que es para repuesto («REPUESTO»). Tiene
+  que pasarla a un vendedor antes de ofrecerla.
 
 ## I. Integración con múltiples fuentes (recomendación, no implementado)
 
@@ -390,13 +395,13 @@ Modelo de procedencia sugerido. Es un ejemplo conceptual, no un producto real:
 - **Qué está hecho:** API v1 completa en el repositorio de la tienda (`ApplebBoss-Laravel`, carpeta `src/`), con panel
   de integraciones, 23 pruebas automáticas propias y la suite completa en verde. Auditoría de seguridad y de datos del
   09-10-2026 en `APPLE_BOSS_API_SECURITY.md`.
-- **Commit desplegado:** `cae9d9a` en `main` (API en `5bb7f5c`, búsqueda corregida en `d42229b`). Verificado en
-  producción el 09-10-2026 (sección C).
+- **Commit desplegado:** `77e6805` (API en `5bb7f5c`, búsqueda corregida en `d42229b`, 401 en JSON en `df82166`).
+  Verificado en producción el 09-10-2026 (sección C). Para revisarlo: `GET /health` sin token → 401 en JSON.
 - **Limitaciones reales, verificadas:** el sistema no registra marcas, variantes, stock por sucursal ni historial de
   borrados; las fotos existen solo para lo publicado (hoy 5 publicaciones, 1 con foto); la condición está vacía en casi
   todos los celulares; hay un equipo para repuesto con «REPUESTO» en el nombre y un accesorio cargado con su código
   como nombre; la tasa de cambio es la del dólar paralelo que usa la tienda, no una conversión de precios. En el panel
-  quedan 4 integraciones de prueba desactivadas y sin tokens (despliegue y verificación del 09-10-2026).
+  quedan 5 integraciones de prueba desactivadas y sin tokens (despliegue y verificaciones del 09-10-2026).
 - **Qué falta del lado de la tienda:** crear la integración «APPLE BOSS AI» para obtener el token. Aparte, con su
   propia autorización: la corrección de IP real en Caddy (parte B de `APPLE_BOSS_API_DEPLOYMENT.md`).
 - **Qué falta del lado de APPLE BOSS AI:** todo lo de las secciones G, I y J. Nada de eso va en el repositorio de la
