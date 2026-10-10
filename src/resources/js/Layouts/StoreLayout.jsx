@@ -10,6 +10,7 @@ import CompareBar from '@/Components/Store/CompareBar';
 import { esExterno } from '@/Components/Store/enlaces';
 import WhatsAppFlotante from '@/Components/Store/WhatsAppFlotante';
 import AccesoModal from '@/Components/Store/AccesoModal';
+import CreditoBurrow from '@/Components/Store/CreditoBurrow';
 import { UserRound } from 'lucide-react';
 import { nombreTienda, saludoWhatsapp } from '@/Components/Store/tienda';
 
@@ -891,9 +892,11 @@ function StoreFooter({ abrirAcceso }) {
             {/* Subfooter. `data-tope-flotante`: hasta acá baja el botón de WhatsApp, nunca sobre el copyright. */}
             <div data-tope-flotante style={{ borderTop: '1px solid rgba(255,255,255,0.14)' }}>
                 {/* StoreContainer no acepta style: el color va por clase para que el copyright se lea en blanco */}
-                <StoreContainer className="flex flex-wrap items-center justify-between gap-3 py-5 text-xs font-medium text-white">
+                <StoreContainer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 text-xs font-medium text-white">
                     <span>© {year} {nombre} · {pais}</span>
                     <span>Equipos revisados · Precios reales · Atención personalizada</span>
+                    {/* Al final de todo, la firma de quien hizo el sitio */}
+                    <CreditoBurrow />
                 </StoreContainer>
             </div>
         </footer>
