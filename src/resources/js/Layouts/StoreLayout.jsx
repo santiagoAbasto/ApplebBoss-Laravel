@@ -892,14 +892,11 @@ function StoreFooter({ abrirAcceso }) {
             {/* Subfooter. `data-tope-flotante`: hasta acá baja el botón de WhatsApp, nunca sobre el copyright. */}
             <div data-tope-flotante style={{ borderTop: '1px solid rgba(255,255,255,0.14)' }}>
                 {/* StoreContainer no acepta style: el color va por clase para que el copyright se lea en blanco */}
-                <StoreContainer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 text-xs font-medium text-white">
-                    {/* En la misma línea del copyright, la firma de quien hizo el sitio */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span>Copyright © {year} {nombre} · Todos los derechos reservados</span>
-                        <span aria-hidden="true" className="hidden h-4 w-px bg-white/20 sm:block" />
-                        <CreditoBurrow />
-                    </div>
+                {/* En el celular, todo centrado y la firma al final; en la computadora, una línea con la firma a la derecha */}
+                <StoreContainer className="flex flex-col items-center gap-2 py-3 text-center text-xs font-medium text-white lg:flex-row lg:justify-between lg:gap-6 lg:text-left">
+                    <span>Copyright © {year} {nombre} · Todos los derechos reservados</span>
                     <span>Equipos revisados · Precios reales · Atención personalizada</span>
+                    <CreditoBurrow />
                 </StoreContainer>
             </div>
         </footer>
