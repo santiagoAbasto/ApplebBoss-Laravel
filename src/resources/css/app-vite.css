@@ -449,35 +449,3 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .ab-acceso-brillo, .ab-acceso-brillo-2 { animation: none; }
 }
-
-/* Firma de Burrow Labs en el pie (CreditoBurrow.jsx). Geometría del manifest de su marca: pivote de las orejas y pupila.
-   El burro saluda tres veces y descansa; con el puntero encima saluda sin parar. */
-.ab-burro-orejas { transform-origin: 41.687% 32.142%; animation: ab-burro-orejas 2.4s ease-in-out infinite; }
-.ab-burro-pupila {
-  position: absolute; left: 48.587%; top: 39.337%; width: 3.908%; aspect-ratio: 1; border-radius: 50%;
-  background: #090a0b; transform: translate(-50%, -50%); animation: ab-burro-mirar 5.2s ease-in-out infinite;
-}
-.ab-burro-brazo { transform-origin: 96px 116px; transform: rotate(10deg); animation: ab-burro-saludo 2.8s ease-in-out infinite; }
-.ab-credito:is(:hover, :focus-visible) .ab-burro-brazo { animation: ab-burro-saludo-rapido 0.45s ease-in-out infinite alternate; }
-@keyframes ab-burro-saludo {
-  0%, 56%, 100% { transform: rotate(10deg); }
-  8%, 24%, 40%  { transform: rotate(36deg); }
-  16%, 32%, 48% { transform: rotate(8deg); }
-}
-@keyframes ab-burro-saludo-rapido { from { transform: rotate(6deg); } to { transform: rotate(36deg); } }
-@keyframes ab-burro-orejas {
-  0%, 58%, 100% { transform: rotate(0); }
-  65% { transform: rotate(-7deg); }
-  72% { transform: rotate(5deg); }
-  80% { transform: rotate(-4deg); }
-  90% { transform: rotate(2deg); }
-}
-@keyframes ab-burro-mirar {
-  0%, 16%, 100% { transform: translate(-50%, -50%); }
-  22%, 38% { transform: translate(-406%, 8%); }
-  44%, 58% { transform: translate(-190%, 310%); }
-  64%, 80% { transform: translate(4%, 246%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ab-burro-orejas, .ab-burro-pupila, .ab-burro-brazo, .ab-credito:is(:hover, :focus-visible) .ab-burro-brazo { animation: none; }
-}
