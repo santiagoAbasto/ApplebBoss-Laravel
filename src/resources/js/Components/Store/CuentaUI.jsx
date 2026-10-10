@@ -205,8 +205,23 @@ export function FormularioEntrar({ alSalir, enfocar = false }) {
 }
 
 /** Página de cuenta dentro de la tienda: la tarjeta al centro sobre un fondo suave, igual que el modal. */
-// ─── El fondo de las páginas de cuenta: los equipos de la tienda flotando alrededor de la tarjeta ─────────────────
-// x / y en % del fondo y w en px. «giro» da la vuelta entera despacio; el resto se mece. «movil» = también en el celular.
+/** ¿Pantalla de celular? (el mismo corte que `sm` de Tailwind) */
+export function useEsCelular() {
+    const consulta = '(max-width: 639px)';
+    const [celular, setCelular] = useState(() => typeof window !== 'undefined' && window.matchMedia(consulta).matches);
+    useEffect(() => {
+        const m = window.matchMedia(consulta);
+        const cambio = () => setCelular(m.matches);
+        m.addEventListener ? m.addEventListener('change', cambio) : m.addListener(cambio);
+        return () => (m.removeEventListener ? m.removeEventListener('change', cambio) : m.removeListener(cambio));
+    }, []);
+    return celular;
+}
+
+// ─── El fondo de la cuenta (páginas y modal «Acceder»): los equipos de la tienda flotando alrededor de la tarjeta ──
+// x / y en % del fondo y w en px. «giro» da la vuelta entera despacio; el resto se mece. «movil»: también en el celular;
+// 'solo', únicamente ahí (llenan la franja de arriba, que es lo que deja ver la hoja del modal). En el celular los demás
+// ni se montan: no gastan batería animándose ocultos.
 const TRAZO = 'rgba(255,255,255,0.6)';
 const LIMA = 'rgba(198,203,54,0.95)';
 const EQUIPOS = [
@@ -222,12 +237,14 @@ const EQUIPOS = [
     { C: MacBook, x: 75, y: 63, w: 190, rot: 6, trazo: TRAZO, dur: 9.8, movil: true },
     { C: Watch, x: 92, y: 83, w: 56, rot: 12, trazo: LIMA, dur: 7.2, giro: 22 },
     { C: IPad, x: 66, y: 86, w: 90, rot: -7, trazo: TRAZO, dur: 8.6 },
+    { C: AirPods, x: 3, y: 13, w: 60, rot: -10, trazo: TRAZO, dur: 7.8, giro: 30, movil: 'solo' },
+    { C: Watch, x: 50, y: 9, w: 56, rot: 12, trazo: LIMA, dur: 7.4, giro: 24, movil: 'solo' },
 ];
 const DESTELLOS = [[12, 24, 0.2], [32, 56, 1.4], [5, 47, 2.6], [30, 96, 0.8], [68, 14, 2], [86, 24, 0.5], [96, 58, 1.8], [70, 52, 3], [84, 96, 1.1], [48, 4, 2.3]];
 const ESTRELLA = 'M0 -5 L1.2 -1.2 L5 0 L1.2 1.2 L0 5 L-1.2 1.2 L-5 0 L-1.2 -1.2 Z';
 const PROPORCION = new Map([[IPhone, 2], [MacBook, 90 / 140], [IPad, 120 / 90], [Watch, 100 / 60], [AirPods, 70 / 80], [IMac, 112 / 120]]);
 
-function EquipoFlotante({ equipo: { C, x, y, w, rot, trazo, dur, giro, movil }, orden, quieto }) {
+function EquipoFlotante({ equipo: { C, x, y, w, rot, trazo, dur, giro }, orden, quieto }) {
     const h = w * PROPORCION.get(C);
     const retraso = 0.15 + orden * 0.12;
     const lima = trazo === LIMA;
@@ -236,16 +253,16 @@ function EquipoFlotante({ equipo: { C, x, y, w, rot, trazo, dur, giro, movil }, 
         : { rotate: [rot - 6, rot + 6, rot - 6], transition: { duration: dur * 1.25, repeat: Infinity, ease: 'easeInOut' } };
 
     return (
-        <motion.div className={`absolute ${movil ? '' : 'hidden sm:block'}`}
+        <motion.div className="absolute"
             style={{ left: `${x}%`, top: `${y}%`, width: `calc(${w}px * var(--ab-escala))`, height: `calc(${h}px * var(--ab-escala))` }}
             initial={quieto ? false : { opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, delay: retraso, ease: SUAVE }}>
             <motion.div className="relative h-full w-full"
                 animate={quieto ? undefined : { y: [0, -18, 0], x: [0, 10, 0] }}
                 transition={{ duration: dur, delay: retraso, repeat: Infinity, ease: 'easeInOut' }}>
-                {/* Halo que respira detrás del equipo */}
-                <motion.span className="absolute -inset-[35%] rounded-full"
-                    style={{ background: `radial-gradient(circle, ${lima ? 'rgba(198,203,54,0.22)' : 'rgba(123,130,216,0.30)'}, transparent 65%)` }}
+                {/* Halo que respira detrás del equipo. closest-side: se apaga justo en el borde de su caja, sin cortarse */}
+                <motion.span className="absolute -inset-[35%]"
+                    style={{ background: `radial-gradient(closest-side, ${lima ? 'rgba(198,203,54,0.22)' : 'rgba(123,130,216,0.30)'}, transparent)` }}
                     animate={quieto ? undefined : { opacity: [0.4, 1, 0.4], scale: [0.9, 1.08, 0.9] }}
                     transition={{ duration: dur * 0.8, repeat: Infinity, ease: 'easeInOut' }} />
                 <motion.div className="relative h-full w-full" initial={{ rotate: rot }} animate={quieto ? undefined : mecerse}>
@@ -257,7 +274,9 @@ function EquipoFlotante({ equipo: { C, x, y, w, rot, trazo, dur, giro, movil }, 
 }
 
 /** Decorativo: aria-hidden, sin eventos y quieto si el usuario pidió reducir el movimiento. */
-function FondoEquipos({ quieto }) {
+export function FondoEquipos() {
+    const quieto = useReducedMotion();
+    const celular = useEsCelular();
     return (
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden [--ab-escala:0.6] sm:[--ab-escala:1]">
             {/* Trama de puntos y dos luces que se desplazan */}
@@ -274,7 +293,8 @@ function FondoEquipos({ quieto }) {
                 </motion.div>
             ))}
 
-            {EQUIPOS.map((equipo, i) => <EquipoFlotante key={i} equipo={equipo} orden={i} quieto={quieto} />)}
+            {EQUIPOS.map((equipo, i) => (celular ? equipo.movil : equipo.movil !== 'solo')
+                && <EquipoFlotante key={i} equipo={equipo} orden={i} quieto={quieto} />)}
 
             {/* Destellos */}
             <svg className="absolute inset-0 h-full w-full">
@@ -296,7 +316,7 @@ export function PaginaCuenta({ children }) {
     return (
         <section className="relative flex min-h-[calc(100dvh-140px)] items-center overflow-hidden px-4 py-14 sm:min-h-[calc(100dvh-200px)] sm:py-20"
             style={{ background: 'radial-gradient(700px 520px at 50% 50%, rgba(123,130,216,0.30), transparent 70%), radial-gradient(1400px 800px at 50% 0%, #1A3A96 0%, #0A2468 45%, #011446 85%)' }}>
-            <FondoEquipos quieto={quieto} />
+            <FondoEquipos />
             <motion.div className="relative mx-auto w-full max-w-[460px] overflow-hidden rounded-[30px] shadow-[0_50px_120px_-30px_rgba(0,0,0,0.7)] ring-1 ring-white/20"
                 initial={quieto ? false : { opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ type: 'spring', damping: 30, stiffness: 300 }}>
