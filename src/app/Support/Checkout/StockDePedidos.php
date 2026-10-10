@@ -4,6 +4,7 @@ namespace App\Support\Checkout;
 
 use App\Models\Pedido;
 use App\Models\PedidoItem;
+use App\Support\Pagos\MetodosDePago;
 
 /**
  * Qué unidades están apartadas por un pedido en curso.
@@ -46,10 +47,14 @@ class StockDePedidos
             ->exists();
     }
 
-    /** Libera los pedidos que vencieron sin pago y devuelve cuántos liberó. */
+    /**
+     * Libera los pedidos que vencieron sin pago y devuelve cuántos liberó. No toca uno con el pago reportado (el
+     * cliente dice que ya pagó: lo decide el equipo con el comprobante) ni uno que se paga en efectivo al retirarlo.
+     */
     public static function liberarVencidos(): int
     {
-        $vencidos = Pedido::whereIn('estado', [Pedido::PENDIENTE_PAGO, Pedido::PAGO_EN_REVISION])
+        $vencidos = Pedido::where('estado', Pedido::PENDIENTE_PAGO)
+            ->where(fn ($q) => $q->whereNull('metodo_pago')->orWhere('metodo_pago', '!=', MetodosDePago::EFECTIVO_TIENDA))
             ->whereNotNull('expira_en')
             ->where('expira_en', '<', now())
             ->get();

@@ -62,14 +62,54 @@ class TipoDeCambioTest extends TestCase
 
     public function test_si_la_fuente_se_cae_usa_el_ultimo_valor_bueno(): void
     {
-        $this->fuenteResponde(['blue' => ['buy' => 12.30]]);
+        // Responde una vez y después deja de responder
+        Http::fake(['*dolarbluebolivia*' => Http::sequence()->push(['data' => ['blue' => ['buy' => 12.30]]])->push([], 503)]);
         $this->assertSame(12.30, TipoDeCambio::bobPorUsdt());
 
-        // Se vence el valor fresco y la fuente deja de responder
-        Cache::forget('tc.blue');
-        Http::fake(['*dolarbluebolivia*' => Http::response([], 503)]);
+        // Pasan 10 minutos sin lecturas
+        $this->travel(10)->minutes();
 
         $this->assertSame(12.30, TipoDeCambio::bobPorUsdt(), 'el último bueno vale más que quedarse sin cobrar');
+        $this->assertSame('last_known', TipoDeCambio::detalle()['origen']);
+    }
+
+    public function test_el_programador_la_renueva_y_la_visita_no_espera_a_la_fuente(): void
+    {
+        Http::fake(['*dolarbluebolivia*' => Http::sequence()
+            ->push(['data' => ['blue' => ['buy' => 12.00], 'fetched_at' => now()->subSeconds(40)->toIso8601String()]])
+            ->push(['data' => ['blue' => ['buy' => 12.40]]])]);
+
+        $this->artisan('tipo-cambio:actualizar')->assertSuccessful();
+        $this->assertSame(12.00, TipoDeCambio::bobPorUsdt());
+        $this->assertSame('live', TipoDeCambio::detalle()['origen']);
+        $this->assertSame(now()->subSeconds(40)->toIso8601String(), TipoDeCambio::detalle()['momento'], 'la hora es la de la medición de la fuente');
+        Http::assertSentCount(1); // las visitas leen lo guardado
+
+        // A los 30 s, la siguiente lectura cambia el precio en USDT de toda la tienda
+        $this->travel(30)->seconds();
+        $this->artisan('tipo-cambio:actualizar')->assertSuccessful();
+        $this->assertSame(12.40, TipoDeCambio::bobPorUsdt());
+        $this->getJson('/tipo-cambio')->assertOk()->assertJsonPath('data.bob_por_usdt', 12.4);
+
+        $programadas = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+            ->filter(fn ($e) => str_contains($e->command, 'tipo-cambio:actualizar'));
+        $this->assertSame('* * * * *', $programadas->sole()->expression);
+        $this->assertSame(30, $programadas->sole()->repeatSeconds, 'cada 30 segundos');
+    }
+
+    public function test_con_la_fuente_caida_no_se_reintenta_en_cada_visita(): void
+    {
+        Http::fake(['*dolarbluebolivia*' => Http::response([], 503)]);
+        config(['pagos.binance.tasa_bob' => 13.5]);
+
+        foreach (range(1, 5) as $visita) {
+            $this->assertSame(13.5, TipoDeCambio::bobPorUsdt());
+        }
+        Http::assertSentCount(1); // a lo sumo una vez por minuto: una fuente caída no frena la tienda
+
+        $this->travel(61)->seconds();
+        TipoDeCambio::bobPorUsdt();
+        Http::assertSentCount(2);
     }
 
     public function test_sin_fuente_ni_respaldo_no_se_cobra_en_cripto(): void

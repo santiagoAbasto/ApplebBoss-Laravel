@@ -56,6 +56,10 @@ Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 Route::get('/llms.txt', [RobotsController::class, 'llms'])->name('llms');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
+// 💱 La tasa del paralelo, para que la tienda actualice los precios en USDT sin recargar (StoreLayout la pide cada 30 s)
+Route::get('/tipo-cambio', fn () => response()->json(['data' => \App\Support\Pagos\TipoDeCambio::paraLaVista()])
+    ->header('Cache-Control', 'public, max-age=15'))->name('tipo-cambio');
+
 // 📖 API Docs — Swagger UI estático (sin anotaciones, spec en public/api-docs/openapi.json)
 Route::get('/api/docs', fn () => view('api-docs'))->name('api.docs')->middleware('throttle:60,1');
 

@@ -42,6 +42,27 @@ export function useUsdt() {
     };
 }
 
+/**
+ * El paralelo se mueve minuto a minuto: cada 30 s (y al volver a la pestaña) se pregunta la tasa y, si cambió, se
+ * actualizan todos los precios en USDT de la página sin recargarla. El monto ya cotizado de un pedido no se toca.
+ */
+function useTipoCambioEnVivo() {
+    const actual = usePage().props.tipoCambio?.bob_por_usdt ?? null;
+
+    useEffect(() => {
+        const consultar = () => {
+            if (document.hidden) return;
+            fetch('/tipo-cambio', { headers: { Accept: 'application/json' } })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((r) => { if (r && (r.data?.bob_por_usdt ?? null) !== actual) router.replaceProp('tipoCambio', r.data); })
+                .catch(() => { /* sin red: queda la tasa que hay y se reintenta en la siguiente */ });
+        };
+        const reloj = setInterval(consultar, 30000);
+        document.addEventListener('visibilitychange', consultar);
+        return () => { clearInterval(reloj); document.removeEventListener('visibilitychange', consultar); };
+    }, [actual]);
+}
+
 /** El precio en bolivianos y, debajo, su equivalente en USDT. */
 export function Precio({ valor, className = '', claseUsdt = '' }) {
     const enUsdt = useUsdt()(valor);
@@ -895,6 +916,7 @@ export default function StoreLayout({ children }) {
     const abrirAcceso = useCallback(() => setAccesoAbierto(true), []);
     const cerrarAcceso = useCallback(() => setAccesoAbierto(false), []);
     const [ready, setReady] = useState(false);
+    useTipoCambioEnVivo();
 
     // Con el menú del celular o el modal de acceso abiertos, el WhatsApp flotante se aparta: si no, tapa «Acceder»
     useEffect(() => {

@@ -427,9 +427,9 @@ components:
         quote: { type: string, enum: [BOB] }
         rate: { type: string, example: '9.87' }
         rate_type: { type: string, enum: [parallel_buy] }
-        origin: { type: string, enum: [live, last_known, manual] }
+        origin: { type: string, enum: [live, last_known, manual], description: 'live = medida hace menos de 5 min; last_known = la fuente falló o se quedó atrás' }
         provider: { type: string }
-        as_of: { type: string, format: date-time, nullable: true }
+        as_of: { type: string, format: date-time, nullable: true, description: Hora en que la fuente midió el mercado. La tienda la lee cada 30 s. }
         usage: { type: string }
     ChangeEvent:
       type: object

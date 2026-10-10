@@ -137,8 +137,11 @@ ejemplo son ilustrativas.
 ```
 
 - Es la misma tasa con la que la tienda cobra en USDT (Binance Pay): el dólar paralelo, lado compra.
-- `origin`: `live` (leída de la fuente hace menos de 30 min), `last_known` (la fuente falló; último valor bueno de los
-  últimos 7 días) o `manual` (tasa fija configurada en el servidor). `as_of` es `null` para `manual`.
+- La tienda lee la fuente cada 30 s y la fuente mide el mercado cada 1 a 2 min: el paralelo se mueve minuto a minuto,
+  así que conviene pedirla justo antes de cotizar y no guardarla más de un minuto.
+- `as_of` es la hora en que la fuente midió el mercado (no la de la consulta). `origin`: `live` (medida hace menos de
+  5 min), `last_known` (la fuente falló o se quedó atrás; último valor bueno de los últimos 7 días) o `manual` (tasa
+  fija configurada en el servidor). `as_of` es `null` para `manual`.
 - Si no hay ninguna: `data = []` y `meta.available = false`. Nunca se inventa ni se cae al oficial.
 - Los precios del inventario están en BOB y la API **no** los convierte.
 

@@ -140,7 +140,9 @@ function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
                                     <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Pedido {pedido.codigo}</p>
                                     <h1 className="mt-1 text-2xl font-black md:text-3xl" style={{ color: 'var(--text-primary)' }}>Completa tu pago</h1>
                                     <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                        Te guardamos el equipo. Total a pagar:{' '}
+                                        Te guardamos el equipo{estado === 'pendiente_pago' && metodo !== 'efectivo_tienda' && pedido.expira_en
+                                            ? ` hasta las ${new Date(pedido.expira_en).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}; después vuelve a la tienda`
+                                            : ''}. Total a pagar:{' '}
                                         <strong className="tabular-nums" style={{ color: 'var(--ab-navy)' }}>{money(pedido.total)}</strong>
                                     </p>
                                 </div>

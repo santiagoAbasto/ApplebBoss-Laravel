@@ -267,6 +267,27 @@ class CheckoutTiendaTest extends TestCase
         $this->assertSame('disponible', $celular->fresh()->estado);
     }
 
+    public function test_el_programador_libera_los_vencidos_pero_no_un_pago_reportado_ni_el_efectivo_en_tienda(): void
+    {
+        [$a, $b, $c] = [$this->celular(), $this->celular(), $this->celular()];
+        foreach ([$a, $b, $c] as $celular) {
+            $this->publicar($celular);
+        }
+        $sinPagar = CreadorDePedido::crear(["celular:{$a->id}"], $this->datosCliente());
+        $reportado = CreadorDePedido::crear(["celular:{$b->id}"], $this->datosCliente());
+        ConfirmadorDePago::marcarEnRevision($reportado, null, 'REF-1');
+        $enTienda = CreadorDePedido::crear(["celular:{$c->id}"], $this->datosCliente(['metodo_pago' => 'efectivo_tienda']));
+
+        $this->travel(config('envios.minutos_para_pagar') + 1)->minutes();
+        $this->artisan('pedidos:liberar-vencidos')->assertSuccessful();
+
+        $this->assertSame(Pedido::CANCELADO, $sinPagar->fresh()->estado);
+        $this->assertSame(Pedido::PAGO_EN_REVISION, $reportado->fresh()->estado, 'el cliente dice que pagó: lo decide el equipo');
+        $this->assertSame(Pedido::PENDIENTE_PAGO, $enTienda->fresh()->estado, 'se paga al retirarlo');
+        $this->assertTrue(collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+            ->contains(fn ($e) => str_contains($e->command, 'pedidos:liberar-vencidos') && $e->expression === '* * * * *'));
+    }
+
     public function test_cancelado_no_se_puede_confirmar(): void
     {
         $celular = $this->celular();
