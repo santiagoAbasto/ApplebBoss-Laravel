@@ -550,4 +550,4 @@ export function EquipoEnRevision({ compacta = false }) {
 }
 
 // Siluetas reutilizables (pantallas de acceso)
-export { IPhone, MacBook, IPad, Watch };
+export { AirPods, IMac, IPhone, MacBook, IPad, Watch };
