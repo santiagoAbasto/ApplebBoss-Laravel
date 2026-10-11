@@ -166,6 +166,15 @@ export const fmtDate = (iso) => iso
 export const bsFmt = (n) =>
     `Bs ${(Number(n) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+/**
+ * La ganancia como porcentaje del costo, con dos decimales: cuánto se le sube al costo para llegar al precio. Es la
+ * cuenta con la que se decide un precio (costo 6.480 + 15 % = 7.452), así que todo el panel usa esta y no la del
+ * precio de venta. Costo 6.480 y venta 7.600 → «17,28» (6.480 × 1,1728 ≈ 7.600). null si no hay costo.
+ */
+export const pctSobreCosto = (ganancia, costo) => (Number(costo) > 0
+    ? (((Number(ganancia) || 0) / Number(costo)) * 100).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : null);
+
 export const Input = forwardRef(function Input({ className = '', ...props }, ref) {
     return <input ref={ref} className={`${inputCls} h-11 ${className}`} {...props} />;
 });

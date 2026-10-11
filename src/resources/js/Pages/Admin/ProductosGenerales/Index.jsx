@@ -4,7 +4,7 @@ import { route } from 'ziggy-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, FileDown, Package, Plus, Search, ShoppingBag, Tag, TrendingUp, X } from 'lucide-react';
 import { notifyRecordsUpdated, useAutoRefresh } from '@/Hooks/useAutoRefresh';
-import { EmptyState, PageHeader, Paginador, Toast, bsFmt, buttonCls, inputCls, useToast } from '@/Components/Admin/ui';
+import { EmptyState, PageHeader, Paginador, Toast, bsFmt, buttonCls, inputCls, pctSobreCosto, useToast } from '@/Components/Admin/ui';
 import { CONDICIONES } from '@/Components/Admin/condicion';
 import {
   AccionesFila, Aviso, BarraSeleccion, ChipsEstado, CondicionFila, EstadoBadge, ModalEliminar, PrecioConGanancia, Stat, TiendaBadge,
@@ -136,7 +136,7 @@ export default function Index({ productos = [], enTienda = {}, conHistorial = []
     { key: 'bajo_costo', label: 'Bajo el costo', ocultarSinDatos: true, alerta: true },
   ].filter((f) => !f.ocultarSinDatos || conteo[f.key] > 0 || estado === f.key);
 
-  const margen = conteo.venta > 0 ? Math.round((conteo.ganancia / conteo.venta) * 100) : null;
+  const margen = pctSobreCosto(conteo.ganancia, conteo.costo);
   const sinCondicion = conteo.disponibles_sin_condicion;
 
   return (
@@ -166,7 +166,7 @@ export default function Index({ productos = [], enTienda = {}, conHistorial = []
           <Stat icon={Tag} label="Valor de venta" value={bsFmt(conteo.venta)} tone="emerald"
             hint={`Costo de los disponibles: ${bsFmt(conteo.costo)}`} />
           <Stat icon={TrendingUp} label="Ganancia esperada" value={bsFmt(conteo.ganancia)} tone="lila"
-            hint={margen != null ? `Margen de ${margen} % sobre la venta` : 'Sin productos disponibles'} />
+            hint={margen != null ? `${margen} % sobre el costo` : 'Sin productos disponibles'} />
           <Stat icon={ShoppingBag} label="Vendidos" value={conteo.vendido.toLocaleString('es-BO')} tone="slate"
             hint={conteo.permuta ? `${conteo.permuta} en permuta por habilitar` : 'Productos que ya salieron'} />
         </div>

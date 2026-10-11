@@ -7,7 +7,7 @@ import {
   Wrench, X,
 } from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
-import { Badge, EmptyState, Field, Input, Modal, PageHeader, Toast, bsFmt, buttonCls, inputCls, useToast } from '@/Components/Admin/ui';
+import { Badge, EmptyState, Field, Input, Modal, PageHeader, Toast, bsFmt, buttonCls, inputCls, pctSobreCosto, useToast } from '@/Components/Admin/ui';
 
 const TZ = 'America/La_Paz';
 const SIN_FILTROS = { desde: '', hasta: '', vendedor: '', tecnico: '', pendientes: false };
@@ -276,7 +276,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
   const totalCobrado = filtrados.reduce((a, s) => a + s.cobrado, 0);
   const cobradoConCosto = conCosto.reduce((a, s) => a + s.cobrado, 0);
   const totalGanancia = cobradoConCosto - totalCosto;
-  const margen = cobradoConCosto > 0 ? Math.round((totalGanancia / cobradoConCosto) * 100) : null;
+  const margen = pctSobreCosto(totalGanancia, totalCosto);
   const clientes = new Set(filtrados.map((s) => normalizar(s.cliente))).size;
   const hayFiltros = Boolean(q) || hayFiltrosServidor;
 
@@ -348,7 +348,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
               <Stat icon={TrendingUp} label="Ganancia" value={totalGanancia < 0 ? conSigno(totalGanancia) : bsFmt(totalGanancia)} tone="emerald"
                 hint={sinCostoVisibles > 0
                   ? `Sin contar ${sinCostoVisibles} ${sinCostoVisibles === 1 ? 'servicio sin costo' : 'servicios sin costo'}`
-                  : margen !== null ? `Margen de ${margen} %` : 'Sin cobros en este período'} />
+                  : margen !== null ? `${margen} % sobre el costo` : 'Sin cobros en este período'} />
             </>
           ) : (
             <>

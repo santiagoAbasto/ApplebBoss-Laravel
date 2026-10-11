@@ -4,7 +4,7 @@ import {
   AlertTriangle, ArrowLeft, CalendarCheck, CheckCircle2, ChevronRight, ExternalLink, History, Info, Lock, PackageCheck,
   Pencil, Repeat, ShoppingBag, ShoppingCart, Store, Trash2, TrendingUp,
 } from 'lucide-react';
-import { Badge, Button, Field, Input, Modal, Segmented, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { Badge, Button, Field, Input, Modal, Segmented, bsFmt, buttonCls, inputCls, pctSobreCosto } from '@/Components/Admin/ui';
 import { CONDICIONES, CondicionBadge } from '@/Components/Admin/condicion';
 
 // Piezas comunes de las pantallas de inventario (celulares, computadoras…): la misma línea en todas.
@@ -58,9 +58,8 @@ export const MAX_MONTO = 99999999.99;
 export const montoInicial = (v) => (v === null || v === undefined || v === '' ? '' : String(Number(v)));
 
 export function rentabilidad(costo, venta) {
-  const v = Number(venta) || 0;
-  const ganancia = r2(v - (Number(costo) || 0));
-  return { ganancia, margen: v > 0 ? Math.round((ganancia / v) * 100) : null };
+  const ganancia = r2((Number(venta) || 0) - (Number(costo) || 0));
+  return { ganancia, sobreCosto: pctSobreCosto(ganancia, costo) };
 }
 
 /** Revisa el costo y el precio de venta; agrega los errores a `e`. */
@@ -183,7 +182,7 @@ export function CamposPrecio({ data, errores, cambiar }) {
       </div>
       {hayPrecios && (rent.ganancia >= 0 ? (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-[13px] font-semibold text-emerald-800">
-          <TrendingUp className="h-4 w-4 shrink-0" /> Ganancia de {bsFmt(rent.ganancia)}{rent.margen != null ? ` · ${rent.margen} % del precio de venta` : ''}
+          <TrendingUp className="h-4 w-4 shrink-0" /> Ganancia de {bsFmt(rent.ganancia)}{rent.sobreCosto != null ? ` · ${rent.sobreCosto} % sobre el costo` : ''}
         </p>
       ) : (
         <p className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-[13px] font-semibold text-amber-800">

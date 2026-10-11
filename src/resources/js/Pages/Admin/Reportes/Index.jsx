@@ -7,7 +7,7 @@ import {
   AlertTriangle, BadgePercent, CalendarRange, Download, FileText, PiggyBank, Search, TrendingUp, Users, Wallet, X,
 } from 'lucide-react';
 import AllocationDonut, { CATEGORIAS } from '@/Components/Admin/charts/AllocationDonut';
-import { EmptyState, PageHeader, Paginador, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { EmptyState, PageHeader, Paginador, bsFmt, buttonCls, inputCls, pctSobreCosto } from '@/Components/Admin/ui';
 
 const TZ = 'America/La_Paz';
 const COLOR = Object.fromEntries(CATEGORIAS.map((c) => [c.label, c.color]));
@@ -267,7 +267,7 @@ export default function ReporteIndex({
   const descuentos = Number(resumen.total_descuento) || 0;
   const permutas = Number(resumen.total_permuta) || 0;
   const movimientos = Number(resumen.movimientos) || 0;
-  const margen = vendido > 0 ? Math.round((ganancia / vendido) * 100) : null;
+  const margen = pctSobreCosto(ganancia, invertido);
   const g = resumen.ganancias_por_tipo || {};
   const distribucion = [
     { label: 'Celulares', valor: Number(g.celulares) || 0 },
@@ -359,7 +359,7 @@ export default function ReporteIndex({
           <Stat icon={Wallet} label="Total vendido" value={bsFmt(vendido)}
             hint={`${movimientos.toLocaleString('es-BO')} ${movimientos === 1 ? 'movimiento' : 'movimientos'} · ${periodoTexto}${vendedorNombre ? ` · ${vendedorNombre}` : ''}`} />
           <Stat icon={TrendingUp} label="Ganancia" value={ganancia < 0 ? conSigno(ganancia) : bsFmt(ganancia)} tone="emerald"
-            hint={margen !== null ? `Margen de ${margen} % sobre lo vendido` : 'Sin ventas en este período'} />
+            hint={margen !== null ? `${margen} % sobre el capital invertido` : 'Sin ventas en este período'} />
           <Stat icon={PiggyBank} label="Capital invertido" value={bsFmt(invertido)} tone="lila" hint="Costo de lo vendido" />
           <Stat icon={BadgePercent} label="Descuentos y permutas" value={bsFmt(descuentos + permutas)} tone="rose"
             hint={`Descuentos ${bsFmt(descuentos)} · Permutas ${bsFmt(permutas)}`} />
