@@ -48,6 +48,7 @@ class Permisos
         'exportar'     => ['Exportar datos',       'Exportar datos',      ['admin.exportaciones', 'admin.exportar']],
 
         'usuarios'     => ['Usuarios y roles',     'Sistema',             ['admin.usuarios', 'admin.roles']],
+        'tecnicos'     => ['Técnicos registrados', 'Sistema',             ['admin.tecnicos']],
         'integraciones' => ['Integraciones API',   'Sistema',             ['admin.integraciones']],
     ];
 

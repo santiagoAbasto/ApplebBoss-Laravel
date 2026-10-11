@@ -513,6 +513,11 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::patch('/usuarios/{usuario}', [\App\Http\Controllers\Admin\UsuarioController::class, 'update'])->name('usuarios.update');
         Route::delete('/usuarios/{usuario}', [\App\Http\Controllers\Admin\UsuarioController::class, 'destroy'])->name('usuarios.destroy');
 
+        // Sistema → Técnicos registrados: corregir un nombre lo corrige también en servicios y diagnósticos
+        Route::get('/tecnicos', [\App\Http\Controllers\Admin\TecnicoController::class, 'index'])->name('tecnicos.index');
+        Route::post('/tecnicos', [\App\Http\Controllers\Admin\TecnicoController::class, 'store'])->name('tecnicos.store');
+        Route::patch('/tecnicos/{tecnico}', [\App\Http\Controllers\Admin\TecnicoController::class, 'update'])->name('tecnicos.update');
+
         Route::post('/roles', [\App\Http\Controllers\Admin\RolController::class, 'store'])->name('roles.store');
         Route::patch('/roles/{rol}', [\App\Http\Controllers\Admin\RolController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{rol}', [\App\Http\Controllers\Admin\RolController::class, 'destroy'])->name('roles.destroy');

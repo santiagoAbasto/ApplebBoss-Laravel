@@ -60,6 +60,7 @@ const NAV = [
   ] },
   { key: 'sistema', label: 'Sistema', items: [
     { r: 'admin.usuarios.index', icon: IconoUsuarios, label: 'Usuarios y roles', modulo: 'usuarios' },
+    { r: 'admin.tecnicos.index', icon: Wrench, label: 'Técnicos registrados', modulo: 'tecnicos' },
     { r: 'admin.integraciones.index', icon: Plug, label: 'Integraciones API', modulo: 'integraciones' },
   ] },
 ];
