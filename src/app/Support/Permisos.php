@@ -37,6 +37,7 @@ class Permisos
         'inventario'   => ['Inventario',           'Inventario',          ['admin.celulares', 'admin.computadoras', 'admin.productos-apple', 'admin.productos-generales']],
         'auditoria'    => ['Auditoría',            'Inventario',          ['admin.inventory-audits']],
 
+        'trafico'      => ['Tráfico de la web',    'Tienda online',       ['admin.trafico']],
         'tienda'       => ['Tienda online',        'Tienda online',       [
             'admin.catalogo', 'admin.modelos', 'admin.categories', 'admin.collections', 'admin.home-builder',
             'admin.menus', 'admin.pages', 'admin.faqs', 'admin.resenas', 'admin.services', 'admin.locations', 'admin.novedades',

@@ -233,7 +233,7 @@ function DejarResena({ escribir, onClose }) {
                 </div>
 
                 <div className="mt-5 space-y-3">
-                    <Link href={esCliente ? '/cuenta' : '/seguimiento'} className={opcion} style={{ borderColor: 'var(--border-light)' }}>
+                    <Link href={esCliente ? '/mi-cuenta' : '/seguimiento'} className={opcion} style={{ borderColor: 'var(--border-light)' }}>
                         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}>
                             <ShoppingBag className="h-5 w-5" />
                         </span>

@@ -35,6 +35,8 @@
         @endif
     @else
         <title data-inertia>{{ config('app.name', 'Laravel') }}</title>
+        {{-- Una ruta que el SEO no conoce (ingresar, mi cuenta, checkout, pedido, seguimiento, el panel) no va a Google --}}
+        <meta name="robots" content="noindex,nofollow">
     @endif
 
     {{-- Datos estructurados: se imprimen en el servidor para que Google los lea sin ejecutar JS --}}

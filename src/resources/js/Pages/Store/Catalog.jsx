@@ -190,6 +190,12 @@ function CatalogInner({ products, categories, categoria, filters, pagination }) 
     const totalCats = categories.reduce((sum, c) => sum + (c.count ?? 0), 0);
 
     const update = (next) => push({ ...buildParams(filters), ...next, page: undefined });
+    // Enlace real a otra página del listado: Google lo sigue y el filtro se conserva (antes eran botones que volvían a la 1)
+    const urlPagina = (n) => {
+        const p = new URLSearchParams();
+        Object.entries({ ...buildParams(filters), page: n > 1 ? n : undefined }).forEach(([k, v]) => { if (v !== undefined && v !== '') p.set(k, v); });
+        return `/catalogo${p.toString() ? `?${p}` : ''}`;
+    };
     const submit = (e) => { e.preventDefault(); update({ q: query || undefined }); };
     const clearAll = () => { setQuery(''); router.get('/catalogo'); };
 
@@ -387,28 +393,33 @@ function CatalogInner({ products, categories, categoria, filters, pagination }) 
                                 className="mt-14 flex items-center justify-center gap-3"
                                 aria-label="Paginación del catálogo"
                             >
-                                <button
-                                    disabled={pagination.current === 1}
-                                    onClick={() => update({ page: pagination.current - 1 })}
-                                    className="rounded-full border px-5 py-2.5 text-sm font-bold transition-opacity disabled:opacity-30"
-                                    style={{
-                                        borderColor: 'var(--border-medium)',
-                                        color: 'var(--text-secondary)',
-                                    }}
-                                >
-                                    Anterior
-                                </button>
+                                {pagination.current > 1 ? (
+                                    <Link href={urlPagina(pagination.current - 1)} rel="prev"
+                                        className="rounded-full border px-5 py-2.5 text-sm font-bold"
+                                        style={{ borderColor: 'var(--border-medium)', color: 'var(--text-secondary)' }}>
+                                        Anterior
+                                    </Link>
+                                ) : (
+                                    <span aria-disabled="true" className="rounded-full border px-5 py-2.5 text-sm font-bold opacity-30"
+                                        style={{ borderColor: 'var(--border-medium)', color: 'var(--text-secondary)' }}>
+                                        Anterior
+                                    </span>
+                                )}
                                 <span className="px-2 text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
                                     {pagination.current} de {pagination.last}
                                 </span>
-                                <button
-                                    disabled={pagination.current === pagination.last}
-                                    onClick={() => update({ page: pagination.current + 1 })}
-                                    className="rounded-full px-5 py-2.5 text-sm font-bold transition-opacity disabled:opacity-30"
-                                    style={{ background: 'var(--ab-navy)', color: '#FFFFFF' }}
-                                >
-                                    Siguiente
-                                </button>
+                                {pagination.current < pagination.last ? (
+                                    <Link href={urlPagina(pagination.current + 1)} rel="next"
+                                        className="rounded-full px-5 py-2.5 text-sm font-bold"
+                                        style={{ background: 'var(--ab-navy)', color: '#FFFFFF' }}>
+                                        Siguiente
+                                    </Link>
+                                ) : (
+                                    <span aria-disabled="true" className="rounded-full px-5 py-2.5 text-sm font-bold opacity-30"
+                                        style={{ background: 'var(--ab-navy)', color: '#FFFFFF' }}>
+                                        Siguiente
+                                    </span>
+                                )}
                             </nav>
                         )}
                     </div>

@@ -10,7 +10,9 @@ import CompareBar from '@/Components/Store/CompareBar';
 import { esExterno } from '@/Components/Store/enlaces';
 import WhatsAppFlotante from '@/Components/Store/WhatsAppFlotante';
 import AccesoModal from '@/Components/Store/AccesoModal';
+import AvisoCookies from '@/Components/Store/AvisoCookies';
 import CreditoBurrow from '@/Components/Store/CreditoBurrow';
+import { medir } from '@/Components/Store/medicion';
 import { UserRound } from 'lucide-react';
 import { nombreTienda, saludoWhatsapp } from '@/Components/Store/tienda';
 
@@ -903,6 +905,20 @@ function StoreFooter({ abrirAcceso }) {
     );
 }
 
+// ─── Medición propia (Tienda online → Tráfico) ────────────────────────────────
+// Una página vista por cada dirección, y cualquier enlace a WhatsApp de la tienda (botón flotante, fichas, pie).
+function usarMedicion() {
+    const ruta = (usePage().url || '').split('?')[0];
+    useEffect(() => { medir('pagina'); }, [ruta]);
+    useEffect(() => {
+        const alClic = (e) => {
+            if (e.target.closest?.('a[href*="wa.me/"], a[href*="api.whatsapp.com"], a[href*="whatsapp.com/send"]')) medir('whatsapp');
+        };
+        document.addEventListener('click', alClic, true);
+        return () => document.removeEventListener('click', alClic, true);
+    }, []);
+}
+
 // ─── Layout principal ─────────────────────────────────────────────────────────
 const CART_KEY = 'appleboss-cart-v2';
 function loadStored() {
@@ -918,6 +934,7 @@ export default function StoreLayout({ children }) {
     const [accesoAbierto, setAccesoAbierto] = useState(false);
     const abrirAcceso = useCallback(() => setAccesoAbierto(true), []);
     const cerrarAcceso = useCallback(() => setAccesoAbierto(false), []);
+    usarMedicion();
     const [ready, setReady] = useState(false);
     useTipoCambioEnVivo();
 
@@ -950,6 +967,7 @@ export default function StoreLayout({ children }) {
     }, [ready, cartOpen]);
 
     const add = useCallback((product) => {
+        medir('carrito_agregar', product.name);
         setStored((cur) => cur.some((i) => i.key === product.key) ? cur : [...cur, { key: product.key, quantity: 1 }]);
         setHydrated((cur) => cur.some((i) => i.key === product.key) ? cur : [...cur, { key: product.key, quantity: 1, name: product.name, price: product.price, type: product.type, condition: product.condition ?? null, images: product.images ?? [], available: true }]);
         setCartOpen(true);
@@ -1013,6 +1031,7 @@ export default function StoreLayout({ children }) {
                     <CompareBar />
 
                     <AccesoModal abierto={accesoAbierto} onCerrar={cerrarAcceso} />
+                    <AvisoCookies />
                 </div>
             </CompareProvider>
         </CartContext.Provider>

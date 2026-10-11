@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import { Search, X, ArrowRight } from '@/Components/Store/Icons';
+import { medir } from '@/Components/Store/medicion';
 
 /**
  * Buscador de la tienda.
@@ -274,7 +275,12 @@ export default function SearchOverlay({ open, onClose }) {
         if (categoria) params.set('categoria', categoria);
         fetch(`/api/buscar?${params}`)
             .then((r) => r.json())
-            .then((data) => { if (!cancelado) { setResults(data.results ?? []); setLoading(false); setActive(0); } })
+            .then((data) => {
+                if (cancelado) return;
+                setResults(data.results ?? []); setLoading(false); setActive(0);
+                // Lo que buscan y no tenemos: sirve para decidir qué publicar
+                if (!(data.results ?? []).length && q.length >= 3) medir('busqueda_sin_resultados', q);
+            })
             .catch(() => { if (!cancelado) { setResults([]); setLoading(false); } });
         return () => { cancelado = true; };
     }, [debouncedQuery, categoria]);
@@ -289,6 +295,7 @@ export default function SearchOverlay({ open, onClose }) {
     const irACatalogo = useCallback((texto) => {
         const limpio = (texto ?? '').trim();
         guardarReciente(limpio);
+        if (limpio) medir('busqueda', limpio);
         const params = new URLSearchParams();
         if (limpio) params.set('q', limpio);
         if (categoria && categoria !== 'seminuevos') params.set('categoria', categoria);
@@ -297,6 +304,7 @@ export default function SearchOverlay({ open, onClose }) {
 
     const abrirResultado = useCallback((r) => {
         guardarReciente(query);
+        if (query.trim()) medir('busqueda', query.trim());
         irA(r.url);
     }, [irA, query]);
 

@@ -57,7 +57,7 @@ function centroIcono(i, n) {
 const LAMINAS = [
     { clave: 'iphone', label: 'iPhone',    hub: '/iphone', glow: '#E8742A', acento: '#FFB27A', elige: (p) => p.category === 'celulares',       frase: 'Nuevos y seminuevos' },
     { clave: 'mac',    label: 'Mac',       hub: '/mac',    glow: '#3E5BD8', acento: '#9EA5E8', elige: (p) => p.category === 'computadoras',    frase: 'Nuevas y seminuevas' },
-    { clave: 'apple',  label: 'Más Apple', hub: '/apple',  glow: '#7B5BD6', acento: '#C4B5FD', elige: (p) => p.category === 'productos-apple', frase: 'iPad, Apple Watch y AirPods' },
+    { clave: 'apple',  label: 'Más Apple', hub: '/catalogo?categoria=productos-apple',  glow: '#7B5BD6', acento: '#C4B5FD', elige: (p) => p.category === 'productos-apple', frase: 'iPad, Apple Watch y AirPods' },
     { clave: 'myskin', label: 'MYSKIN',    hub: '/myskin', glow: '#9DAA1F', acento: '#C6CB36', elige: (p) => p.is_myskin,                      frase: 'Protección premium · Bolivia' },
 ];
 

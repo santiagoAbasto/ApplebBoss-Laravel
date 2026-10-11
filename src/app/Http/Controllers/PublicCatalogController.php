@@ -152,13 +152,17 @@ class PublicCatalogController extends Controller
 
         // La página de una categoría muestra su portada y usa su título y su descripción en Google (Categorías del panel)
         $categoria = $category !== 'todos' ? CatalogCategory::active()->where('slug', $category)->first() : null;
+        // La página 2 en adelante es su propia URL canónica: si apuntara a la 1, Google descartaría lo que solo aparece ahí
+        $conPagina = fn (string $url) => $page > 1 ? $url . (str_contains($url, '?') ? '&' : '?') . 'page=' . $page : $url;
         if ($categoria) {
             app(\App\Support\Seo::class)->context([
                 'titulo'          => $categoria->name,
                 'seo_title'       => $categoria->tituloGoogle(),
                 'seo_description' => $categoria->descripcionGoogle(),
-                'canonical'       => $categoria->urlCatalogo(),
+                'canonical'       => $conPagina($categoria->urlCatalogo()),
             ]);
+        } elseif ($page > 1) {
+            app(\App\Support\Seo::class)->context(['canonical' => $conPagina('/catalogo')]);
         }
 
         return Inertia::render('Store/Catalog', [

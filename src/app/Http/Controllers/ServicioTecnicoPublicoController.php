@@ -134,6 +134,8 @@ class ServicioTecnicoPublicoController extends Controller
             'solicitud_servicio_id' => $solicitud->id,
         ]);
 
+        \App\Support\Trafico\Medicion::registrar($request, 'solicitud_servicio', '/servicio-tecnico', $validated['tipo_equipo'] ?? null);
+
         return redirect()->route('servicio-tecnico.index')->with('solicitud_servicio', [
             'codigo' => $solicitud->codigo,
             'nombre' => (string) Str::of($solicitud->nombre_contacto)->before(' '),

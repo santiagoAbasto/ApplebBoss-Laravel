@@ -21,8 +21,8 @@ Artisan::command('resenas:google', function () {
 
 \Illuminate\Support\Facades\Schedule::command('resenas:google')->dailyAt('07:00')->withoutOverlapping();
 
-// API de integración: el registro de solicitudes se guarda 90 días
-\Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class]])->dailyAt('03:30');
+// API de integración: el registro de solicitudes se guarda 90 días. Medición de la tienda: 14 meses (política de privacidad)
+\Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class, \App\Models\EventoWeb::class]])->dailyAt('03:30');
 
 // Dólar paralelo para cobrar en USDT: se mueve minuto a minuto, así que se lee cada 30 segundos (la fuente lo mide cada 1 a 2)
 Artisan::command('tipo-cambio:actualizar', function () {
@@ -38,3 +38,11 @@ Artisan::command('pedidos:liberar-vencidos', function () {
 })->purpose('Cancela los pedidos que vencieron sin pago y devuelve los equipos a la tienda');
 
 \Illuminate\Support\Facades\Schedule::command('pedidos:liberar-vencidos')->everyMinute()->withoutOverlapping(5);
+
+// IndexNow: Bing (y con él ChatGPT y Copilot) se entera de lo nuevo, lo que cambió y lo vendido sin esperar a rastrear
+Artisan::command('seo:indexnow {--todo : Avisa el sitemap entero}', function () {
+    $n = \App\Support\Seo\IndexNow::avisarCambios((bool) $this->option('todo'));
+    $n === null ? $this->warn('No se avisó: dominio de prueba o IndexNow no respondió.') : $this->info("IndexNow: {$n} direcciones avisadas.");
+})->purpose('Avisa a Bing por IndexNow qué direcciones del sitemap cambiaron');
+
+\Illuminate\Support\Facades\Schedule::command('seo:indexnow')->everyFifteenMinutes()->withoutOverlapping(10);

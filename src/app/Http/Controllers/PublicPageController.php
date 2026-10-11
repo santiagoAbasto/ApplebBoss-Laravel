@@ -17,12 +17,15 @@ class PublicPageController extends Controller
             'titulo'          => $page->title,
             'seo_title'       => $page->tituloGoogle(),
             'seo_description' => $page->meta_description,
+            // Un texto legal con un dato por confirmar se puede revisar, pero Google no lo indexa hasta completarlo
+            'noindex'         => $page->esBorrador(),
             // Sin descripción propia, el comienzo del texto de la página: antes las cinco compartían la del sitio
             'descripcion'     => \Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', \App\Support\TextoEnriquecido::aTexto($page->content)), 155, '…') ?: null,
         ]);
 
         return Inertia::render('Store/Page', [
             'page' => [
+                'slug'             => $page->slug,
                 'title'            => $page->title,
                 'content'          => $page->content,
                 'meta_title'       => $page->meta_title ?: $page->title,

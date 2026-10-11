@@ -113,7 +113,8 @@ class RobotsController extends Controller
             }
         }
 
-        $paginas = \App\Models\Page::active()->orderBy('sort_order')->get(['slug', 'title']);
+        $paginas = \App\Models\Page::active()->orderBy('sort_order')->get(['slug', 'title', 'content'])
+            ->reject(fn ($p) => $p->esBorrador());
         if ($paginas->isNotEmpty()) {
             $lineas[] = '';
             $lineas[] = '## Información';

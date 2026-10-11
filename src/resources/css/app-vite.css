@@ -104,6 +104,10 @@ body[data-acceso] .ab-wa {
   pointer-events: none;
   transition: opacity .18s ease;
 }
+/* El aviso de cookies ocupa el ancho de la pantalla en el celular: mientras está, el WhatsApp se aparta */
+@media (max-width: 639px) {
+  body[data-aviso-cookies] .ab-wa { opacity: 0; pointer-events: none; }
+}
 
 .ab-wa {
   position: fixed;

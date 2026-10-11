@@ -55,6 +55,11 @@ class HandleInertiaRequests extends Middleware
             'newsletter_titulo'     => ConfiguracionTienda::get('newsletter_titulo'),
             'newsletter_subtitulo'  => ConfiguracionTienda::get('newsletter_subtitulo'),
             'newsletter_boton'      => ConfiguracionTienda::get('newsletter_boton'),
+            // Google Analytics y Clarity (Tienda online → Tráfico): sus ID son públicos; cargan solo con el consentimiento
+            'medicion' => [
+                'ga4'     => ConfiguracionTienda::get('medicion_ga4'),
+                'clarity' => ConfiguracionTienda::get('medicion_clarity'),
+            ],
         ];
     }
 

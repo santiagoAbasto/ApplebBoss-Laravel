@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import StoreLayout, { StoreContainer, useWhatsApp } from '@/Layouts/StoreLayout';
 import { ArrowRight, MessageCircle } from '@/Components/Store/Icons';
 import Reveal from '@/Components/Store/Reveal';
+import { BotonCambiarEleccion } from '@/Components/Store/AvisoCookies';
 
 export default function StorePage({ page }) {
   const { paginas = [] } = usePage().props;
@@ -51,12 +52,13 @@ export default function StorePage({ page }) {
             <article className="rounded-3xl border bg-white p-6 md:p-10" style={{ borderColor: 'var(--border-light)' }}>
               {page.content ? (
                 <div
-                  className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tight prose-h2:mt-0 prose-a:text-[color:var(--ab-periwinkle)]"
+                  className="prose prose-slate max-w-none prose-headings:font-black prose-headings:tracking-tight [&>h2:first-child]:mt-0 prose-a:text-[color:var(--ab-periwinkle)]"
                   dangerouslySetInnerHTML={{ __html: page.content }}
                 />
               ) : (
                 <p className="text-slate-400">Esta página no tiene contenido todavía.</p>
               )}
+              {page.content && page.slug === 'cookies' && <BotonCambiarEleccion />}
             </article>
           </Reveal>
 

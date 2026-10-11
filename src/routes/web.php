@@ -54,6 +54,8 @@ use Illuminate\Http\Request;
 // 🗺 SEO
 Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 Route::get('/llms.txt', [RobotsController::class, 'llms'])->name('llms');
+// IndexNow: la clave publicada prueba que el sitio es nuestro cuando le avisamos a Bing qué cambió
+Route::get('/indexnow.txt', fn () => response(\App\Support\Seo\IndexNow::clave(), 200, ['Content-Type' => 'text/plain; charset=UTF-8']))->name('indexnow');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // 💱 La tasa del paralelo, para que la tienda actualice los precios en USDT sin recargar (StoreLayout la pide cada 30 s)
@@ -110,8 +112,9 @@ Route::get('/{familia}/{slug}', [HubController::class, 'modelo'])
     ->where('slug', '[a-z0-9-]+')
     ->name('store.modelo');
 // Redirige a catálogo mientras no tengan hub propio
-Route::get('/apple',        fn () => redirect('/catalogo?categoria=productos-apple', 302))->name('hub.apple');
-Route::get('/accesorios',   fn () => redirect('/catalogo?categoria=accesorios', 302))->name('hub.accesorios');
+// Permanentes (301): Google pasa la autoridad al destino y no deja la dirección corta como «página con redirección»
+Route::get('/apple',        fn () => redirect('/catalogo?categoria=productos-apple', 301))->name('hub.apple');
+Route::get('/accesorios',   fn () => redirect('/catalogo?categoria=accesorios', 301))->name('hub.accesorios');
 
 // API pública: sincronización del carrito (el servidor es autoridad de precios)
 Route::post('/api/carrito/sync', [PublicCatalogController::class, 'syncCart'])
@@ -512,6 +515,10 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::post('/usuarios', [\App\Http\Controllers\Admin\UsuarioController::class, 'store'])->name('usuarios.store');
         Route::patch('/usuarios/{usuario}', [\App\Http\Controllers\Admin\UsuarioController::class, 'update'])->name('usuarios.update');
         Route::delete('/usuarios/{usuario}', [\App\Http\Controllers\Admin\UsuarioController::class, 'destroy'])->name('usuarios.destroy');
+
+        // Tienda online → Tráfico: la medición propia y la puesta en marcha en Google, Bing y buscadores de IA
+        Route::get('/trafico', [\App\Http\Controllers\Admin\TraficoController::class, 'index'])->name('trafico.index');
+        Route::patch('/trafico/medicion', [\App\Http\Controllers\Admin\TraficoController::class, 'medicion'])->name('trafico.medicion');
 
         // Sistema → Técnicos registrados: corregir un nombre lo corrige también en servicios y diagnósticos
         Route::get('/tecnicos', [\App\Http\Controllers\Admin\TecnicoController::class, 'index'])->name('tecnicos.index');

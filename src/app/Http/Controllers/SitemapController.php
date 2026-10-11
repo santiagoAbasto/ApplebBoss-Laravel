@@ -23,9 +23,11 @@ class SitemapController extends Controller
             ->get();
 
         // Páginas CMS activas
+        // Un texto legal en borrador (con un dato por confirmar) no se le muestra a Google
         $pages = Page::active()
-            ->select('slug', 'updated_at')
-            ->get();
+            ->select('slug', 'content', 'updated_at')
+            ->get()
+            ->reject(fn (Page $p) => $p->esBorrador());
 
         $urls = collect();
 

@@ -32,6 +32,7 @@ const NAV = [
     { r: 'admin.inventory-audits.index', icon: ClipboardCheck, label: 'Auditoría', modulo: 'auditoria' },
   ] },
   { key: 'tienda', label: 'Tienda online', items: [
+    { r: 'admin.trafico.index', icon: ChartLine, label: 'Tráfico y visitas', modulo: 'trafico' },
     { r: 'admin.catalogo.index', icon: Store, label: 'Productos en la tienda', modulo: 'tienda' },
     { r: 'admin.modelos.index', icon: Images, label: 'Modelos y fotos', modulo: 'tienda' },
     { r: 'admin.categories.index', icon: Tag, label: 'Categorías', modulo: 'tienda' },

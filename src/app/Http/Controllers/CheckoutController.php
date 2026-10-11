@@ -104,6 +104,8 @@ class CheckoutController extends Controller
         }
 
         $pedido = CreadorDePedido::crear($datos['claves'], $datos);
+        // Para el embudo de Tienda online → Tráfico: solo que hubo un pedido y cómo se pagará, nunca quién
+        \App\Support\Trafico\Medicion::registrar($request, 'pedido_creado', '/checkout', $pedido->metodo_pago);
 
         return redirect()->route('checkout.pago', [
             'codigo' => $pedido->codigo,

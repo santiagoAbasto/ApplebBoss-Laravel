@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\V1\ProductApiController;
 // 📦 API PÚBLICA v1 — productos y catálogo
 // NUNCA exponer: precio_costo, ganancia, IMEI, serial, notas privadas.
 // ========================
+// Medición propia de la tienda (Tienda online → Tráfico): sin cookies ni sesión, por eso vive acá y no en web
+Route::post('/eventos', [\App\Http\Controllers\EventoWebController::class, 'store'])->name('eventos.store');
+
 Route::prefix('v1')
     ->name('api.v1.')
     ->middleware(['throttle:120,1'])

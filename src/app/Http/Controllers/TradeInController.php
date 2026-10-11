@@ -123,6 +123,8 @@ class TradeInController extends Controller
         $enviadas = $request->session()->get('trade_in.enviadas', []);
         $request->session()->put('trade_in.enviadas', array_slice([...$enviadas, $solicitud->codigo], -self::CONFIRMACIONES));
 
+        \App\Support\Trafico\Medicion::registrar($request, 'solicitud_tradein', '/trade-in', $solicitud->tipo_equipo ?? null);
+
         return redirect()->route('trade-in.confirmacion', ['codigo' => $solicitud->codigo]);
     }
 

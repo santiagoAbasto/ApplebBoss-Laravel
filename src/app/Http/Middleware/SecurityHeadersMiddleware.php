@@ -79,13 +79,15 @@ class SecurityHeadersMiddleware
      * ────────────────────────────────────────────────────────────────── */
     private function cspProduction(): string
     {
+        $m = $this->medicionDeTerceros();
+
         return implode('; ', [
             // Solo recursos del propio dominio por defecto
             "default-src 'self'",
 
             // Scripts: self + inline (Inertia/React necesita inline en el <head>) + la medición de Cloudflare,
             // que el proxy inyecta solo en producción.
-            "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+            "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com" . $m['script'],
 
             // Estilos: self + inline (Tailwind genera estilos inline) + bunny fonts + google fonts
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com",
@@ -94,10 +96,10 @@ class SecurityHeadersMiddleware
             "font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com data:",
 
             // Imágenes: self + data URIs + blob (avatares, logos inline)
-            "img-src 'self' data: blob: https://tile.openstreetmap.org",
+            "img-src 'self' data: blob: https://tile.openstreetmap.org" . $m['img'],
 
             // Fetch/XHR: self + el envío de la medición de Cloudflare
-            "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
+            "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com" . $m['connect'],
 
             // Workers (service worker, etc.)
             "worker-src 'self' blob:",
@@ -117,6 +119,31 @@ class SecurityHeadersMiddleware
             // iframes → solo self (refuerza X-Frame-Options)
             "frame-ancestors 'self'",
         ]);
+    }
+
+    /**
+     * Google Analytics y Microsoft Clarity se habilitan solo si su código está cargado en Tienda online → Tráfico
+     * (y aun así cargan recién cuando el visitante acepta las cookies). Sin código, la política no les abre nada.
+     */
+    private function medicionDeTerceros(): array
+    {
+        $m = ['script' => '', 'connect' => '', 'img' => ''];
+        try {
+            if (filled(\App\Models\ConfiguracionTienda::get('medicion_ga4'))) {
+                $m['script']  .= ' https://www.googletagmanager.com';
+                $m['connect'] .= ' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com';
+                $m['img']     .= ' https://*.google-analytics.com https://www.googletagmanager.com';
+            }
+            if (filled(\App\Models\ConfiguracionTienda::get('medicion_clarity'))) {
+                $m['script']  .= ' https://www.clarity.ms https://*.clarity.ms';
+                $m['connect'] .= ' https://*.clarity.ms https://c.bing.com';
+                $m['img']     .= ' https://*.clarity.ms https://c.bing.com';
+            }
+        } catch (\Throwable) {
+            // Sin base (por ejemplo, durante una migración) la política queda cerrada
+        }
+
+        return $m;
     }
 
     /* ──────────────────────────────────────────────────────────────────

@@ -230,35 +230,6 @@ function PdpGallery({ product, className = '' }) {
     );
 }
 
-// ─── JSON-LD — NUNCA expone IMEI, costo, proveedor ────────────────────────
-function ProductJsonLd({ product }) {
-    const nombre = useNombreTienda();
-    const primaryImage = product.images?.find((i) => i.es_principal) ?? product.images?.[0];
-    const conditionMap = {
-        'Nuevo':           'https://schema.org/NewCondition',
-        'Seminuevo':       'https://schema.org/UsedCondition',
-        'Open Box':        'https://schema.org/OpenBoxCondition',
-        'Reacondicionado': 'https://schema.org/RefurbishedCondition',
-    };
-    const jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.name,
-        description: product.summary,
-        ...(primaryImage ? { image: primaryImage.url_detail ?? primaryImage.url_medium ?? primaryImage.url_card } : {}),
-        brand: { '@type': 'Brand', name: product.is_myskin ? 'MYSKIN' : nombre },
-        offers: {
-            '@type': 'Offer',
-            priceCurrency: 'BOB',
-            price: product.promo_price ?? product.price,
-            availability: product.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            url: typeof window !== 'undefined' ? window.location.href : '',
-            ...(product.condition ? { itemCondition: conditionMap[product.condition] } : {}),
-        },
-    };
-    return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
-}
-
 // ─── Sticky nav (desktop) ──────────────────────────────────────────────────
 function PdpNav({ sections, activeId }) {
     return (
@@ -511,7 +482,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
 
     return (
         <>
-            <ProductJsonLd product={product} />
+
 
             {/* Sticky buy bar (mobile) */}
             {showBuyBar && product.available && (
