@@ -1,7 +1,7 @@
 # Plan de despliegue de la API de integración v1
 
 > Preparado el 09-10-2026. **Parte A ejecutada el 09-10-2026** con autorización del dueño (producción en `a0ff8ae`).
-> **Parte B sin autorizar.**
+> **Parte B aplicada el 12-10-2026** (script `caddy-parte-b.sh`: copia del Caddyfile, parche, `caddy validate`, reinicio). Verificado: 37 sesiones después del reinicio, 0 con IP de Cloudflare; Googlebot, Bingbot y visitantes con su IP real.
 > Producción hoy: commit `a2e21c3`, imagen `appleboss-app:production`, PostgreSQL 18, Caddy 2.11.4 detrás de Cloudflare.
 
 ## Qué cambia
