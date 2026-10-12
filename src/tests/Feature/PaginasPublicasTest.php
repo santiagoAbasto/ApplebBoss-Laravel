@@ -13,7 +13,7 @@ class PaginasPublicasTest extends TestCase
 
     public function test_active_pages_are_shared_for_the_footer(): void
     {
-        Page::whereIn('slug', [...Page::LEGALES, 'garantia'])->delete(); // las migraciones de textos legales los siembran en toda base nueva
+        Page::whereIn('slug', [...Page::LEGALES, 'garantia', 'nosotros', 'envios'])->delete(); // las migraciones de textos los siembran en toda base nueva
         Page::create(['slug' => 'nosotros', 'title' => 'Nosotros', 'content' => '<p>Hola</p>', 'active' => true, 'sort_order' => 1]);
         Page::create(['slug' => 'garantia', 'title' => 'Garantía', 'content' => '<p>Hola</p>', 'active' => true, 'sort_order' => 2]);
         Page::create(['slug' => 'borrador', 'title' => 'Oculta', 'content' => '<p>Hola</p>', 'active' => false, 'sort_order' => 3]);
@@ -35,5 +35,22 @@ class PaginasPublicasTest extends TestCase
 
         $this->assertStringContainsString("frame-src 'self' https://www.google.com https://maps.google.com", $csp);
         $this->assertStringContainsString("frame-ancestors 'self'", $csp);
+    }
+
+    public function test_nosotros_y_envios_cuentan_las_entregas_y_la_garantia_de_la_configuracion(): void
+    {
+        $envios = Page::where('slug', 'envios')->firstOrFail()->content;
+        foreach (array_keys(config('envios.envio.destinos')) as $departamento) {
+            $this->assertStringContainsString($departamento, $envios);
+        }
+        $this->assertStringContainsString(config('envios.envio.destinos.La Paz.plazo'), $envios);
+        $this->assertStringContainsString(intdiv(config('envios.minutos_para_pagar'), 60) . ' horas', $envios);
+
+        $nosotros = Page::where('slug', 'nosotros')->firstOrFail()->content;
+        $this->assertStringContainsString('Melchor Urquidi', $nosotros);
+        $this->assertStringContainsString(config('documentos.garantia.meses.equipo_seminuevo') . ' en seminuevos', $nosotros);
+
+        $this->get('/paginas/envios')->assertOk();
+        $this->get('/paginas/nosotros')->assertOk();
     }
 }
