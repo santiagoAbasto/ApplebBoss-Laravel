@@ -18,6 +18,11 @@ class PedidoObserver
 {
     public function created(Pedido $pedido): void
     {
+        try {
+            \App\Support\Carritos\Recuperacion::alCrearPedido($pedido); // compró: su carrito abandonado se cierra
+        } catch (\Throwable $e) {
+            Log::warning('No se pudo cerrar el carrito abandonado del pedido ' . $pedido->codigo . ': ' . $e->getMessage());
+        }
         $this->avisar($pedido);
     }
 

@@ -143,6 +143,12 @@ Route::controller(\App\Http\Controllers\CheckoutController::class)->group(functi
     Route::post('/pedido/{codigo}/binance/aviso', 'avisoBinance')->name('pago.binance.aviso')->middleware('throttle:60,1');
 });
 
+// Carritos abandonados: el enlace del correo rearma el carrito. Sin sesión, como el seguimiento: el token es el control.
+Route::controller(\App\Http\Controllers\CarritoController::class)->group(function () {
+    Route::get('/carrito/recuperar/{token}', 'recuperar')->name('carrito.recuperar')->middleware('throttle:30,1');
+    Route::get('/carrito/sin-recordatorios/{token}', 'sinRecordatorios')->name('carrito.sin-recordatorios')->middleware('throttle:10,1');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Cuenta de quien compra
@@ -374,6 +380,9 @@ Route::middleware(['auth', 'verified', 'permiso'])
         // ========================
         // 🧾 Pedidos de la tienda en línea
         // ========================
+        // Carritos abandonados: ver, mandar el recordatorio a mano o escribir por WhatsApp
+        Route::get('/carritos', [App\Http\Controllers\Admin\CarritoController::class, 'index'])->name('carritos.index');
+        Route::post('/carritos/{carrito}/recordar', [App\Http\Controllers\Admin\CarritoController::class, 'recordar'])->name('carritos.recordar');
         Route::get('/pedidos', [App\Http\Controllers\Admin\PedidoController::class, 'index'])->name('pedidos.index');
         Route::get('/pedidos/{pedido}', [App\Http\Controllers\Admin\PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('/pedidos/{pedido}/comprobante', [App\Http\Controllers\Admin\PedidoController::class, 'comprobante'])->name('pedidos.comprobante');

@@ -318,6 +318,10 @@ class PublicCatalogController extends Controller
         $items = is_array($entrada) ? collect($entrada)->take(50) : collect();
 
         if ($items->isEmpty()) {
+            if ($usuario = $request->user()) {
+                \App\Support\Carritos\Recuperacion::guardar($usuario, []); // lo vació: el servidor también lo olvida
+            }
+
             return response()->json(['items' => []]);
         }
 
@@ -355,6 +359,11 @@ class PublicCatalogController extends Controller
                 'available' => true,
             ];
         })->filter()->values();
+
+        // Con sesión, el carrito queda guardado para recordárselo si lo abandona (Ventas y operación → Carritos abandonados)
+        if ($usuario = $request->user()) {
+            \App\Support\Carritos\Recuperacion::guardar($usuario, $result->all());
+        }
 
         return response()->json(['items' => $result]);
     }

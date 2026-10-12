@@ -65,6 +65,8 @@ class StockDePedidos
                 'Pedido cancelado por falta de pago',
                 'Se venció el tiempo para pagar y el equipo volvió a estar disponible.',
             );
+            // El equipo volvió a la tienda: se le recuerda a la persona que puede retomarlo
+            \App\Support\Carritos\Recuperacion::desdePedidoVencido($pedido->loadMissing('items'));
         }
 
         return $vencidos->count();

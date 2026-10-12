@@ -16,6 +16,7 @@ const NAV = [
     { r: 'admin.ventas.index', icon: ShoppingCart, label: 'Ventas', modulo: 'ventas' },
     { r: 'admin.pedidos.index', icon: Truck, label: 'Pedidos de la tienda', modulo: 'pedidos' },
     { r: 'admin.cuentas-tienda.index', icon: UserRound, label: 'Usuarios de la tienda', modulo: 'pedidos' },
+    { r: 'admin.carritos.index', icon: ShoppingCart, label: 'Carritos abandonados', modulo: 'carritos' },
     { r: 'admin.reservas.index', icon: CalendarCheck, label: 'Reservas', modulo: 'reservas' },
     { r: 'admin.servicios.index', icon: Hammer, label: 'Servicio técnico', modulo: 'servicios' },
     { r: 'admin.diagnosticos.index', icon: Stethoscope, label: 'Diagnósticos', modulo: 'diagnosticos' },

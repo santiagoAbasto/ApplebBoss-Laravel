@@ -22,7 +22,7 @@ Artisan::command('resenas:google', function () {
 \Illuminate\Support\Facades\Schedule::command('resenas:google')->dailyAt('07:00')->withoutOverlapping();
 
 // API de integración: el registro de solicitudes se guarda 90 días. Medición de la tienda: 14 meses (política de privacidad)
-\Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class, \App\Models\EventoWeb::class]])->dailyAt('03:30');
+\Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class, \App\Models\EventoWeb::class, \App\Models\Carrito::class]])->dailyAt('03:30');
 
 // Dólar paralelo para cobrar en USDT: se mueve minuto a minuto, así que se lee cada 30 segundos (la fuente lo mide cada 1 a 2)
 Artisan::command('tipo-cambio:actualizar', function () {
@@ -46,3 +46,13 @@ Artisan::command('seo:indexnow {--todo : Avisa el sitemap entero}', function () 
 })->purpose('Avisa a Bing por IndexNow qué direcciones del sitemap cambiaron');
 
 \Illuminate\Support\Facades\Schedule::command('seo:indexnow')->everyFifteenMinutes()->withoutOverlapping(10);
+
+// Carritos abandonados: el primer recordatorio una hora después del último cambio, el segundo un día después del primero
+Artisan::command('carritos:recordar', function () {
+    $enviados = 0;
+    foreach (\App\Support\Carritos\Recuperacion::pendientes() as $carrito) {
+        $enviados += (int) \App\Support\Carritos\Recuperacion::recordar($carrito);
+    }
+    $this->info("Recordatorios enviados: {$enviados}");
+})->purpose('Manda el recordatorio a los carritos y pedidos que quedaron sin pagar');
+\Illuminate\Support\Facades\Schedule::command('carritos:recordar')->everyFifteenMinutes()->withoutOverlapping(10);

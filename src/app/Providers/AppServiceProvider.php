@@ -30,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\Pedido::observe(\App\Observers\PedidoObserver::class);
 
+        if ($responderA = config('mail.reply_to.address')) {
+            \Illuminate\Support\Facades\Mail::alwaysReplyTo($responderA, config('mail.reply_to.name'));
+        }
+
         // ── API de integración ─────────────────────────────────────────────
         // Un token solo sirve si su integración sigue activa (desactivarla corta todos sus tokens al instante)
         \Laravel\Sanctum\Sanctum::authenticateAccessTokensUsing(fn ($token, bool $valido) => $valido

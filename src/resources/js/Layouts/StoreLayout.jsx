@@ -936,6 +936,8 @@ export default function StoreLayout({ children }) {
     const cerrarAcceso = useCallback(() => setAccesoAbierto(false), []);
     usarMedicion();
     const [ready, setReady] = useState(false);
+    const [version, setVersion] = useState(0);   // sube cuando un enlace de carrito abandonado lo rearma
+    const teniaItems = useRef(false);
     useTipoCambioEnVivo();
 
     // Con el menú del celular o el modal de acceso abiertos, el WhatsApp flotante se aparta: si no, tapa «Acceder»
@@ -950,7 +952,21 @@ export default function StoreLayout({ children }) {
     useEffect(() => { if (ready) localStorage.setItem(CART_KEY, JSON.stringify(stored)); }, [stored, ready]);
 
     useEffect(() => {
-        if (!ready || stored.length === 0) { setHydrated([]); return; }
+        if (!ready) return;
+        if (stored.length === 0) {
+            setHydrated([]);
+            // Si lo vació, el servidor también lo olvida (carritos abandonados); si nunca tuvo nada, no se molesta
+            if (teniaItems.current) {
+                teniaItems.current = false;
+                fetch('/api/carrito/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ items: [] }),
+                }).catch(() => {});
+            }
+            return;
+        }
+        teniaItems.current = true;
         setSyncing(true);
         fetch('/api/carrito/sync', {
             method: 'POST',
@@ -964,7 +980,7 @@ export default function StoreLayout({ children }) {
             })
             .catch(() => {})
             .finally(() => setSyncing(false));
-    }, [ready, cartOpen]);
+    }, [ready, cartOpen, version]);
 
     const add = useCallback((product) => {
         medir('carrito_agregar', product.name);
@@ -983,6 +999,12 @@ export default function StoreLayout({ children }) {
         setStored([]);
         setHydrated([]);
         try { localStorage.removeItem(CART_KEY); } catch { /* sin almacenamiento */ }
+    }, []);
+
+    // El enlace de un carrito abandonado lo rearma: reemplaza lo guardado y fuerza la sincronización
+    const restaurar = useCallback((keys) => {
+        setStored(keys.map((key) => ({ key, quantity: 1 })));
+        setVersion((v) => v + 1);
     }, []);
 
     const total = useMemo(
@@ -1004,7 +1026,7 @@ export default function StoreLayout({ children }) {
     }, []);
 
     return (
-        <CartContext.Provider value={{ cart, add, remove, total, open: () => setCartOpen(true), clear, syncing }}>
+        <CartContext.Provider value={{ cart, add, remove, total, open: () => setCartOpen(true), clear, restaurar, syncing }}>
             <CompareProvider>
                 {/* Las fuentes (Figtree y Barlow) se cargan una sola vez en app.blade.php: si el link viviera acá,
                     se quitaría y volvería a poner en cada cambio de página y el texto parpadearía. */}

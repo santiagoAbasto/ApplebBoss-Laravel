@@ -63,8 +63,14 @@ return [
     ],
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'apple.boss2011@gmail.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'ventas@appleboss.com.bo'),
         'name' => env('MAIL_FROM_NAME', 'Apple Boss'),
+    ],
+
+    // Si los automáticos salen de una casilla que nadie lee (no-reply@), las respuestas van a esta
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME', env('MAIL_FROM_NAME', 'Apple Boss')),
     ],
 
 ];
