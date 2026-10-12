@@ -522,7 +522,7 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
             <aside
                 className={`fixed right-0 top-0 z-[60] flex h-full w-full max-w-sm flex-col shadow-2xl transition-transform sm:max-w-md ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
                 style={{ background: 'var(--surface-white)', transitionDuration: '280ms', transitionTimingFunction: 'cubic-bezier(.32,.72,0,1)' }}
-                aria-hidden={!isOpen}
+                aria-hidden={!isOpen} inert={!isOpen || undefined}
                 aria-label="Carrito de compras"
             >
                 <div className="flex items-center justify-between border-b px-6 py-5" style={{ borderColor: 'var(--border-light)' }}>
