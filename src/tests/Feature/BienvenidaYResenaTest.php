@@ -42,6 +42,19 @@ class BienvenidaYResenaTest extends TestCase
         Mail::assertQueued(Bienvenida::class, 1);
     }
 
+    public function test_el_marco_de_marca_lleva_logo_whatsapp_redes_y_legales(): void
+    {
+        config(['seo.negocio.redes' => ['instagram' => 'https://instagram.com/appleboss', 'tiktok' => 'https://tiktok.com/@appleboss'], 'seo.public_url' => 'https://appleboss.com.bo']);
+        \App\Models\StoreLocation::create(['name' => 'Apple Boss Cochabamba', 'address' => 'Av. Melchor Urquidi', 'city' => 'Cochabamba', 'country' => 'Bolivia', 'whatsapp' => '59175904313', 'active' => true, 'sort_order' => 0]);
+
+        $html = (new Bienvenida(User::factory()->make(['name' => 'Ana Quispe', 'email' => 'ana@gmail.com'])))->render();
+
+        foreach (['images/correo/logo-animado.gif', 'images/correo/whatsapp.png', 'https://wa.me/59175904313', 'images/correo/instagram.png', 'https://tiktok.com/@appleboss', 'Av. Melchor Urquidi', '/paginas/privacidad'] as $pieza) {
+            $this->assertStringContainsString($pieza, $html);
+        }
+        $this->assertStringNotContainsString('images/correo/facebook.png', $html, 'sin perfil de Facebook no hay icono');
+    }
+
     public function test_pide_la_resena_una_semana_despues_de_la_entrega_y_solo_una_vez(): void
     {
         Mail::fake();

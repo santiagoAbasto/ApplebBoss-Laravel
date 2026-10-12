@@ -9,7 +9,7 @@
     $base   = rtrim((string) config('seo.public_url', config('app.url')), '/');
     $local  = \App\Models\StoreLocation::principal();
     $wa     = $local?->whatsapp ? 'https://wa.me/' . preg_replace('/\D+/', '', $local->whatsapp) : null;
-    $redes  = (array) config('seo.redes', []);
+    $redes  = (array) config('seo.negocio.redes', []);
     $nombre = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'tiktok' => 'TikTok'];
 @endphp
 <!DOCTYPE html>
