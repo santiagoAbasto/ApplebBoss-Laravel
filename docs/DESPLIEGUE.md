@@ -86,6 +86,15 @@ docker compose -f docker-compose.production.yml exec -T db pg_dump -U "$POSTGRES
 
 > Guarda ese archivo **fuera del repo**. Nunca lo subas a git.
 
+#### Respaldo automático (desde el 12-10-2026)
+
+Además del respaldo manual de cada despliegue, `docker/production/respaldo-db.sh` corre por cron todas las noches
+(03:30 UTC, 23:30 en Bolivia): guarda la base en `~/respaldos/base-FECHA.dump` (formato de `pg_restore`, se conservan 14)
+y, los domingos, los archivos subidos en `~/respaldos/archivos-FECHA.tgz` (se conservan 4). Cada corrida comprueba el
+dump con `pg_restore --list` y escribe una línea en `~/respaldos/respaldo.log`. Se programa una sola vez con
+`bash docker/production/respaldo-db.sh --instalar-cron`; cómo restaurar está en la cabecera del script. Todavía no hay
+copia fuera del VPS.
+
 ### 4 · Agregar las variables nuevas al `.env.production`
 
 ```bash

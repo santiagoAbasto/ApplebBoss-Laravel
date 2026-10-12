@@ -87,12 +87,15 @@ return [
             [
                 'titulo' => 'Condiciones importantes',
                 'icono'  => 'pago',
+                // Lo mismo que dice la página Garantía de la tienda (Ley N.º 453): cambio o devolución solo por
+                // defecto de fábrica y en ese orden; nunca por cambio de opinión.
                 'lista'  => [
                     'La garantía es válida únicamente dentro del tiempo establecido.',
-                    'No se aceptan cambios ni devoluciones.',
+                    'Cambios y devoluciones solo por defecto de fábrica confirmado por nuestro Servicio Técnico dentro de la garantía: primero reparación, luego cambio y, en último caso, devolución del dinero.',
+                    'No hay cambios ni devoluciones por cambio de opinión, de color o de modelo: revisa y prueba el equipo antes de pagar.',
+                    'Accesorios (fundas, vidrios, cables): se revisan al entregarlos; una falla de fábrica se avisa dentro de los 7 días.',
                     'El diagnóstico técnico puede demorar hasta 72 horas hábiles.',
                     'La garantía aplica una sola vez por falla.',
-                    'No se realizan devoluciones de dinero.',
                 ],
             ],
         ],
