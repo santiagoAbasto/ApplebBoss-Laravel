@@ -1,6 +1,5 @@
 import './polyfills';
 import '../css/app-vite.css';
-import './bootstrap';
 import { route } from 'ziggy-js';
 
 import { createInertiaApp } from '@inertiajs/react';

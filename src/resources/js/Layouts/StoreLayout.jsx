@@ -1,5 +1,4 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import axios from 'axios';
 import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShoppingBag, Trash2, Wrench, X } from '@/Components/Store/Icons';
 import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ProductVisual from '@/Components/Store/ProductVisual';
@@ -664,15 +663,22 @@ function NewsletterBar() {
         setStatus('sending');
         setError('');
         try {
-            await axios.post('/newsletter', { email: email.trim(), website });
+            // fetch en vez de axios: la tienda no carga axios (17 KB) solo para este formulario. El token CSRF va como lo mandaba axios.
+            const xsrf = decodeURIComponent(document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='))?.slice('XSRF-TOKEN='.length) ?? '');
+            const r = await fetch('/newsletter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-XSRF-TOKEN': xsrf },
+                body: JSON.stringify({ email: email.trim(), website }),
+            });
+            if (!r.ok) throw Object.assign(new Error('newsletter'), { status: r.status, data: await r.json().catch(() => ({})) });
             setStatus('done');
             setEmail('');
         } catch (err) {
             setStatus('error');
             setError(
-                err.response?.status === 429
+                err.status === 429
                     ? 'Demasiados intentos. Prueba de nuevo en un minuto.'
-                    : (err.response?.data?.errors?.email?.[0] ?? 'No pudimos registrar tu correo. Inténtalo de nuevo.')
+                    : (err.data?.errors?.email?.[0] ?? 'No pudimos registrar tu correo. Inténtalo de nuevo.')
             );
         }
     };

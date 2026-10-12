@@ -1,3 +1,4 @@
+import '@/bootstrap'; // window.axios con X-Requested-With para los formularios del panel (la tienda no lo carga)
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
