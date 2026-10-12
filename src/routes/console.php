@@ -56,3 +56,21 @@ Artisan::command('carritos:recordar', function () {
     $this->info("Recordatorios enviados: {$enviados}");
 })->purpose('Manda el recordatorio a los carritos y pedidos que quedaron sin pagar');
 \Illuminate\Support\Facades\Schedule::command('carritos:recordar')->everyFifteenMinutes()->withoutOverlapping(10);
+
+// Una semana después de la entrega se pide la reseña, una sola vez por pedido y nunca a quien pidió no recibir correos
+Artisan::command('resenas:pedir', function () {
+    $pedidos = \App\Models\Pedido::with('items')
+        ->where('estado', \App\Models\Pedido::ENTREGADO)
+        ->whereNull('resena_pedida_en')
+        ->whereDoesntHave('resena')
+        ->whereNotNull('email_cliente')
+        ->whereBetween('entregado_en', [now()->subDays(14), now()->subDays(7)])
+        ->where(fn ($q) => $q->whereNull('user_id')->orWhereHas('usuario', fn ($u) => $u->where('sin_recordatorios', false)))
+        ->get();
+    foreach ($pedidos as $pedido) {
+        \Illuminate\Support\Facades\Mail::send(new \App\Mail\PedirResena($pedido));
+        $pedido->update(['resena_pedida_en' => now()]);
+    }
+    $this->info("Pedidos de reseña enviados: {$pedidos->count()}");
+})->purpose('Pide la reseña a quien recibió su pedido hace una semana');
+\Illuminate\Support\Facades\Schedule::command('resenas:pedir')->dailyAt('10:00')->withoutOverlapping();

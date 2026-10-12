@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \App\Models\Pedido::observe(\App\Observers\PedidoObserver::class);
+        \App\Models\User::observe(\App\Observers\UserObserver::class);
 
         if ($responderA = config('mail.reply_to.address')) {
             \Illuminate\Support\Facades\Mail::alwaysReplyTo($responderA, config('mail.reply_to.name'));

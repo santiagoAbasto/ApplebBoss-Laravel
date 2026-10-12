@@ -62,7 +62,7 @@ class CuentaController extends Controller
         $user->rol      = 'cliente';   // fuera de $fillable a propósito: nunca llega del formulario
         $user->save();
 
-        event(new Registered($user));   // manda el correo de verificación
+        event(new Registered($user));   // la bienvenida la manda UserObserver (no hay verificación de correo)
         Auth::login($user);
         $request->session()->regenerate();
 

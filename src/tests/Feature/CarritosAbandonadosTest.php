@@ -119,7 +119,7 @@ class CarritosAbandonadosTest extends TestCase
 
         $this->travelTo('2026-10-12 10:59:00');
         $this->artisan('carritos:recordar');
-        Mail::assertNothingQueued();
+        Mail::assertNotQueued(CarritoAbandonado::class);
 
         $this->travelTo('2026-10-12 11:00:00');
         $this->artisan('carritos:recordar');
@@ -169,13 +169,13 @@ class CarritosAbandonadosTest extends TestCase
         $this->assertTrue((bool) $ana->fresh()->sin_recordatorios);
         $this->travel(2)->hours();
         $this->artisan('carritos:recordar');
-        Mail::assertNothingQueued();
+        Mail::assertNotQueued(CarritoAbandonado::class);
 
         // Si ya no queda nada disponible, el recordatorio no sale y el carrito se descarta
         $ana->forceFill(['sin_recordatorios' => false])->save();
         Celular::find($pub->producto_id)->update(['estado' => 'vendido']);
         $this->artisan('carritos:recordar');
-        Mail::assertNothingQueued();
+        Mail::assertNotQueued(CarritoAbandonado::class);
         $this->assertSame(0, Carrito::count());
     }
 

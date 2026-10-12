@@ -25,6 +25,12 @@ return [
         'ciudad'      => env('SEO_NEGOCIO_CIUDAD', 'Cochabamba'),
         'region'      => env('SEO_NEGOCIO_REGION', 'Cochabamba'),
         'pais'        => env('SEO_NEGOCIO_PAIS', 'BO'),
+        // Perfiles oficiales con nombre, para el pie de los correos
+        'redes' => array_filter([
+            'facebook'  => env('SEO_PERFIL_FACEBOOK'),
+            'instagram' => env('SEO_PERFIL_INSTAGRAM'),
+            'tiktok'    => env('SEO_PERFIL_TIKTOK'),
+        ]),
         // Perfiles oficiales verificados del negocio (sameAs)
         'perfiles' => array_values(array_filter([
             env('SEO_PERFIL_FACEBOOK'),
