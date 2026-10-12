@@ -115,7 +115,7 @@ function ProductSpotlight({ product, onAdd }) {
             <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="flex items-center justify-center bg-gray-50 p-6" style={{ minHeight: 220 }}>
                     {img ? (
-                        <img src={img.url_medium ?? img.url_card} alt={img.alt ?? product.name} className="max-h-[220px] w-auto object-contain" />
+                        <img src={img.url_medium ?? img.url_card} alt={img.alt ?? product.name} width={img.ancho ?? undefined} height={img.alto ?? undefined} fetchPriority="high" decoding="async" className="max-h-[220px] w-auto object-contain" />
                     ) : (
                         <ProductVisual product={product} className="h-44 w-full rounded-xl" />
                     )}

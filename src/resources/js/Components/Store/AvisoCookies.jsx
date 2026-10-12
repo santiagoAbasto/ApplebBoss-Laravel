@@ -84,7 +84,7 @@ export default function AvisoCookies() {
           style={{ borderColor: 'var(--border-light)' }}>
           <p className="text-[14px] leading-relaxed text-slate-700">
             Usamos cookies de analítica ({nombres}) <strong>solo si aceptas</strong>. Nos ayudan a saber qué páginas sirven y cómo se usa la tienda.{' '}
-            <a href="/paginas/cookies" className="font-semibold underline underline-offset-2" style={{ color: 'var(--ab-navy)' }}>Más información</a>
+            <a href="/paginas/cookies" className="font-semibold underline underline-offset-2" style={{ color: 'var(--ab-navy)' }}>Leer la política de cookies</a>
           </p>
           <div className="mt-3.5 grid grid-cols-2 gap-2">
             {[['rechazo', 'Rechazar'], ['acepto', 'Aceptar']].map(([valor, texto]) => (

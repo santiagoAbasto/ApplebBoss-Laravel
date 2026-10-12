@@ -348,7 +348,7 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                     <button
                         onClick={openSearch}
                         className="ml-4 hidden h-10 flex-1 items-center gap-3 rounded-full border px-4 text-sm md:flex"
-                        style={{ borderColor: 'var(--border-light)', color: 'var(--text-muted)', background: 'var(--surface-muted)' }}
+                        style={{ borderColor: 'var(--border-light)', color: 'var(--text-secondary)', background: 'var(--surface-muted)' }}
                         aria-label="Abrir búsqueda"
                     >
                         <Search className="h-4 w-4 shrink-0" />

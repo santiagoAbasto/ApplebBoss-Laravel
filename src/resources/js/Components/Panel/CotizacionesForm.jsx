@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
 import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import flags from 'react-phone-number-input/flags';
 import {
   ArrowLeft, Eye, FileText, Laptop, Mail, MessageCircle, Package, PencilLine, Search, Smartphone, Tablet, Trash2,

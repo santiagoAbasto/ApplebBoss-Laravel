@@ -294,24 +294,33 @@ body[data-acceso] .ab-wa {
   align-items: center;
   gap: 6px;
   margin-top: 9px;
-  color: #12a54c;
+  color: #0b7a37; /* 5,9:1 sobre blanco; el verde de WhatsApp no alcanza el contraste mínimo en texto chico */
   font-size: 11px;
   font-weight: 700;
 }
 
 .ab-wa-saludo-estado i {
+  position: relative;
   width: 7px;
   height: 7px;
   border-radius: 999px;
   background: #25d366;
-  box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+}
+
+/* La onda se anima con transform y opacity (la compone la GPU), no con box-shadow */
+.ab-wa-saludo-estado i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(37, 211, 102, 0.6);
   animation: ab-wa-latido 2s ease-out infinite;
 }
 
 @keyframes ab-wa-latido {
-  0%   { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-  70%  { box-shadow: 0 0 0 7px rgba(37, 211, 102, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+  0%   { transform: scale(1); opacity: 0.8; }
+  70%  { transform: scale(3); opacity: 0; }
+  100% { transform: scale(3); opacity: 0; }
 }
 
 .ab-wa-cerrar {
@@ -354,7 +363,7 @@ body[data-acceso] .ab-wa {
   .ab-wa[data-guino] .ab-wa-boton,
   .ab-wa-aviso,
   .ab-wa-saludo,
-  .ab-wa-saludo-estado i,
+  .ab-wa-saludo-estado i::after,
   .ab-wa-brillo::after {
     animation: none;
     transition: none;

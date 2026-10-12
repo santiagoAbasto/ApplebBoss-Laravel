@@ -322,7 +322,7 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre, 
                 {!encendida && (
                     <motion.div key="arranque" className="absolute inset-0 z-40 grid place-items-center bg-black" exit={{ opacity: 0 }} transition={{ duration: 0.45 }}>
                         <div className="flex flex-col items-center" style={{ gap: px(4) }}>
-                            <img src={MARCA} alt="" style={{ height: px(9) }} />
+                            <img src={MARCA} alt="" width={220} height={256} style={{ height: px(9), width: 'auto' }} />
                             <div className="overflow-hidden rounded-full bg-white/20" style={{ width: px(16), height: px(0.6) }}>
                                 {/* scaleX en vez de width: la anima la GPU sin recalcular el diseño (Lighthouse: animación no compuesta) */}
                                 <motion.div className="h-full w-full origin-left bg-white" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9, ease: 'easeInOut', delay: 0.15 }} />
@@ -491,7 +491,8 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
 
     const pestanas = (
         <motion.div {...entra(ancha ? 0.6 : 1.1, { y: 16 })} className={`relative z-30 flex max-w-full items-center gap-2 overflow-x-auto px-1 pb-1 ${ancha ? 'mt-6' : 'mt-6 self-stretch'}`}
-            role="tablist" aria-label="Destacados por categoría">
+            >
+            <div role="tablist" aria-label="Destacados por categoría" className="flex shrink-0 items-center gap-2">
             {laminas.map((l, i) => {
                 const esta = i === activa;
                 return (
@@ -509,6 +510,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                     </button>
                 );
             })}
+            </div>
             {!quieto && (
                 <button type="button" onClick={() => setEnPausa((p) => !p)} aria-label={enPausa ? 'Seguir pasando los destacados' : 'Pausar los destacados'}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-full border backdrop-blur" style={vidrio}>

@@ -463,6 +463,8 @@ class PublicCatalogController extends Controller
             'url_medium'   => $img->urlMedium(),
             'url_detail'   => $img->urlDetail(),
             'alt'          => $img->alt ?: $pub->titulo,
+            'ancho'        => $img->metadata['width'] ?? null,
+            'alto'         => $img->metadata['height'] ?? null,
             'es_principal' => $img->es_principal,
             'orden'        => $img->orden,
         ])->toArray();
