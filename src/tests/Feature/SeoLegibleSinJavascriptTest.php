@@ -119,6 +119,7 @@ class SeoLegibleSinJavascriptTest extends TestCase
 
     public function test_una_pagina_informativa_sin_descripcion_propia_usa_el_comienzo_de_su_texto(): void
     {
+        \App\Models\Page::where('slug', 'garantia')->delete(); // la migración de garantía la siembra con descripción propia
         \App\Models\Page::create(['title' => 'Garantía', 'slug' => 'garantia', 'active' => true,
             'content' => '<h2>Plazos</h2><p>Los equipos nuevos tienen 12 meses de garantía y los seminuevos, 4 meses.</p>']);
 

@@ -136,18 +136,40 @@ class TraficoWebTest extends TestCase
     public function test_un_texto_legal_con_un_dato_por_confirmar_no_se_indexa(): void
     {
         $privacidad = Page::where('slug', 'privacidad')->firstOrFail();
-        $this->assertTrue($privacidad->esBorrador(), 'la migración deja el titular y el NIT por confirmar');
         $this->assertStringContainsString('Estadísticas propias', $privacidad->content);
         $this->assertTrue(Page::where('slug', 'cookies')->value('active'));
 
+        $privacidad->update(['content' => $privacidad->content . '<p>[DATO POR CONFIRMAR: algo]</p>']);
+        $this->assertTrue($privacidad->fresh()->esBorrador());
         $this->get('/paginas/privacidad')->assertOk()->assertInertia(fn (Assert $p) => $p->where('seo.robots', 'noindex,nofollow'));
         $this->get('/sitemap.xml')->assertDontSee('/paginas/privacidad');
         $this->get('/llms.txt')->assertDontSee('/paginas/privacidad');
 
         // Completado el dato, se publica
-        $privacidad->update(['content' => str_replace(Page::MARCA_PENDIENTE, 'Juan Pérez', $privacidad->content)]);
-        $privacidad->update(['content' => preg_replace('/\[[^\]]*\]/', 'dato', $privacidad->fresh()->content)]);
+        $privacidad->update(['content' => str_replace('<p>[DATO POR CONFIRMAR: algo]</p>', '', $privacidad->fresh()->content)]);
         $this->get('/paginas/privacidad')->assertInertia(fn (Assert $p) => $p->where('seo.robots', 'index,follow'));
         $this->get('/sitemap.xml')->assertSee('/paginas/privacidad');
+    }
+
+    public function test_los_textos_legales_y_la_garantia_quedan_completos_y_se_indexan(): void
+    {
+        foreach (['privacidad', 'terminos'] as $slug) {
+            $texto = Page::where('slug', $slug)->firstOrFail()->content;
+            $this->assertStringNotContainsString(Page::MARCA_PENDIENTE, $texto, "$slug sigue con datos por confirmar");
+            $this->assertStringContainsString('12555473014', $texto);
+        }
+        $this->assertStringContainsString('cambio de opinión', Page::where('slug', 'terminos')->value('content'));
+
+        // La página Garantía dice lo mismo que la nota de venta, con los plazos de config/documentos.php
+        $garantia = Page::where('slug', 'garantia')->firstOrFail()->content;
+        foreach (config('documentos.garantia.meses') as $meses) {
+            $this->assertStringContainsString("{$meses} meses", $garantia);
+        }
+        foreach (['líquidos', 'terceros', 'Ley N.º 453', 'devolvemos el dinero'] as $frase) {
+            $this->assertStringContainsString($frase, $garantia);
+        }
+
+        $this->get('/sitemap.xml')->assertSee('/paginas/privacidad')->assertSee('/paginas/terminos')->assertSee('/paginas/garantia');
+        $this->get('/paginas/garantia')->assertOk()->assertInertia(fn (Assert $p) => $p->where('seo.robots', 'index,follow'));
     }
 }

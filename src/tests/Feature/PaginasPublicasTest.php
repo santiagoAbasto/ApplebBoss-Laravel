@@ -13,7 +13,7 @@ class PaginasPublicasTest extends TestCase
 
     public function test_active_pages_are_shared_for_the_footer(): void
     {
-        Page::whereIn('slug', Page::LEGALES)->delete(); // la migración de textos legales los siembra en toda base nueva
+        Page::whereIn('slug', [...Page::LEGALES, 'garantia'])->delete(); // las migraciones de textos legales los siembran en toda base nueva
         Page::create(['slug' => 'nosotros', 'title' => 'Nosotros', 'content' => '<p>Hola</p>', 'active' => true, 'sort_order' => 1]);
         Page::create(['slug' => 'garantia', 'title' => 'Garantía', 'content' => '<p>Hola</p>', 'active' => true, 'sort_order' => 2]);
         Page::create(['slug' => 'borrador', 'title' => 'Oculta', 'content' => '<p>Hola</p>', 'active' => false, 'sort_order' => 3]);
