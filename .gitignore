@@ -51,3 +51,6 @@ coverage/
 # Caché de Python (herramientas de la base de modelos)
 __pycache__/
 *.pyc
+
+# Memoria local de Memanto: nunca entra en un commit
+MEMORY.md
