@@ -157,6 +157,7 @@ class TraficoWebTest extends TestCase
             $texto = Page::where('slug', $slug)->firstOrFail()->content;
             $this->assertStringNotContainsString(Page::MARCA_PENDIENTE, $texto, "$slug sigue con datos por confirmar");
             $this->assertStringContainsString('12555473014', $texto);
+            $this->assertStringContainsString('Santiago Alfredo Abasto Ortega', $texto);
         }
         $this->assertStringContainsString('cambio de opinión', Page::where('slug', 'terminos')->value('content'));
 
