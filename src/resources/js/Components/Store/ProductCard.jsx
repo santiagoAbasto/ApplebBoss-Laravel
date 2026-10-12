@@ -44,6 +44,7 @@ export default function ProductCard({ product, onAdd, priority = false }) {
             {/* Imagen */}
             <Link
                 href={product.url}
+                aria-label={product.name}
                 className="block overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={{ '--tw-ring-color': 'var(--ab-periwinkle)' }}
                 tabIndex={0}

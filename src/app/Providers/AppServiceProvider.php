@@ -69,7 +69,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // ── Vite prefetch ─────────────────────────────────────────────────
-        Vite::prefetch(concurrency: 3);
+        // La precarga de todos los chunks hace instantánea la navegación del panel. En la tienda descargaba el
+        // panel entero (más de 100 archivos) a cada visitante, y Lighthouse lo cobraba en el hilo principal.
+        if (! $this->app->runningInConsole() && $this->app['request']->is('admin', 'admin/*', 'vendedor', 'vendedor/*')) {
+            Vite::prefetch(concurrency: 3);
+        }
 
         // ── La tienda solo muestra lo que está en stock ───────────────────
         // Lo que se vende (o se borra del inventario) deja de estar publicado en ese momento.

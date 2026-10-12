@@ -98,7 +98,7 @@ function Barra({ aspecto, retraso }) {
 function Tarjeta({ r, oculta = false }) {
     const aspectos = Object.entries(r.aspectos ?? {}).filter(([clave]) => ASPECTO_CORTO[clave]);
     return (
-        <figure aria-hidden={oculta || undefined}
+        <figure aria-hidden={oculta || undefined} inert={oculta || undefined}
             className="ab-tarjeta rounded-2xl p-5 transition-transform duration-300 hover:-translate-y-0.5"
             style={{ background: 'var(--surface-white)', boxShadow: '0 18px 40px -26px rgba(1,20,70,0.55), 0 0 0 1px rgba(1,20,70,0.06)' }}>
             <div className="flex items-center justify-between gap-3">

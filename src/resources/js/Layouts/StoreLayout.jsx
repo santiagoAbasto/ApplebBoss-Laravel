@@ -335,8 +335,11 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                         aria-label={`${nombre} — inicio`}
                     >
                         <img
-                            src="/images/logo-appleboss.png"
+                            src="/images/logo-appleboss-160.png"
                             alt={nombre}
+                            width={80}
+                            height={80}
+                            fetchPriority="high"
                             className="store-brand-logo h-[58px] w-[58px] object-contain sm:h-20 sm:w-20"
                         />
                     </Link>
@@ -793,7 +796,7 @@ function StoreFooter({ abrirAcceso }) {
                     {/* Brand column */}
                     <div>
                         <div className="flex items-center gap-3">
-                            <img src="/images/logo-appleboss.png" alt={nombre} className="h-12 w-12 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                            <img src="/images/logo-appleboss-160.png" alt={nombre} width={48} height={48} loading="lazy" className="h-12 w-12 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
                             <span className="text-2xl font-black tracking-tight text-white">{nombre}</span>
                         </div>
                         <p className="mt-4 text-sm leading-6" style={{ color: 'rgba(255,255,255,0.82)', maxWidth: '26ch' }}>

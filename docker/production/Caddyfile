@@ -10,6 +10,13 @@ www.{$APP_DOMAIN} {
 {$APP_DOMAIN} {
     encode zstd gzip
 
+    # Los archivos de /build/assets llevan hash en el nombre: cambian de nombre cuando cambian, así que pueden
+    # guardarse un año. Las imágenes y los íconos, una semana. Sin esto Cloudflare y el navegador los pedían cada 4 h.
+    @conhash path /build/assets/*
+    header @conhash Cache-Control "public, max-age=31536000, immutable"
+    @imagenes path /images/* /storage/* /favicon/* /favicon.ico
+    header @imagenes Cache-Control "public, max-age=604800"
+
     reverse_proxy app:80
 
     log {

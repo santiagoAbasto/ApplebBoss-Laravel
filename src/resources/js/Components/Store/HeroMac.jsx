@@ -320,11 +320,12 @@ function Pantalla({ laminas, activa, onElegir, quieto, encendida, chica, corre, 
             {/* Arranque: el logo de la tienda y la barra de carga, como al prender una Mac */}
             <AnimatePresence>
                 {!encendida && (
-                    <motion.div key="arranque" className="absolute inset-0 z-40 grid place-items-center bg-black" exit={{ opacity: 0 }} transition={{ duration: 0.6 }}>
+                    <motion.div key="arranque" className="absolute inset-0 z-40 grid place-items-center bg-black" exit={{ opacity: 0 }} transition={{ duration: 0.45 }}>
                         <div className="flex flex-col items-center" style={{ gap: px(4) }}>
                             <img src={MARCA} alt="" style={{ height: px(9) }} />
                             <div className="overflow-hidden rounded-full bg-white/20" style={{ width: px(16), height: px(0.6) }}>
-                                <motion.div className="h-full bg-white" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 1.3, ease: 'easeInOut', delay: 0.3 }} />
+                                {/* scaleX en vez de width: la anima la GPU sin recalcular el diseño (Lighthouse: animación no compuesta) */}
+                                <motion.div className="h-full w-full origin-left bg-white" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9, ease: 'easeInOut', delay: 0.15 }} />
                             </div>
                         </div>
                     </motion.div>
@@ -401,8 +402,8 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
 
     // La Mac arranca (logo y barra de carga) mientras entra; después se precargan las otras fotos
     useEffect(() => {
-        const t = setTimeout(() => setEncendida(true), quieto ? 0 : 1900);
-        const p = setTimeout(() => LAMINAS.forEach((l) => { new Image().src = foto(l.clave, chica ? 'chica' : 'grande'); }), 2400);
+        const t = setTimeout(() => setEncendida(true), quieto ? 0 : 1150); // la barra termina a los 1,05 s
+        const p = setTimeout(() => LAMINAS.forEach((l) => { new Image().src = foto(l.clave, chica ? 'chica' : 'grande'); }), 1700);
         return () => { clearTimeout(t); clearTimeout(p); };
     }, [quieto, chica]); // eslint-disable-line react-hooks/exhaustive-deps
 
