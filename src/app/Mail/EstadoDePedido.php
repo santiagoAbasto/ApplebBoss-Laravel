@@ -6,6 +6,7 @@ use App\Models\Pedido;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -82,6 +83,7 @@ class EstadoDePedido extends Mailable implements ShouldQueue
 
         return new Envelope(
             to: [$this->pedido->email_cliente],
+            replyTo: [new Address(config('mail.casillas.pedidos'))],
             subject: sprintf($texto['asunto'] ?? 'Tu pedido %s', $this->pedido->codigo),
         );
     }

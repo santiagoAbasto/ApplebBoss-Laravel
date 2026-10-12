@@ -30,9 +30,9 @@ class NewsletterCampaignMail extends Mailable
         $replyTo = ConfiguracionTienda::get('newsletter_responder_a');
 
         return new Envelope(
-            // La dirección sale siempre de la configuración SMTP (.env); solo el nombre es editable
-            from: new Address(config('mail.from.address'), ConfiguracionTienda::get('newsletter_remitente_nombre') ?: config('mail.from.name')),
-            replyTo: filter_var($replyTo, FILTER_VALIDATE_EMAIL) ? [new Address($replyTo)] : [],
+            // El boletín sale de su propia casilla (un alias que Google acepta como remitente); solo el nombre es editable
+            from: new Address(config('mail.casillas.novedades'), ConfiguracionTienda::get('newsletter_remitente_nombre') ?: config('mail.from.name')),
+            replyTo: [new Address(filter_var($replyTo, FILTER_VALIDATE_EMAIL) ? $replyTo : config('mail.casillas.info'))],
             subject: ($this->esPrueba ? '[PRUEBA] ' : '') . $this->campaign->asunto,
         );
     }

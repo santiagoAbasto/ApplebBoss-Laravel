@@ -24,7 +24,8 @@ class CotizacionEnviada extends Mailable
         // Generar el PDF de la cotización
         $pdf = Pdf::loadView('pdf.cotizacion', ['cotizacion' => $this->cotizacion]);
 
-        return $this->from('apple.boss2011@gmail.com', 'Apple Boss')
+        return $this->from(config('mail.from.address'), config('mail.from.name'))
+                    ->replyTo(config('mail.casillas.ventas'))
                     ->subject('Cotización enviada - Apple Boss')
                     ->view('emails.cotizacion')
                     ->with([

@@ -25,7 +25,8 @@ class CotizacionMailable extends Mailable
         $pdf = Pdf::loadView('pdf.cotizacion', ['cotizacion' => $this->cotizacion]);
 
         return $this->subject('Cotización N.º COT-' . $this->cotizacion->id . ' | Apple Boss')
-                    ->from('apple.boss2011@gmail.com', 'Apple Boss')
+                    ->from(config('mail.from.address'), config('mail.from.name'))
+                    ->replyTo(config('mail.casillas.ventas'))
                     ->view('emails.cotizacion')
                     ->with([
                         'cotizacion' => $this->cotizacion,

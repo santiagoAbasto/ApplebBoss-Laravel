@@ -73,4 +73,16 @@ return [
         'name' => env('MAIL_REPLY_TO_NAME', env('MAIL_FROM_NAME', 'Apple Boss')),
     ],
 
+    // Casillas por área (alias de Google Workspace que caen en la misma bandeja). Lo automático sale de `from`;
+    // cada correo dice a cuál de estas se responde, y las páginas públicas muestran la que corresponde.
+    'casillas' => [
+        'info'       => env('MAIL_CASILLA_INFO', 'info@appleboss.com.bo'),
+        'ventas'     => env('MAIL_CASILLA_VENTAS', 'ventas@appleboss.com.bo'),
+        'pedidos'    => env('MAIL_CASILLA_PEDIDOS', 'pedidos@appleboss.com.bo'),
+        'soporte'    => env('MAIL_CASILLA_SOPORTE', 'soporte@appleboss.com.bo'),
+        'privacidad' => env('MAIL_CASILLA_PRIVACIDAD', 'privacidad@appleboss.com.bo'),
+        'novedades'  => env('MAIL_CASILLA_NOVEDADES', 'novedades@appleboss.com.bo'),
+        'seguridad'  => env('MAIL_CASILLA_SEGURIDAD', 'seguridad@appleboss.com.bo'),
+    ],
+
 ];

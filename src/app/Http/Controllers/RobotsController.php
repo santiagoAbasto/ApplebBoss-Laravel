@@ -139,4 +139,17 @@ class RobotsController extends Controller
             'X-Robots-Tag'  => 'noindex',
         ]);
     }
+
+    /** RFC 9116: a quién avisar de una falla de seguridad del sitio. */
+    public function seguridad(): Response
+    {
+        $lineas = [
+            'Contact: mailto:' . config('mail.casillas.seguridad'),
+            'Expires: ' . now()->addYear()->startOfDay()->toIso8601ZuluString(),
+            'Preferred-Languages: es, en',
+            'Canonical: ' . rtrim((string) config('seo.public_url', config('app.url')), '/') . '/.well-known/security.txt',
+        ];
+
+        return response(implode("\n", $lineas) . "\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
 }

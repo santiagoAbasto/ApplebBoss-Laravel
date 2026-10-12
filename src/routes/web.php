@@ -54,6 +54,8 @@ use Illuminate\Http\Request;
 // 🗺 SEO
 Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 Route::get('/llms.txt', [RobotsController::class, 'llms'])->name('llms');
+Route::get('/.well-known/security.txt', [RobotsController::class, 'seguridad'])->name('security.txt');
+Route::get('/security.txt', fn () => redirect('/.well-known/security.txt', 301));
 // IndexNow: la clave publicada prueba que el sitio es nuestro cuando le avisamos a Bing qué cambió
 Route::get('/indexnow.txt', fn () => response(\App\Support\Seo\IndexNow::clave(), 200, ['Content-Type' => 'text/plain; charset=UTF-8']))->name('indexnow');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');

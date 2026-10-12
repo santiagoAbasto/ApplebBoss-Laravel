@@ -6,6 +6,7 @@ use App\Models\Carrito;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -30,6 +31,7 @@ class CarritoAbandonado extends Mailable implements ShouldQueue
 
         return new Envelope(
             to: [$this->carrito->user->email],
+            replyTo: [new Address(config('mail.casillas.pedidos'))],
             subject: $this->numero === 1
                 ? 'Te guardamos tu carrito, ' . $this->nombre()
                 : "Última llamada: {$primero} sigue disponible",
