@@ -122,6 +122,52 @@ class Seo
         ];
     }
 
+    /**
+     * El título de una página por modelo en 65 caracteres como máximo: Bing avisa pasados los 70 y Google lo corta cerca
+     * de los 60. Se prueba de la forma más completa a la más corta, y el nombre se compacta sin perder lo que distingue
+     * al modelo (dos MacBook Pro de 13" de distinto año nunca comparten título).
+     */
+    public static function tituloDeModelo(string $nombre): string
+    {
+        $corto = self::nombreCompacto($nombre);
+
+        foreach ([
+            "{$nombre} en Cochabamba: precio y ficha técnica",
+            "{$nombre}: precio en Cochabamba",
+            "{$corto}: precio en Cochabamba",
+            "{$corto} · Apple Boss",
+        ] as $candidato) {
+            if (mb_strlen($candidato) <= 65) {
+                return $candidato;
+            }
+        }
+
+        return $corto;
+    }
+
+    /** El nombre sin las palabras que Apple escribe largas y todo el mundo abrevia. */
+    public static function nombreCompacto(string $nombre): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', strtr($nombre, [
+            'de 11 pulgadas'             => '11″',
+            'de 13 pulgadas'             => '13″',
+            ' pulgadas'                  => '″',
+            'GPS + Cellular'             => 'Cellular',
+            'Wi‑Fi + Cellular'           => 'Cellular',  // con el guion de Apple (U+2011)
+            'Wi-Fi + Cellular'           => 'Cellular',
+            'dos puertos Thunderbolt 3'  => '2 puertos',
+            'cuatro puertos'             => '4 puertos',
+            'dos puertos'                => '2 puertos',
+            'noviembre de '              => '',
+            'principios de '             => '',
+            'mediados de '               => '',
+            'finales de '                => '',
+            'Retina, '                   => '',
+            'con cancelación activa de ruido' => 'ANC',
+            'generación'                 => 'gen.',
+        ])));
+    }
+
     /** Convierte rutas relativas o del disco public en URL absoluta. */
     public static function absolute(string $value): string
     {

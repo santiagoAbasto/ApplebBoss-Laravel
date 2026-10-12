@@ -120,6 +120,7 @@ class HubController extends Controller
 
         app(Seo::class)->context([
             'titulo'      => $titulo,
+            'seo_title'   => Seo::tituloDeModelo($modelo->nombre),   // nunca más de 65 caracteres (Bing avisaba en 24 modelos)
             'imagen'      => $ficha['imagen'],
             'descripcion' => collect([
                 $oferta
