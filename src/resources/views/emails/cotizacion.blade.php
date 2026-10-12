@@ -88,7 +88,7 @@
     </div>
 
     <div class="footer" style="text-align: center;">
-  <p style="margin-bottom: 10px;"><strong>Apple Boss</strong> | Av. Melchor Urquidi, Cochabamba</p>
+  <p style="margin-bottom: 10px;"><strong>Apple Boss</strong> | Edificio Fidel Anze, Av. Melchor Urquidi, Cochabamba</p>
   <div class="social-icons" style="display: inline-block;">
     <a href="https://wa.me/59175904313" target="_blank" title="Chatea por WhatsApp">
       <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp" width="26" height="26">

@@ -170,8 +170,8 @@ td:last-child {
     <div class="center">
         <div class="brand">APPLE BOSS</div>
         <div class="brand-sub">
-            Av. Melchor Urquidi entre Calle Fidel Anze<br>
-            y Av. Julio Rodriguez · Cochabamba<br>
+            Edificio Fidel Anze, Av. Melchor Urquidi<br>
+            entre Fidel Anze y América · Cochabamba<br>
             <strong>WhatsApp: +591 75 90 4313</strong>
         </div>
     </div>
