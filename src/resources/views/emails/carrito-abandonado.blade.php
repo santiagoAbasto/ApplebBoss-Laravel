@@ -48,9 +48,6 @@
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 0 6px;">
         <a href="{{ $enlace }}" class="ab-boton" style="display:inline-block;background:#011446;background-image:linear-gradient(135deg,#011446,#1A3A96,#011446);color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:15px 34px;border-radius:999px;">Retomar mi compra →</a>
     </td></tr></table>
-    @if ($whatsapp)
-        <p style="margin:6px 0 0;text-align:center;font-size:13px;color:#64748b;">¿Prefieres que te ayude una persona? <a href="{{ $whatsapp }}" style="color:#011446;font-weight:700;">Escríbenos por WhatsApp</a></p>
-    @endif
 @endsection
 
 @section('pie')

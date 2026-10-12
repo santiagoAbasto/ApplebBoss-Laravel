@@ -72,6 +72,13 @@
                         </tr>
                     </table>
                 </td></tr>
+                @if ($wa)
+                    <tr><td style="padding-top:16px;">
+                        <a href="{{ $wa }}" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-size:14px;font-weight:800;padding:11px 18px 11px 12px;border-radius:999px;">
+                            <img src="{{ $base }}/images/correo/whatsapp.png" width="22" height="22" alt="" style="display:inline-block;vertical-align:middle;border:0;margin-right:8px;">Escríbenos por WhatsApp
+                        </a>
+                    </td></tr>
+                @endif
                 @if ($redes)
                     <tr><td style="padding-top:14px;">
                         @foreach ($redes as $red => $url)
