@@ -93,6 +93,14 @@ class SeoLegibleSinJavascriptTest extends TestCase
         $this->assertStringNotContainsString('id="lectura"', $this->get('/admin/login')->getContent());
     }
 
+    /** El pie muestra quién desarrolló la tienda: el bloque legible dice lo mismo que ve el visitante. */
+    public function test_el_credito_del_pie_se_lee_sin_javascript(): void
+    {
+        $lectura = $this->lectura($this->get('/')->assertOk()->getContent());
+
+        $this->assertStringContainsString('<a href="https://burrowlabs.com.bo/" rel="noopener">Desarrollado por Burrow Labs</a>', $lectura);
+    }
+
     public function test_llms_txt_presenta_la_tienda_y_lo_disponible_hoy(): void
     {
         $this->productoPublicado();

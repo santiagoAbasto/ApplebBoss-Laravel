@@ -399,7 +399,10 @@ class ContenidoLegible
         return (! empty($tienda['tienda_descripcion']) ? '<p>' . e($tienda['tienda_descripcion']) . '</p>' : '')
             . self::menu(array_merge((array) ($p['navMenu']['footer'] ?? []), $paginas))
             . (! empty($tienda['whatsapp_enabled']) && ! empty($tienda['whatsapp_numero'])
-                ? '<p><a href="https://wa.me/' . e(preg_replace('/\D/', '', (string) $tienda['whatsapp_numero'])) . '">Escribir por WhatsApp</a></p>' : '');
+                ? '<p><a href="https://wa.me/' . e(preg_replace('/\D/', '', (string) $tienda['whatsapp_numero'])) . '">Escribir por WhatsApp</a></p>' : '')
+            // El crédito que el pie ya muestra (CreditoBurrow en StoreLayout). En React es el logotipo, así que
+            // acá va su texto: sin esto el enlace existe solo después de ejecutar JavaScript.
+            . '<p><a href="https://burrowlabs.com.bo/" rel="noopener">Desarrollado por Burrow Labs</a></p>';
     }
 
     private static function definiciones(array $pares): string
