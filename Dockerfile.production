@@ -65,8 +65,17 @@ RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /e
         '    Options -Indexes +FollowSymLinks' \
         '    Require all granted' \
         '</Directory>' \
+        '# Caché del navegador y de Cloudflare: lo de /build/assets lleva hash en el nombre (cambia de nombre al cambiar),' \
+        '# así que puede guardarse un año; imágenes e íconos, una semana. Sin esto se pedían de nuevo cada 4 horas.' \
+        '<LocationMatch "^/build/assets/">' \
+        '    Header set Cache-Control "public, max-age=31536000, immutable"' \
+        '</LocationMatch>' \
+        '<LocationMatch "^/(images|storage|favicon)/|^/favicon\.ico$">' \
+        '    Header set Cache-Control "public, max-age=604800"' \
+        '</LocationMatch>' \
         > /etc/apache2/conf-available/appleboss.conf \
     && printf '%s\n' 'ServerName localhost' > /etc/apache2/conf-available/servername.conf \
+    && a2enmod headers \
     && a2enconf appleboss servername \
     && composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
     && php artisan package:discover --ansi \
