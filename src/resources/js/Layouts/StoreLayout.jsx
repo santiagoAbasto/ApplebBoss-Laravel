@@ -203,7 +203,7 @@ function MegaMenuItem({ item, acceso = false }) {
                 className={acceso
                     ? `inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-3 text-xs font-bold transition-opacity ${open ? 'opacity-100' : 'hover:opacity-70'}`
                     : `inline-flex cursor-pointer items-center gap-1 whitespace-nowrap px-3 py-3 text-xs font-semibold tracking-wide transition-colors ${open ? 'opacity-100' : 'hover:opacity-70'}`}
-                style={acceso ? { color: 'var(--ab-navy)' } : item.myskin ? { color: 'var(--ms-lime)' } : { color: 'var(--text-secondary)' }}
+                style={acceso ? { color: 'var(--ab-navy)' } : item.myskin ? { color: 'var(--ms-lime-texto)' } : { color: 'var(--text-secondary)' }}
                 onFocus={handleEnter}
                 onBlur={handleLeave}
                 onKeyDown={handleKeyDown}
@@ -459,7 +459,7 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                                         nuevaPestana={item.open_in_new_tab}
                                         onClick={() => setMenuOpen(false)}
                                         className="flex items-center justify-between py-3.5 text-[15px] font-semibold"
-                                        style={item.myskin ? { color: 'var(--ms-lime)' } : { color: 'var(--text-primary)' }}
+                                        style={item.myskin ? { color: 'var(--ms-lime-texto)' } : { color: 'var(--text-primary)' }}
                                     >
                                         {item.label}
                                         <ChevronRight className="h-4 w-4" style={{ color: 'var(--text-muted)' }} />

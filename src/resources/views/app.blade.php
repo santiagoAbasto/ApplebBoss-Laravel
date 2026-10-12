@@ -54,6 +54,11 @@
     <link rel="manifest" href="{{ asset('favicon/site.webmanifest') }}?v={{ $faviconVersion }}">
 
     <!-- Fonts: se cargan una sola vez para toda la app (tienda, acceso y panel), así no parpadean al navegar -->
+    @if (request()->routeIs('store.home'))
+        {{-- La foto de la MacBook del hero es el elemento más grande de la portada (LCP): se pide junto con el HTML --}}
+        <link rel="preload" as="image" href="/images/hero-mac-1/macbook-chica.webp" media="(max-width: 640px)" fetchpriority="high">
+        <link rel="preload" as="image" href="/images/hero-mac-1/macbook.webp" media="(min-width: 641px)" fetchpriority="high">
+    @endif
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
