@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Venta;
+use App\Support\Documentos\Contacto;
+use App\Support\Documentos\Documento;
+use App\Support\Documentos\Envio;
 use App\Models\Celular;
 use App\Models\Computadora;
 use App\Models\ProductoGeneral;
@@ -539,6 +542,8 @@ class VentaController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $ventas->each(fn (Venta $v) => $v->setAttribute('compartir', Documento::compartir($v)));
+
         if (auth()->user()->rol === 'admin') {
             return Inertia::render('Admin/Ventas/Index', [
                 'ventas' => $ventas,
@@ -614,6 +619,7 @@ class VentaController extends Controller
         $request->validate([
             'nombre_cliente' => 'required|string',
             'telefono_cliente' => 'nullable|string',
+            'correo_cliente' => 'nullable|email:rfc|max:191',
             'tipo_venta' => 'required|in:producto,servicio_tecnico',
             'es_permuta' => 'boolean',
             'tipo_permuta' => 'nullable|in:celular,computadora,producto_general',
@@ -767,6 +773,7 @@ class VentaController extends Controller
 
                     'nombre_cliente' => $request->nombre_cliente,
                     'telefono_cliente' => $request->telefono_cliente,
+                    'correo_cliente' => Str::lower(trim((string) $request->correo_cliente)) ?: null,
                     'tipo_venta' => $request->tipo_venta,
                     'es_permuta' => $request->es_permuta,
                     'tipo_permuta' => $request->tipo_permuta,
@@ -833,6 +840,8 @@ class VentaController extends Controller
                         'codigo_nota' => $codigoServicio,
                         'cliente' => $request->nombre_cliente,
                         'telefono' => $request->telefono_cliente,
+                        'correo' => $venta->correo_cliente,
+                        'estado' => ServicioTecnico::ENTREGADO,
                         'equipo' => $request->equipo,
                         'detalle_servicio' => $sinCosto
                             ? \App\Support\SinCostos::detalleDeServicio($request->detalle_servicio)
@@ -864,11 +873,15 @@ class VentaController extends Controller
                         'user_id' => $venta->user_id,
                         'nombre' => Str::title(trim($venta->nombre_cliente)),
                         'telefono' => $venta->telefono_cliente,
-                        'correo' => null,
+                        'correo' => $venta->correo_cliente,
                         'documento' => null,
                     ]);
                 }
             }
+            Contacto::recordar($venta->nombre_cliente, $venta->telefono_cliente, $venta->correo_cliente, $venta->user_id);
+
+            // La nota de venta le llega al cliente por correo (si dejó uno), con el PDF y la garantía
+            $correoEnviado = Envio::avisar($venta, 'venta');
 
             if (Schema::hasTable('system_notifications')) {
                 SystemNotification::create([
@@ -883,8 +896,9 @@ class VentaController extends Controller
             }
 
             return response()->json([
-                'message' => 'Venta registrada con éxito',
+                'message' => 'Venta registrada con éxito' . ($correoEnviado ? '. Nota enviada por correo a ' . $venta->correo_cliente . '.' : '.'),
                 'venta_id' => $venta->id,
+                'correo_enviado' => $correoEnviado,
             ]);
         });
     }
@@ -938,6 +952,7 @@ class VentaController extends Controller
         $request->validate([
             'nombre_cliente' => 'required|string|max:255',
             'telefono_cliente' => 'nullable|string|max:255',
+            'correo_cliente' => 'nullable|email:rfc|max:191',
             'metodo_pago' => 'required|in:efectivo,qr,tarjeta',
             'inicio_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
             'fin_tarjeta' => 'required_if:metodo_pago,tarjeta|nullable|digits:4',
@@ -1112,6 +1127,7 @@ class VentaController extends Controller
             $venta->update([
                 'nombre_cliente' => $request->nombre_cliente,
                 'telefono_cliente' => $request->telefono_cliente,
+                'correo_cliente' => Str::lower(trim((string) $request->correo_cliente)) ?: $venta->correo_cliente,
                 'metodo_pago' => $request->metodo_pago,
                 'inicio_tarjeta' => $request->metodo_pago === 'tarjeta' ? $request->inicio_tarjeta : null,
                 'fin_tarjeta' => $request->metodo_pago === 'tarjeta' ? $request->fin_tarjeta : null,
@@ -1125,16 +1141,11 @@ class VentaController extends Controller
             ]);
 
             if ($venta->telefono_cliente) {
-                Cliente::updateOrCreate(
-                    ['telefono' => $venta->telefono_cliente],
-                    [
-                        'user_id' => $venta->user_id,
-                        'nombre' => Str::title(trim($venta->nombre_cliente)),
-                        'correo' => null,
-                        'documento' => null,
-                    ]
-                );
+                // Se actualiza el nombre; el correo y el documento que ya tenía el cliente no se pisan
+                $cliente = Cliente::firstOrNew(['telefono' => $venta->telefono_cliente]);
+                $cliente->fill(['user_id' => $cliente->user_id ?? $venta->user_id, 'nombre' => Str::title(trim($venta->nombre_cliente))])->save();
             }
+            Contacto::recordar($venta->nombre_cliente, $venta->telefono_cliente, $venta->correo_cliente, $venta->user_id);
 
             $venta->refresh()->load(['items', 'servicioTecnico']);
             $this->notifyAdminSaleEdited(
@@ -1153,27 +1164,8 @@ class VentaController extends Controller
     {
         $this->authorizeVentaAccess($venta);
 
-        $venta->load([
-            'items',
-            'items.celular',
-            'items.computadora',
-            'items.productoGeneral',
-            'items.productoApple',
-            'vendedor',
-            'entregadoCelular',
-            'entregadoComputadora',
-            'entregadoProductoGeneral',
-            'entregadoProductoApple',
-            'reserva',
-        ]);
-
-        $sumaSubtotalItems = $venta->items->sum('subtotal');
-        $valorPermuta = $venta->valor_permuta ?? 0;
-        $montoReserva = $venta->monto_reserva_aplicado ?? 0;
-        $totalAPagar = $sumaSubtotalItems - $valorPermuta - $montoReserva;
-
-        return PDF::loadView('pdf.boleta', compact('venta', 'sumaSubtotalItems', 'valorPermuta', 'montoReserva', 'totalAPagar'))
-            ->stream("boleta-venta-{$venta->id}.pdf");
+        // El mismo PDF que recibe el cliente por correo y por el enlace firmado
+        return Documento::pdf($venta)->stream("boleta-venta-{$venta->id}.pdf");
     }
 
 
@@ -1250,6 +1242,7 @@ class VentaController extends Controller
                     'tipo_venta' => 'servicio_tecnico',
                     'created_at' => $s->created_at,
                     'vendedor' => $s->vendedor?->name ?? null,
+                    'compartir' => Documento::compartir($s),
                 ];
             });
 
@@ -1264,6 +1257,7 @@ class VentaController extends Controller
                     'tipo_venta' => 'producto',
                     'created_at' => $v->created_at,
                     'vendedor' => $v->vendedor?->name ?? null,
+                    'compartir' => Documento::compartir($v),
                 ];
             });
             // Unir y retornar correctamente

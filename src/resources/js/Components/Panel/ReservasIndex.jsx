@@ -9,6 +9,7 @@ import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 import {
   Badge, Button, EmptyState, Modal, PageHeader, Toast, bsFmt, buttonCls, inputCls, useToast,
 } from '@/Components/Admin/ui';
+import Compartir from '@/Components/Panel/Compartir';
 
 const ESTADOS = {
   activa: { label: 'Activa', tone: 'emerald', icon: Hourglass },
@@ -136,6 +137,7 @@ export default function ReservasIndex({ reservas = [], Layout, prefijo = 'admin'
       )}
       <Doc href={route(`${prefijo}.reservas.boleta`, r.id)} icon={FileText} label="Nota" />
       <Doc href={route(`${prefijo}.reservas.boleta80`, r.id)} icon={Printer} label="Térmica" />
+      <Compartir prefijo={prefijo} compartir={r.compartir} />
       {r.estado === 'activa' && (
         <>
           <button type="button" onClick={() => setConfirmar({ reserva: r, estado: 'vencida' })} title="Marcar como vencida" aria-label={`Marcar ${r.codigo_nota} como vencida`}

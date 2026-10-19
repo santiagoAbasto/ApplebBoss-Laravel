@@ -14,6 +14,8 @@ class Reserva extends Model
         'codigo_nota',
         'nombre_cliente',
         'telefono_cliente',
+        'correo_cliente',
+        'correo_enviado_en',
         'fecha',
         'subtotal',
         'monto_reserva',
@@ -27,6 +29,7 @@ class Reserva extends Model
         'fecha' => 'datetime',
         'subtotal' => 'decimal:2',
         'monto_reserva' => 'decimal:2',
+        'correo_enviado_en' => 'datetime',
     ];
 
     protected static function booted(): void

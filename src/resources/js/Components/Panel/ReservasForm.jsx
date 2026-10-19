@@ -24,6 +24,7 @@ export default function ReservasForm({ Layout, prefijo = 'admin', guia = null })
   const [data, setData] = useState({
     nombre_cliente: '',
     telefono_cliente: '',
+    correo_cliente: '',
     monto_reserva: '',
     terminos_condiciones: TERMINOS,
   });
@@ -240,7 +241,7 @@ export default function ReservasForm({ Layout, prefijo = 'admin', guia = null })
                           <button type="button" className="block w-full px-4 py-2.5 text-left hover:bg-slate-50"
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
-                              setData((d) => ({ ...d, nombre_cliente: c.nombre, telefono_cliente: c.telefono || d.telefono_cliente }));
+                              setData((d) => ({ ...d, nombre_cliente: c.nombre, telefono_cliente: c.telefono || d.telefono_cliente, correo_cliente: c.correo || d.correo_cliente }));
                               setMostrarClientes(false);
                             }}>
                             <span className="block font-semibold text-slate-900">{c.nombre}</span>
@@ -254,6 +255,10 @@ export default function ReservasForm({ Layout, prefijo = 'admin', guia = null })
                 <Field label="Teléfono" hint="Sirve para avisarle cuando llegue el momento de retirar.">
                   <Input value={data.telefono_cliente} placeholder="Ej.: 70000000" inputMode="tel"
                     onChange={(e) => setData({ ...data, telefono_cliente: e.target.value })} />
+                </Field>
+                <Field label="Correo (opcional)" hint="Le llega la nota de reserva con el abono y el saldo.">
+                  <Input type="email" value={data.correo_cliente} placeholder="nombre@correo.com" inputMode="email" autoComplete="off"
+                    onChange={(e) => setData({ ...data, correo_cliente: e.target.value })} />
                 </Field>
               </div>
             </StepCard>

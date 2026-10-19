@@ -30,6 +30,9 @@ class CotizacionMailable extends Mailable
                     ->view('emails.cotizacion')
                     ->with([
                         'cotizacion' => $this->cotizacion,
+                        'nombre'     => \App\Support\Documentos\Documento::nombreDePila($this->cotizacion),
+                        'enlace'     => \App\Support\Documentos\Documento::enlace($this->cotizacion),
+                        'fecha'      => \Carbon\Carbon::parse($this->cotizacion->fecha_cotizacion ?? $this->cotizacion->created_at)->translatedFormat('d \d\e F \d\e Y'),
                     ])
                     ->attachData($pdf->output(), 'Cotizacion_' . $this->cotizacion->id . '.pdf', [
                         'mime' => 'application/pdf',

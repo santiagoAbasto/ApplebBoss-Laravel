@@ -1,111 +1,49 @@
-<!DOCTYPE html>
-<html lang="es">
+@extends('emails.layouts.marca')
 
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      color: #333;
-      background: #f4f4f4;
-      padding: 20px;
-    }
+@section('etiqueta', 'Cotización COT-' . $cotizacion->id)
+@section('titulo', 'Tu cotización, ' . $nombre)
 
-    .card {
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 30px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      max-width: 600px;
-      margin: auto;
-    }
+@section('contenido')
+    @include('emails.partials.icono', ['icono' => 'check-animado.gif', 'ancho' => 72, 'alto' => 72])
 
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+    <p style="margin:0;font-size:15px;line-height:1.65;color:#475569;">
+        Gracias por consultarnos. Esta es la cotización que preparamos para ti; el PDF va adjunto y también puedes abrirlo desde el botón. Si quieres ajustar algo, responde este correo o escríbenos por WhatsApp.
+    </p>
 
-    .header img {
-      width: 130px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      margin-bottom: 10px;
-    }
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid #e2e8f0;border-radius:14px;">
+        <tr><td style="padding:14px 16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+                <td style="font-size:11px;font-weight:700;letter-spacing:1px;color:#94a3b8;text-transform:uppercase;">Cotización COT-{{ $cotizacion->id }}</td>
+                <td align="right" style="font-size:12px;color:#94a3b8;">{{ $fecha }}</td>
+            </tr></table>
 
-    .header h2 {
-      font-size: 22px;
-      color: #003366;
-      margin-top: 12px;
-    }
+            @foreach ((array) $cotizacion->items as $item)
+                @php($detalle = implode(' · ', array_filter([$item['modelo'] ?? null, $item['capacidad'] ?? ($item['almacenamiento'] ?? null), $item['color'] ?? null, $item['ram'] ?? null])))
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;"><tr>
+                    <td style="font-size:14px;line-height:1.5;color:#0f172a;">
+                        <strong>{{ $item['nombre'] ?? 'Producto' }}</strong>@if ((int) ($item['cantidad'] ?? 1) > 1) <span style="color:#94a3b8;">× {{ (int) $item['cantidad'] }}</span>@endif
+                        @if ($detalle)<br><span style="font-size:12px;color:#64748b;">{{ $detalle }}</span>@endif
+                    </td>
+                    <td align="right" valign="top" style="font-size:14px;font-weight:700;color:#0f172a;white-space:nowrap;padding-left:12px;">{{ $cotizacion->simboloMoneda() }} {{ number_format((float) ($item['total'] ?? 0), 2, ',', '.') }}</td>
+                </tr></table>
+            @endforeach
 
-    .info {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #333;
-    }
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#011446;border-radius:12px;"><tr>
+                <td style="padding:12px 14px;font-size:13px;font-weight:700;color:#9aa3c7;">Total cotizado · {{ $cotizacion->moneda === 'USD' ? 'dólares' : 'bolivianos' }}</td>
+                <td align="right" style="padding:12px 14px;font-size:18px;font-weight:900;color:#C6CB36;white-space:nowrap;">{{ $cotizacion->simboloMoneda() }} {{ number_format((float) $cotizacion->total, 2, ',', '.') }}</td>
+            </tr></table>
+        </td></tr>
+    </table>
 
-    .info p {
-      margin: 6px 0;
-    }
+    @if ($cotizacion->notas_adicionales)
+        <p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#94a3b8;"><strong style="color:#64748b;">Notas:</strong> {{ strip_tags((string) $cotizacion->notas_adicionales) }}</p>
+    @endif
 
-    .footer {
-      margin-top: 30px;
-      font-size: 13px;
-      color: #555;
-      text-align: center;
-    }
+    @include('emails.partials.documento-pdf', ['enlace' => $enlace, 'titulo' => 'La cotización', 'boton' => 'Descargar mi cotización'])
 
-    .social-icons {
-      margin-top: 10px;
-    }
+    <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#64748b;">Los precios y el stock pueden cambiar: la cotización vale mientras el producto siga disponible.</p>
+@endsection
 
-    .social-icons a {
-      margin: 0 8px;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .social-icons img {
-      width: 26px;
-      height: 26px;
-      vertical-align: middle;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="card">
-    <div class="header">
-      <img src="https://i.imgur.com/7MORsIZ.png" alt="Apple Boss">
-      <h2>Tu cotización ha sido generada</h2>
-    </div>
-
-    <div class="info">
-      <p><strong>Cliente:</strong> {{ $cotizacion->nombre_cliente }}</p>
-      <p><strong>Teléfono:</strong> {{ $cotizacion->telefono ?? '-' }}</p>
-      <p><strong>Correo:</strong> {{ $cotizacion->correo_cliente }}</p>
-      <p><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}</p>
-    </div>
-
-    <div class="footer" style="text-align: center;">
-  <p style="margin-bottom: 10px;"><strong>Apple Boss</strong> | Edificio Fidel Anze, Av. Melchor Urquidi, Cochabamba</p>
-  <div class="social-icons" style="display: inline-block;">
-    <a href="https://wa.me/59175904313" target="_blank" title="Chatea por WhatsApp">
-      <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp" width="26" height="26">
-    </a>
-    <a href="https://www.instagram.com/apple_boss_bol/" target="_blank" title="Instagram">
-      <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram" width="26" height="26">
-    </a>
-    <a href="https://www.facebook.com/Applebossbo" target="_blank" title="Facebook">
-      <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook" width="26" height="26">
-    </a>
-    <a href="https://www.tiktok.com/@apple_boss_bo" target="_blank" title="TikTok">
-      <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" alt="TikTok" width="26" height="26">
-    </a>
-    <a href="https://maps.app.goo.gl/byLr26x8RwSuz4ij7" target="_blank" title="Ver ubicación en Google Maps">
-      <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="Ubicación" width="26" height="26">
-    </a>
-  </div>
-</div>
-
-</html>
+@section('pie')
+    Te escribimos por la cotización COT-{{ $cotizacion->id }}. Responde este correo y te atendemos desde ventas@appleboss.com.bo.
+@endsection

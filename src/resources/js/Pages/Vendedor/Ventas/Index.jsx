@@ -10,6 +10,7 @@ import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 import { Badge, EmptyState, Modal, PageHeader, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
 import { Stat } from '@/Components/Admin/inventario';
 import AdminGuide from '@/Components/Admin/AdminGuide';
+import Compartir from '@/Components/Panel/Compartir';
 
 // Mis ventas: cada fila es un producto vendido por este vendedor. La lista ya llega filtrada
 // por `user_id` desde el servidor (VentaController@index), así que acá no se mezcla nada de nadie.
@@ -69,6 +70,7 @@ export default function Index({ ventas = [] }) {
       const descuento = parseFloat(venta.descuento || 0);
       return [{
         cliente: venta.nombre_cliente,
+        compartir: venta.compartir,
         producto: 'Servicio técnico',
         codigoNota: venta.servicio_tecnico?.codigo_nota ?? venta.codigo_nota,
         id_venta: venta.id,
@@ -91,6 +93,7 @@ export default function Index({ ventas = [] }) {
 
       return {
         cliente: venta.nombre_cliente,
+        compartir: venta.compartir,
         producto,
         codigoNota: venta.codigo_nota,
         id_venta: venta.id,
@@ -225,6 +228,7 @@ export default function Index({ ventas = [] }) {
                         href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.boleta', r.id_real) : route('vendedor.ventas.boleta', r.id_real)} />
                       <AccionNota icon={Printer} label="Térmica"
                         href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.recibo80mm', r.id_real) : route('vendedor.ventas.boleta80', r.id_real)} />
+                      <Compartir prefijo="vendedor" compartir={r.compartir} />
                     </div>
                   </li>
                 ))}
@@ -307,6 +311,7 @@ export default function Index({ ventas = [] }) {
                             <div className="flex justify-end gap-1.5">
                               <AccionNota icon={FileText} label="Nota" href={route('vendedor.ventas.boleta', i.id_venta)} />
                               <AccionNota icon={Printer} label="Térmica" href={route('vendedor.ventas.boleta80', i.id_venta)} />
+                              <Compartir prefijo="vendedor" compartir={i.compartir} />
                               <Link href={route('vendedor.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
                                 <Pencil className="h-3.5 w-3.5" />

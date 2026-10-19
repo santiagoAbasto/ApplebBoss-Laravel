@@ -7,6 +7,7 @@ import AdminGuide from '@/Components/Admin/AdminGuide';
 import {
   Badge, EmptyState, Field, Input, Modal, PageHeader, Select, Textarea, Toast, buttonCls, useToast,
 } from '@/Components/Admin/ui';
+import Compartir from '@/Components/Panel/Compartir';
 
 // Ventas y operación → Diagnósticos: el informe técnico de un equipo, con el membrete, la firma y el sello de la
 // tienda. La firma certifica lo que vio el técnico: el PDF sale firmado recién con pruebas, conclusión y técnico.
@@ -159,6 +160,7 @@ export default function Index({ diagnosticos = [], pruebasSugeridas = [], result
                     <a href={route('admin.diagnosticos.pdf', d.id)} target="_blank" rel="noopener noreferrer" className={buttonCls(d.listo ? 'primary' : 'secondary', 'h-9 px-3 text-xs')}>
                       <FileText className="h-3.5 w-3.5" /> {d.listo ? 'Informe PDF' : 'Ver borrador'}
                     </a>
+                    <Compartir prefijo="admin" compartir={d.compartir} />
                     <button type="button" onClick={() => borrar(d)} className={buttonCls('danger', 'h-9 px-3 text-xs')}>
                       <Trash2 className="h-3.5 w-3.5" /> Borrar
                     </button>

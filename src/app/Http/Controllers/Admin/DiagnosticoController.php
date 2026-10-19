@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Diagnostico;
+use App\Support\Documentos\Documento;
+use App\Support\Documentos\Envio;
 use App\Models\Tecnico;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +38,7 @@ class DiagnosticoController extends Controller
                 'tecnico'          => $d->tecnico,
                 'listo'            => $d->listo(),
                 'falta'            => $d->queFalta(),
+                'compartir'        => Documento::compartir($d),
             ])->values(),
             'pruebasSugeridas' => Diagnostico::PRUEBAS,
             'resultados'       => Diagnostico::RESULTADOS,
@@ -48,14 +51,14 @@ class DiagnosticoController extends Controller
     {
         $diagnostico = Diagnostico::create($this->datos($request) + ['user_id' => $request->user()->id]);
 
-        return back()->with('success', "Se guardó el diagnóstico {$diagnostico->codigo}.");
+        return back()->with('success', "Se guardó el diagnóstico {$diagnostico->codigo}." . $this->avisoDeEnvio($diagnostico));
     }
 
     public function update(Request $request, Diagnostico $diagnostico): RedirectResponse
     {
         $diagnostico->update($this->datos($request));
 
-        return back()->with('success', "Se guardó el diagnóstico {$diagnostico->codigo}.");
+        return back()->with('success', "Se guardó el diagnóstico {$diagnostico->codigo}." . $this->avisoDeEnvio($diagnostico));
     }
 
     public function destroy(Diagnostico $diagnostico): RedirectResponse
@@ -67,7 +70,17 @@ class DiagnosticoController extends Controller
 
     public function pdf(Diagnostico $diagnostico)
     {
-        return Pdf::loadView('pdf.diagnostico', compact('diagnostico'))->stream("informe-tecnico-{$diagnostico->codigo}.pdf");
+        return Documento::pdf($diagnostico)->stream("informe-tecnico-{$diagnostico->codigo}.pdf");
+    }
+
+    /** La primera vez que el informe queda firmado sale solo al correo del cliente; después se reenvía desde el botón. */
+    private function avisoDeEnvio(Diagnostico $diagnostico): string
+    {
+        if (! $diagnostico->listo() || $diagnostico->correo_enviado_en || ! Documento::correo($diagnostico)) {
+            return '';
+        }
+
+        return Envio::avisar($diagnostico, 'diagnostico') ? ' Informe enviado por correo a ' . $diagnostico->cliente_correo . '.' : '';
     }
 
     private function datos(Request $request): array

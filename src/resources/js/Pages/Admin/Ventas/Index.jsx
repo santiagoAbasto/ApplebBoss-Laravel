@@ -88,6 +88,7 @@ export default function Index({ ventas }) {
 
       return [{
         cliente: venta.nombre_cliente,
+        compartir: venta.compartir,
         producto: 'Servicio Técnico',
         codigoNota: venta.servicio_tecnico?.codigo_nota ?? venta.codigo_nota,
         id_venta: venta.id,
@@ -123,6 +124,7 @@ export default function Index({ ventas }) {
 
       return {
         cliente: venta.nombre_cliente,
+        compartir: venta.compartir,
         producto: nombre,
         codigoNota: venta.codigo_nota,
         id_venta: venta.id,
@@ -259,6 +261,7 @@ export default function Index({ ventas }) {
                         href={r.tipo === 'servicio_tecnico' ? route('admin.servicios.boleta', r.id_real) : route('admin.ventas.boleta', r.id_real)} />
                       <AccionNota icon={Printer} label="Térmica"
                         href={r.tipo === 'servicio_tecnico' ? route('admin.servicios.recibo80mm', r.id_real) : route('admin.ventas.boleta80', r.id_real)} />
+                      <Compartir prefijo="admin" compartir={r.compartir} />
                     </div>
                   </li>
                 ))}
@@ -353,6 +356,7 @@ export default function Index({ ventas }) {
                             <div className="flex justify-end gap-1.5">
                               <AccionNota icon={FileText} label="Nota" href={route('admin.ventas.boleta', i.id_venta)} />
                               <AccionNota icon={Printer} label="Térmica" href={route('admin.ventas.boleta80', i.id_venta)} />
+                              <Compartir prefijo="admin" compartir={i.compartir} />
                               <Link href={route('admin.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
                                 <Pencil className="h-3.5 w-3.5" />

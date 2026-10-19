@@ -91,6 +91,13 @@ Route::post('/newsletter', [\App\Http\Controllers\NewsletterController::class, '
 Route::get('/newsletter/baja/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeShow'])->name('newsletter.baja')->middleware('throttle:30,1');
 Route::post('/newsletter/baja/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribe'])->name('newsletter.baja.confirmar')->middleware('throttle:20,1');
 
+// Documentos del cliente (nota de venta, de servicio, de reserva e informe técnico): el enlace del correo y del WhatsApp
+// lleva firma; sin ella no abre. Sin sesión, como el seguimiento de pedidos: el enlace es el control.
+Route::get('/documentos/{tipo}/{id}', [\App\Http\Controllers\DocumentoController::class, 'ver'])
+    ->name('documentos.ver')
+    ->middleware(['signed', 'throttle:30,1'])
+    ->where(['tipo' => 'venta|servicio|reserva|diagnostico|cotizacion', 'id' => '[0-9]+']);
+
 // 🏠 Rutas públicas del catálogo
 Route::get('/', [PublicCatalogController::class, 'home'])->name('store.home');
 Route::get('/catalogo', [PublicCatalogController::class, 'index'])->name('store.catalog');
@@ -447,6 +454,15 @@ Route::middleware(['auth', 'verified', 'permiso'])
         // El costo del servicio lo carga el administrador (el vendedor registra solo lo que cobra)
         Route::patch('/servicios/{servicio}/costo', [ServicioTecnicoController::class, 'cargarCosto'])
             ->name('servicios.costo');
+
+        // El camino del equipo en el taller (recibido → en reparación → listo → entregado); cada paso avisa al cliente
+        Route::patch('/servicios/{servicio}/estado', [ServicioTecnicoController::class, 'cambiarEstado'])
+            ->name('servicios.estado');
+
+        // Botón «Correo» de ventas, servicios, reservas y diagnósticos: manda el documento al cliente
+        Route::post('/documentos/{tipo}/{id}/correo', [\App\Http\Controllers\DocumentoController::class, 'correo'])
+            ->name('documentos.correo')
+            ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
 
         // ========================
         // 🩺 Diagnósticos: el informe técnico firmado de un equipo
@@ -941,6 +957,11 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
 
         Route::get('/servicios/{servicio}/recibo-80mm', [ServicioTecnicoController::class, 'recibo80mm'])
             ->name('servicios.recibo80mm');
+        Route::patch('/servicios/{servicio}/estado', [ServicioTecnicoController::class, 'cambiarEstado'])
+            ->name('servicios.estado');
+        Route::post('/documentos/{tipo}/{id}/correo', [\App\Http\Controllers\DocumentoController::class, 'correo'])
+            ->name('documentos.correo')
+            ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
 
         Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])
             ->name('servicios.exportarFiltrado');

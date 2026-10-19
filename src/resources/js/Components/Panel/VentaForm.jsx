@@ -39,6 +39,7 @@ export default function VentaForm({ celulares, computadoras, productosGenerales,
   const { data, setData } = useForm({
     nombre_cliente: '',
     telefono_cliente: '',
+    correo_cliente: '',
     tipo_venta: 'producto',
     metodo_pago: 'efectivo',
     descuento: 0,
@@ -184,6 +185,7 @@ export default function VentaForm({ celulares, computadoras, productosGenerales,
     setData('reserva_id', reserva.id);
     setData('nombre_cliente', reserva.nombre_cliente || '');
     setData('telefono_cliente', reserva.telefono_cliente || '');
+    setData('correo_cliente', reserva.correo_cliente || '');
     setItems((reserva.items || []).map((item) => {
       const producto = productoDesdeReserva(item);
       return {
@@ -388,6 +390,7 @@ export default function VentaForm({ celulares, computadoras, productosGenerales,
                             onClick={() => {
                               setData('nombre_cliente', c.nombre);
                               setData('telefono_cliente', c.telefono);
+                              setData('correo_cliente', c.correo || '');
                               setMostrarClientes(false);
                             }}>
                             <span className="block font-semibold text-slate-900">{c.nombre}</span>
@@ -403,6 +406,13 @@ export default function VentaForm({ celulares, computadoras, productosGenerales,
                   <Input value={data.telefono_cliente} placeholder="Ej.: 70000000" inputMode="tel"
                     onChange={(e) => setData('telefono_cliente', e.target.value)} />
                 </Field>
+
+                <div className="md:col-span-2">
+                  <Field label="Correo (opcional)" hint="Le llega la nota de venta con la garantía y el PDF apenas registres la venta.">
+                    <Input type="email" value={data.correo_cliente} placeholder="nombre@correo.com" inputMode="email" autoComplete="off"
+                      onChange={(e) => setData('correo_cliente', e.target.value)} />
+                  </Field>
+                </div>
 
                 <div className="md:col-span-2">
                   <Field label="Forma de pago">

@@ -22,6 +22,8 @@ class Venta extends Model
     protected $fillable = [
         'nombre_cliente',
         'telefono_cliente',
+        'correo_cliente',
+        'correo_enviado_en',
         'fecha',
         'codigo_nota',
         'reserva_id',
@@ -50,6 +52,8 @@ class Venta extends Model
         'notas_adicionales',
         'user_id',
     ];
+
+    protected $casts = ['correo_enviado_en' => 'datetime'];
 
     /**
      * Las notas pueden traer formato del editor: se guarda solo lo permitido (sin scripts ni atributos).

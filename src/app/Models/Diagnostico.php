@@ -17,12 +17,13 @@ class Diagnostico extends Model
 
     protected $fillable = [
         'codigo', 'fecha', 'cliente_nombre', 'cliente_telefono', 'cliente_correo', 'equipo', 'identificador',
-        'falla_reportada', 'pruebas', 'conclusion', 'recomendacion', 'tecnico', 'user_id',
+        'falla_reportada', 'pruebas', 'conclusion', 'recomendacion', 'tecnico', 'user_id', 'correo_enviado_en',
     ];
 
     protected $casts = [
         'fecha'   => 'date',
         'pruebas' => 'array',
+        'correo_enviado_en' => 'datetime',
     ];
 
     /** Lo que se suele probar en un celular, en el orden en que conviene. La lista no está cerrada. */

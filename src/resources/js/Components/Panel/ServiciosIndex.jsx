@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 import { Badge, EmptyState, Field, Input, Modal, PageHeader, Toast, bsFmt, buttonCls, inputCls, pctSobreCosto, useToast } from '@/Components/Admin/ui';
+import Compartir from '@/Components/Panel/Compartir';
 
 const TZ = 'America/La_Paz';
 const SIN_FILTROS = { desde: '', hasta: '', vendedor: '', tecnico: '', pendientes: false };
@@ -88,10 +89,63 @@ function Doc({ href, icon: Icon, label }) {
 
 function Acciones({ s, prefijo }) {
   return (
-    <div className="flex justify-end gap-1.5">
+    <div className="flex flex-wrap justify-end gap-1.5">
       <Doc href={route(`${prefijo}.servicios.boleta`, s.id)} icon={FileText} label="Nota" />
       <Doc href={route(`${prefijo}.servicios.recibo80mm`, s.id)} icon={Printer} label="Térmica" />
+      <Compartir prefijo={prefijo} compartir={s.compartir} />
     </div>
+  );
+}
+
+// El camino del equipo en el taller. Cambiar el paso avisa al cliente por correo (si dejó uno), por eso se confirma.
+const ESTADOS = [
+  ['recibido', 'Recibido', 'slate'],
+  ['en_reparacion', 'En reparación', 'amber'],
+  ['listo', 'Listo para recoger', 'emerald'],
+  ['entregado', 'Entregado', 'blue'],
+];
+
+function EstadoServicio({ s, prefijo }) {
+  const [pendiente, setPendiente] = useState(null); // estado elegido, a confirmar
+  const [guardando, setGuardando] = useState(false);
+  const actual = ESTADOS.find(([k]) => k === s.estado) ?? ESTADOS[0];
+  const elegido = ESTADOS.find(([k]) => k === pendiente);
+
+  const confirmar = () => {
+    setGuardando(true);
+    router.patch(route(`${prefijo}.servicios.estado`, s.id), { estado: pendiente }, {
+      preserveScroll: true,
+      onFinish: () => { setGuardando(false); setPendiente(null); },
+    });
+  };
+
+  return (
+    <>
+      <label className="inline-flex items-center gap-1.5">
+        <span className="sr-only">Estado de {s.codigo_nota}</span>
+        <Badge tone={actual[2]}>{actual[1]}</Badge>
+        <select value={s.estado || 'recibido'} onChange={(e) => e.target.value !== s.estado && setPendiente(e.target.value)}
+          aria-label={`Cambiar el estado de ${s.codigo_nota || 'este servicio'}`} title="Cambiar el estado: el cliente recibe un aviso por correo"
+          className="h-7 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
+          {ESTADOS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+        </select>
+      </label>
+      {elegido && (
+        <Modal title={`${s.codigo_nota || 'Servicio'}: marcar como ${elegido[1].toLowerCase()}`} onClose={() => setPendiente(null)}
+          footer={(
+            <>
+              <button type="button" onClick={() => setPendiente(null)} className={buttonCls('secondary')}>Cancelar</button>
+              <button type="button" onClick={confirmar} disabled={guardando} className={buttonCls('primary')}>{guardando ? 'Guardando…' : 'Confirmar'}</button>
+            </>
+          )}>
+          <p className="text-sm text-slate-600">
+            {s.equipo} de {s.cliente}. {s.correo
+              ? <>Se le avisa por correo a <strong className="text-slate-900">{s.correo}</strong>, con la nota adjunta.</>
+              : 'El cliente no dejó correo: no se manda ningún aviso (puedes avisarle por WhatsApp desde la fila).'}
+          </p>
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -490,6 +544,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                         <th className="px-4 py-3">Cliente</th>
                         <th className="px-4 py-3">Equipo y trabajo</th>
                         <th className="px-4 py-3">Técnico</th>
+                        <th className="px-4 py-3">Estado</th>
                         {conCostos && <th className="px-4 py-3 text-right">Costo</th>}
                         <th className="px-4 py-3 text-right">Cobrado</th>
                         {conCostos && <th className="px-4 py-3 text-right">Ganancia</th>}
@@ -515,6 +570,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                             </p>
                           </td>
                           <td className="px-4 py-3"><Tecnico nombre={s.tecnico} /></td>
+                          <td className="px-4 py-3"><EstadoServicio s={s} prefijo={prefijo} /></td>
                           {conCostos && (
                             <td className="px-4 py-3 text-right tabular-nums text-slate-500">
                               {s.pendiente ? (
@@ -554,7 +610,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-slate-200 bg-slate-50/70 text-[13px]">
-                        <td className="px-5 py-3 font-bold text-slate-900" colSpan={4}>
+                        <td className="px-5 py-3 font-bold text-slate-900" colSpan={5}>
                           Total {hayFiltros ? 'filtrado' : 'general'} · {filtrados.length.toLocaleString('es-BO')} {filtrados.length === 1 ? 'servicio' : 'servicios'}
                         </td>
                         {conCostos && <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-600">{bsFmt(totalCosto)}</td>}
@@ -579,6 +635,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                         </div>
                         <Tecnico nombre={s.tecnico} />
                       </div>
+                      <EstadoServicio s={s} prefijo={prefijo} />
                       <p className="text-sm text-slate-600">
                         <span className="font-semibold text-slate-900">{s.equipo}</span>
                         {s.trabajos[0] && ` · ${s.trabajos[0].descripcion}`}

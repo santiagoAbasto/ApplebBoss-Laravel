@@ -8,6 +8,8 @@ use App\Models\Computadora;
 use App\Models\ProductoApple;
 use App\Models\ProductoGeneral;
 use App\Models\Reserva;
+use App\Support\Documentos\Documento;
+use App\Support\Documentos\Envio;
 use App\Models\ReservaItem;
 use App\Services\GeneradorCodigos;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -138,6 +140,8 @@ class ReservaController extends Controller
             ->latest()
             ->get();
 
+        $reservas->each(fn (Reserva $r) => $r->setAttribute('compartir', Documento::compartir($r)));
+
         return Inertia::render(auth()->user()->rol === 'admin' ? 'Admin/Reservas/Index' : 'Vendedor/Reservas/Index', [
             'reservas' => $reservas,
         ]);
@@ -153,6 +157,7 @@ class ReservaController extends Controller
         $request->validate([
             'nombre_cliente' => 'required|string|max:255',
             'telefono_cliente' => 'nullable|string|max:255',
+            'correo_cliente' => 'nullable|email:rfc|max:191',
             'monto_reserva' => 'required|numeric|min:0.01',
             'terminos_condiciones' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -204,6 +209,7 @@ class ReservaController extends Controller
                     'codigo_nota' => $codigoReserva,
                     'nombre_cliente' => $request->nombre_cliente,
                     'telefono_cliente' => $request->telefono_cliente,
+                    'correo_cliente' => Str::lower(trim((string) $request->correo_cliente)) ?: null,
                     'fecha' => now('America/La_Paz'),
                     'subtotal' => $subtotal,
                     'monto_reserva' => $request->monto_reserva,
@@ -230,15 +236,19 @@ class ReservaController extends Controller
                     [
                         'user_id' => $reserva->user_id,
                         'nombre' => Str::title(trim($reserva->nombre_cliente)),
-                        'correo' => null,
+                        'correo' => $reserva->correo_cliente,
                         'documento' => null,
                     ]
                 );
             }
 
+            // La nota de reserva le llega al cliente por correo si dejó uno
+            $correoEnviado = Envio::avisar($reserva, 'reserva');
+
             return response()->json([
-                'message' => 'Reserva registrada con éxito',
+                'message' => 'Reserva registrada con éxito' . ($correoEnviado ? '. Nota enviada por correo a ' . $reserva->correo_cliente . '.' : '.'),
                 'reserva_id' => $reserva->id,
+                'correo_enviado' => $correoEnviado,
             ]);
         });
     }
@@ -257,7 +267,10 @@ class ReservaController extends Controller
 
         $reserva->update(['estado' => $request->estado]);
 
-        return back()->with('success', 'Estado de reserva actualizado.');
+        // Vencida o cancelada: el cliente se entera por correo si dejó uno (volver a «activa» no avisa nada)
+        $correoEnviado = in_array($request->estado, ['vencida', 'cancelada'], true) && Envio::avisar($reserva, 'reserva');
+
+        return back()->with('success', 'Estado de reserva actualizado.' . ($correoEnviado ? ' Aviso enviado por correo a ' . $reserva->correo_cliente . '.' : ''));
     }
 
     public function activas()
@@ -281,10 +294,9 @@ class ReservaController extends Controller
     public function boleta(Reserva $reserva)
     {
         $this->authorizeReservaAccess($reserva);
-        $reserva = $this->loadReservaForDocument($reserva);
 
-        return PDF::loadView('pdf.reserva', compact('reserva'))
-            ->stream("boleta-reserva-{$reserva->id}.pdf");
+        // El mismo PDF que recibe el cliente por correo y por el enlace firmado
+        return Documento::pdf($reserva)->stream("boleta-reserva-{$reserva->id}.pdf");
     }
 
     public function boleta80(Reserva $reserva)

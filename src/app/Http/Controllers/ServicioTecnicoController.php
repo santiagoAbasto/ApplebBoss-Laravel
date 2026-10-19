@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServicioTecnico;
+use App\Support\Documentos\Documento;
+use App\Support\Documentos\Envio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -83,7 +86,7 @@ class ServicioTecnicoController extends Controller
 
             // Al vendedor tampoco le viaja el costo por la búsqueda rápida
             return response()->json([
-                'servicios' => $esAdmin ? $query->get() : $this->sinCostos($query->get()),
+                'servicios' => $esAdmin ? $this->conCompartir($query->get()) : $this->sinCostos($this->conCompartir($query->get())),
             ]);
         }
 
@@ -93,7 +96,7 @@ class ServicioTecnicoController extends Controller
                 : 'Vendedor/Servicios/Index',
             [
                 // Al vendedor no le viajan ni el costo del servicio ni el de cada trabajo
-                'servicios' => $esAdmin ? $query->get() : $this->sinCostos($query->get()),
+                'servicios' => $esAdmin ? $this->conCompartir($query->get()) : $this->sinCostos($this->conCompartir($query->get())),
                 'filtros' => $request->only(['fecha_inicio', 'fecha_fin', 'vendedor_id', 'tecnico', 'pendientes']),
                 // Cuántos servicios esperan su costo, sin importar el período que se esté mirando
                 'pendientesDeCosto' => $esAdmin ? ServicioTecnico::sinCosto()->count() : 0,
@@ -165,6 +168,7 @@ class ServicioTecnicoController extends Controller
         $data = $request->validate(RecepcionDeEquipo::reglas() + [
             'cliente'           => 'required|string|max:255',
             'telefono'          => 'nullable|string|max:50',
+            'correo'            => 'nullable|email:rfc|max:191',
             'equipo'            => 'required|string|max:255',
             'marca'             => ['required', Rule::in(array_keys(ServicioTecnico::MARCAS))],
             'detalle_servicio'  => 'required|string',
@@ -188,8 +192,9 @@ class ServicioTecnicoController extends Controller
         $data['tecnico'] = $tecnico->nombre;
         $esAdmin = ! SinCostos::aplica(Auth::user());
         $montos = $this->montosDelServicio($data, $esAdmin);
+        $correo = Str::lower(trim((string) ($data['correo'] ?? ''))) ?: null;
 
-        return DB::transaction(function () use ($data, $montos, $esAdmin) {
+        return DB::transaction(function () use ($data, $montos, $esAdmin, $correo) {
 
             $cliente = Cliente::firstOrCreate(
                 [
@@ -198,17 +203,20 @@ class ServicioTecnicoController extends Controller
                 ],
                 [
                     'telefono' => $data['telefono'] ?? null,
+                    'correo'   => $correo,
                 ]
             );
 
             $servicio = null;
 
-            GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigo) use ($cliente, $data, $montos, &$servicio) {
+            GeneradorCodigos::crearServicioTecnicoConCodigo(function (string $codigo) use ($cliente, $data, $montos, $correo, &$servicio) {
                 $servicio = ServicioTecnico::create([
                     'codigo_nota'       => $codigo,
                     'cliente_id'        => $cliente->id,
                     'cliente'           => $cliente->nombre,
                     'telefono'          => $cliente->telefono,
+                    'correo'            => $correo,
+                    'estado'            => ServicioTecnico::RECIBIDO,
                     'equipo'            => $data['equipo'],
                     'marca'             => $data['marca'],
                     'recepcion'         => RecepcionDeEquipo::normalizar($data['recepcion'] ?? null),
@@ -230,11 +238,15 @@ class ServicioTecnicoController extends Controller
                 $servicio->load('vendedor')->avisarCostoPendiente();
             }
 
+            // «Recibimos tu equipo»: la nota de servicio le llega al cliente por correo si dejó uno
+            $correoEnviado = $servicio ? Envio::avisar($servicio, 'servicio') : false;
+
             return redirect()
                 ->route($esAdmin ? 'admin.servicios.index' : 'vendedor.servicios.index')
-                ->with('success', $montos['pendiente'] && ! $esAdmin
+                ->with('success', ($montos['pendiente'] && ! $esAdmin
                     ? 'Servicio técnico registrado. Ya puedes imprimir la nota.'
-                    : 'Servicio técnico registrado correctamente.');
+                    : 'Servicio técnico registrado correctamente.')
+                    . ($correoEnviado ? ' Nota enviada por correo a ' . $correo . '.' : ''));
         });
     }
 
@@ -299,6 +311,31 @@ class ServicioTecnicoController extends Controller
      * utilidad siempre cuadran. El vendedor registra solo lo que paga el cliente; si el administrador deja algún costo
      * vacío, el servicio queda con el costo pendiente igual que uno del vendedor.
      */
+    /* ======================================================
+     * ESTADO DEL TRABAJO: recibido → en reparación → listo → entregado
+     * ====================================================== */
+    public function cambiarEstado(Request $request, ServicioTecnico $servicio)
+    {
+        $this->authorizeServicioAccess($servicio);
+
+        $datos = $request->validate(
+            ['estado' => ['required', Rule::in(array_keys(ServicioTecnico::ESTADOS))]],
+            ['estado.in' => 'Ese estado no existe.'],
+        );
+
+        if ($datos['estado'] === $servicio->estado) {
+            return back();
+        }
+
+        $servicio->update(['estado' => $datos['estado']]);
+
+        // Cada paso le avisa al cliente por correo, con la nota adjunta, si dejó un correo
+        $correoEnviado = Envio::avisar($servicio, 'servicio');
+
+        return back()->with('success', $servicio->codigo_nota . ': ' . $servicio->etiquetaDeEstado()
+            . ($correoEnviado ? '. Aviso enviado por correo a ' . $servicio->correo . '.' : '.'));
+    }
+
     private function montosDelServicio(array $data, bool $esAdmin): array
     {
         $items = json_decode($data['detalle_servicio'], true);
@@ -363,6 +400,12 @@ class ServicioTecnicoController extends Controller
     }
 
     /** Servicios listos para el panel del vendedor: sin el costo del servicio ni el de cada trabajo. */
+    /** Lo que el panel necesita para los botones Correo, WhatsApp y Copiar de cada fila. */
+    private function conCompartir($servicios)
+    {
+        return $servicios->each(fn (ServicioTecnico $s) => $s->setAttribute('compartir', Documento::compartir($s)));
+    }
+
     private function sinCostos($servicios)
     {
         return SinCostos::deColeccion($servicios)->map(function (array $s) {
@@ -560,17 +603,8 @@ class ServicioTecnicoController extends Controller
     {
         $this->authorizeServicioAccess($servicio);
 
-        $servicio->load('vendedor');
-
-        $servicios_cliente = collect(json_decode($servicio->detalle_servicio, true))
-            ->filter(fn($i) => isset($i['descripcion']))
-            ->map(fn($i) => [
-                'descripcion' => $i['descripcion'],
-                'precio' => (float) ($i['precio'] ?? 0),
-            ]);
-
-        return Pdf::loadView('pdf.boleta_servicio', compact('servicio', 'servicios_cliente'))
-            ->stream("boleta-servicio-{$servicio->codigo_nota}.pdf");
+        // El mismo PDF que recibe el cliente por correo y por el enlace firmado
+        return Documento::pdf($servicio)->stream("boleta-servicio-{$servicio->codigo_nota}.pdf");
     }
 
     public function recibo80mm(ServicioTecnico $servicio)

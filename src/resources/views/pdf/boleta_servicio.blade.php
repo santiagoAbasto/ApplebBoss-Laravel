@@ -10,7 +10,7 @@
   // Cómo entró el equipo: la revisión y el código de desbloqueo que se anotaron en el mostrador
   $revision   = $servicio->recepcion['revision'] ?? [];
   $desbloqueo = RecepcionDeEquipo::textoDesbloqueo($servicio->recepcion['desbloqueo'] ?? null);
-  $marca      = ServicioTecnico::MARCAS[$servicio->marca] ?? null;
+  $marca      = ServicioTecnico::MARCAS[$servicio->marca ?? ''] ?? null;
   $bs       = fn ($n) => 'Bs ' . number_format((float) $n, 2);
   $fecha    = $servicio->fecha ?? $servicio->created_at;
   $fecha    = $fecha ? $fecha->timezone(config('app.timezone')) : null;

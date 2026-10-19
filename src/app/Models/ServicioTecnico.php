@@ -20,7 +20,10 @@ class ServicioTecnico extends Model
         'codigo_nota',
         'cliente',
         'telefono',
+        'correo',
         'equipo',
+        'estado',
+        'correo_enviado_en',
         'marca',
         'recepcion',
         'detalle_servicio',
@@ -45,7 +48,33 @@ class ServicioTecnico extends Model
         'recepcion'        => 'array',
         'costo_pendiente'  => 'boolean',
         'costo_cargado_en' => 'datetime',
+        'correo_enviado_en' => 'datetime',
     ];
+
+    /* =========================
+     |  ESTADO DEL TRABAJO
+     ========================= */
+
+    public const RECIBIDO = 'recibido';
+
+    public const EN_REPARACION = 'en_reparacion';
+
+    public const LISTO = 'listo';
+
+    public const ENTREGADO = 'entregado';
+
+    /** En este orden avanza un equipo en el taller; cada paso le avisa al cliente por correo si dejó uno. */
+    public const ESTADOS = [
+        self::RECIBIDO      => 'Recibido',
+        self::EN_REPARACION => 'En reparación',
+        self::LISTO         => 'Listo para recoger',
+        self::ENTREGADO     => 'Entregado',
+    ];
+
+    public function etiquetaDeEstado(): string
+    {
+        return self::ESTADOS[$this->estado] ?? self::ESTADOS[self::RECIBIDO];
+    }
 
     /* =========================
      |  MARCA DEL EQUIPO

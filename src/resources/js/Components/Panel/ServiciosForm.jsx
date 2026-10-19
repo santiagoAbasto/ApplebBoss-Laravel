@@ -32,6 +32,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
   const [data, setData] = useState({
     cliente: '',
     telefono: '',
+    correo: '',
     equipo: '',
     marca: '',
     tecnico_id: '',
@@ -78,7 +79,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
   };
 
   const elegirCliente = (c) => {
-    setData((d) => ({ ...d, cliente: c.nombre, telefono: c.telefono || d.telefono }));
+    setData((d) => ({ ...d, cliente: c.nombre, telefono: c.telefono || d.telefono, correo: c.correo || d.correo }));
     quitarError('cliente');
     setMostrarSugerencias(false);
   };
@@ -171,6 +172,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
     router.post(route(`${prefijo}.servicios.store`), {
       cliente: data.cliente.trim(),
       telefono: data.telefono.trim(),
+      correo: data.correo.trim(),
       equipo: data.equipo.trim(),
       marca: data.marca,
       tecnico_id: data.tecnico_id,
@@ -248,6 +250,10 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
                 <Field label="Teléfono" error={errores.telefono} hint="Para avisarle cuando el equipo esté listo.">
                   <Input value={data.telefono} placeholder="Ej.: 70000000" inputMode="tel"
                     onChange={(e) => cambiar('telefono', e.target.value)} />
+                </Field>
+                <Field label="Correo (opcional)" error={errores.correo} hint="Recibe la nota ahora y un aviso en cada paso: en reparación, listo y entregado.">
+                  <Input type="email" value={data.correo} placeholder="nombre@correo.com" inputMode="email" autoComplete="off"
+                    onChange={(e) => cambiar('correo', e.target.value)} />
                 </Field>
               </div>
             </StepCard>
