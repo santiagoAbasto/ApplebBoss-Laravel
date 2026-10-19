@@ -13,14 +13,14 @@ class CatalogCategorySeeder extends Seeder
             [
                 'name'            => 'iPhone',
                 'slug'            => 'celulares',
-                'description'     => 'Equipos revisados y disponibles.',
+                'description'     => 'iPhone nuevos y seminuevos, y un asesor para ayudarte a elegir el tuyo.',
                 'active'          => true,
                 'show_home'       => true,
                 'show_navigation' => true,
                 'is_myskin'       => false,
                 'sort_order'      => 1,
                 'meta_title'      => 'iPhone disponibles en Cochabamba — Apple Boss',
-                'meta_description' => 'iPhone nuevos y seminuevos disponibles en Cochabamba. Equipos revisados, condición real.',
+                'meta_description' => 'iPhone nuevos y seminuevos en Cochabamba a buen precio, con asesoría para elegir y una postventa que responde.',
             ],
             [
                 'name'            => 'Mac',

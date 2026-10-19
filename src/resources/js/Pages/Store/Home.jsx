@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight, BadgeCheck, ChevronDown, Exchange,
-    MapPin, MessageCircle, Scan, ShieldCheck, Smartphone, Watch,
+    MapPin, MessageCircle, Scan, ShieldCheck, Smartphone, Watch, Wrench,
 } from '@/Components/Store/Icons';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -80,8 +80,9 @@ function TrustBar() {
     return (
         <TrustMarquee items={[
             { icon: ShieldCheck,   text: 'Revisados antes de entregarte' },
-            { icon: MessageCircle, text: 'Atención directa, sin bots' },
-            { icon: BadgeCheck,    text: 'Precios reales, sin letra chica' },
+            { icon: BadgeCheck,    text: 'Buen precio, sin letra chica' },
+            { icon: MessageCircle, text: 'Te asesoramos en cada paso, sin bots' },
+            { icon: Wrench,        text: 'Postventa que responde después de la compra' },
             { icon: Scan,          text: 'Condición explícita en cada equipo' },
             { icon: Exchange,      text: 'Tu equipo actual como parte de pago' },
             // Solo con un local cargado en Tienda online → Ubicaciones

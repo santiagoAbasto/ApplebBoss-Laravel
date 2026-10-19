@@ -19,7 +19,15 @@ return [
     'negocio' => [
         'nombre'      => env('SEO_NEGOCIO_NOMBRE', 'Apple Boss'),
         'tipo'        => 'Store',                       // schema.org/Store
-        'descripcion' => 'Venta de equipos Apple nuevos y seminuevos, accesorios y servicio técnico en Cochabamba, Bolivia.',
+        'descripcion' => 'Equipos Apple nuevos y seminuevos, accesorios y servicio técnico en Cochabamba, Bolivia: buen precio, asesoría en cada paso y una postventa que responde.',
+        // El lema de la tienda, elegido por el dueño el 19-10-2026: barra de anuncio, pie de la tienda, cabecera de los correos,
+        // página de documentos, tarjeta de WhatsApp y slogan del JSON-LD. La parte con `escudo` lleva el ícono de seguridad
+        // (SVG en la web; escudo.png en los correos, porque Gmail no muestra SVG). En texto plano: App\Support\Seo::lema().
+        'lema' => [
+            ['texto' => 'Garantía real'],
+            ['texto' => 'Compra segura y protegida', 'escudo' => true],
+            ['texto' => 'Cochabamba, Bolivia'],
+        ],
         'telefono'    => env('SEO_NEGOCIO_TELEFONO'),   // se completa desde StoreLocation si existe
         'calle'       => env('SEO_NEGOCIO_CALLE'),
         'ciudad'      => env('SEO_NEGOCIO_CIUDAD', 'Cochabamba'),

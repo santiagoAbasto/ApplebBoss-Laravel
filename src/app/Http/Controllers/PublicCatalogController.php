@@ -516,7 +516,7 @@ class PublicCatalogController extends Controller
         }
 
         return collect([
-            ['slug' => 'celulares',       'name' => 'iPhone',        'description' => 'Equipos revisados y disponibles.',           'is_myskin' => false],
+            ['slug' => 'celulares',       'name' => 'iPhone',        'description' => 'iPhone nuevos y seminuevos, y un asesor para ayudarte a elegir el tuyo.',           'is_myskin' => false],
             ['slug' => 'computadoras',    'name' => 'Mac',           'description' => 'Potencia para crear y trabajar.',            'is_myskin' => false],
             ['slug' => 'productos-apple', 'name' => 'Apple',         'description' => 'iPad, Watch, AirPods y más.',                'is_myskin' => false],
             ['slug' => 'fundas',          'name' => 'Fundas MYSKIN', 'description' => 'Protección con identidad propia.',           'is_myskin' => true],

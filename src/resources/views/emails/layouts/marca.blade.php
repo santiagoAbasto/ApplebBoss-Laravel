@@ -40,7 +40,7 @@
                     </td>
                     <td style="vertical-align:middle;padding-left:14px;">
                         <span style="display:block;color:#ffffff;font-size:22px;line-height:1;font-weight:900;letter-spacing:-0.4px;">APPLE BOSS</span>
-                        <span style="display:block;margin-top:7px;color:#9aa3c7;font-size:12px;letter-spacing:0.3px;">Equipos revisados · Stock real · Cochabamba</span>
+                        <span style="display:block;margin-top:7px;color:#9aa3c7;font-size:12px;letter-spacing:0.3px;">@include('partials.lema', ['svg' => false])</span>
                     </td>
                 </tr>
             </table>

@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShoppingBag, Trash2, Wrench, X } from '@/Components/Store/Icons';
+import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShieldCheck, ShoppingBag, Trash2, Wrench, X } from '@/Components/Store/Icons';
 import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ProductVisual from '@/Components/Store/ProductVisual';
 import SearchOverlay from '@/Components/Store/SearchOverlay';
@@ -906,7 +906,19 @@ function StoreFooter({ abrirAcceso }) {
                 {/* En el celular, todo centrado y la firma al final; en la computadora, una línea con la firma a la derecha */}
                 <StoreContainer className="flex flex-col items-center gap-2 py-3 text-center text-xs font-medium text-white lg:flex-row lg:justify-between lg:gap-6 lg:text-left">
                     <span>Copyright © {year} {nombre} · Todos los derechos reservados</span>
-                    <span>Equipos revisados · Precios reales · Atención personalizada</span>
+                    {Array.isArray(tienda?.lema) && (
+                        <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                            {tienda.lema.map((parte, i) => (
+                                <Fragment key={parte.texto}>
+                                    {i > 0 && <span aria-hidden="true">·</span>}
+                                    <span className="inline-flex items-center gap-1">
+                                        {parte.escudo && <ShieldCheck size={14} strokeWidth={2} color="#C6CB36" aria-hidden="true" />}
+                                        {parte.texto}
+                                    </span>
+                                </Fragment>
+                            ))}
+                        </span>
+                    )}
                     <CreditoBurrow />
                 </StoreContainer>
             </div>

@@ -75,6 +75,10 @@ class DatosEstructurados
             $datos['description'] = $cfg['descripcion'];
         }
 
+        if (! empty($cfg['lema'])) {
+            $datos['slogan'] = \App\Support\Seo::lema();
+        }
+
         if (! empty($cfg['telefono'])) {
             $datos['telephone'] = $cfg['telefono'];
         }

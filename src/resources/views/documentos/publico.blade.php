@@ -33,7 +33,7 @@
     .marca{display:flex;align-items:center;gap:12px}
     .marca img{width:52px;height:52px;border-radius:14px;display:block}
     .marca b{display:block;font-size:19px;font-weight:900;letter-spacing:-.3px}
-    .marca span{display:block;margin-top:4px;font-size:12px;color:#9aa3c7}
+    .marca .lema{display:block;margin-top:5px;font-size:12px;line-height:1.5;color:#9aa3c7}
     .cuerpo{padding:26px}
     h1{margin:0 0 8px;font-size:23px;line-height:1.2;letter-spacing:-.3px;color:#011446}
     p{margin:0;font-size:15px;line-height:1.6;color:#475569}
@@ -52,7 +52,7 @@
     <div class="cabeza">
         <div class="marca">
             <img src="{{ $base }}/images/correo/logo-animado.gif" alt="Apple Boss" width="52" height="52">
-            <div><b>APPLE BOSS</b><span>Equipos revisados · Stock real · Cochabamba</span></div>
+            <div><b>APPLE BOSS</b><span class="lema">@include('partials.lema', ['svg' => true])</span></div>
         </div>
     </div>
     <div class="cuerpo">

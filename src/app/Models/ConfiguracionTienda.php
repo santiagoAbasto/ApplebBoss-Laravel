@@ -110,6 +110,7 @@ class ConfiguracionTienda extends Model
             'tienda_descripcion' => static::get('tienda_descripcion'),
             'footer_tagline'     => static::get('footer_tagline'),
             'anuncio_barra'      => static::get('anuncio_barra'),
+            'lema'               => config('seo.negocio.lema'),
         ];
     }
 
