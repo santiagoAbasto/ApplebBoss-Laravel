@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
 import { Badge, EmptyState, PageHeader, bsFmt, buttonCls, inputCls } from '@/Components/Admin/ui';
+import Compartir from '@/Components/Panel/Compartir';
 
 const TIPOS = {
   celular: { label: 'Celular', tone: 'blue' },
