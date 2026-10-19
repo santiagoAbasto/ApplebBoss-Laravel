@@ -1,6 +1,6 @@
 # Seguridad de la API de integración Apple Boss
 
-> Última revisión: 09-10-2026. Estado: implementada y probada en local, **sin desplegar**.
+> Última revisión: 19-10-2026. Estado: en producción desde el 09-10-2026.
 
 ## Credenciales
 
@@ -112,7 +112,7 @@ solo lectura en producción.
 | Integración desactivada | Sí: ningún token suyo entra |
 | La gracia de 24 h no revive tokens | Sí: rotar no alarga un token vencido ni puede traer uno revocado, que se borra |
 | Credenciales en registros o repositorio | No hay: el registro no guarda tokens y la búsqueda en el código no encontró ninguno |
-| IP real detrás de Cloudflare | **No.** Las 20 sesiones de producción tienen IP de Cloudflare. Corrección preparada y validada en `APPLE_BOSS_API_DEPLOYMENT.md`, parte B |
+| IP real detrás de Cloudflare | Sí, desde el 12-10-2026: Caddy confía solo en los rangos de Cloudflare y pasa la IP del cliente (`APPLE_BOSS_API_DEPLOYMENT.md`, parte B). Verificado: ninguna sesión nueva con IP de Cloudflare |
 
 ## Despliegue
 

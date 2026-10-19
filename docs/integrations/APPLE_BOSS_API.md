@@ -1,6 +1,7 @@
 # API de integración Apple Boss — visión general
 
-> v1 · solo lectura · implementada, auditada y guardada en Git el 09-10-2026 · **sin push ni despliegue**.
+> v1 · solo lectura · en producción desde el 09-10-2026 en `https://appleboss.com.bo/api/v1/integration` (ver
+> [APPLE_BOSS_AI_HANDOFF.md](APPLE_BOSS_AI_HANDOFF.md)).
 
 ## Para qué existe
 

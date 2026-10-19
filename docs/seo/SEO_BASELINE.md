@@ -5,6 +5,13 @@
 **Renderizado:** SPA con Inertia. **No hay SSR.**
 **Negocio:** tienda física en Cochabamba (Bolivia) + tienda en línea. Ficha de Google Business Profile activa (4,8 ★ · 72 opiniones · CID `9984482128729594095`).
 
+> **Estado al 19-10-2026.** Esta línea base es del 18-09 y lo de abajo queda como registro. Resuelto desde entonces:
+> Search Console conectado y en uso; GA4 y Microsoft Clarity cargados (11-10); Bing Webmaster Tools, IndexNow y Bing
+> Places; dirección y horario confirmados e iguales en la web, Google y Bing (12-10); perfiles sociales confirmados en
+> `sameAs`; contenido legible sin JavaScript y `llms.txt` para buscadores de IA; el `robots.txt` de producción declara
+> el sitemap. Sigue pendiente: GTIN/SKU de productos para Merchant Center. Producción corre PHP 8.4 (la 8.5 es la del
+> Docker de desarrollo).
+
 > Método: todo lo de abajo está **verificado contra el sitio corriendo**, no supuesto. Cada hallazgo indica cómo se comprobó.
 
 ---

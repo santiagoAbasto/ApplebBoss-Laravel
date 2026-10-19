@@ -6,7 +6,7 @@ Sistema web de gestión comercial e inventario con tienda pública para un negoc
 
 Apple Boss centraliza ventas, reservas, clientes, cotizaciones, inventario, egresos y servicio técnico. Está orientado a administración y vendedores, y mantiene trazabilidad sobre productos identificados por código, IMEI o número de serie.
 
-También incluye una tienda pública administrable con catálogo, búsqueda, comparación, páginas de contenido y configuración comercial. Es un sistema interno en evolución activa: los flujos principales están implementados y existen pruebas y un entorno Docker, pero no se encontró CI/CD ni evidencia suficiente para afirmar un despliegue productivo.
+También incluye una tienda pública administrable con catálogo, búsqueda, comparación, páginas de contenido y configuración comercial. Está en producción en appleboss.com.bo (despliegues documentados desde el 18-09-2026 en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)) y sigue en evolución activa. No tiene CI/CD: la suite completa se corre antes de cada despliegue.
 
 ## Funcionalidades principales
 
@@ -23,7 +23,8 @@ También incluye una tienda pública administrable con catálogo, búsqueda, com
 - Base de fichas técnicas por modelo (38 iPhone, 16 Mac, una laptop gamer Lenovo y 58 tipos de accesorio) tomadas de las fichas oficiales de cada marca y validadas por esquema. Alimenta las fichas de producto (los accesorios se reconocen por su nombre y salen con descripción, ficha con íconos SVG y compatibilidad) y los comparadores públicos `/comparar/iphone`, `/comparar/mac`, `/comparar/cargadores` y `/comparar/vidrios`, cuyo precio y stock calcula el servidor desde el inventario.
 - Administración de publicaciones, imágenes, categorías, colecciones, compatibilidades, menús, páginas, preguntas frecuentes, servicios y ubicaciones.
 - SEO técnico básico mediante slugs, metadatos, `robots.txt` y sitemap XML.
-- Automatizaciones n8n para respaldo de PostgreSQL y generación de reportes comerciales asistidos por IA.
+- Automatizaciones n8n para respaldo de PostgreSQL y generación de reportes comerciales asistidos por IA (entorno local).
+- En producción, `docker/production/respaldo-db.sh` respalda la base cada noche y los archivos subidos cada domingo (cron del VPS).
 
 ## Arquitectura
 
@@ -53,7 +54,7 @@ No se encontró implementación multi-tenant.
 
 ### Backend
 
-- PHP 8.5 en Docker y Laravel 13 (13.32.0 en `composer.lock`). `composer.json` pide PHP `^8.3` y fija la plataforma en 8.3.0, así que las dependencias sirven desde PHP 8.3 (ver «Actualización del stack»).
+- Laravel 13 (13.32.0 en `composer.lock`) con PHP 8.4 en la imagen de producción (`php:8.4-apache`) y 8.5 en el Docker de desarrollo. `composer.json` pide PHP `^8.3` y fija la plataforma en 8.3.0, así que las dependencias sirven desde PHP 8.3 (ver «Actualización del stack»).
 - Eloquent ORM, autenticación por sesión y Laravel Breeze.
 - Inertia Laravel 3, Ziggy y Laravel Sanctum instalado.
 - Dompdf para comprobantes, cotizaciones, auditorías y reportes.
@@ -79,7 +80,8 @@ No se encontró implementación multi-tenant.
 ### DevOps / Infraestructura
 
 - Docker y Docker Compose.
-- Apache con PHP 8.5, contenedor de aplicación y worker de colas.
+- Apache con PHP (8.4 en producción, 8.5 en desarrollo), contenedor de aplicación, worker de colas y programador.
+- Producción: VPS con Docker detrás de Cloudflare y Caddy.
 - PostgreSQL, Node 24/Vite, Adminer, n8n 2.39 y Cloudflare Tunnel.
 
 ### IA
@@ -140,9 +142,9 @@ La IA se limita a interpretación y redacción: Laravel calcula las cifras y el 
 
 ## Testing y calidad
 
-El repositorio contiene 20 archivos y 115 métodos de test: 19 feature y uno unitario. Cubren autenticación, autorización, ventas, servicios, secuencias, stock, auditorías, configuración, catálogo y privacidad pública, compatibilidades, XSS, SEO y constructor del inicio.
+El repositorio contiene 106 archivos de prueba con 827 pruebas, casi todas feature. Cubren autenticación, autorización y roles, ventas, servicios, reservas, secuencias, stock, auditorías, configuración, catálogo y privacidad pública, checkout y pedidos, correos al cliente y sus enlaces, API de integración, XSS, SEO y el constructor del inicio.
 
-La configuración de PHPUnit usa SQLite en memoria, cache/sesiones en memoria, correo simulado y cola síncrona. El script `composer test` limpia la configuración y ejecuta `php artisan test`. No se ejecutó la suite durante esta actualización para respetar la restricción de no modificar artefactos fuera de `README.md`; por tanto, no se afirma que todos los tests estén pasando. Tampoco se encontraron workflows de GitHub Actions, GitLab CI ni Jenkins.
+La configuración de PHPUnit usa SQLite en memoria, cache/sesiones en memoria, correo simulado y cola síncrona. El script `composer test` limpia la configuración y ejecuta `php artisan test`. La suite completa pasa (827 pruebas, verificado el 19-10-2026) y se corre antes de cada despliegue. No hay workflows de GitHub Actions, GitLab CI ni Jenkins.
 
 Comandos disponibles:
 
@@ -156,11 +158,11 @@ npm run build
 
 `docker-compose.yml` define aplicación Apache/PHP, worker de colas, PostgreSQL 18, Vite, Adminer, n8n y dos modalidades de Cloudflare Tunnel. Los servicios persistentes usan volúmenes y la base incluye healthcheck. El workflow de respaldo ejecuta una copia programada de PostgreSQL; el workflow inteligente se ejecuta semanalmente y entrega el reporte a Laravel.
 
-El repositorio no aporta manifiestos Kubernetes/Helm ni una canalización CI/CD. Docker Compose evidencia un entorno reproducible de desarrollo y operación, pero no demuestra por sí solo un despliegue productivo, monitoreo o política externa de backups.
+No hay manifiestos Kubernetes/Helm ni CI/CD. Producción corre en un VPS con `docker-compose.production.yml` (aplicación, cola, programador, PostgreSQL y Caddy) detrás de Cloudflare. Cada despliegue respalda la base y comprueba que el respaldo se restaura, etiqueta la imagen anterior para volver atrás y verifica el sitio al terminar (ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)). La base se respalda además cada noche en el VPS; todavía no hay copia fuera del servidor.
 
 ### Actualización del stack (2026-09-16)
 
-PHP 8.5, Laravel 13, Inertia 3, React 19, Vite 8, PHPUnit 12, PostgreSQL 18 y n8n 2.39, verificado paso a paso (575 tests, 120 capturas antes/después de la tienda y los dos paneles, 21 interacciones en navegador, CSRF y conteos de la base). Lo que conviene saber al tocar el proyecto:
+PHP 8.5 (desarrollo; la imagen de producción usa 8.4), Laravel 13, Inertia 3, React 19, Vite 8, PHPUnit 12, PostgreSQL 18 y n8n 2.39, verificado paso a paso (575 tests, 120 capturas antes/después de la tienda y los dos paneles, 21 interacciones en navegador, CSRF y conteos de la base). Lo que conviene saber al tocar el proyecto:
 
 - **Tailwind sigue en la 3.4** a propósito: la 4 no funciona en iPhone con iOS anterior a 16.4.
 - `vite.config.js` fija los navegadores de antes (`safari14`, `chrome87`…) y minifica el CSS con esbuild; `resources/js/polyfills.js` agrega `Object.hasOwn` para iOS 14 y 15.
@@ -190,7 +192,7 @@ docker compose exec app php artisan migrate
 
 ### Sin Docker
 
-Requiere PHP 8.3+ (en Docker corre 8.5), Composer, Node.js/npm y una base compatible con las migraciones. La plantilla `src/.env.example` debe revisarse porque sus valores locales de base de datos no coinciden con PostgreSQL de Docker.
+Requiere PHP 8.3+ (en el Docker de desarrollo corre 8.5; en producción, 8.4), Composer, Node.js/npm y una base compatible con las migraciones. La plantilla `src/.env.example` debe revisarse porque sus valores locales de base de datos no coinciden con PostgreSQL de Docker.
 
 ```bash
 cd src
@@ -255,7 +257,7 @@ composer run dev
 
 ## Estado del proyecto
 
-**Sistema interno.** Los módulos operativos, la tienda pública, las automatizaciones y una suite de pruebas están implementados. El historial y la estructura muestran evolución continua, pero la ausencia de CI/CD y de evidencia verificable de operación pública impide clasificarlo desde este repositorio como producto en producción.
+**En producción** en appleboss.com.bo: tienda en línea con checkout, panel interno de ventas, inventario y servicio técnico, correos al cliente y API de integración. Sigue en evolución activa. No tiene CI/CD: la suite completa (827 pruebas) se corre antes de cada despliegue.
 
 ## Mi contribución
 
@@ -269,7 +271,7 @@ Nombre:
 Apple Boss
 
 Tipo:
-Sistema interno de gestión comercial con tienda pública
+Sistema de gestión comercial con tienda en línea, en producción
 
 Rol:
 Desarrollo full stack y diseño técnico verificable en el repositorio
@@ -278,7 +280,7 @@ Descripción corta:
 Aplicación para administrar inventario unitario, ventas, reservas, clientes, cotizaciones, servicios técnicos, reportes y publicaciones de una tienda tecnológica.
 
 Stack principal:
-PHP 8.5, Laravel 13, React 19, Inertia.js 3, PostgreSQL 18, Tailwind CSS 3.4, Vite 8 y Docker Compose
+PHP 8.4 (producción) / 8.5 (desarrollo), Laravel 13, React 19, Inertia.js 3, PostgreSQL 18, Tailwind CSS 3.4, Vite 8 y Docker Compose
 
 Arquitectura:
 Monolito modular Laravel/Inertia con frontend React, APIs JSON específicas, colas y automatizaciones externas en n8n
@@ -287,10 +289,10 @@ Seguridad:
 Sesiones, roles, CSRF, rate limiting, validación, sanitización XSS, CSP/cabeceras HTTP, secretos por entorno y control explícito de datos públicos
 
 Testing:
-PHPUnit con 312 pruebas unitarias/feature; pasan todas (`php artisan test`, verificado el 2026-09-15)
+PHPUnit con 827 pruebas unitarias/feature; pasan todas (`php artisan test`, verificado el 2026-10-19)
 
 DevOps:
-Docker Compose con Apache/PHP, worker, PostgreSQL, Node/Vite, Adminer, n8n y Cloudflare Tunnel; sin CI/CD detectado
+Docker Compose; producción en VPS detrás de Cloudflare y Caddy, con despliegue por script (respaldo verificado, imagen de vuelta y verificación) y respaldo nocturno; sin CI/CD
 
 IA:
 OpenAI orquestado por n8n para reportes JSON, con KPIs determinísticos, validación/fallback y revisión desde el panel

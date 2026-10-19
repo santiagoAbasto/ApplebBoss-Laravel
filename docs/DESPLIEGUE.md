@@ -157,15 +157,27 @@ Debe dar `200` (la tienda en línea ya funciona).
 
 ## Si algo sale mal — volver atrás
 
+**Nunca `git reset --hard` en el VPS:** borra cambios propios del servidor que no están en git. La vuelta atrás es la
+imagen anterior: cada despliegue la deja etiquetada como `appleboss-app:antes-<tema>-<commit>` e imprime al final el
+comando exacto. Con la imagen anterior, el código del servidor queda adelantado hasta el próximo despliegue, y el
+siguiente `git pull --ff-only` sigue funcionando.
+
 ```bash
-cd ~/apps/appleboss && git reset --hard HEAD~1 && docker compose -f docker-compose.production.yml build app && docker compose -f docker-compose.production.yml up -d
+cd ~/apps/appleboss
+docker image ls appleboss-app        # la última «antes-…» es la de antes del despliegue
+docker tag appleboss-app:antes-<tema>-<commit> appleboss-app:production
+docker compose -f docker-compose.production.yml up -d app queue scheduler
 ```
 
-Las migraciones de esta versión **solo crean tablas nuevas**: no tocan ni borran datos existentes, así que volver atrás el código es seguro. Si además necesitas deshacer las tablas:
+Si la última migración solo creó tablas y hay que deshacerlas:
 
 ```bash
 docker compose -f docker-compose.production.yml exec app php artisan migrate:rollback --step=1 --force
 ```
+
+Si una migración dañó datos, se restaura el respaldo hecho antes de migrar. Va en una ventana de mantenimiento y
+después de guardar un respaldo del estado actual. El comando para un `.dump` está en la cabecera de
+`docker/production/respaldo-db.sh`.
 
 ---
 
@@ -197,7 +209,7 @@ al seguimiento del cliente, y el comprobante vive en disco privado: solo se abre
 ## Pendientes que NO entran acá
 
 - **SSR** — **ya no es urgente**: Search Console confirma que Google renderiza e indexa la home. Queda como mejora (velocidad de indexación y vista previa al compartir en redes).
-- **GA4** (falta el ID de medición `G-XXXXXXX`). Search Console **ya está conectado**: sitemap aceptado, 24 páginas descubiertas.
-- **NAP**: falta la dirección de calle y el teléfono en el panel (Tienda online → Ubicaciones). Sin eso, Google no recibe ni `streetAddress` ni `telephone`.
+- ~~GA4~~: GA4 y Microsoft Clarity cargados desde Tienda online → Tráfico el 11-10-2026. Search Console conectado; Bing Webmaster Tools, IndexNow y Bing Places hechos.
+- ~~NAP~~: dirección oficial y WhatsApp cargados en Tienda online → Ubicaciones, iguales en la web, Google y Bing (12-10-2026). Solo falta un teléfono fijo, si se quiere publicar uno.
 - **Credenciales del BNB** para el QR automático.
 - **`apple-boss.com.bo`**: queda para otro proyecto. Asegúrate de que **no** apunte a este sitio, para no crear contenido duplicado.

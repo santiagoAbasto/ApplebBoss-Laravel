@@ -1,6 +1,33 @@
 # Apple Boss — Arquitectura Actual
 > Generado: 2026-09-13 — inspección completa del repositorio
 
+> **Documento histórico.** Es la foto del repositorio del 13-09-2026, antes de la tienda en línea con checkout, la API
+> y los correos al cliente. No describe el sistema de hoy. Lo vigente está en [README.md](README.md),
+> [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md), [docs/integrations/APPLE_BOSS_API.md](docs/integrations/APPLE_BOSS_API.md) y
+> [docs/seguridad/arquitectura-resumen.md](docs/seguridad/arquitectura-resumen.md).
+
+## Qué cambió desde entonces (verificado el 19-10-2026)
+
+| Tema | En este documento | Hoy |
+|------|-------------------|-----|
+| Backend | PHP 8.2 + Laravel 12 | Laravel 13.32; PHP 8.4 en producción (imagen `php:8.4-apache`) y 8.5 en el Docker de desarrollo; `composer.json` admite desde PHP 8.3 |
+| Frontend | React 18 + Inertia v2, Vite 6 | React 19.3, Inertia 3.7, Vite 8.3; Tailwind sigue en 3.4 a propósito (la 4 no funciona en iOS anterior a 16.4) |
+| Base de datos | PostgreSQL 15 | PostgreSQL 18 |
+| Panel | SB Admin 2 (Bootstrap) | `PanelShell` con Tailwind, compartido por el administrador y el vendedor |
+| Roles | admin y vendedor, sin RBAC formal | Roles como datos (tabla `roles`, `App\Models\Role`) con permisos por módulo (`App\Support\Permisos`); al vendedor nunca le llegan costo ni ganancia (`App\Support\SinCostos`) |
+| Trade-In | No existe | `/trade-in` (cotizador público) y su bandeja en el panel |
+| Novedades | No existe | `/novedades` y Tienda online → Novedades |
+| API v1 | Incompleta | `/api/v1/integration`: solo lectura, tokens por scope, en producción desde el 09-10-2026 |
+| Reseñas de Google | No existe | `resenas:google` todos los días a las 07:00 (Google Business Profile) |
+| schema.org | Parcial | `App\Support\Seo\DatosEstructurados` (Store, Product, migas y slogan) |
+| Ofertas con fechas | Parcial | `promocion_desde` y `promocion_hasta` en la publicación |
+| Tests E2E | No existen | Siguen sin existir; 827 pruebas feature y unitarias con PHPUnit |
+| Producción | — | appleboss.com.bo, VPS con Docker detrás de Cloudflare y Caddy; despliegue, vuelta atrás y respaldos en `docs/DESPLIEGUE.md` |
+
+---
+
+*Lo que sigue es el documento original del 13-09-2026, sin cambios.*
+
 ## Stack verificado
 
 | Capa | Tecnología |
