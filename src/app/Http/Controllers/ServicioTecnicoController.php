@@ -403,6 +403,8 @@ class ServicioTecnicoController extends Controller
     /** Lo que el panel necesita para los botones Correo, WhatsApp y Copiar de cada fila. */
     private function conCompartir($servicios)
     {
+        Documento::prepararEnlaces($servicios);
+
         return $servicios->each(fn (ServicioTecnico $s) => $s->setAttribute('compartir', Documento::compartir($s)));
     }
 

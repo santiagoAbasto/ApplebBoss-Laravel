@@ -542,6 +542,7 @@ class VentaController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        Documento::prepararEnlaces($ventas);
         $ventas->each(fn (Venta $v) => $v->setAttribute('compartir', Documento::compartir($v)));
 
         if (auth()->user()->rol === 'admin') {
@@ -1230,6 +1231,9 @@ class VentaController extends Controller
                         ->orWhereRaw('LOWER(nombre_cliente) LIKE ?', [Busqueda::contiene($query)]);
                 })
                 ->get();
+
+            Documento::prepararEnlaces($serviciosRaw);
+            Documento::prepararEnlaces($ventasRaw);
 
             // Mapear servicios técnicos
             $servicios = $serviciosRaw->map(function ($s) {

@@ -91,8 +91,13 @@ Route::post('/newsletter', [\App\Http\Controllers\NewsletterController::class, '
 Route::get('/newsletter/baja/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribeShow'])->name('newsletter.baja')->middleware('throttle:30,1');
 Route::post('/newsletter/baja/{token}', [\App\Http\Controllers\NewsletterController::class, 'unsubscribe'])->name('newsletter.baja.confirmar')->middleware('throttle:20,1');
 
-// Documentos del cliente (nota de venta, de servicio, de reserva e informe técnico): el enlace del correo y del WhatsApp
-// lleva firma; sin ella no abre. Sin sesión, como el seguimiento de pedidos: el enlace es el control.
+// Documentos del cliente (nota de venta, de servicio, de reserva, informe técnico y cotización): el enlace del correo y
+// del WhatsApp es una clave aleatoria que vence (Documento::enlace). Sin sesión, como el seguimiento: el enlace es el control.
+Route::middleware('throttle:30,1')->where(['token' => '[A-Za-z0-9]{20,64}'])->group(function () {
+    Route::get('/d/{token}', [\App\Http\Controllers\DocumentoController::class, 'publico'])->name('documentos.publico');
+    Route::get('/d/{token}/pdf', [\App\Http\Controllers\DocumentoController::class, 'pdf'])->name('documentos.pdf');
+});
+// Enlaces del primer día (firmados, con el número del documento): redirigen al enlace nuevo
 Route::get('/documentos/{tipo}/{id}', [\App\Http\Controllers\DocumentoController::class, 'ver'])
     ->name('documentos.ver')
     ->middleware(['signed', 'throttle:30,1'])

@@ -8,8 +8,9 @@ use App\Models\Reserva;
 use App\Models\ServicioTecnico;
 use App\Models\Venta;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -17,8 +18,9 @@ use Illuminate\Support\Str;
  * de reserva y el informe técnico. Acá vive, una sola vez, cómo se arma el PDF de cada uno, su enlace público firmado,
  * el mensaje de WhatsApp listo para mandar y lo que el panel necesita para los botones de compartir.
  *
- * El enlace público lleva firma: sin ella, 403. Es el mismo control que el seguimiento de pedidos: un correo o un
- * WhatsApp se reenvían, y el enlace es lo único que abre el documento.
+ * El enlace público es una clave aleatoria de 32 caracteres (tabla enlaces_documento): no deja ver el tipo ni el número
+ * interno, no se puede adivinar ni recorrer, y vence a los 30 días. Abre una página de marca con vista previa para
+ * WhatsApp y el botón al PDF, que no se indexa ni manda la clave a otros sitios.
  */
 final class Documento
 {
@@ -29,6 +31,12 @@ final class Documento
         'diagnostico' => Diagnostico::class,
         'cotizacion'  => Cotizacion::class,
     ];
+
+    /** Días que vale un enlace. El PDF también va adjunto al correo: el enlace es para abrirlo rápido, no para siempre. */
+    public const VIGENCIA_DIAS = 30;
+
+    /** Enlaces ya resueltos para cada documento (por objeto: se olvidan solos cuando el modelo deja de existir). */
+    private static ?\WeakMap $enlaces = null;
 
     public static function tipo(Model $doc): string
     {
@@ -160,14 +168,82 @@ final class Documento
             ->values();
     }
 
-    /** Enlace público al PDF, con firma. Null si el documento todavía no puede salir (informe sin firmar). */
+    /** Enlace público del documento (la página con el PDF). Null si todavía no puede salir (informe sin firmar). */
     public static function enlace(Model $doc): ?string
     {
         if (! self::publicable($doc)) {
             return null;
         }
 
-        return URL::signedRoute('documentos.ver', ['tipo' => self::tipo($doc), 'id' => $doc->getKey()]);
+        $guardado = (self::$enlaces ??= new \WeakMap())[$doc] ?? null;
+        if (! $guardado || $guardado[1]->lte(now()->addDay())) {
+            self::prepararEnlaces([$doc]);
+            $guardado = self::$enlaces[$doc];
+        }
+
+        return route('documentos.publico', $guardado[0]);
+    }
+
+    /**
+     * Deja resuelto el enlace vigente de cada documento con una consulta por tipo y, si faltan, una sola inserción:
+     * un listado de 500 ventas no hace 500 escrituras. Un enlace que vence en menos de un día se reemplaza.
+     */
+    public static function prepararEnlaces(iterable $docs): void
+    {
+        self::$enlaces ??= new \WeakMap();
+        $porTipo = collect($docs)->filter(fn (Model $d) => self::publicable($d))->groupBy(fn (Model $d) => self::tipo($d));
+
+        foreach ($porTipo as $tipo => $grupo) {
+            $vigentes = DB::table('enlaces_documento')
+                ->where('tipo', $tipo)
+                ->whereIn('documento_id', $grupo->map->getKey()->unique()->values())
+                ->where('vence_en', '>', now()->addDay())
+                ->orderBy('vence_en')
+                ->get()
+                ->keyBy('documento_id');
+
+            $nuevos = [];
+            $resueltos = [];
+            foreach ($grupo as $doc) {
+                $id = $doc->getKey();
+                if (! isset($resueltos[$id])) {
+                    if ($fila = $vigentes->get($id)) {
+                        $resueltos[$id] = [$fila->token, Carbon::parse($fila->vence_en)];
+                    } else {
+                        $resueltos[$id] = [Str::random(32), now()->addDays(self::VIGENCIA_DIAS)];
+                        $nuevos[] = ['token' => $resueltos[$id][0], 'tipo' => $tipo, 'documento_id' => $id,
+                            'vence_en' => $resueltos[$id][1], 'created_at' => now(), 'updated_at' => now()];
+                    }
+                }
+                self::$enlaces[$doc] = $resueltos[$id];
+            }
+
+            foreach (array_chunk($nuevos, 500) as $lote) {
+                DB::table('enlaces_documento')->insert($lote);
+            }
+        }
+    }
+
+    /** El documento de un enlace y hasta cuándo vale; null si la clave no existe o el documento ya no está. */
+    public static function porToken(string $token): ?array
+    {
+        $fila = DB::table('enlaces_documento')->where('token', $token)->first();
+        $modelo = $fila ? (self::TIPOS[$fila->tipo] ?? null) : null;
+        $doc = $modelo ? $modelo::find($fila->documento_id) : null;
+
+        return $doc ? [$doc, Carbon::parse($fila->vence_en)] : null;
+    }
+
+    /** La línea de la vista previa (WhatsApp, Facebook): qué es el documento, sin datos del cliente. */
+    public static function resumen(Model $doc): string
+    {
+        return match (self::tipo($doc)) {
+            'venta'       => 'Tu comprobante con el detalle y la garantía, en PDF.',
+            'servicio'    => 'El detalle de tu servicio técnico, en PDF.',
+            'reserva'     => 'Tu reserva con el abono y el saldo, en PDF.',
+            'diagnostico' => 'El informe técnico firmado de tu equipo, en PDF.',
+            'cotizacion'  => 'Tu cotización con precios y condiciones, en PDF.',
+        };
     }
 
     /** El número para WhatsApp, con el 591 de Bolivia si vino sin código de país. */
@@ -198,7 +274,7 @@ final class Documento
             'cotizacion'  => "{$saludo}, te escribimos de Apple Boss. Acá está tu cotización {$codigo}:",
         };
 
-        return $cuerpo . ($enlace ? "\n{$enlace}" : '') . "\n\nCualquier consulta, respondé por este mismo chat. Apple Boss · appleboss.com.bo";
+        return $cuerpo . ($enlace ? "\n{$enlace}" : '') . "\n\nCualquier consulta, responde por este mismo chat. Apple Boss · appleboss.com.bo";
     }
 
     public static function whatsapp(Model $doc): ?string

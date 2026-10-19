@@ -29,7 +29,10 @@ class SecurityHeadersMiddleware
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
 
         // ── Referrer controlado ──────────────────────────────────────────
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Una respuesta puede pedir una política más estricta (los enlaces de documentos: no-referrer)
+        if (! $response->headers->has('Referrer-Policy')) {
+            $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        }
 
         // ── Deshabilitar APIs sensibles no usadas ────────────────────────
         // `interest-cohort` salió de Chrome: hoy solo ensucia la consola con «Unrecognized feature».

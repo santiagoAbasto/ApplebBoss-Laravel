@@ -140,6 +140,7 @@ class ReservaController extends Controller
             ->latest()
             ->get();
 
+        Documento::prepararEnlaces($reservas);
         $reservas->each(fn (Reserva $r) => $r->setAttribute('compartir', Documento::compartir($r)));
 
         return Inertia::render(auth()->user()->rol === 'admin' ? 'Admin/Reservas/Index' : 'Vendedor/Reservas/Index', [

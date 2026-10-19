@@ -14,13 +14,52 @@ use Illuminate\Http\Request;
  */
 class DocumentoController extends Controller
 {
-    /** El PDF para el cliente. Sin firma válida, 403 (lo decide el middleware `signed`); un informe sin firmar, 404. */
+    /** No se indexa, no se guarda en ningún caché y no le pasa la clave a otro sitio por el Referer. */
+    private const CABECERAS = [
+        'X-Robots-Tag'    => 'noindex, nofollow, noarchive',
+        'Referrer-Policy' => 'no-referrer',
+        'Cache-Control'   => 'private, no-store, max-age=0',
+    ];
+
+    /** La página del enlace: marca, vista previa para WhatsApp y el botón al PDF. Vencida, 410; inexistente, 404. */
+    public function publico(string $token)
+    {
+        [$doc, $vence] = Documento::porToken($token) ?? [null, null];
+        $estado = match (true) {
+            ! $doc || ! Documento::publicable($doc) => 'no_existe',
+            $vence->isPast()                        => 'vencido',
+            default                                 => 'ok',
+        };
+        $local = \App\Models\StoreLocation::principal();
+
+        return response()->view('documentos.publico', [
+            'estado'      => $estado,
+            'titulo'      => $estado === 'ok' ? Documento::titulo($doc) : 'Documento de Apple Boss',
+            'resumen'     => $estado === 'ok' ? Documento::resumen($doc) : 'Pide tu documento por WhatsApp y te lo mandamos de nuevo.',
+            'pdf'         => $estado === 'ok' ? route('documentos.pdf', $token) : null,
+            'vence'       => $estado === 'ok' ? $vence : null,
+            'url'         => route('documentos.publico', $token),
+            'whatsapp'    => $local?->whatsapp ? 'https://wa.me/' . preg_replace('/\D+/', '', $local->whatsapp) : null,
+        ], ['ok' => 200, 'vencido' => 410, 'no_existe' => 404][$estado])->withHeaders(self::CABECERAS);
+    }
+
+    /** El PDF del enlace, con las mismas reglas que la página. */
+    public function pdf(string $token)
+    {
+        [$doc, $vence] = Documento::porToken($token) ?? [null, null];
+        abort_if(! $doc || ! Documento::publicable($doc), 404);
+        abort_if($vence->isPast(), 410);
+
+        return Documento::pdf($doc)->stream(Documento::nombreArchivo($doc))->withHeaders(self::CABECERAS);
+    }
+
+    /** Enlaces viejos (firmados, con el número del documento): llevan al enlace nuevo. Sin firma válida, 403. */
     public function ver(string $tipo, int $id)
     {
         $doc = Documento::buscar($tipo, $id);
         abort_unless(Documento::publicable($doc), 404);
 
-        return Documento::pdf($doc)->stream(Documento::nombreArchivo($doc));
+        return redirect()->to(Documento::enlace($doc));
     }
 
     /** Manda (o vuelve a mandar) el correo del documento. Si viene un correo nuevo, queda guardado en el documento y en Clientes. */

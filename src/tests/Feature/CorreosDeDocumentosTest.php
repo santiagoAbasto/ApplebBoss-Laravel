@@ -151,19 +151,56 @@ class CorreosDeDocumentosTest extends TestCase
         Mail::assertQueuedCount(1);
     }
 
-    public function test_el_pdf_publico_exige_la_firma_y_un_informe_sin_firmar_no_sale(): void
+    public function test_el_enlace_publico_es_una_clave_que_no_revela_nada_vence_y_no_se_indexa(): void
     {
         $venta = $this->registrarVenta($this->admin());
 
         $enlace = Documento::enlace($venta);
-        $this->assertStringContainsString('/documentos/venta/' . $venta->id . '?', $enlace);
-        $this->get($enlace)->assertOk()->assertHeader('Content-Type', 'application/pdf');
-        $this->get($enlace . 'x')->assertForbidden();
+        $this->assertMatchesRegularExpression('#/d/[A-Za-z0-9]{32}$#', $enlace, 'ni el tipo ni el número interno a la vista');
+        $this->assertStringNotContainsString('/venta/', $enlace);
+        $this->assertStringNotContainsString('signature=', $enlace);
+        $this->assertSame($enlace, Documento::enlace(Venta::find($venta->id)), 'el mismo documento reusa su enlace vigente');
+
+        $pagina = $this->get($enlace)->assertOk()
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+            ->assertHeader('Referrer-Policy', 'no-referrer');
+        $pagina->assertSee('<meta property="og:title" content="Nota de venta ' . $venta->codigo_nota . ' · Apple Boss">', false)
+            ->assertSee('documento-og.png', false)
+            ->assertSee('noindex, nofollow, noarchive', false)
+            ->assertDontSee('Ana María', false); // la vista previa no lleva datos del cliente
+        $this->get($enlace . '/pdf')->assertOk()->assertHeader('Content-Type', 'application/pdf')->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+
+        $this->get('/d/' . str_repeat('a', 32))->assertNotFound();
+        $this->get('/d/' . str_repeat('a', 32) . '/pdf')->assertNotFound();
+
+        \Illuminate\Support\Facades\DB::table('enlaces_documento')->update(['vence_en' => now()->subMinute()]);
+        $this->get($enlace)->assertStatus(410)->assertSee('Este enlace venció');
+        $this->get($enlace . '/pdf')->assertStatus(410);
+        $nuevo = Documento::enlace(Venta::find($venta->id));
+        $this->assertNotSame($enlace, $nuevo, 'vencido, se arma uno nuevo');
+        $this->get($nuevo)->assertOk();
+
+        // Los enlaces firmados del primer día llevan al enlace nuevo; sin firma, 403
+        $this->get(URL::signedRoute('documentos.ver', ['tipo' => 'venta', 'id' => $venta->id]))->assertRedirect($nuevo);
         $this->get('/documentos/venta/' . $venta->id)->assertForbidden();
 
         $borrador = Diagnostico::create(['fecha' => '2026-10-19', 'cliente_nombre' => 'Pedro', 'equipo' => 'iPad', 'falla_reportada' => 'No enciende', 'user_id' => User::factory()->create(['rol' => 'admin'])->id]);
         $this->assertNull(Documento::enlace($borrador));
-        $this->get(URL::signedRoute('documentos.ver', ['tipo' => 'diagnostico', 'id' => $borrador->id]))->assertNotFound();
+    }
+
+    public function test_el_listado_prepara_los_enlaces_de_una_vez_y_no_los_repite(): void
+    {
+        $admin = $this->admin();
+        foreach (range(1, 3) as $i) {
+            $this->registrarVenta($admin);
+        }
+        \Illuminate\Support\Facades\DB::table('enlaces_documento')->delete();
+
+        $this->actingAs($admin)->get(route('admin.ventas.index'))->assertOk();
+        $this->assertSame(3, \Illuminate\Support\Facades\DB::table('enlaces_documento')->count());
+
+        $this->actingAs($admin)->get(route('admin.ventas.index'))->assertOk();
+        $this->assertSame(3, \Illuminate\Support\Facades\DB::table('enlaces_documento')->count(), 'los vigentes se reusan');
     }
 
     public function test_desde_el_panel_se_manda_con_un_correo_nuevo_y_el_vendedor_solo_lo_suyo(): void
@@ -222,12 +259,13 @@ class CorreosDeDocumentosTest extends TestCase
         $cotizacion = \App\Models\Cotizacion::create(['user_id' => $admin->id, 'nombre_cliente' => 'Rosa Mamani', 'telefono' => '77000000', 'correo_cliente' => 'rosa@example.com', 'fecha_cotizacion' => '2026-10-19', 'items' => [['nombre' => 'iPhone 15 128 GB', 'cantidad' => 1, 'precio_sin_factura' => 5000, 'descuento' => 0, 'iva' => 650, 'it' => 150, 'total' => 5800]], 'total' => 5800, 'moneda' => 'BOB']);
         $html = (new \App\Mail\CotizacionMailable($cotizacion))->render();
         $this->assertStringContainsString('Tu cotización, Rosa', $html);
-        $this->assertStringContainsString('/documentos/cotizacion/' . $cotizacion->id, $html);
+        $this->assertStringContainsString(Documento::enlace($cotizacion), $html);
         $this->assertStringContainsString('logo-animado.gif', $html, 'la cotización usa el mismo marco de marca');
 
         $mensaje = Documento::mensajeWhatsapp($venta);
         $this->assertStringContainsString($venta->codigo_nota, $mensaje);
-        $this->assertStringContainsString('/documentos/venta/' . $venta->id, $mensaje);
+        $this->assertStringContainsString(Documento::enlace($venta), $mensaje);
+        $this->assertStringNotContainsString('respondé', $mensaje, 'tuteo, sin voseo');
         $this->assertStringStartsWith('https://wa.me/59175555555?text=', Documento::whatsapp($venta));
         $this->assertSame('ana@example.com', $venta->compartir['correo'] ?? Documento::compartir($venta)['correo']);
     }

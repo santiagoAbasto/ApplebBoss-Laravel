@@ -22,7 +22,7 @@ class DiagnosticoController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Diagnosticos/Index', [
-            'diagnosticos' => Diagnostico::latest()->get()->map(fn (Diagnostico $d) => [
+            'diagnosticos' => tap(Diagnostico::latest()->get(), fn ($lista) => Documento::prepararEnlaces($lista))->map(fn (Diagnostico $d) => [
                 'id'               => $d->id,
                 'codigo'           => $d->codigo,
                 'fecha'            => $d->fecha?->toDateString(),
