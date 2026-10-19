@@ -206,7 +206,7 @@ Eso es la prueba viva: falsear `X-Forwarded-For` antes repartía los pedidos en 
 | ¿Qué metodología usaste? | Skill `security-audit` de Cloudflare (reconocimiento + 32 unidades de cobertura) + caja blanca + caja negra + carga con k6. | §3 del reporte |
 | ¿Cómo sabés que no filtra el costo? | Regla server-side `SinCostos::purgar`, probada con tests y en runtime; el admin sí lo ve. | 2.2, 2.5 |
 | ¿El sistema aguanta? | k6: humo 100% OK, pico con todos 200, límites que saltan a 429. | 3.1–3.4 |
-| ¿Los arreglos rompieron algo? | No: 567 pruebas en verde. | 2.1 |
+| ¿Los arreglos rompieron algo? | No: 619 pruebas en verde al cerrar el reporte (18-09-2026); el 19-10-2026 la suite tiene 827, todas en verde. | 2.1 |
 | ¿El hallazgo era real? | Sí, lo muestro prendiendo y apagando el fix. | 4 |
 | ¿Y en producción? | Checklist de despliegue: `APP_ENV=production`, `SESSION_SECURE_COOKIE=true`, `TRUSTED_PROXIES`, rotar tokens. | §5 y §8 del reporte |
 
