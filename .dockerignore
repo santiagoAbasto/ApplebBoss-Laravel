@@ -7,3 +7,5 @@ src/*
 
 npm-debug.log
 yarn-error.log
+graphify-out
+.graphifyignore

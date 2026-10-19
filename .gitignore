@@ -54,3 +54,7 @@ __pycache__/
 
 # Memoria local de Memanto: nunca entra en un commit
 MEMORY.md
+
+# Cerebro del proyecto (graphify): local, nunca entra al repositorio ni a la imagen
+graphify-out/
+.graphifyignore
