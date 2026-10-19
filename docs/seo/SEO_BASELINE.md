@@ -9,8 +9,8 @@
 > Search Console conectado y en uso; GA4 y Microsoft Clarity cargados (11-10); Bing Webmaster Tools, IndexNow y Bing
 > Places; dirección y horario confirmados e iguales en la web, Google y Bing (12-10); perfiles sociales confirmados en
 > `sameAs`; contenido legible sin JavaScript y `llms.txt` para buscadores de IA; el `robots.txt` de producción declara
-> el sitemap. Sigue pendiente: GTIN/SKU de productos para Merchant Center. Producción corre PHP 8.4 (la 8.5 es la del
-> Docker de desarrollo).
+> el sitemap. Sigue pendiente: GTIN/SKU de productos para Merchant Center. Producción corre PHP 8.5
+> desde el 19-10-2026.
 
 > Método: todo lo de abajo está **verificado contra el sitio corriendo**, no supuesto. Cada hallazgo indica cómo se comprobó.
 

@@ -54,7 +54,7 @@ No se encontró implementación multi-tenant.
 
 ### Backend
 
-- Laravel 13 (13.32.0 en `composer.lock`) con PHP 8.4 en la imagen de producción (`php:8.4-apache`) y 8.5 en el Docker de desarrollo. `composer.json` pide PHP `^8.3` y fija la plataforma en 8.3.0, así que las dependencias sirven desde PHP 8.3 (ver «Actualización del stack»).
+- Laravel 13 (13.32.0 en `composer.lock`) con PHP 8.5 en producción (`php:8.5-apache`, desde el 19-10-2026) y en el Docker de desarrollo. `composer.json` pide PHP `^8.3` y fija la plataforma en 8.3.0, así que las dependencias sirven desde PHP 8.3 (ver «Actualización del stack»).
 - Eloquent ORM, autenticación por sesión y Laravel Breeze.
 - Inertia Laravel 3, Ziggy y Laravel Sanctum instalado.
 - Dompdf para comprobantes, cotizaciones, auditorías y reportes.
@@ -80,7 +80,7 @@ No se encontró implementación multi-tenant.
 ### DevOps / Infraestructura
 
 - Docker y Docker Compose.
-- Apache con PHP (8.4 en producción, 8.5 en desarrollo), contenedor de aplicación, worker de colas y programador.
+- Apache con PHP 8.5 (producción y desarrollo), contenedor de aplicación, worker de colas y programador.
 - Producción: VPS con Docker detrás de Cloudflare y Caddy.
 - PostgreSQL, Node 24/Vite, Adminer, n8n 2.39 y Cloudflare Tunnel.
 
@@ -144,7 +144,7 @@ La IA se limita a interpretación y redacción: Laravel calcula las cifras y el 
 
 El repositorio contiene 106 archivos de prueba con 827 pruebas, casi todas feature. Cubren autenticación, autorización y roles, ventas, servicios, reservas, secuencias, stock, auditorías, configuración, catálogo y privacidad pública, checkout y pedidos, correos al cliente y sus enlaces, API de integración, XSS, SEO y el constructor del inicio.
 
-La configuración de PHPUnit usa SQLite en memoria, cache/sesiones en memoria, correo simulado y cola síncrona. El script `composer test` limpia la configuración y ejecuta `php artisan test`. La suite completa pasa (827 pruebas, verificado el 19-10-2026) y se corre antes de cada despliegue. No hay workflows de GitHub Actions, GitLab CI ni Jenkins.
+La configuración de PHPUnit usa SQLite en memoria, cache/sesiones en memoria, correo simulado y cola síncrona. El script `composer test` limpia la configuración y ejecuta `php artisan test`. La suite completa pasa (827 pruebas, verificado el 19-10-2026) y se corre antes de cada despliegue. Un aviso de obsolescencia de PHP hace fallar la prueba (`tests/TestCase.php` usa `withoutDeprecationHandling()`): así se detecta antes de subir el código que la próxima versión de PHP rompería. No hay workflows de GitHub Actions, GitLab CI ni Jenkins.
 
 Comandos disponibles:
 
@@ -162,7 +162,7 @@ No hay manifiestos Kubernetes/Helm ni CI/CD. Producción corre en un VPS con `do
 
 ### Actualización del stack (2026-09-16)
 
-PHP 8.5 (desarrollo; la imagen de producción usa 8.4), Laravel 13, Inertia 3, React 19, Vite 8, PHPUnit 12, PostgreSQL 18 y n8n 2.39, verificado paso a paso (575 tests, 120 capturas antes/después de la tienda y los dos paneles, 21 interacciones en navegador, CSRF y conteos de la base). Lo que conviene saber al tocar el proyecto:
+PHP 8.5 (desarrollo; producción desde el 19-10-2026), Laravel 13, Inertia 3, React 19, Vite 8, PHPUnit 12, PostgreSQL 18 y n8n 2.39, verificado paso a paso (575 tests, 120 capturas antes/después de la tienda y los dos paneles, 21 interacciones en navegador, CSRF y conteos de la base). Lo que conviene saber al tocar el proyecto:
 
 - **Tailwind sigue en la 3.4** a propósito: la 4 no funciona en iPhone con iOS anterior a 16.4.
 - `vite.config.js` fija los navegadores de antes (`safari14`, `chrome87`…) y minifica el CSS con esbuild; `resources/js/polyfills.js` agrega `Object.hasOwn` para iOS 14 y 15.
@@ -192,7 +192,7 @@ docker compose exec app php artisan migrate
 
 ### Sin Docker
 
-Requiere PHP 8.3+ (en el Docker de desarrollo corre 8.5; en producción, 8.4), Composer, Node.js/npm y una base compatible con las migraciones. La plantilla `src/.env.example` debe revisarse porque sus valores locales de base de datos no coinciden con PostgreSQL de Docker.
+Requiere PHP 8.3+ (en desarrollo y en producción corre 8.5), Composer, Node.js/npm y una base compatible con las migraciones. La plantilla `src/.env.example` debe revisarse porque sus valores locales de base de datos no coinciden con PostgreSQL de Docker.
 
 ```bash
 cd src
@@ -280,7 +280,7 @@ Descripción corta:
 Aplicación para administrar inventario unitario, ventas, reservas, clientes, cotizaciones, servicios técnicos, reportes y publicaciones de una tienda tecnológica.
 
 Stack principal:
-PHP 8.4 (producción) / 8.5 (desarrollo), Laravel 13, React 19, Inertia.js 3, PostgreSQL 18, Tailwind CSS 3.4, Vite 8 y Docker Compose
+PHP 8.5, Laravel 13, React 19, Inertia.js 3, PostgreSQL 18, Tailwind CSS 3.4, Vite 8 y Docker Compose
 
 Arquitectura:
 Monolito modular Laravel/Inertia con frontend React, APIs JSON específicas, colas y automatizaciones externas en n8n

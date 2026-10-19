@@ -10,7 +10,7 @@
 
 | Tema | En este documento | Hoy |
 |------|-------------------|-----|
-| Backend | PHP 8.2 + Laravel 12 | Laravel 13.32; PHP 8.4 en producción (imagen `php:8.4-apache`) y 8.5 en el Docker de desarrollo; `composer.json` admite desde PHP 8.3 |
+| Backend | PHP 8.2 + Laravel 12 | Laravel 13.32 con PHP 8.5 en producción (imagen `php:8.5-apache`, desde el 19-10-2026) y en desarrollo; `composer.json` admite desde PHP 8.3 |
 | Frontend | React 18 + Inertia v2, Vite 6 | React 19.3, Inertia 3.7, Vite 8.3; Tailwind sigue en 3.4 a propósito (la 4 no funciona en iOS anterior a 16.4) |
 | Base de datos | PostgreSQL 15 | PostgreSQL 18 |
 | Panel | SB Admin 2 (Bootstrap) | `PanelShell` con Tailwind, compartido por el administrador y el vendedor |

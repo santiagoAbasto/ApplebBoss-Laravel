@@ -1202,7 +1202,7 @@ class VentaController extends Controller
     public function buscarNota(Request $request)
     {
         try {
-            $query = trim($request->input('codigo_nota'));
+            $query = trim((string) $request->input('codigo_nota'));
 
             if ($query === '') {
                 return response()->json([]);
@@ -1282,7 +1282,7 @@ class VentaController extends Controller
 
     public function buscarSoloVentas(Request $request)
     {
-        $query = trim($request->input('codigo_nota'));
+        $query = trim((string) $request->input('codigo_nota'));
 
         if ($query === '') {
             return response()->json([]);

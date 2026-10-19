@@ -14,7 +14,7 @@
 |---|---|
 | Empresa | **Apple Boss**, Cochabamba, Bolivia. Vende productos Apple nuevos y seminuevos, otros equipos, accesorios (marca propia de fundas: MYSKIN) y servicio técnico |
 | Sistema principal | https://appleboss.com.bo — tienda en línea + panel de gestión (inventario, ventas, reservas, pedidos, servicio técnico) |
-| Stack | Laravel 13, PHP 8.4 en producción (8.5 en el Docker de desarrollo), PostgreSQL 18, React 19 + Inertia 3, Docker en un VPS de Hostinger, detrás de Cloudflare |
+| Stack | Laravel 13, PHP 8.5 (producción y desarrollo), PostgreSQL 18, React 19 + Inertia 3, Docker en un VPS de Hostinger, detrás de Cloudflare |
 | Moneda | Bolivianos (BOB). El cobro en USDT usa el dólar paralelo del día |
 | Esta API | REST, **solo lectura**, versión v1, base `https://appleboss.com.bo/api/v1/integration` |
 

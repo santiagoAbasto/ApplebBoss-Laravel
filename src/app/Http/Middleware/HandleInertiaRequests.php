@@ -73,7 +73,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 // Qué módulos del panel abre su rol: el menú esconde lo que el servidor va a rechazar igual
                 'permisos' => fn () => $request->user()
-                    ? \App\Models\Role::mapa()[$request->user()->rol] ?? ($request->user()->rol === 'admin' ? ['*'] : [])
+                    ? \App\Models\Role::mapa()[$request->user()->rol ?? ''] ?? ($request->user()->rol === 'admin' ? ['*'] : [])
                     : [],
             ],
             // Para mostrar cada precio en Bs y en USDT. Null si no se pudo saber la tasa:

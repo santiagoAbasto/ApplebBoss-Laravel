@@ -15,7 +15,7 @@ une el segundo proyecto. Ver [APPLE_BOSS_DATA_SOURCES.md](APPLE_BOSS_DATA_SOURCE
 ## Arquitectura
 
 ```
-                 appleboss.com.bo  (Laravel 13 · PHP 8.4 · PostgreSQL 18 · Docker en Hostinger, detrás de Cloudflare)
+                 appleboss.com.bo  (Laravel 13 · PHP 8.5 · PostgreSQL 18 · Docker en Hostinger, detrás de Cloudflare)
                         │
    inventario (celulares, computadoras, productos_apple, productos_generales)
    publicaciones de la tienda (catalogo_publicaciones + catalogo_imagenes)

@@ -16,7 +16,7 @@ COPY src/ ./
 RUN npm run build
 
 
-FROM php:8.4-apache AS runtime
+FROM php:8.5-apache AS runtime
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
