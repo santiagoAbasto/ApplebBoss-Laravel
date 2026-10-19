@@ -217,4 +217,4 @@ Eso es la prueba viva: falsear `X-Forwarded-For` antes repartía los pedidos en 
 - La skill lanza 12 agentes de caza en paralelo; en la corrida se cortaron por el **límite de sesión de la cuenta**. Por eso el reconocimiento, la cobertura, la caja negra y k6 quedaron completos, y **la caza de vulnerabilidades se terminó a mano**, revisando el código y confirmando cada hallazgo con una prueba local reproducible.
 - Las **6 observaciones** de la caja negra no son fallas: HSTS y cookie `Secure` solo aplican con HTTPS real (producción); la versión de PHP/Apache es fuga de versión (endurecer en despliegue).
 - El check de k6 «api sin costo» es un *regex sobre todo el cuerpo* (puede matchear la palabra en un texto de marketing); la prueba fina es la inspección de claves de 1.3 y 2.5.
-- **Nada está commiteado**: los arreglos están en el árbol de trabajo. Si el tribunal quiere, se hace el commit en el momento.
+- **Los arreglos ya están en git y en producción** (commits del 17 y 18-09-2026). Para mostrarlos, `git log` y el diff de cada hallazgo en el reporte.

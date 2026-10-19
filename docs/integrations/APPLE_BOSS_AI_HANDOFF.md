@@ -1,7 +1,7 @@
 # APPLE BOSS AI — Handoff de la API de integración
 
 > Documento autónomo para el proyecto «APPLE BOSS AI» (ventas, WhatsApp, CRM) o para otra sesión de Claude Code que
-> no tenga acceso al repositorio de la tienda. Última revisión: 09-10-2026.
+> no tenga acceso al repositorio de la tienda. Última revisión: 19-10-2026.
 > **Estado de la API:** **operativa en producción.** Commit desplegado: **`77e6805`** (incluye la API de `5bb7f5c`, la
 > búsqueda corregida de `d42229b` y el 401 en JSON de `df82166`). Verificada en producción el 09-10-2026 con
 > credenciales temporales, ya revocadas: los 9 endpoints, 647 productos (302 en stock), fotos, permisos, privacidad,
@@ -402,8 +402,8 @@ Modelo de procedencia sugerido. Es un ejemplo conceptual, no un producto real:
   todos los celulares; hay un equipo para repuesto con «REPUESTO» en el nombre y un accesorio cargado con su código
   como nombre; la tasa de cambio es la del dólar paralelo que usa la tienda, no una conversión de precios. En el panel
   quedan 5 integraciones de prueba desactivadas y sin tokens (despliegue y verificaciones del 09-10-2026).
-- **Qué falta del lado de la tienda:** crear la integración «APPLE BOSS AI» para obtener el token. Aparte, con su
-  propia autorización: la corrección de IP real en Caddy (parte B de `APPLE_BOSS_API_DEPLOYMENT.md`).
+- **Qué falta del lado de la tienda:** crear la integración «APPLE BOSS AI» para obtener el token. La corrección de
+  IP real en Caddy (parte B de `APPLE_BOSS_API_DEPLOYMENT.md`) quedó aplicada el 12-10-2026.
 - **Qué falta del lado de APPLE BOSS AI:** todo lo de las secciones G, I y J. Nada de eso va en el repositorio de la
   tienda.
 - **Contrato estable:** v1 no cambia nombres ni tipos. Si algo no cuadra con este documento, manda el OpenAPI
