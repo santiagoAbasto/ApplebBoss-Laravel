@@ -78,14 +78,17 @@ function Stat({ icon: Icon, label, value, hint, tone = 'navy' }) {
   );
 }
 
+// Botón de documento: solo ícono, con tooltip. Mantiene la fila compacta (la nota y el recibo se abren en PDF).
 function Doc({ href, icon: Icon, label }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" title={label}
-      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
-      <Icon className="h-3.5 w-3.5" /> {label}
+    <a href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label}
+      className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-3.5 w-3.5" />
     </a>
   );
 }
+
+const Divisor = () => <span className="mx-0.5 h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />;
 
 function Acciones({ s, prefijo }) {
   const [presupuesto, setPresupuesto] = useState(false);
@@ -93,21 +96,25 @@ function Acciones({ s, prefijo }) {
   const puedePresupuestar = s.modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(s.estado);
 
   return (
-    <div className="flex flex-wrap justify-end gap-1.5">
+    <div className="flex flex-wrap items-center justify-end gap-1">
+      {/* Documento: la nota y el recibo térmico, en PDF */}
+      <Doc href={route(`${prefijo}.servicios.boleta`, s.id)} icon={FileText} label="Nota (PDF)" />
+      <Doc href={route(`${prefijo}.servicios.recibo80mm`, s.id)} icon={Printer} label="Recibo térmico" />
+      <Divisor />
+      {/* Enviar al cliente (WhatsApp / Correo / Copiar) y pedir reseña */}
+      <Compartir prefijo={prefijo} compartir={s.compartir} />
+      <Divisor />
+      {/* Gestión del servicio */}
       {puedePresupuestar && (
         <button type="button" onClick={() => setPresupuesto(true)} title={`Cargar el presupuesto de ${s.codigo_nota}`}
           className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#011446] bg-[#011446] px-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#0a1f5c]">
           <Receipt className="h-3.5 w-3.5" /> Presupuesto
         </button>
       )}
-      <Doc href={route(`${prefijo}.servicios.boleta`, s.id)} icon={FileText} label="Nota" />
-      <Doc href={route(`${prefijo}.servicios.recibo80mm`, s.id)} icon={Printer} label="Térmica" />
-      {/* Corregir lo que se registró mal (el admin ve en el Resumen qué cambió) */}
-      <Link href={route(`${prefijo}.servicios.edit`, s.id)} title={`Editar ${s.codigo_nota}`}
-        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
-        <Pencil className="h-3.5 w-3.5" /> Editar
+      <Link href={route(`${prefijo}.servicios.edit`, s.id)} title={`Editar ${s.codigo_nota}`} aria-label={`Editar ${s.codigo_nota}`}
+        className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
+        <Pencil className="h-3.5 w-3.5" />
       </Link>
-      <Compartir prefijo={prefijo} compartir={s.compartir} />
       {presupuesto && <ModalPresupuesto servicio={s} prefijo={prefijo} onCerrar={() => setPresupuesto(false)} />}
     </div>
   );

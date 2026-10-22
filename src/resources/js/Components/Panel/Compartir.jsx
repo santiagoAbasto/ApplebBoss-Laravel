@@ -46,8 +46,7 @@ export default function Compartir({ prefijo, compartir }) {
 
   return (
     <>
-      <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <div className="inline-flex gap-1.5">
+      <div className="inline-flex items-center gap-1">
         {whatsapp && !bloqueo ? (
           <a href={whatsapp} target="_blank" rel="noopener noreferrer" title={`WhatsApp con ${TITULOS[tipo]} ${codigo}`}
             className={`${chip} border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100`}>
@@ -63,11 +62,11 @@ export default function Compartir({ prefijo, compartir }) {
           className={`${chip} ${enviadoEn ? 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'}`}>
           <Mail className="h-3.5 w-3.5" /> Correo {enviadoEn && <Check className="h-3 w-3" aria-label="enviado" />}
         </button>
-        <button type="button" disabled={Boolean(bloqueo)} onClick={copiar} title={bloqueo || 'Copiar el mensaje con el enlace al PDF'}
-          className={`${chip} border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900`}>
-          {copiado ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />} {copiado ? 'Copiado' : 'Copiar'}
+        <button type="button" disabled={Boolean(bloqueo)} onClick={copiar} aria-label="Copiar el mensaje con el enlace"
+          title={bloqueo || 'Copiar el mensaje con el enlace al PDF'}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50">
+          {copiado ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
-      </div>
         {!bloqueo && <PedirResena prefijo={prefijo} id={id} codigo={codigo} resena={compartir.resena} />}
       </div>
 

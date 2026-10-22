@@ -30,14 +30,17 @@ const hora = (iso) => new Date(iso).toLocaleTimeString('es-BO', { hour: '2-digit
 const hoy = () => new Date().toISOString().slice(0, 10);
 const primeroDelMes = () => `${new Date().toISOString().slice(0, 7)}-01`;
 
+// Documento en PDF: solo ícono con tooltip, para que la fila quede compacta.
 function AccionNota({ href, icon: Icon, label }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" title={label}
-      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
-      <Icon className="h-3.5 w-3.5" /> {label}
+    <a href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label}
+      className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-3.5 w-3.5" />
     </a>
   );
 }
+
+const Divisor = () => <span className="mx-0.5 h-5 w-px shrink-0 bg-slate-200" aria-hidden="true" />;
 
 export default function Index({ ventas = [] }) {
   useAutoRefresh(['ventas']);
@@ -218,17 +221,22 @@ export default function Index({ ventas = [] }) {
                       <span className="truncate text-sm font-semibold text-slate-800">{r.nombre_cliente}</span>
                       <Badge tone={r.tipo === 'servicio_tecnico' ? 'emerald' : 'navy'}>{r.tipo === 'servicio_tecnico' ? 'Servicio técnico' : 'Venta'}</Badge>
                     </div>
-                    <div className="flex gap-2">
-                      {r.tipo === 'venta' && (
-                        <Link href={route('vendedor.ventas.edit', r.id_real)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900">
-                          <Pencil className="h-3.5 w-3.5" /> Editar
-                        </Link>
-                      )}
-                      <AccionNota icon={FileText} label="Nota"
+                    <div className="flex flex-wrap items-center gap-1">
+                      <AccionNota icon={FileText} label="Nota (PDF)"
                         href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.boleta', r.id_real) : route('vendedor.ventas.boleta', r.id_real)} />
-                      <AccionNota icon={Printer} label="Térmica"
+                      <AccionNota icon={Printer} label="Recibo térmico"
                         href={r.tipo === 'servicio_tecnico' ? route('vendedor.servicios.recibo80mm', r.id_real) : route('vendedor.ventas.boleta80', r.id_real)} />
+                      <Divisor />
                       <Compartir prefijo="vendedor" compartir={r.compartir} />
+                      {r.tipo === 'venta' && (
+                        <>
+                          <Divisor />
+                          <Link href={route('vendedor.ventas.edit', r.id_real)} title="Editar venta" aria-label="Editar venta"
+                            className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -308,10 +316,12 @@ export default function Index({ ventas = [] }) {
                             {i.reserva > 0 && <p className="mt-0.5 text-[11px] text-slate-400">Seña previa {bsFmt(i.reserva)}</p>}
                           </td>
                           <td className="px-5 py-3">
-                            <div className="flex justify-end gap-1.5">
-                              <AccionNota icon={FileText} label="Nota" href={route('vendedor.ventas.boleta', i.id_venta)} />
-                              <AccionNota icon={Printer} label="Térmica" href={route('vendedor.ventas.boleta80', i.id_venta)} />
+                            <div className="flex flex-wrap items-center justify-end gap-1">
+                              <AccionNota icon={FileText} label="Nota (PDF)" href={route('vendedor.ventas.boleta', i.id_venta)} />
+                              <AccionNota icon={Printer} label="Recibo térmico" href={route('vendedor.ventas.boleta80', i.id_venta)} />
+                              <Divisor />
                               <Compartir prefijo="vendedor" compartir={i.compartir} />
+                              <Divisor />
                               <Link href={route('vendedor.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
                                 <Pencil className="h-3.5 w-3.5" />
