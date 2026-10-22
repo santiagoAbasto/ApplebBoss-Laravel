@@ -7,8 +7,10 @@ use App\Models\Cliente;
 use App\Models\ConfiguracionTienda;
 use App\Models\NewsletterSubscriber;
 use App\Models\ProductoGeneral;
+use App\Models\ServicioTecnico;
 use App\Models\User;
 use App\Models\Venta;
+use App\Support\Documentos\Documento;
 use App\Support\Resenas\Solicitud;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -69,13 +71,13 @@ class SolicitudDeResenaTest extends TestCase
         $admin = $this->admin();
         $venta = $this->registrarVenta($admin); // sin correo del cliente
 
-        $this->actingAs($admin)->post(route('admin.resenas.pedir', ['id' => $venta->id]), ['correo' => ' Ana.Quispe@Example.com '])
+        $this->actingAs($admin)->post(route('admin.resenas.pedir', ['tipo' => 'venta', 'id' => $venta->id]), ['correo' => ' Ana.Quispe@Example.com '])
             ->assertRedirect();
 
         $venta->refresh();
         $this->assertSame('ana.quispe@example.com', $venta->correo_cliente);
         $this->assertNotNull($venta->resena_pedida_en);
-        Mail::assertQueued(SolicitudDeResena::class, fn (SolicitudDeResena $m) => $m->hasTo('ana.quispe@example.com') && $m->venta->is($venta));
+        Mail::assertQueued(SolicitudDeResena::class, fn (SolicitudDeResena $m) => $m->hasTo('ana.quispe@example.com') && $m->doc->is($venta));
         $this->assertDatabaseHas('clientes', ['correo' => 'ana.quispe@example.com']);
         $this->assertDatabaseHas('newsletter_subscribers', ['email' => 'ana.quispe@example.com']);
     }
@@ -86,9 +88,60 @@ class SolicitudDeResenaTest extends TestCase
         $otro = User::factory()->create(['rol' => 'vendedor']);
         $venta = $this->registrarVenta($vendedora, ['correo_cliente' => 'duena@example.com'], 'vendedor');
 
-        $this->actingAs($otro)->post(route('vendedor.resenas.pedir', ['id' => $venta->id]), [])->assertForbidden();
-        $this->actingAs($vendedora)->post(route('vendedor.resenas.pedir', ['id' => $venta->id]), [])->assertRedirect();
+        $this->actingAs($otro)->post(route('vendedor.resenas.pedir', ['tipo' => 'venta', 'id' => $venta->id]), [])->assertForbidden();
+        $this->actingAs($vendedora)->post(route('vendedor.resenas.pedir', ['tipo' => 'venta', 'id' => $venta->id]), [])->assertRedirect();
         Mail::assertQueued(SolicitudDeResena::class, fn (SolicitudDeResena $m) => $m->hasTo('duena@example.com'));
+    }
+
+    private function servicio(User $user, array $datos = []): ServicioTecnico
+    {
+        return ServicioTecnico::create(array_merge([
+            'codigo_nota' => 'AT-ST' . random_int(100, 999),
+            'cliente' => 'Luis Fernández', 'telefono' => '77788899',
+            'equipo' => 'iPhone 13', 'marca' => 'apple',
+            'estado' => ServicioTecnico::RECIBIDO,
+            'detalle_servicio' => json_encode([['descripcion' => 'Cambio de pantalla', 'costo' => 300, 'precio' => 550]]),
+            'precio_costo' => 300, 'precio_venta' => 550, 'tecnico' => 'AXEL',
+            'fecha' => '2026-10-10', 'user_id' => $user->id,
+        ], $datos));
+    }
+
+    public function test_al_entregar_un_servicio_se_pide_la_resena_y_aparece_el_boton_en_el_panel(): void
+    {
+        $admin = $this->admin();
+        $servicio = $this->servicio($admin, ['correo' => 'luisf@example.com']);
+
+        // Un servicio que todavía no se entrega no muestra el botón de reseña.
+        $this->assertNull(Documento::compartir($servicio)['resena']);
+
+        Mail::fake(); // ignorar la nota de servicio que se encola al cambiar de estado
+        $this->actingAs($admin)
+            ->patch(route('admin.servicios.estado', $servicio), ['estado' => ServicioTecnico::ENTREGADO])
+            ->assertRedirect();
+
+        $servicio->refresh();
+        $this->assertNotNull($servicio->resena_pedida_en, 'al entregar queda marcado el pedido de reseña');
+        Mail::assertQueued(SolicitudDeResena::class, fn (SolicitudDeResena $m) => $m->hasTo('luisf@example.com') && $m->doc->is($servicio));
+
+        // Entregado: el panel ya trae los botones de reseña, con el tipo para armar la ruta.
+        $panel = Documento::compartir($servicio)['resena'];
+        $this->assertSame('servicio', $panel['tipo']);
+        $this->assertStringStartsWith('https://wa.me/59177788899?text=', $panel['whatsapp']);
+    }
+
+    public function test_el_boton_de_resena_del_panel_tambien_sirve_para_un_servicio(): void
+    {
+        $admin = $this->admin();
+        $servicio = $this->servicio($admin, ['estado' => ServicioTecnico::ENTREGADO]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.resenas.pedir', ['tipo' => 'servicio', 'id' => $servicio->id]), ['correo' => 'nuevo@example.com'])
+            ->assertRedirect();
+
+        $servicio->refresh();
+        $this->assertSame('nuevo@example.com', $servicio->correo);
+        $this->assertNotNull($servicio->resena_pedida_en);
+        Mail::assertQueued(SolicitudDeResena::class, fn (SolicitudDeResena $m) => $m->hasTo('nuevo@example.com') && $m->doc->is($servicio));
     }
 
     public function test_no_se_pide_dos_veces_salvo_que_el_panel_lo_fuerce_ni_a_quien_no_quiere_correos(): void

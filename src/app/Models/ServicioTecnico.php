@@ -38,6 +38,11 @@ class ServicioTecnico extends Model
         'costo_pendiente',
         'costo_cargado_por',
         'costo_cargado_en',
+        'modo',
+        'cuota_diagnostico',
+        'presupuesto_en',
+        'aprobado_en',
+        'rechazado_en',
     ];
 
     /**
@@ -49,6 +54,11 @@ class ServicioTecnico extends Model
         'costo_pendiente'  => 'boolean',
         'costo_cargado_en' => 'datetime',
         'correo_enviado_en' => 'datetime',
+        'resena_pedida_en' => 'datetime',
+        'cuota_diagnostico' => 'decimal:2',
+        'presupuesto_en'   => 'datetime',
+        'aprobado_en'      => 'datetime',
+        'rechazado_en'     => 'datetime',
     ];
 
     /* =========================
@@ -57,23 +67,80 @@ class ServicioTecnico extends Model
 
     public const RECIBIDO = 'recibido';
 
+    public const EN_DIAGNOSTICO = 'en_diagnostico';
+
+    public const PRESUPUESTO = 'presupuesto';
+
     public const EN_REPARACION = 'en_reparacion';
 
     public const LISTO = 'listo';
 
     public const ENTREGADO = 'entregado';
 
-    /** En este orden avanza un equipo en el taller; cada paso le avisa al cliente por correo si dejó uno. */
+    /** El cliente no aprobó el presupuesto: no se repara. Rama aparte, no es un paso del camino normal. */
+    public const RECHAZADO = 'rechazado';
+
+    /**
+     * El camino completo del equipo, en orden (sirve de tracker en el correo, estilo Pedidos Ya). Un servicio de
+     * «reparación directa» salta el diagnóstico y el presupuesto (ver pasosTracker). Cada paso avisa al cliente.
+     */
     public const ESTADOS = [
-        self::RECIBIDO      => 'Recibido',
-        self::EN_REPARACION => 'En reparación',
-        self::LISTO         => 'Listo para recoger',
-        self::ENTREGADO     => 'Entregado',
+        self::RECIBIDO       => 'Recibido',
+        self::EN_DIAGNOSTICO => 'En diagnóstico',
+        self::PRESUPUESTO    => 'Presupuesto',
+        self::EN_REPARACION  => 'En reparación',
+        self::LISTO          => 'Reparado',
+        self::ENTREGADO      => 'Entregado',
+    ];
+
+    /** Etiquetas de todos los estados, incluido el rechazado que no es parte del camino normal. */
+    public const ETIQUETAS = self::ESTADOS + [self::RECHAZADO => 'Presupuesto rechazado'];
+
+    /* =========================
+     |  CÓMO INGRESA EL SERVICIO
+     ========================= */
+
+    public const MODO_DIRECTO = 'directo';
+
+    public const MODO_DIAGNOSTICO = 'diagnostico';
+
+    public const MODOS = [
+        self::MODO_DIRECTO     => 'Reparación directa',
+        self::MODO_DIAGNOSTICO => 'Diagnóstico',
     ];
 
     public function etiquetaDeEstado(): string
     {
-        return self::ESTADOS[$this->estado] ?? self::ESTADOS[self::RECIBIDO];
+        return self::ETIQUETAS[$this->estado] ?? self::ETIQUETAS[self::RECIBIDO];
+    }
+
+    public function esDiagnostico(): bool
+    {
+        return $this->modo === self::MODO_DIAGNOSTICO;
+    }
+
+    /** Los pasos del camino para ESTE servicio: el directo no muestra diagnóstico ni presupuesto. */
+    public function pasosTracker(): array
+    {
+        $saltar = $this->esDiagnostico() ? [] : [self::EN_DIAGNOSTICO, self::PRESUPUESTO];
+
+        return array_values(array_diff(array_keys(self::ESTADOS), $saltar));
+    }
+
+    /**
+     * Qué estados puede elegir a mano el panel desde el desplegable. El presupuesto y el rechazo salen de su propio
+     * flujo (cargar presupuesto / el cliente aprueba), no del desplegable.
+     */
+    public function estadosSeleccionables(): array
+    {
+        $pasos = array_values(array_diff($this->pasosTracker(), [self::PRESUPUESTO]));
+
+        // Mientras no haya precio aprobado, un diagnóstico no salta a reparación desde el desplegable.
+        if ($this->esDiagnostico() && in_array($this->estado, [self::RECIBIDO, self::EN_DIAGNOSTICO], true)) {
+            return array_values(array_diff($pasos, [self::EN_REPARACION, self::LISTO, self::ENTREGADO]));
+        }
+
+        return $pasos;
     }
 
     /* =========================
@@ -141,10 +208,17 @@ class ServicioTecnico extends Model
      |  COSTO Y UTILIDAD
      ========================= */
 
-    /** Los servicios que todavía no tienen costo: el administrador tiene que cargarlo para saber la utilidad. */
+    /**
+     * Los servicios que todavía no tienen costo: el administrador tiene que cargarlo para saber la utilidad. Un
+     * diagnóstico que aún está en diagnóstico no cuenta: todavía no hay reparación ni precio sobre el cual cargar costo.
+     */
     public function scopeSinCosto($query)
     {
-        return $query->where('costo_pendiente', true);
+        return $query->where('costo_pendiente', true)
+            ->where(function ($q) {
+                $q->where('modo', '!=', self::MODO_DIAGNOSTICO)
+                    ->orWhereNotIn('estado', [self::RECIBIDO, self::EN_DIAGNOSTICO]);
+            });
     }
 
     /** Lo que cuesta el servicio para los reportes: sin costo cargado no se inventa uno. */

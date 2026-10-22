@@ -30,6 +30,20 @@ export const recepcionInicial = (puntos = []) => ({
   desbloqueo: { modo: '', tipo: 'pin', valor: '' },
 });
 
+/** Para editar: parte de los puntos estándar con el estado que quedó guardado, y suma los puntos propios que haya. */
+export const recepcionDesde = (guardada, puntos = []) => {
+  const estados = new Map((guardada?.revision ?? []).map((p) => [p.etiqueta, p.estado]));
+  const base = puntos.map((etiqueta) => ({ ...puntoNuevo(etiqueta), estado: estados.get(etiqueta) ?? null }));
+  const extra = (guardada?.revision ?? [])
+    .filter((p) => !puntos.includes(p.etiqueta))
+    .map((p) => ({ ...puntoNuevo(p.etiqueta, true), estado: p.estado }));
+  const d = guardada?.desbloqueo ?? {};
+  return {
+    revision: [...base, ...extra],
+    desbloqueo: { modo: d.modo ?? '', tipo: d.tipo ?? 'pin', valor: d.valor ?? '' },
+  };
+};
+
 /** Lo que viaja al servidor: solo los puntos que alguien marcó. */
 export const payloadRecepcion = (recepcion) => ({
   revision: recepcion.revision

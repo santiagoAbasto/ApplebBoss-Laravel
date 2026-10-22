@@ -18,13 +18,13 @@ export default function PedirResena({ prefijo, id, codigo, resena }) {
   const [error, setError] = useState(null);
 
   if (!resena) return null;
-  const { whatsapp, pedida_en: pedidaEn } = resena;
+  const { whatsapp, pedida_en: pedidaEn, tipo } = resena;
 
   const enviar = (e) => {
     e?.preventDefault();
     setEnviando(true);
     setError(null);
-    router.post(route(`${prefijo}.resenas.pedir`, { id }), { correo: correo.trim() }, {
+    router.post(route(`${prefijo}.resenas.pedir`, { tipo, id }), { correo: correo.trim() }, {
       preserveScroll: true,
       onSuccess: () => setModal(false),
       onError: (errs) => setError(errs.correo || 'No se pudo enviar.'),
@@ -37,7 +37,7 @@ export default function PedirResena({ prefijo, id, codigo, resena }) {
       <div className="inline-flex items-center gap-1.5">
         <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Reseña</span>
         {whatsapp ? (
-          <a href={whatsapp} target="_blank" rel="noopener noreferrer" title={`WhatsApp pidiendo la reseña de la venta ${codigo}`}
+          <a href={whatsapp} target="_blank" rel="noopener noreferrer" title={`WhatsApp pidiendo la reseña · ${codigo}`}
             className={`${chip} border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100`}>
             <Star className="h-3.5 w-3.5" /> WhatsApp
           </a>
@@ -54,7 +54,7 @@ export default function PedirResena({ prefijo, id, codigo, resena }) {
       </div>
 
       {modal && (
-        <Modal title={`Pedir reseña de la venta ${codigo}`} onClose={() => setModal(false)}
+        <Modal title={`Pedir reseña · ${codigo}`} onClose={() => setModal(false)}
           footer={(
             <>
               <button type="button" onClick={() => setModal(false)} className={buttonCls('secondary')}>Cancelar</button>

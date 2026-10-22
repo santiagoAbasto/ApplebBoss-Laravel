@@ -3,7 +3,7 @@ import { route } from 'ziggy-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import {
-  AlertTriangle, CalendarRange, Download, FileSpreadsheet, FileText, Hammer, Pencil, Plus, Printer, Search, TrendingUp, Users, Wallet,
+  AlertTriangle, CalendarRange, Download, FileSpreadsheet, FileText, Hammer, Pencil, Plus, Printer, Receipt, Search, Trash2, TrendingUp, Users, Wallet,
   Wrench, X,
 } from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
@@ -88,28 +88,64 @@ function Doc({ href, icon: Icon, label }) {
 }
 
 function Acciones({ s, prefijo }) {
+  const [presupuesto, setPresupuesto] = useState(false);
+  // El presupuesto se carga sobre un diagnóstico que todavía no tiene precio.
+  const puedePresupuestar = s.modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(s.estado);
+
   return (
     <div className="flex flex-wrap justify-end gap-1.5">
+      {puedePresupuestar && (
+        <button type="button" onClick={() => setPresupuesto(true)} title={`Cargar el presupuesto de ${s.codigo_nota}`}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#011446] bg-[#011446] px-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#0a1f5c]">
+          <Receipt className="h-3.5 w-3.5" /> Presupuesto
+        </button>
+      )}
       <Doc href={route(`${prefijo}.servicios.boleta`, s.id)} icon={FileText} label="Nota" />
       <Doc href={route(`${prefijo}.servicios.recibo80mm`, s.id)} icon={Printer} label="Térmica" />
+      {/* Corregir lo que se registró mal (el admin ve en el Resumen qué cambió) */}
+      <Link href={route(`${prefijo}.servicios.edit`, s.id)} title={`Editar ${s.codigo_nota}`}
+        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900">
+        <Pencil className="h-3.5 w-3.5" /> Editar
+      </Link>
       <Compartir prefijo={prefijo} compartir={s.compartir} />
+      {presupuesto && <ModalPresupuesto servicio={s} prefijo={prefijo} onCerrar={() => setPresupuesto(false)} />}
     </div>
   );
 }
 
-// El camino del equipo en el taller. Cambiar el paso avisa al cliente por correo (si dejó uno), por eso se confirma.
-const ESTADOS = [
-  ['recibido', 'Recibido', 'slate'],
-  ['en_reparacion', 'En reparación', 'amber'],
-  ['listo', 'Listo para recoger', 'emerald'],
-  ['entregado', 'Entregado', 'blue'],
-];
+// El camino del equipo en el taller (estilo tracker). Cambiar el paso avisa al cliente por correo, por eso se confirma.
+// El presupuesto y el rechazo son estados de visualización: salen de su propio flujo, no del desplegable.
+const ESTADO_INFO = {
+  recibido:       ['Recibido', 'slate'],
+  en_diagnostico: ['En diagnóstico', 'violet'],
+  presupuesto:    ['Presupuesto', 'amber'],
+  en_reparacion:  ['En reparación', 'amber'],
+  listo:          ['Reparado', 'emerald'],
+  entregado:      ['Entregado', 'blue'],
+  rechazado:      ['Rechazado', 'rose'],
+};
+
+// Mismo criterio que el backend (ServicioTecnico::estadosSeleccionables): qué puede elegir el desplegable por modo.
+const PASOS = {
+  directo:     ['recibido', 'en_reparacion', 'listo', 'entregado'],
+  diagnostico: ['recibido', 'en_diagnostico', 'presupuesto', 'en_reparacion', 'listo', 'entregado'],
+};
+const estadosSeleccionables = (s) => {
+  const modo = s.modo === 'diagnostico' ? 'diagnostico' : 'directo';
+  let pasos = PASOS[modo].filter((e) => e !== 'presupuesto');
+  if (modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(s.estado)) {
+    pasos = pasos.filter((e) => !['en_reparacion', 'listo', 'entregado'].includes(e));
+  }
+  return pasos;
+};
 
 function EstadoServicio({ s, prefijo }) {
   const [pendiente, setPendiente] = useState(null); // estado elegido, a confirmar
   const [guardando, setGuardando] = useState(false);
-  const actual = ESTADOS.find(([k]) => k === s.estado) ?? ESTADOS[0];
-  const elegido = ESTADOS.find(([k]) => k === pendiente);
+  const actual = ESTADO_INFO[s.estado] ?? ESTADO_INFO.recibido;
+  const elegido = pendiente ? ESTADO_INFO[pendiente] : null;
+  // El estado actual siempre aparece en la lista (aunque sea presupuesto/rechazado, que no se eligen a mano).
+  const opciones = [...new Set([s.estado, ...estadosSeleccionables(s)])].filter((k) => ESTADO_INFO[k]);
 
   const confirmar = () => {
     setGuardando(true);
@@ -123,15 +159,15 @@ function EstadoServicio({ s, prefijo }) {
     <>
       <label className="inline-flex items-center gap-1.5">
         <span className="sr-only">Estado de {s.codigo_nota}</span>
-        <Badge tone={actual[2]}>{actual[1]}</Badge>
+        <Badge tone={actual[1]}>{actual[0]}</Badge>
         <select value={s.estado || 'recibido'} onChange={(e) => e.target.value !== s.estado && setPendiente(e.target.value)}
           aria-label={`Cambiar el estado de ${s.codigo_nota || 'este servicio'}`} title="Cambiar el estado: el cliente recibe un aviso por correo"
           className="h-7 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
-          {ESTADOS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          {opciones.map((k) => <option key={k} value={k}>{ESTADO_INFO[k][0]}</option>)}
         </select>
       </label>
       {elegido && (
-        <Modal title={`${s.codigo_nota || 'Servicio'}: marcar como ${elegido[1].toLowerCase()}`} onClose={() => setPendiente(null)}
+        <Modal title={`${s.codigo_nota || 'Servicio'}: marcar como ${elegido[0].toLowerCase()}`} onClose={() => setPendiente(null)}
           footer={(
             <>
               <button type="button" onClick={() => setPendiente(null)} className={buttonCls('secondary')}>Cancelar</button>
@@ -240,6 +276,93 @@ function ModalCosto({ servicio, onCerrar }) {
   );
 }
 
+let idPresu = 0;
+const itemPresu = () => ({ id: ++idPresu, descripcion: '', costo: '', precio: '' });
+
+/** A partir del diagnóstico: se fija lo que paga el cliente (y el costo, si es admin) y se le manda para que apruebe. */
+function ModalPresupuesto({ servicio, prefijo, onCerrar }) {
+  const conMargen = prefijo === 'admin';
+  const [items, setItems] = useState([itemPresu()]);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
+
+  const cambiar = (id, campo, v) => setItems((xs) => xs.map((x) => (x.id === id ? { ...x, [campo]: v } : x)));
+  const quitar = (id) => setItems((xs) => (xs.length === 1 ? [itemPresu()] : xs.filter((x) => x.id !== id)));
+  const agregar = () => setItems((xs) => [...xs, itemPresu()]);
+
+  const descritos = items.filter((t) => t.descripcion.trim() && t.precio !== '');
+  const total = descritos.reduce((a, t) => a + (Number(t.precio) || 0), 0);
+
+  const enviar = () => {
+    if (enviando) return;
+    if (descritos.length === 0) { setError('Agrega al menos un trabajo con lo que paga el cliente.'); return; }
+    const detalle = descritos.map((t) => ({
+      descripcion: t.descripcion.trim(),
+      ...(conMargen && t.costo !== '' ? { costo: Math.round((Number(t.costo) || 0) * 100) / 100 } : {}),
+      precio: Math.round((Number(t.precio) || 0) * 100) / 100,
+    }));
+    setEnviando(true);
+    setError(null);
+    router.patch(route(`${prefijo}.servicios.presupuesto`, servicio.id), { detalle_servicio: JSON.stringify(detalle) }, {
+      preserveScroll: true,
+      onSuccess: onCerrar,
+      onError: (errs) => setError(errs.detalle_servicio || 'No se pudo cargar el presupuesto.'),
+      onFinish: () => setEnviando(false),
+    });
+  };
+
+  return (
+    <Modal title={`Presupuesto de ${servicio.codigo_nota || 'servicio'}`} onClose={onCerrar}
+      footer={(
+        <>
+          <button type="button" onClick={onCerrar} className={buttonCls('secondary', 'h-11')}>Cancelar</button>
+          <button type="button" onClick={enviar} disabled={enviando || descritos.length === 0} className={buttonCls('primary', 'h-11')}>
+            {enviando ? 'Enviando…' : 'Enviar al cliente'}
+          </button>
+        </>
+      )}>
+      <div className="space-y-3">
+        <p className="rounded-xl bg-slate-50 px-4 py-3 text-[13px] leading-relaxed text-slate-600">
+          <span className="font-semibold text-slate-900">{servicio.equipo}</span> de {servicio.cliente}. Pon lo que haría falta y cuánto paga el cliente
+          {conMargen ? ' (y el costo, para la utilidad)' : ''}. {servicio.correo
+            ? <>Le llega a <strong className="text-slate-900">{servicio.correo}</strong> para que apruebe o rechace.</>
+            : 'El cliente no dejó correo: avísale por WhatsApp.'}
+        </p>
+
+        <ul className="space-y-2">
+          {items.map((t, i) => (
+            <li key={t.id} className={`grid items-center gap-2 ${conMargen ? 'grid-cols-[minmax(0,1fr)_96px_110px_36px]' : 'grid-cols-[minmax(0,1fr)_120px_36px]'}`}>
+              <Input value={t.descripcion} placeholder={i === 0 ? 'Ej.: Cambio de pantalla' : 'Trabajo'} aria-label={`Trabajo ${i + 1}`}
+                onChange={(e) => cambiar(t.id, 'descripcion', e.target.value)} />
+              {conMargen && (
+                <Input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Costo" aria-label={`Costo ${i + 1}`}
+                  className="tabular-nums" value={t.costo} onChange={(e) => cambiar(t.id, 'costo', e.target.value)} />
+              )}
+              <Input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Cliente paga" aria-label={`Cobro al cliente ${i + 1}`}
+                className="font-semibold tabular-nums" value={t.precio} onChange={(e) => cambiar(t.id, 'precio', e.target.value)} />
+              <button type="button" onClick={() => quitar(t.id)} aria-label={`Quitar trabajo ${i + 1}`} title="Quitar"
+                className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button type="button" onClick={agregar}
+          className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-400 hover:text-slate-900">
+          <Plus className="h-4 w-4" /> Agregar trabajo
+        </button>
+
+        <div className="flex items-center justify-between rounded-xl bg-[#011446] px-4 py-3 text-white">
+          <span className="text-xs font-bold uppercase tracking-[0.1em] text-white/60">El cliente paga</span>
+          <span className="text-xl font-extrabold tabular-nums">{bsFmt(total)}</span>
+        </div>
+        {error && <p className="text-sm font-semibold text-rose-600">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
 export default function ServiciosIndex({ servicios = [], filtros = {}, vendedores = [], tecnicos = [], pendientesDeCosto = 0, Layout, prefijo = 'admin', titulo, subtitulo, guia = null }) {
   useAutoRefresh(['servicios']);
   const [toast] = useToast();
@@ -306,7 +429,9 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
   const conCostos = prefijo === 'admin';
 
   const filas = useMemo(() => servicios.map((s) => {
-    const pendiente = conCostos && Boolean(s.costo_pendiente);
+    // Un diagnóstico que aún está en diagnóstico no tiene precio todavía: no se le carga costo.
+    const diagnosticoSinPrecio = s.modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(s.estado);
+    const pendiente = conCostos && Boolean(s.costo_pendiente) && !diagnosticoSinPrecio;
     const costo = Number(s.precio_costo || 0);
     const cobrado = Number(s.precio_venta || 0);
     // Sin costo cargado no hay utilidad que mostrar: no se toma el cobro entero como ganancia

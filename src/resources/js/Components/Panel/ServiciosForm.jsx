@@ -7,10 +7,18 @@ import { ArrowLeft, Hammer, Plus, Trash2, UserPlus, Wrench } from 'lucide-react'
 import PremiumNotice from '@/Components/PremiumNotice';
 import { notifyRecordsUpdated } from '@/Hooks/useAutoRefresh';
 import { Badge, Field, Input, Segmented, StepCard, Textarea, bsFmt, buttonCls } from '@/Components/Admin/ui';
-import RecepcionEquipo, { payloadRecepcion, recepcionInicial, textoDesbloqueo, validarRecepcion } from '@/Components/Panel/RecepcionEquipo';
+import RecepcionEquipo, { payloadRecepcion, recepcionDesde, recepcionInicial, textoDesbloqueo, validarRecepcion } from '@/Components/Panel/RecepcionEquipo';
 
 let ultimoId = 0;
 const nuevoTrabajo = () => ({ id: ++ultimoId, descripcion: '', costo: '', precio: '' });
+const strMonto = (v) => (v === null || v === undefined || v === '' ? '' : String(v));
+// Trabajos para el formulario, desde el detalle guardado del servicio (al editar).
+const trabajosDesde = (lista = []) => {
+  const ts = (Array.isArray(lista) ? lista : [])
+    .filter((t) => t && (t.descripcion ?? '').toString().trim())
+    .map((t) => ({ id: ++ultimoId, descripcion: t.descripcion ?? '', costo: strMonto(t.costo), precio: strMonto(t.precio) }));
+  return ts.length ? ts : [nuevoTrabajo()];
+};
 const monto = (v) => Math.round((Number(v) || 0) * 100) / 100;
 
 /** La regla del taller: quién puede recibir cada marca. El servidor la vuelve a aplicar al guardar. */
@@ -25,23 +33,29 @@ function Linea({ label, valor }) {
   );
 }
 
-export default function ServiciosForm({ tecnicos = [], marcas = [], especialidades = [], revision = [], Layout, prefijo = 'admin' }) {
+export default function ServiciosForm({ servicio = null, tecnicos = [], marcas = [], especialidades = [], revision = [], Layout, prefijo = 'admin' }) {
   // El vendedor registra solo lo que paga el cliente: con eso sale la nota. El costo de cada trabajo lo carga
   // el administrador desde la lista (le llega el aviso), y recién ahí se calcula la utilidad.
   const conMargen = prefijo === 'admin';
+  const esEdicion = Boolean(servicio);
+  // Un diagnóstico que todavía no tiene presupuesto se edita sin trabajos ni precio (solo datos y cuota).
+  const sinPresupuestoAun = esEdicion && servicio.modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(servicio.estado);
+  const [modoDiag, setModoDiag] = useState(() => (esEdicion ? sinPresupuestoAun : false));
+  const vistaDiagnostico = esEdicion ? sinPresupuestoAun : modoDiag;
+  const [cuota, setCuota] = useState(() => (servicio?.cuota_diagnostico != null ? String(servicio.cuota_diagnostico) : ''));
   const [data, setData] = useState({
-    cliente: '',
-    telefono: '',
-    correo: '',
-    equipo: '',
-    marca: '',
-    tecnico_id: '',
-    fecha: dayjs().format('YYYY-MM-DD'), // fecha local (no UTC)
-    notas_adicionales: '',
+    cliente: servicio?.cliente || '',
+    telefono: servicio?.telefono || '',
+    correo: servicio?.correo || '',
+    equipo: servicio?.equipo || '',
+    marca: servicio?.marca || '',
+    tecnico_id: servicio?.tecnico_id || '',
+    fecha: servicio?.fecha ? dayjs(servicio.fecha).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'), // fecha local (no UTC)
+    notas_adicionales: servicio?.notas_adicionales || '',
   });
-  const [recepcion, setRecepcion] = useState(() => recepcionInicial(revision));
+  const [recepcion, setRecepcion] = useState(() => (esEdicion ? recepcionDesde(servicio.recepcion, revision) : recepcionInicial(revision)));
   const [nuevoTecnico, setNuevoTecnico] = useState(null); // { nombre, especialidad } mientras se da de alta
-  const [trabajos, setTrabajos] = useState(() => [nuevoTrabajo()]);
+  const [trabajos, setTrabajos] = useState(() => (esEdicion ? trabajosDesde(servicio.trabajos) : [nuevoTrabajo()]));
   const [sugerencias, setSugerencias] = useState([]);
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [errores, setErrores] = useState({});
@@ -142,14 +156,17 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
     if (!data.cliente.trim()) e.cliente = 'Escribe el nombre del cliente.';
     if (!data.equipo.trim()) e.equipo = 'Indica qué equipo deja el cliente.';
     if (!data.marca) e.marca = 'Indica de qué es el equipo.';
-    if (!data.tecnico_id) e.tecnico_id = 'Elige quién hace el trabajo.';
+    if (!data.tecnico_id) e.tecnico_id = 'Elige quién recibe el equipo.';
     if (!data.fecha) e.fecha = 'Elige la fecha.';
-    trabajos.forEach((t) => {
-      if (!t.descripcion.trim() && (t.costo !== '' || t.precio !== '')) e[`trabajo.${t.id}`] = 'Describe este trabajo.';
-      else if (t.descripcion.trim() && t.precio === '') e[`trabajo.${t.id}`] = 'Escribe cuánto paga el cliente por este trabajo.';
-      else if (Number(t.costo) < 0 || Number(t.precio) < 0) e[`trabajo.${t.id}`] = 'Los montos no pueden ser negativos.';
-    });
-    if (descritos.length === 0) e.trabajos = 'Agrega al menos un trabajo.';
+    // En diagnóstico no hay trabajos todavía: el precio se carga después con el presupuesto.
+    if (!vistaDiagnostico) {
+      trabajos.forEach((t) => {
+        if (!t.descripcion.trim() && (t.costo !== '' || t.precio !== '')) e[`trabajo.${t.id}`] = 'Describe este trabajo.';
+        else if (t.descripcion.trim() && t.precio === '') e[`trabajo.${t.id}`] = 'Escribe cuánto paga el cliente por este trabajo.';
+        else if (Number(t.costo) < 0 || Number(t.precio) < 0) e[`trabajo.${t.id}`] = 'Los montos no pueden ser negativos.';
+      });
+      if (descritos.length === 0) e.trabajos = 'Agrega al menos un trabajo.';
+    }
     return e;
   };
 
@@ -169,7 +186,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
       precio: monto(t.precio),
     }));
 
-    router.post(route(`${prefijo}.servicios.store`), {
+    const base = {
       cliente: data.cliente.trim(),
       telefono: data.telefono.trim(),
       correo: data.correo.trim(),
@@ -179,27 +196,45 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
       recepcion: payloadRecepcion(recepcion),
       fecha: data.fecha,
       notas_adicionales: data.notas_adicionales.trim(),
-      detalle_servicio: JSON.stringify(detalle),
-      ...(conMargen && sinCosto === 0 ? { precio_costo: monto(detalle.reduce((a, t) => a + (t.costo ?? 0), 0)) } : {}),
-      precio_venta: monto(detalle.reduce((a, t) => a + t.precio, 0)),
-    }, {
+      modo: vistaDiagnostico ? 'diagnostico' : 'directo',
+    };
+
+    // En diagnóstico entra sin trabajos ni precio: solo la cuota opcional. El precio de la reparación va con el presupuesto.
+    const payload = vistaDiagnostico
+      ? { ...base, cuota_diagnostico: cuota === '' ? 0 : monto(cuota) }
+      : {
+          ...base,
+          detalle_servicio: JSON.stringify(detalle),
+          ...(conMargen && sinCosto === 0 ? { precio_costo: monto(detalle.reduce((a, t) => a + (t.costo ?? 0), 0)) } : {}),
+          precio_venta: monto(detalle.reduce((a, t) => a + t.precio, 0)),
+        };
+
+    const opciones = {
       preserveState: true,
       preserveScroll: true,
       onStart: () => setGuardando(true),
       onSuccess: () => notifyRecordsUpdated(),
       onError: (errs) => {
         setErrores(errs);
-        avisar('No se pudo registrar el servicio', 'Revisa los datos marcados.');
+        avisar(esEdicion ? 'No se pudo guardar el cambio' : 'No se pudo registrar el servicio', 'Revisa los datos marcados.');
       },
       onFinish: () => setGuardando(false),
-    });
+    };
+
+    if (esEdicion) {
+      router.put(route(`${prefijo}.servicios.update`, servicio.id), payload, opciones);
+    } else {
+      router.post(route(`${prefijo}.servicios.store`), payload, opciones);
+    }
   };
 
   const mensajes = [...new Set(Object.values(errores).flat())];
 
+  const titulo = esEdicion ? `Editar ${servicio.codigo_nota || 'servicio técnico'}` : 'Nuevo servicio técnico';
+
   return (
-    <Layout title="Nuevo servicio técnico">
-      <Head title="Nuevo servicio técnico | Apple Boss" />
+    <Layout title={titulo}>
+      <Head title={`${titulo} | Apple Boss`} />
       <PremiumNotice notice={notice} onClose={() => setNotice(null)} />
 
       <div className="ab-reset mx-auto max-w-[1400px] space-y-5">
@@ -211,14 +246,37 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
           </Link>
           <div>
             <h1 className="text-[32px] font-extrabold leading-tight tracking-tight text-[#011446]" style={{ fontFamily: "'Barlow Condensed', 'Barlow', sans-serif" }}>
-              Nuevo servicio técnico
+              {titulo}
             </h1>
-            <p className="text-sm text-slate-500">Registra la reparación: cliente, equipo, técnico y lo que se cobra.</p>
+            <p className="text-sm text-slate-500">
+              {esEdicion
+                ? 'Corrige lo que se registró mal. El cambio queda anotado para el administrador.'
+                : 'Registra la reparación: cliente, equipo, técnico y lo que se cobra.'}
+            </p>
           </div>
         </div>
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-5">
+            {/* Cómo ingresa: solo al registrar uno nuevo */}
+            {!esEdicion && (
+              <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">¿Cómo entra el equipo?</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={() => setModoDiag(false)}
+                    className={`rounded-xl border p-3 text-left transition-colors ${!vistaDiagnostico ? 'border-[#011446] bg-[#011446]/[0.04]' : 'border-slate-200 hover:border-slate-300'}`}>
+                    <span className="block text-sm font-bold text-[#011446]">Reparación directa</span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-slate-500">Ya sabes qué tiene y cuánto cobrar. Entra con su precio.</span>
+                  </button>
+                  <button type="button" onClick={() => setModoDiag(true)}
+                    className={`rounded-xl border p-3 text-left transition-colors ${vistaDiagnostico ? 'border-[#011446] bg-[#011446]/[0.04]' : 'border-slate-200 hover:border-slate-300'}`}>
+                    <span className="block text-sm font-bold text-[#011446]">Diagnóstico</span>
+                    <span className="mt-0.5 block text-[12px] leading-snug text-slate-500">Entra para revisar. El precio de la reparación se carga después, y el cliente lo aprueba.</span>
+                  </button>
+                </div>
+              </section>
+            )}
+
             {/* Paso 1 */}
             <StepCard step={1} title="Cliente" subtitle="Escribe el nombre: si ya vino antes, aparece para elegirlo.">
               <div className="grid gap-4 md:grid-cols-2">
@@ -375,7 +433,18 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
               <RecepcionEquipo recepcion={recepcion} onCambiar={setRecepcion} error={errores.desbloqueo} />
             </StepCard>
 
-            {/* Paso 4 */}
+            {/* Paso 4 — en diagnóstico, solo la cuota opcional (el precio de la reparación va con el presupuesto) */}
+            {vistaDiagnostico && (
+              <StepCard step={4} title="Cuota de diagnóstico"
+                subtitle="Opcional. Lo que cobras por revisar el equipo. Déjalo en blanco o en 0 si el diagnóstico es gratis.">
+                <Field label="Cuota de diagnóstico (Bs)" hint="El precio de la reparación se carga después, cuando sepas qué tiene, y el cliente lo aprueba.">
+                  <Input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" className="tabular-nums max-w-[220px]"
+                    value={cuota} onChange={(e) => setCuota(e.target.value)} />
+                </Field>
+              </StepCard>
+            )}
+
+            {!vistaDiagnostico && (
             <StepCard step={4} title="Trabajos a realizar"
               subtitle={conMargen
                 ? 'Cada trabajo con su costo y lo que paga el cliente. Si todavía no sabes el costo, déjalo vacío y lo cargas después desde la lista.'
@@ -426,6 +495,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
               </button>
               {errores.trabajos && <p className="mt-2 text-xs font-semibold text-rose-600">{errores.trabajos}</p>}
             </StepCard>
+            )}
 
             {/* Paso 5 */}
             <StepCard step={5} title="Notas" subtitle="Opcional. Lo que no entra en la revisión: acuerdos, plazos o recomendaciones.">
@@ -455,7 +525,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
                   <Linea label="Revisión" valor={`${recepcion.revision.filter((p) => p.estado).length} puntos marcados`} />
                 </dl>
 
-                {descritos.length > 0 && (
+                {!vistaDiagnostico && descritos.length > 0 && (
                   <ul className="max-h-48 space-y-2 overflow-y-auto border-t border-slate-100 pt-4">
                     {descritos.map((t) => (
                       <li key={`r-${t.id}`} className="flex items-baseline justify-between gap-3 text-sm">
@@ -466,7 +536,7 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
                   </ul>
                 )}
 
-                {conMargen && (
+                {!vistaDiagnostico && conMargen && (
                   <dl className="space-y-1.5 border-t border-slate-100 pt-4 text-sm">
                     <div className="flex justify-between gap-3">
                       <dt className="text-slate-500">Costo de los trabajos</dt>
@@ -485,13 +555,21 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
                   </dl>
                 )}
 
-                <div className="rounded-xl bg-[#011446] px-4 py-3.5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">El cliente paga</p>
-                  <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight">{bsFmt(totalCobro)}</p>
-                  <p className="mt-1.5 text-xs text-white/60">Es el total que aparece en la nota.</p>
-                </div>
+                {vistaDiagnostico ? (
+                  <div className="rounded-xl bg-[#011446] px-4 py-3.5 text-white">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">Entra para diagnóstico</p>
+                    <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight">{cuota === '' || monto(cuota) === 0 ? 'Gratis' : bsFmt(monto(cuota))}</p>
+                    <p className="mt-1.5 text-xs text-white/60">El precio de la reparación llega con el presupuesto, y el cliente lo aprueba.</p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-[#011446] px-4 py-3.5 text-white">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">El cliente paga</p>
+                    <p className="mt-1 text-[28px] font-extrabold leading-none tracking-tight">{bsFmt(totalCobro)}</p>
+                    <p className="mt-1.5 text-xs text-white/60">Es el total que aparece en la nota.</p>
+                  </div>
+                )}
 
-                {!conMargen && (
+                {!vistaDiagnostico && !conMargen && (
                   <p className="rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
                     Al registrarlo sale la nota para el cliente. El costo del trabajo lo carga el administrador para calcular la utilidad.
                   </p>
@@ -508,9 +586,11 @@ export default function ServiciosForm({ tecnicos = [], marcas = [], especialidad
 
                 <button type="button" onClick={registrar} disabled={guardando}
                   className={buttonCls('primary', 'h-12 w-full text-[15px]')}>
-                  {guardando ? 'Guardando…' : 'Registrar servicio'}
+                  {guardando ? 'Guardando…' : (esEdicion ? 'Guardar cambios' : (vistaDiagnostico ? 'Registrar para diagnóstico' : 'Registrar servicio'))}
                 </button>
-                <p className="text-center text-xs text-slate-400">Al guardar vuelves al listado, donde imprimes la nota.</p>
+                <p className="text-center text-xs text-slate-400">
+                  {esEdicion ? 'Al guardar vuelves al listado con los datos corregidos.' : 'Al guardar vuelves al listado, donde imprimes la nota.'}
+                </p>
               </div>
             </section>
           </aside>

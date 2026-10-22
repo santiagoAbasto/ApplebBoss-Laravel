@@ -88,7 +88,7 @@
       </tr>
       @empty
       <tr class="ultima">
-        <td colspan="2" class="gris">{{ TextoEnriquecido::aTexto($servicio->detalle_servicio) ?: 'Sin detalle cargado.' }}</td>
+        <td colspan="2" class="gris">{{ TextoEnriquecido::aTexto($servicio->detalle_servicio) ?: ($servicio->esDiagnostico() ? 'Equipo recibido para diagnóstico. El presupuesto se envía luego.' : 'Sin detalle cargado.') }}</td>
       </tr>
       @endforelse
     </table>

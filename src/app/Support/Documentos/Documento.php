@@ -184,6 +184,22 @@ final class Documento
         return route('documentos.publico', $guardado[0]);
     }
 
+    /** La clave vigente del enlace del documento (para armar otras rutas públicas, como el presupuesto). */
+    public static function tokenDe(Model $doc): ?string
+    {
+        if (! self::publicable($doc)) {
+            return null;
+        }
+
+        $guardado = (self::$enlaces ??= new \WeakMap())[$doc] ?? null;
+        if (! $guardado || $guardado[1]->lte(now()->addDay())) {
+            self::prepararEnlaces([$doc]);
+            $guardado = self::$enlaces[$doc] ?? null;
+        }
+
+        return $guardado[0] ?? null;
+    }
+
     /**
      * Deja resuelto el enlace vigente de cada documento con una consulta por tipo y, si faltan, una sola inserción:
      * un listado de 500 ventas no hace 500 escrituras. Un enlace que vence en menos de un día se reemplaza.
@@ -298,8 +314,11 @@ final class Documento
             'enlace'            => self::enlace($doc),
             'publicable'        => self::publicable($doc),
             'correo_enviado_en' => $doc->correo_enviado_en?->toIso8601String(),
-            // Solo la venta lleva el pedido de reseña: es la compra terminada que se puede calificar.
-            'resena'            => $doc instanceof \App\Models\Venta ? \App\Support\Resenas\Solicitud::paraPanel($doc) : null,
+            // El pedido de reseña va en la venta (compra terminada) y en el servicio ya entregado: lo que se puede calificar.
+            'resena'            => (
+                $doc instanceof \App\Models\Venta
+                || ($doc instanceof \App\Models\ServicioTecnico && $doc->estado === \App\Models\ServicioTecnico::ENTREGADO)
+            ) ? \App\Support\Resenas\Solicitud::paraPanel($doc) : null,
         ];
     }
 }

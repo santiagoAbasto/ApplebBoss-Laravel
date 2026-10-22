@@ -8,15 +8,17 @@ use App\Models\Venta;
 use App\Support\Documentos\Contacto;
 use App\Support\Documentos\Documento;
 use App\Support\ResenasDeGoogle;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
- * Pedirle al cliente que califique en Google después de una compra.
+ * Pedirle al cliente que califique en Google después de una compra o de un servicio técnico entregado.
  *
- * El enlace es el g.page oficial del perfil (configurable en `resena_enlace`). El WhatsApp es un botón que abre el
- * chat con el mensaje armado —no se puede mandar solo sin la API de WhatsApp—; el correo sale por cola, unos días
- * después de la venta o cuando el panel lo dispara. `resena_pedida_en` marca a quién ya se le pidió, para no repetir.
+ * Funciona para cualquier documento que maneje `Documento` (venta o servicio): usa sus ayudantes para el nombre,
+ * teléfono y correo del cliente. El enlace es el g.page oficial del perfil (configurable en `resena_enlace`). El
+ * WhatsApp es un botón que abre el chat con el mensaje armado —no se puede mandar solo sin la API de WhatsApp—; el
+ * correo sale por cola. `resena_pedida_en` marca a quién ya se le pidió, para no repetir.
  */
 final class Solicitud
 {
@@ -46,38 +48,39 @@ final class Solicitud
     }
 
     /** El mensaje de WhatsApp: saludo con el nombre, agradecimiento y el enlace para calificar. */
-    public static function mensajeWhatsapp(Venta $venta): string
+    public static function mensajeWhatsapp(Model $doc): string
     {
-        $nombre = Documento::nombreDePila($venta);
+        $nombre = Documento::nombreDePila($doc);
         $saludo = $nombre === 'Hola' ? 'Hola' : "Hola {$nombre}";
 
-        return "{$saludo}, ¡gracias por tu compra en Apple Boss! ¿Nos dejas tu opinión en Google? "
+        return "{$saludo}, ¡gracias por elegir Apple Boss! ¿Nos dejas tu opinión en Google? "
             . "Son 10 segundos y nos ayudas muchísimo a seguir creciendo:\n"
             . self::enlace()
             . "\n\nApple Boss · appleboss.com.bo";
     }
 
     /** El enlace wa.me con el mensaje armado, o null si el cliente no dejó teléfono. */
-    public static function whatsapp(Venta $venta): ?string
+    public static function whatsapp(Model $doc): ?string
     {
-        $numero = Documento::numeroWhatsapp(Documento::telefono($venta));
+        $numero = Documento::numeroWhatsapp(Documento::telefono($doc));
 
-        return $numero ? 'https://wa.me/' . $numero . '?text=' . rawurlencode(self::mensajeWhatsapp($venta)) : null;
+        return $numero ? 'https://wa.me/' . $numero . '?text=' . rawurlencode(self::mensajeWhatsapp($doc)) : null;
     }
 
-    /** Lo que el panel necesita para los botones de reseña de una venta. */
-    public static function paraPanel(Venta $venta): array
+    /** Lo que el panel necesita para los botones de reseña de una venta o un servicio. */
+    public static function paraPanel(Model $doc): array
     {
         return [
-            'whatsapp'  => self::whatsapp($venta),
-            'mensaje'   => self::mensajeWhatsapp($venta),
+            'tipo'      => Documento::tipo($doc),
+            'whatsapp'  => self::whatsapp($doc),
+            'mensaje'   => self::mensajeWhatsapp($doc),
             'enlace'    => self::enlace(),
-            'correo'    => Documento::correo($venta),
-            'pedida_en' => $venta->resena_pedida_en?->toIso8601String(),
+            'correo'    => Documento::correo($doc),
+            'pedida_en' => $doc->resena_pedida_en?->toIso8601String(),
         ];
     }
 
-    /** Los correos (en minúsculas) a los que ya se les pidió reseña, para no repetir en los envíos por lote. */
+    /** Los correos (en minúsculas) a los que ya se les pidió reseña, para no repetir en los envíos por lote de ventas. */
     public static function correosYaPedidos(): array
     {
         return Venta::whereNotNull('resena_pedida_en')
@@ -89,43 +92,49 @@ final class Solicitud
             ->all();
     }
 
-    /** ¿Se le puede pedir reseña por correo a esta venta ahora? (tiene correo, no se pidió aún, no está en opt-out). */
-    public static function corresponde(Venta $venta): bool
+    /** ¿Se le puede pedir reseña por correo ahora? (tiene correo, no se pidió aún, no está en opt-out). */
+    public static function corresponde(Model $doc): bool
     {
-        return $venta->resena_pedida_en === null
-            && filled(Documento::correo($venta))
-            && ! optional($venta->vendedor)->sin_recordatorios;
+        return $doc->resena_pedida_en === null
+            && filled(Documento::correo($doc))
+            && ! optional($doc->vendedor)->sin_recordatorios;
     }
 
     /**
-     * Manda el correo pidiendo la reseña. Si viene un correo nuevo lo guarda (ficha + newsletter). Marca la venta
-     * como pedida. Con `forzar=false` no repite si ya se pidió. Devuelve true si se encoló el correo.
+     * Manda el correo pidiendo la reseña (venta o servicio). Si viene un correo nuevo lo guarda (ficha + newsletter).
+     * Marca el documento como pedido. Con `forzar=false` no repite si ya se pidió. Devuelve true si se encoló el correo.
      */
-    public static function pedir(Venta $venta, ?string $correo = null, string $origen = 'panel', bool $forzar = false): bool
+    public static function pedir(Model $doc, ?string $correo = null, string $origen = 'panel', bool $forzar = false, ?int $retrasoMinutos = null): bool
     {
-        if ($venta->resena_pedida_en && ! $forzar) {
+        if ($doc->resena_pedida_en && ! $forzar) {
             return false;
         }
 
-        $correo = Str::lower(trim((string) ($correo ?: Documento::correo($venta))));
+        $correo = Str::lower(trim((string) ($correo ?: Documento::correo($doc))));
         if ($correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
             return false;
         }
 
         // Quien pidió no recibir recordatorios no recibe el pedido de reseña.
-        if (optional($venta->vendedor)->sin_recordatorios) {
+        if (optional($doc->vendedor)->sin_recordatorios) {
             return false;
         }
 
-        if ($correo !== Documento::correo($venta)) {
-            $venta->forceFill([Documento::campoCorreo($venta) => $correo])->save();
+        if ($correo !== Documento::correo($doc)) {
+            $doc->forceFill([Documento::campoCorreo($doc) => $correo])->save();
         }
 
-        Contacto::recordar(Documento::nombre($venta), Documento::telefono($venta), $correo, $venta->user_id ?? null);
-        Contacto::suscribir($correo, Documento::nombre($venta), $origen);
+        Contacto::recordar(Documento::nombre($doc), Documento::telefono($doc), $correo, $doc->user_id ?? null);
+        Contacto::suscribir($correo, Documento::nombre($doc), $origen);
 
-        Mail::to($correo)->queue(new SolicitudDeResena($venta));
-        $venta->forceFill(['resena_pedida_en' => now()])->save();
+        // Con retraso cuando sale junto a otro correo (al entregar un servicio ya sale la nota «entregado»):
+        // así el pedido de reseña no llega pegado al otro.
+        $destino = Mail::to($correo);
+        $retrasoMinutos
+            ? $destino->later(now()->addMinutes($retrasoMinutos), new SolicitudDeResena($doc))
+            : $destino->queue(new SolicitudDeResena($doc));
+
+        $doc->forceFill(['resena_pedida_en' => now()])->save();
 
         return true;
     }

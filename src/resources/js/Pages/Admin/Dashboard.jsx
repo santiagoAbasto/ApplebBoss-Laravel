@@ -46,6 +46,8 @@ const notificationTarget = (n) => {
   if (n?.type === 'report' && n?.report_id) return route('admin.automation.show', n.report_id);
   if (n?.type === 'sale_edit' && n?.sale_id) return route('admin.ventas.edit', n.sale_id);
   if (['sale', 'sale_edit'].includes(n?.type)) return route('admin.ventas.index');
+  if (n?.type === 'service_edit' && n?.servicio_tecnico_id) return route('admin.servicios.edit', n.servicio_tecnico_id);
+  if (['presupuesto_aprobado', 'presupuesto_rechazado'].includes(n?.type)) return route('admin.servicios.index');
   if (n?.type === 'service') return route('admin.servicios.index');
   // Un servicio que registró un vendedor sin costo: la lista se abre con los pendientes
   if (n?.type === 'servicio_sin_costo') return route('admin.servicios.index', { pendientes: 1 });
@@ -59,6 +61,9 @@ const NOTIF_META = {
   sale:      { label: 'Venta nueva',   color: '#0A7A4B', bg: '#DCFCE7', action: 'Ver ventas', icon: ShoppingCart },
   report:    { label: 'Reporte',       color: AB.periwinkle, bg: '#E8E9F5', action: 'Ver reporte', icon: ChartLine },
   service:   { label: 'Servicio',      color: '#0369A1', bg: '#E0F2FE', action: 'Ver servicios', icon: Hammer },
+  service_edit: { label: 'Servicio editado', color: '#D97706', bg: '#FEF3C7', action: 'Ver servicio', icon: PencilLine },
+  presupuesto_aprobado: { label: 'Presupuesto aprobado', color: '#0A7A4B', bg: '#DCFCE7', action: 'Ver servicios', icon: CheckCheck },
+  presupuesto_rechazado: { label: 'Presupuesto rechazado', color: '#BE123C', bg: '#FFE4E6', action: 'Ver servicios', icon: Receipt },
   servicio_sin_costo: { label: 'Falta el costo', color: '#B45309', bg: '#FEF3C7', action: 'Cargar costo', icon: Hammer },
   stock:     { label: 'Stock',         color: '#BE123C', bg: '#FFE4E6', action: 'Ver resumen', icon: Boxes },
   trade_in:  { label: 'Trade-In',      color: '#3F4585', bg: '#E8E9F5', action: 'Ver solicitud', icon: Repeat },

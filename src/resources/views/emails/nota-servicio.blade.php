@@ -25,8 +25,10 @@
                     <td align="right" valign="top" style="font-size:14px;font-weight:700;color:#0f172a;white-space:nowrap;padding-left:12px;">Bs {{ number_format($trabajo['precio'], 2, ',', '.') }}</td>
                 </tr></table>
             @endforeach
-            @if ($trabajos->isEmpty() && $servicio->detalle_servicio)
-                <p style="margin:10px 0 0;font-size:14px;line-height:1.5;color:#0f172a;">{{ strip_tags((string) $servicio->detalle_servicio) }}</p>
+            @php($detalleLibre = trim((string) $servicio->detalle_servicio))
+            @if ($trabajos->isEmpty() && $detalleLibre !== '' && ! \Illuminate\Support\Str::startsWith($detalleLibre, ['[', '{']))
+                {{-- Servicios viejos con el detalle en texto libre; nunca el JSON vacío de un diagnóstico --}}
+                <p style="margin:10px 0 0;font-size:14px;line-height:1.5;color:#0f172a;">{{ strip_tags($detalleLibre) }}</p>
             @endif
 
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;background:#011446;border-radius:12px;"><tr>
@@ -36,7 +38,16 @@
         </td></tr>
     </table>
 
-    @include('emails.partials.documento-pdf', ['enlace' => $enlace, 'titulo' => 'La nota de servicio', 'boton' => 'Ver mi nota de servicio'])
+    @if (!empty($enlacePresupuesto))
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding-top:20px;">
+                <a href="{{ $enlacePresupuesto }}" style="display:inline-block;background:#C6CB36;color:#011446;font-weight:800;font-size:16px;text-decoration:none;padding:15px 30px;border-radius:999px;">Revisar y aprobar el presupuesto</a>
+            </td></tr>
+        </table>
+        <p style="margin:10px 0 0;font-size:12px;line-height:1.6;color:#94a3b8;text-align:center;">En ese mismo enlace puedes aprobarlo o rechazarlo. Empezamos la reparación recién cuando lo apruebas.</p>
+    @else
+        @include('emails.partials.documento-pdf', ['enlace' => $enlace, 'titulo' => 'La nota de servicio', 'boton' => 'Ver mi nota de servicio'])
+    @endif
 @endsection
 
 @section('pie')

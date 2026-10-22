@@ -97,6 +97,13 @@ Route::middleware('throttle:30,1')->where(['token' => '[A-Za-z0-9]{20,64}'])->gr
     Route::get('/d/{token}', [\App\Http\Controllers\DocumentoController::class, 'publico'])->name('documentos.publico');
     Route::get('/d/{token}/pdf', [\App\Http\Controllers\DocumentoController::class, 'pdf'])->name('documentos.pdf');
 });
+// Presupuesto del servicio técnico: el cliente aprueba o rechaza desde el correo, sin sesión (la clave es el control).
+// GET muestra el monto (evita que un escáner de links decida solo); POST confirma la decisión.
+Route::middleware('throttle:30,1')->where(['token' => '[A-Za-z0-9]{20,64}'])->group(function () {
+    Route::get('/s/{token}/presupuesto', [ServicioTecnicoController::class, 'presupuestoPublico'])->name('servicios.presupuesto.publico');
+    Route::post('/s/{token}/presupuesto/aprobar', [ServicioTecnicoController::class, 'aprobarPresupuesto'])->name('servicios.presupuesto.aprobar');
+    Route::post('/s/{token}/presupuesto/rechazar', [ServicioTecnicoController::class, 'rechazarPresupuesto'])->name('servicios.presupuesto.rechazar');
+});
 // Enlaces del primer día (firmados, con el número del documento): redirigen al enlace nuevo
 Route::get('/documentos/{tipo}/{id}', [\App\Http\Controllers\DocumentoController::class, 'ver'])
     ->name('documentos.ver')
@@ -433,7 +440,7 @@ Route::middleware(['auth', 'verified', 'permiso'])
         // 🧰 Servicios Técnicos
         // ========================
         Route::resource('servicios', ServicioTecnicoController::class)
-            ->only(['index', 'create', 'store'])
+            ->only(['index', 'create', 'store', 'edit', 'update'])
             ->names('servicios')
             ->parameters(['servicios' => 'servicio']);
 
@@ -460,6 +467,10 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::patch('/servicios/{servicio}/costo', [ServicioTecnicoController::class, 'cargarCosto'])
             ->name('servicios.costo');
 
+        // El presupuesto a partir del diagnóstico: fija el precio y se lo manda al cliente para que lo apruebe
+        Route::patch('/servicios/{servicio}/presupuesto', [ServicioTecnicoController::class, 'cargarPresupuesto'])
+            ->name('servicios.presupuesto');
+
         // El camino del equipo en el taller (recibido → en reparación → listo → entregado); cada paso avisa al cliente
         Route::patch('/servicios/{servicio}/estado', [ServicioTecnicoController::class, 'cambiarEstado'])
             ->name('servicios.estado');
@@ -470,8 +481,8 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
 
         // Botón «Pedir reseña» de una venta: correo con el enlace para calificar en Google
-        Route::post('/resenas/pedir/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
-            ->name('resenas.pedir')->where('id', '[0-9]+');
+        Route::post('/resenas/pedir/{tipo}/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
+            ->name('resenas.pedir')->where(['tipo' => 'venta|servicio', 'id' => '[0-9]+']);
 
         // ========================
         // 🩺 Diagnósticos: el informe técnico firmado de un equipo
@@ -957,6 +968,13 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
         Route::post('/servicios', [ServicioTecnicoController::class, 'store'])
             ->name('servicios.store');
 
+        // Editar un servicio por si alguien se equivocó (el admin ve en el Resumen qué cambió el vendedor)
+        Route::get('/servicios/{servicio}/edit', [ServicioTecnicoController::class, 'edit'])
+            ->name('servicios.edit');
+
+        Route::put('/servicios/{servicio}', [ServicioTecnicoController::class, 'update'])
+            ->name('servicios.update');
+
         // Un técnico nuevo se da de alta desde el mismo formulario; la especialidad la cambia el administrador
         Route::post('/servicios/tecnicos', [ServicioTecnicoController::class, 'guardarTecnico'])
             ->name('servicios.tecnicos.store');
@@ -966,6 +984,9 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
 
         Route::get('/servicios/{servicio}/recibo-80mm', [ServicioTecnicoController::class, 'recibo80mm'])
             ->name('servicios.recibo80mm');
+        // El presupuesto a partir del diagnóstico (el vendedor pone lo que cobra; el costo lo carga el admin después)
+        Route::patch('/servicios/{servicio}/presupuesto', [ServicioTecnicoController::class, 'cargarPresupuesto'])
+            ->name('servicios.presupuesto');
         Route::patch('/servicios/{servicio}/estado', [ServicioTecnicoController::class, 'cambiarEstado'])
             ->name('servicios.estado');
         Route::post('/documentos/{tipo}/{id}/correo', [\App\Http\Controllers\DocumentoController::class, 'correo'])
@@ -973,8 +994,8 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
             ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
 
         // Botón «Pedir reseña» de una venta
-        Route::post('/resenas/pedir/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
-            ->name('resenas.pedir')->where('id', '[0-9]+');
+        Route::post('/resenas/pedir/{tipo}/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
+            ->name('resenas.pedir')->where(['tipo' => 'venta|servicio', 'id' => '[0-9]+']);
 
         Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])
             ->name('servicios.exportarFiltrado');

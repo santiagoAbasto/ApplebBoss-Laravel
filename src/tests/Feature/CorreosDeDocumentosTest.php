@@ -242,7 +242,7 @@ class CorreosDeDocumentosTest extends TestCase
 
         $servicio->estado = ServicioTecnico::LISTO;
         $html = (new NotaDeServicio($servicio))->render();
-        $this->assertStringContainsString('está listo', $html);
+        $this->assertStringContainsString('reparado', $html);
         $this->assertStringContainsString('Cambio de batería', $html);
         $this->assertStringNotContainsString('100,00', $html, 'el costo del trabajo nunca viaja al cliente');
 

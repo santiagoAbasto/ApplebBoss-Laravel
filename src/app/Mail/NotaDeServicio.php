@@ -30,6 +30,24 @@ class NotaDeServicio extends Mailable implements ShouldQueue
             'cuerpo' => 'Ya está en nuestro taller{tecnico}. Te avisamos por este correo en cada paso, y acá va tu nota de servicio con lo acordado.',
             'icono'  => ['icono' => 'progreso-animado.gif', 'ancho' => 96, 'alto' => 24],
         ],
+        ServicioTecnico::EN_DIAGNOSTICO => [
+            'asunto' => 'Estamos revisando tu equipo · {codigo}',
+            'titulo' => 'Revisando tu {equipo}',
+            'cuerpo' => 'Lo recibimos para diagnóstico{tecnico}. Apenas sepamos qué tiene, te mandamos el presupuesto a este correo para que lo apruebes.',
+            'icono'  => ['icono' => 'progreso-animado.gif', 'ancho' => 96, 'alto' => 24],
+        ],
+        ServicioTecnico::PRESUPUESTO => [
+            'asunto' => 'Tu presupuesto está listo · {codigo}',
+            'titulo' => 'Presupuesto de tu {equipo}',
+            'cuerpo' => 'Revisamos tu equipo y preparamos el presupuesto. Revísalo y, si estás de acuerdo, apruébalo para que empecemos la reparación.',
+            'icono'  => ['icono' => 'progreso-animado.gif', 'ancho' => 96, 'alto' => 24],
+        ],
+        ServicioTecnico::RECHAZADO => [
+            'asunto' => 'Presupuesto no aprobado · {codigo}',
+            'titulo' => 'Entendido, no haremos la reparación',
+            'cuerpo' => 'No haremos la reparación de tu {equipo}. Puedes pasar a recogerlo por la tienda; si cambias de idea, escríbenos y lo retomamos.',
+            'icono'  => ['icono' => 'check-animado.gif', 'ancho' => 72, 'alto' => 72],
+        ],
         ServicioTecnico::EN_REPARACION => [
             'asunto' => 'Tu equipo está en reparación · {codigo}',
             'titulo' => 'Estamos trabajando en tu {equipo}',
@@ -37,8 +55,8 @@ class NotaDeServicio extends Mailable implements ShouldQueue
             'icono'  => ['icono' => 'progreso-animado.gif', 'ancho' => 96, 'alto' => 24],
         ],
         ServicioTecnico::LISTO => [
-            'asunto' => 'Tu equipo está listo · {codigo}',
-            'titulo' => 'Tu {equipo} está listo',
+            'asunto' => 'Tu equipo está reparado · {codigo}',
+            'titulo' => 'Tu {equipo} está reparado y listo',
             'cuerpo' => 'Ya puedes pasar a recogerlo por la tienda (la dirección está al pie de este correo). Trae esta nota o dinos el código {codigo}.',
             'icono'  => ['icono' => 'check-animado.gif', 'ancho' => 72, 'alto' => 72],
         ],
@@ -80,17 +98,33 @@ class NotaDeServicio extends Mailable implements ShouldQueue
     public function content(): Content
     {
         $servicio = $this->servicio;
-        $pasos = array_values(ServicioTecnico::ESTADOS);
-        $actual = array_search($servicio->estado, array_keys(ServicioTecnico::ESTADOS), true);
+
+        // El camino que se muestra depende del modo (el directo no tiene diagnóstico ni presupuesto).
+        $clavesPaso = $servicio->pasosTracker();
+        $pasos = array_map(fn ($k) => ServicioTecnico::ESTADOS[$k], $clavesPaso);
+        $actual = array_search($servicio->estado, $clavesPaso, true);
+        if ($actual === false) {
+            // Rechazado: el camino se detiene en el presupuesto.
+            $actual = array_search(ServicioTecnico::PRESUPUESTO, $clavesPaso, true);
+            $actual = $actual === false ? 0 : $actual;
+        }
+
+        // En el presupuesto, el botón lleva a la página pública donde el cliente aprueba o rechaza.
+        $enlacePresupuesto = null;
+        if ($servicio->estado === ServicioTecnico::PRESUPUESTO && ($token = Documento::tokenDe($servicio))) {
+            $enlacePresupuesto = route('servicios.presupuesto.publico', $token);
+        }
 
         return new Content(view: 'emails.nota-servicio', with: [
-            'servicio' => $servicio,
-            'texto'    => $this->texto(),
-            'pasos'    => $pasos,
-            'actual'   => $actual === false ? 0 : $actual,
-            'trabajos' => Documento::trabajosDeServicio($servicio),
-            'fecha'    => Carbon::parse($servicio->fecha ?? $servicio->created_at)->translatedFormat('d \d\e F \d\e Y'),
-            'enlace'   => Documento::enlace($servicio),
+            'servicio'          => $servicio,
+            'texto'             => $this->texto(),
+            'pasos'             => $pasos,
+            'actual'            => $actual,
+            'trabajos'          => Documento::trabajosDeServicio($servicio),
+            'fecha'             => Carbon::parse($servicio->fecha ?? $servicio->created_at)->translatedFormat('d \d\e F \d\e Y'),
+            'enlace'            => Documento::enlace($servicio),
+            'enlacePresupuesto' => $enlacePresupuesto,
+            'total'             => (float) $servicio->precio_venta,
         ]);
     }
 
