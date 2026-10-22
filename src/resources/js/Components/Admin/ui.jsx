@@ -1,7 +1,17 @@
 import { Link, usePage } from '@inertiajs/react';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Tilde verde en la esquina de un botón cuya acción ya se disparó (correo enviado, reseña pedida): deja claro que no
+// hace falta repetirlo, para no mandar correos dobles. El botón debe ser `relative`.
+export function TildeHecho() {
+  return (
+    <span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-emerald-500 ring-2 ring-white">
+      <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+    </span>
+  );
+}
 
 // Piezas compartidas de las pantallas de Marketing y SEO del admin.
 

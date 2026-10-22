@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { Check, Copy, Mail, MessageCircle } from 'lucide-react';
-import { Modal, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { Modal, TildeHecho, buttonCls, inputCls } from '@/Components/Admin/ui';
 import PedirResena from '@/Components/Panel/PedirResena';
 
 // Los botones para hacerle llegar un documento al cliente: WhatsApp con el mensaje armado y el enlace al PDF, Correo
@@ -60,9 +60,10 @@ export default function Compartir({ prefijo, compartir }) {
         )}
         <button type="button" disabled={Boolean(bloqueo)} onClick={() => { setCorreo(compartir.correo || ''); setError(null); setModal(true); }}
           aria-label="Enviar por correo"
-          title={bloqueo || (enviadoEn ? `Correo enviado el ${fechaCorta(enviadoEn)} a ${compartir.correo}` : (compartir.correo ? `Enviar a ${compartir.correo}` : 'El cliente no dejó correo: escríbelo y se envía'))}
-          className={`${icono} ${enviadoEn ? 'border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900'}`}>
+          title={bloqueo || (enviadoEn ? `Correo ya enviado el ${fechaCorta(enviadoEn)} a ${compartir.correo}` : (compartir.correo ? `Enviar a ${compartir.correo}` : 'El cliente no dejó correo: escríbelo y se envía'))}
+          className={`${icono} relative ${enviadoEn ? 'border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900'}`}>
           <Mail className="h-4 w-4" />
+          {enviadoEn && <TildeHecho />}
         </button>
         <button type="button" disabled={Boolean(bloqueo)} onClick={copiar} aria-label="Copiar el mensaje con el enlace"
           title={bloqueo || (copiado ? 'Copiado' : 'Copiar el mensaje con el enlace al PDF')}

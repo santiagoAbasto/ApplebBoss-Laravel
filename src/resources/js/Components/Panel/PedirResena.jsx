@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { Mail, MessageCircle, Star } from 'lucide-react';
-import { Modal, buttonCls, inputCls } from '@/Components/Admin/ui';
+import { Modal, TildeHecho, buttonCls, inputCls } from '@/Components/Admin/ui';
 
 // Pedirle al cliente que califique en Google. Un solo botón «Reseña» abre un modal con las dos formas de pedirla:
 // WhatsApp (mensaje y enlace armados) y Correo (con el enlace para calificar). Solo aparece en una compra o un
@@ -35,9 +35,10 @@ export default function PedirResena({ prefijo, id, codigo, resena }) {
     <>
       <button type="button" onClick={() => { setCorreo(resena.correo || ''); setError(null); setModal(true); }}
         aria-label="Pedir reseña"
-        title={pedidaEn ? `Reseña pedida el ${fechaCorta(pedidaEn)}` : 'Pedir una reseña en Google'}
-        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors ${pedidaEn ? 'border-amber-300 bg-amber-100 text-amber-600' : 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100'}`}>
+        title={pedidaEn ? `Reseña ya pedida el ${fechaCorta(pedidaEn)}` : 'Pedir una reseña en Google'}
+        className={`relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors ${pedidaEn ? 'border-amber-300 bg-amber-100 text-amber-600' : 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100'}`}>
         <Star className="h-4 w-4" fill={pedidaEn ? 'currentColor' : 'none'} />
+        {pedidaEn && <TildeHecho />}
       </button>
 
       {modal && (

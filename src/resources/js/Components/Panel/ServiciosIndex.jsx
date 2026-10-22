@@ -3,7 +3,7 @@ import { route } from 'ziggy-js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import {
-  AlertTriangle, CalendarRange, Download, FileSpreadsheet, FileText, Hammer, Pencil, Plus, Printer, Receipt, Search, Trash2, TrendingUp, Users, Wallet,
+  AlertTriangle, CalendarRange, ChevronDown, Download, FileSpreadsheet, FileText, Hammer, Pencil, Plus, Printer, Receipt, Search, Trash2, TrendingUp, Users, Wallet,
   Wrench, X,
 } from 'lucide-react';
 import { useAutoRefresh } from '@/Hooks/useAutoRefresh';
@@ -168,11 +168,15 @@ function EstadoServicio({ s, prefijo }) {
       <label className="inline-flex flex-col items-start gap-1.5">
         <span className="sr-only">Estado de {s.codigo_nota}</span>
         <Badge tone={actual[1]}>{actual[0]}</Badge>
-        <select value={s.estado || 'recibido'} onChange={(e) => e.target.value !== s.estado && setPendiente(e.target.value)}
-          aria-label={`Cambiar el estado de ${s.codigo_nota || 'este servicio'}`} title="Cambiar el estado: el cliente recibe un aviso por correo"
-          className="h-7 w-[140px] rounded-md border border-slate-200 bg-white pl-2 pr-6 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
-          {opciones.map((k) => <option key={k} value={k}>{ESTADO_INFO[k][0]}</option>)}
-        </select>
+        {/* appearance-none + chevron propio: el alto lo controlamos nosotros, así el texto nunca se corta (el select nativo de macOS sí lo recorta). */}
+        <div className="relative w-[150px]">
+          <select value={s.estado || 'recibido'} onChange={(e) => e.target.value !== s.estado && setPendiente(e.target.value)}
+            aria-label={`Cambiar el estado de ${s.codigo_nota || 'este servicio'}`} title="Cambiar el estado: el cliente recibe un aviso por correo"
+            className="h-8 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-2.5 pr-8 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
+            {opciones.map((k) => <option key={k} value={k}>{ESTADO_INFO[k][0]}</option>)}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        </div>
       </label>
       {elegido && (
         <Modal title={`${s.codigo_nota || 'Servicio'}: marcar como ${elegido[0].toLowerCase()}`} onClose={() => setPendiente(null)}
