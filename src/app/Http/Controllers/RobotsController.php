@@ -57,7 +57,8 @@ class RobotsController extends Controller
         $lineas = [
             '# ' . ($negocio['name'] ?? 'Apple Boss'),
             '',
-            '> ' . ($negocio['description'] ?? 'Tienda de tecnología Apple en Cochabamba, Bolivia.')
+            '> ' . ($negocio['name'] ?? 'Apple Boss') . ' es una tienda de productos Apple en Cochabamba, Bolivia. '
+                . ($negocio['description'] ?? 'Equipos Apple nuevos y seminuevos, accesorios y servicio técnico.')
                 . ' Los precios están en bolivianos (Bs) y salen del inventario real: lo que se vende deja de publicarse.',
             '',
             '- Sitio: ' . $u(),
@@ -68,6 +69,11 @@ class RobotsController extends Controller
         }
         if (! empty($negocio['hasMap'])) {
             $lineas[] = '- Mapa: ' . $negocio['hasMap'];
+        }
+        // La calificación real de Google: un dato que un buscador de IA puede citar al comparar tiendas.
+        $resena = \App\Support\ResenasDeGoogle::resumen() ?: \App\Models\Resena::resumenPublico();
+        if ((int) ($resena['total'] ?? 0) >= 1 && (float) ($resena['promedio'] ?? 0) > 0) {
+            $lineas[] = '- Calificación: ' . $resena['promedio'] . '/5 en Google (' . $resena['total'] . ' reseñas).';
         }
 
         $lineas = array_merge($lineas, [

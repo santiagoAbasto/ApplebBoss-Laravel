@@ -155,8 +155,31 @@ class StoreLocation extends Model
                 'addressLocality' => $this->city,
                 'addressCountry'  => mb_strtolower((string) $this->country) === 'bolivia' ? 'BO' : $this->country,
             ]),
+            'geo'                       => $this->geoParaGoogle(),
             'openingHoursSpecification' => $this->horarioParaGoogle() ?: null,
         ]);
+    }
+
+    /**
+     * Las coordenadas del local para el JSON-LD, sacadas del mismo enlace del mapa que carga el dueño.
+     *
+     * El iframe de Google Maps trae la posición como «!2d<longitud>!3d<latitud>»; se lee de ahí para no
+     * tener un segundo lugar donde cargar lo mismo (y poder equivocarse). Si el enlace no trae coordenadas
+     * —un enlace corto, por ejemplo— devuelve null y el campo no se publica: nunca se inventa una ubicación.
+     */
+    public function geoParaGoogle(): ?array
+    {
+        $fuente = (string) ($this->map_embed_url ?: $this->map_link_url);
+
+        if (! preg_match('/!3d(-?\d{1,3}\.\d+)/', $fuente, $lat) || ! preg_match('/!2d(-?\d{1,3}\.\d+)/', $fuente, $lng)) {
+            return null;
+        }
+
+        return [
+            '@type'     => 'GeoCoordinates',
+            'latitude'  => (float) $lat[1],
+            'longitude' => (float) $lng[1],
+        ];
     }
 
     /** Los días con el mismo tramo van juntos: «lunes a viernes, de 09:00 a 19:00». */

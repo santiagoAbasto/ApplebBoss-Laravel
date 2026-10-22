@@ -220,6 +220,58 @@ class SeoTecnicoTest extends TestCase
         $this->assertNotEmpty($tienda['openingHoursSpecification'] ?? null, 'el horario cargado en el panel debe llegar a Google');
     }
 
+    public function test_publica_las_coordenadas_del_mapa_y_la_zona_que_atiende(): void
+    {
+        StoreLocation::create([
+            'name' => 'Apple Boss Cochabamba', 'address' => 'Av. Melchor Urquidi, Edificio Fidel Anze',
+            'city' => 'Cochabamba', 'country' => 'Bolivia', 'active' => true,
+            // El mismo enlace del mapa que carga el dueño; de ahí salen las coordenadas (!2d<lng>!3d<lat>).
+            'map_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!2d-66.1519459242608!3d-17.371618283512824!2m3',
+        ]);
+        Cache::forget('seo.sedes');
+
+        $tienda = collect($this->jsonLd('/'))->firstWhere('@type', 'Store');
+
+        $this->assertSame('GeoCoordinates', $tienda['geo']['@type'] ?? null);
+        $this->assertEqualsWithDelta(-17.371618, $tienda['geo']['latitude'] ?? 0, 0.0001);
+        $this->assertEqualsWithDelta(-66.151945, $tienda['geo']['longitude'] ?? 0, 0.0001);
+        $this->assertSame('Cochabamba', $tienda['areaServed']['name'] ?? null, 'la tienda declara la ciudad que atiende');
+    }
+
+    public function test_publica_la_calificacion_real_de_google_y_nunca_una_inventada(): void
+    {
+        StoreLocation::create([
+            'name' => 'Apple Boss Cochabamba', 'address' => 'Av. Melchor Urquidi, Edificio Fidel Anze',
+            'city' => 'Cochabamba', 'country' => 'Bolivia', 'active' => true,
+        ]);
+        Cache::forget('seo.sedes');
+
+        // Sin reseñas cargadas: no se publica calificación.
+        $this->assertArrayNotHasKey('aggregateRating', collect($this->jsonLd('/'))->firstWhere('@type', 'Store') ?? []);
+
+        // Con el promedio y la cantidad oficiales de Google: se publica tal cual.
+        \App\Models\ConfiguracionTienda::set('google_resenas_total', '47');
+        \App\Models\ConfiguracionTienda::set('google_resenas_promedio', '4.8');
+
+        $tienda = collect($this->jsonLd('/'))->firstWhere('@type', 'Store');
+        $this->assertSame('4.8', $tienda['aggregateRating']['ratingValue'] ?? null);
+        $this->assertSame(47, $tienda['aggregateRating']['reviewCount'] ?? null);
+    }
+
+    public function test_el_titulo_de_la_home_dice_que_es_una_tienda_de_productos_apple(): void
+    {
+        // La consulta real de la gente es «tiendas de Apple en Cochabamba»: el título lo refleja,
+        // sin dar a entender que es una Apple Store oficial (es un revendedor independiente).
+        $html = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('Tienda de productos Apple en Cochabamba', $html);
+    }
+
+    public function test_llms_txt_presenta_la_tienda_para_los_buscadores_de_ia(): void
+    {
+        $html = $this->get('/llms.txt')->assertOk()->getContent();
+        $this->assertStringContainsString('es una tienda de productos Apple en Cochabamba', $html);
+    }
+
     /* ─── dominio publicable ──────────────────────────────────────────────── */
 
     public function test_detecta_dominios_que_google_no_puede_indexar(): void

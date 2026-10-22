@@ -29,7 +29,7 @@ class Seo
 
     /** Valores por defecto (español de Bolivia, sin afirmaciones no verificadas). */
     public const DEFAULTS = [
-        'store.home'            => ['title' => 'Apple Boss — Tecnología Apple en Cochabamba', 'description' => 'iPhone, Mac, iPad y accesorios Apple en Cochabamba a buen precio, con asesoría en cada paso y una postventa que responde cuando la necesitas.'],
+        'store.home'            => ['title' => 'Apple Boss — Tienda de productos Apple en Cochabamba', 'description' => 'Tienda de productos Apple en Cochabamba: iPhone, Mac, iPad, Apple Watch y accesorios, nuevos y seminuevos, con servicio técnico, garantía y asesoría en cada paso.'],
         'store.catalog'         => ['title' => 'Catálogo — Apple Boss Cochabamba', 'description' => 'Catálogo de equipos Apple disponibles en Apple Boss Cochabamba: iPhone, Mac, iPad, accesorios y fundas MYSKIN.'],
         'hub.iphone'            => ['title' => 'iPhone — Apple Boss Cochabamba', 'description' => 'Compra tu iPhone en Apple Boss. Equipos nuevos y seminuevos, revisados antes de la entrega. Cochabamba, Bolivia.'],
         'hub.mac'               => ['title' => 'Mac — Apple Boss Cochabamba', 'description' => 'MacBook y Mac en Apple Boss. Nuevas y seminuevas. Cochabamba, Bolivia.'],

@@ -3,7 +3,9 @@
 namespace App\Support\Seo;
 
 use App\Models\CatalogoPublicacion;
+use App\Models\Resena;
 use App\Models\StoreLocation;
+use App\Support\ResenasDeGoogle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -88,6 +90,24 @@ class DatosEstructurados
         $perfiles = array_values(array_filter((array) ($cfg['perfiles'] ?? [])));
         if ($perfiles) {
             $datos['sameAs'] = $perfiles;
+        }
+
+        // La zona que atiende la tienda: ayuda a que un buscador la ubique en «Apple en Cochabamba».
+        if (! empty($cfg['ciudad'])) {
+            $datos['areaServed'] = ['@type' => 'City', 'name' => $cfg['ciudad']];
+        }
+
+        // La calificación real de Google (promedio y cantidad oficiales) o, si no, la de las reseñas
+        // publicadas en la tienda. Nunca se inventa: solo se publica con al menos una reseña real.
+        $resumen = ResenasDeGoogle::resumen() ?: Resena::resumenPublico();
+        if ((int) ($resumen['total'] ?? 0) >= 1 && (float) ($resumen['promedio'] ?? 0) > 0) {
+            $datos['aggregateRating'] = [
+                '@type'       => 'AggregateRating',
+                'ratingValue' => (string) $resumen['promedio'],
+                'reviewCount' => (int) $resumen['total'],
+                'bestRating'  => '5',
+                'worstRating' => '1',
+            ];
         }
 
         return array_filter($datos, fn ($v) => $v !== null && $v !== []);
