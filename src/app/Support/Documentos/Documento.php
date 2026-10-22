@@ -298,6 +298,8 @@ final class Documento
             'enlace'            => self::enlace($doc),
             'publicable'        => self::publicable($doc),
             'correo_enviado_en' => $doc->correo_enviado_en?->toIso8601String(),
+            // Solo la venta lleva el pedido de reseña: es la compra terminada que se puede calificar.
+            'resena'            => $doc instanceof \App\Models\Venta ? \App\Support\Resenas\Solicitud::paraPanel($doc) : null,
         ];
     }
 }

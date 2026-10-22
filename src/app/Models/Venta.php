@@ -53,7 +53,7 @@ class Venta extends Model
         'user_id',
     ];
 
-    protected $casts = ['correo_enviado_en' => 'datetime'];
+    protected $casts = ['correo_enviado_en' => 'datetime', 'resena_pedida_en' => 'datetime'];
 
     /**
      * Las notas pueden traer formato del editor: se guarda solo lo permitido (sin scripts ni atributos).

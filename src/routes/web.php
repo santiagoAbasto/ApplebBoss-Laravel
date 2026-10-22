@@ -469,6 +469,10 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->name('documentos.correo')
             ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
 
+        // Botón «Pedir reseña» de una venta: correo con el enlace para calificar en Google
+        Route::post('/resenas/pedir/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
+            ->name('resenas.pedir')->where('id', '[0-9]+');
+
         // ========================
         // 🩺 Diagnósticos: el informe técnico firmado de un equipo
         // ========================
@@ -967,6 +971,10 @@ Route::middleware(['auth', 'verified', 'rol:vendedor'])
         Route::post('/documentos/{tipo}/{id}/correo', [\App\Http\Controllers\DocumentoController::class, 'correo'])
             ->name('documentos.correo')
             ->where(['tipo' => 'venta|servicio|reserva|diagnostico', 'id' => '[0-9]+']);
+
+        // Botón «Pedir reseña» de una venta
+        Route::post('/resenas/pedir/{id}', [\App\Http\Controllers\DocumentoController::class, 'pedirResena'])
+            ->name('resenas.pedir')->where('id', '[0-9]+');
 
         Route::get('/servicios/exportar-filtrado', [ServicioTecnicoController::class, 'exportarFiltrado'])
             ->name('servicios.exportarFiltrado');

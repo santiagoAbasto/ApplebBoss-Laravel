@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Mail\BoletaDeVenta;
+use App\Mail\SolicitudDeResena;
 use App\Mail\InformeTecnico;
 use App\Mail\NotaDeReserva;
 use App\Mail\NotaDeServicio;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Mail;
  */
 class CorreosPrueba extends Command
 {
-    protected $signature = 'correos:prueba {correo : A dónde mandar la muestra} {--solo= : venta, servicio, reserva o diagnostico}';
+    protected $signature = 'correos:prueba {correo : A dónde mandar la muestra} {--solo= : venta, servicio, reserva, diagnostico o resena}';
 
     protected $description = 'Manda una muestra de los correos de documentos del cliente a un correo dado';
 
@@ -33,6 +34,11 @@ class CorreosPrueba extends Command
         if (! $solo || $solo === 'venta') {
             $venta = Venta::with('items')->has('items')->latest()->first() ?? Venta::latest()->first();
             $enviados += $this->mandar($correo, $venta ? new BoletaDeVenta($venta) : null, 'nota de venta ' . ($venta?->codigo_nota ?? '—'));
+        }
+
+        if (! $solo || $solo === 'resena') {
+            $venta = Venta::latest()->first();
+            $enviados += $this->mandar($correo, $venta ? new SolicitudDeResena($venta) : null, 'pedido de reseña (venta ' . ($venta?->codigo_nota ?? '—') . ')');
         }
 
         if (! $solo || $solo === 'servicio') {

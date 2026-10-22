@@ -74,3 +74,53 @@ Artisan::command('resenas:pedir', function () {
     $this->info("Pedidos de reseña enviados: {$pedidos->count()}");
 })->purpose('Pide la reseña a quien recibió su pedido hace una semana');
 \Illuminate\Support\Facades\Schedule::command('resenas:pedir')->dailyAt('10:00')->withoutOverlapping();
+
+// Unos días después de cada venta se pide la reseña por correo (una vez por venta y por cliente, nunca a quien pidió no
+// recibir correos). El WhatsApp es un botón del panel; esto cubre el correo automático.
+Artisan::command('resenas:pedir-ventas', function () {
+    $yaPedidos = \App\Support\Resenas\Solicitud::correosYaPedidos();
+    $ventas = \App\Models\Venta::with('vendedor')
+        ->whereNull('resena_pedida_en')
+        ->whereNotNull('correo_cliente')
+        ->whereBetween('created_at', [now()->subDays(5), now()->subDays(2)])
+        ->orderBy('created_at')
+        ->get();
+    $n = 0;
+    foreach ($ventas as $venta) {
+        $correo = \Illuminate\Support\Str::lower(trim((string) $venta->correo_cliente));
+        if ($correo === '' || isset($yaPedidos[$correo])) {
+            continue;
+        }
+        if (\App\Support\Resenas\Solicitud::pedir($venta, null, 'auto')) {
+            $yaPedidos[$correo] = true;
+            $n++;
+        }
+    }
+    $this->info("Pedidos de reseña por venta enviados: {$n}");
+})->purpose('Pide reseña por correo unos días después de cada venta');
+\Illuminate\Support\Facades\Schedule::command('resenas:pedir-ventas')->dailyAt('10:30')->withoutOverlapping();
+
+// Masivo, a mano: pide reseña a los clientes con correo a los que todavía no se les pidió. Una sola vez por correo.
+Artisan::command('resenas:pedir-historico {--limite=200}', function () {
+    $limite = max(1, (int) $this->option('limite'));
+    $yaPedidos = \App\Support\Resenas\Solicitud::correosYaPedidos();
+    $ventas = \App\Models\Venta::with('vendedor')
+        ->whereNull('resena_pedida_en')
+        ->whereNotNull('correo_cliente')
+        ->orderByDesc('created_at')
+        ->get();
+    $n = 0;
+    foreach ($ventas as $venta) {
+        $correo = \Illuminate\Support\Str::lower(trim((string) $venta->correo_cliente));
+        if ($correo === '' || isset($yaPedidos[$correo])) {
+            continue;
+        }
+        if (\App\Support\Resenas\Solicitud::pedir($venta, null, 'historico')) {
+            $yaPedidos[$correo] = true;
+            if (++$n >= $limite) {
+                break;
+            }
+        }
+    }
+    $this->info("Pedidos de reseña a clientes anteriores: {$n} (límite {$limite})");
+})->purpose('Pide reseña a los clientes con correo a los que aún no se les pidió (una vez por correo)');

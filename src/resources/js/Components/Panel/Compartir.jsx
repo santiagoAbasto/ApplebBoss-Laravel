@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { Check, Copy, Mail, MessageCircle } from 'lucide-react';
 import { Modal, buttonCls, inputCls } from '@/Components/Admin/ui';
+import PedirResena from '@/Components/Panel/PedirResena';
 
 // Los botones para hacerle llegar un documento al cliente: WhatsApp con el mensaje armado y el enlace al PDF, Correo
 // (con el PDF adjunto; si el cliente no dejó correo, se pide acá y queda guardado) y Copiar el mensaje. Lo que muestra
@@ -45,6 +46,7 @@ export default function Compartir({ prefijo, compartir }) {
 
   return (
     <>
+      <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <div className="inline-flex gap-1.5">
         {whatsapp && !bloqueo ? (
           <a href={whatsapp} target="_blank" rel="noopener noreferrer" title={`WhatsApp con ${TITULOS[tipo]} ${codigo}`}
@@ -65,6 +67,8 @@ export default function Compartir({ prefijo, compartir }) {
           className={`${chip} border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900`}>
           {copiado ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />} {copiado ? 'Copiado' : 'Copiar'}
         </button>
+      </div>
+        {!bloqueo && <PedirResena prefijo={prefijo} id={id} codigo={codigo} resena={compartir.resena} />}
       </div>
 
       {modal && (

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Venta;
 use App\Support\Documentos\Documento;
 use App\Support\Documentos\Envio;
+use App\Support\Resenas\Solicitud;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -87,6 +89,31 @@ class DocumentoController extends Controller
         return back()->with(
             $enviado ? 'success' : 'error',
             $enviado ? Documento::titulo($doc) . " enviada a {$correo}." : 'No se pudo enviar el correo.',
+        );
+    }
+
+    /** Botón «Pedir reseña» de una venta: manda el correo con el enlace para calificar en Google. */
+    public function pedirResena(Request $request, int $id)
+    {
+        $venta = Venta::findOrFail($id);
+        $this->autorizar($request->user(), $venta);
+
+        $datos = $request->validate(
+            ['correo' => ['nullable', 'email:rfc', 'max:191']],
+            ['correo.email' => 'Revisa el correo.', 'correo.max' => 'El correo es demasiado largo.'],
+        );
+
+        $correo = trim((string) ($datos['correo'] ?? '')) ?: Documento::correo($venta);
+        if (! $correo) {
+            return back()->withErrors(['correo' => 'Escribe el correo del cliente.']);
+        }
+
+        // Desde el panel se puede re-enviar: si el vendedor lo pide de nuevo, se manda igual (forzar).
+        $enviado = Solicitud::pedir($venta, $correo, 'panel', forzar: true);
+
+        return back()->with(
+            $enviado ? 'success' : 'error',
+            $enviado ? "Pedido de reseña enviado a {$correo}." : 'No se pudo enviar el pedido de reseña.',
         );
     }
 
