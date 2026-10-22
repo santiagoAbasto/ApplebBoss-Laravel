@@ -9,7 +9,8 @@ import PedirResena from '@/Components/Panel/PedirResena';
 // (con el PDF adjunto; si el cliente no dejó correo, se pide acá y queda guardado) y Copiar el mensaje. Lo que muestra
 // sale de `compartir`, que arma el servidor (App\Support\Documentos\Documento::compartir) para cada fila.
 
-const chip = 'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50';
+// Botones de acción compactos: cuadro de 32 px con el ícono centrado. Uniformes para que la fila quede alineada.
+const icono = 'grid h-8 w-8 shrink-0 place-items-center rounded-lg border transition-colors disabled:cursor-not-allowed disabled:opacity-50';
 const fechaCorta = (iso) => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' });
 const TITULOS = { venta: 'la nota de venta', servicio: 'la nota de servicio', reserva: 'la nota de reserva', diagnostico: 'el informe técnico' };
 
@@ -48,24 +49,25 @@ export default function Compartir({ prefijo, compartir }) {
     <>
       <div className="inline-flex items-center gap-1">
         {whatsapp && !bloqueo ? (
-          <a href={whatsapp} target="_blank" rel="noopener noreferrer" title={`WhatsApp con ${TITULOS[tipo]} ${codigo}`}
-            className={`${chip} border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100`}>
-            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+          <a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp con ${TITULOS[tipo]} ${codigo}`} title={`WhatsApp con ${TITULOS[tipo]} ${codigo}`}
+            className={`${icono} border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100`}>
+            <MessageCircle className="h-4 w-4" />
           </a>
         ) : (
-          <button type="button" disabled title={bloqueo || 'El cliente no dejó teléfono'} className={`${chip} border-slate-200 bg-white text-slate-600`}>
-            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+          <button type="button" disabled aria-label="WhatsApp" title={bloqueo || 'El cliente no dejó teléfono'} className={`${icono} border-slate-200 bg-white text-slate-300`}>
+            <MessageCircle className="h-4 w-4" />
           </button>
         )}
         <button type="button" disabled={Boolean(bloqueo)} onClick={() => { setCorreo(compartir.correo || ''); setError(null); setModal(true); }}
-          title={bloqueo || (enviadoEn ? `Enviado el ${fechaCorta(enviadoEn)} a ${compartir.correo}` : (compartir.correo ? `Enviar a ${compartir.correo}` : 'El cliente no dejó correo: escríbelo y se envía'))}
-          className={`${chip} ${enviadoEn ? 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'}`}>
-          <Mail className="h-3.5 w-3.5" /> Correo {enviadoEn && <Check className="h-3 w-3" aria-label="enviado" />}
+          aria-label="Enviar por correo"
+          title={bloqueo || (enviadoEn ? `Correo enviado el ${fechaCorta(enviadoEn)} a ${compartir.correo}` : (compartir.correo ? `Enviar a ${compartir.correo}` : 'El cliente no dejó correo: escríbelo y se envía'))}
+          className={`${icono} ${enviadoEn ? 'border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900'}`}>
+          <Mail className="h-4 w-4" />
         </button>
         <button type="button" disabled={Boolean(bloqueo)} onClick={copiar} aria-label="Copiar el mensaje con el enlace"
-          title={bloqueo || 'Copiar el mensaje con el enlace al PDF'}
-          className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50">
-          {copiado ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+          title={bloqueo || (copiado ? 'Copiado' : 'Copiar el mensaje con el enlace al PDF')}
+          className={`${icono} border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900`}>
+          {copiado ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
         </button>
         {!bloqueo && <PedirResena prefijo={prefijo} id={id} codigo={codigo} resena={compartir.resena} />}
       </div>

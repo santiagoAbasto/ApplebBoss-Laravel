@@ -45,8 +45,8 @@ function Stat({ icon: Icon, label, value, hint, tone = 'navy' }) {
 function AccionNota({ href, icon: Icon, label }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
-      <Icon className="h-3.5 w-3.5" />
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-4 w-4" />
     </a>
   );
 }
@@ -267,7 +267,7 @@ export default function Index({ ventas }) {
                           <Divisor />
                           <Link href={route('admin.ventas.edit', r.id_real)} title="Editar venta" aria-label="Editar venta"
                             className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                           </Link>
                         </>
                       )}
@@ -321,7 +321,7 @@ export default function Index({ ventas }) {
                       const tipoInfo = TIPOS[i.tipo] ?? { label: i.tipo, tone: 'slate' };
                       const rebajas = i.descuento + i.permuta;
                       return (
-                        <tr key={`${i.id_venta}-${idx}`} className="align-top transition-colors hover:bg-slate-50/70">
+                        <tr key={`${i.id_venta}-${idx}`} className="align-middle transition-colors hover:bg-slate-50/70">
                           <td className="px-5 py-3">
                             <p className="font-mono text-[13px] font-bold text-[#585E9F]">{i.codigoNota}</p>
                             <p className="mt-0.5 whitespace-nowrap text-xs text-slate-400">{fecha(i.fecha)} · {hora(i.fecha)}</p>
@@ -370,7 +370,7 @@ export default function Index({ ventas }) {
                               <Divisor />
                               <Link href={route('admin.ventas.edit', i.id_venta)} title="Editar venta" aria-label={`Editar venta ${i.codigoNota}`}
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-4 w-4" />
                               </Link>
                             </div>
                           </td>

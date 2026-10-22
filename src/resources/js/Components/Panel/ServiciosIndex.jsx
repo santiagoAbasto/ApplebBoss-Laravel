@@ -82,8 +82,8 @@ function Stat({ icon: Icon, label, value, hint, tone = 'navy' }) {
 function Doc({ href, icon: Icon, label }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" title={label} aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
-      <Icon className="h-3.5 w-3.5" />
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900">
+      <Icon className="h-4 w-4" />
     </a>
   );
 }
@@ -96,7 +96,7 @@ function Acciones({ s, prefijo }) {
   const puedePresupuestar = s.modo === 'diagnostico' && ['recibido', 'en_diagnostico'].includes(s.estado);
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-1">
       {/* Documento: la nota y el recibo térmico, en PDF */}
       <Doc href={route(`${prefijo}.servicios.boleta`, s.id)} icon={FileText} label="Nota (PDF)" />
       <Doc href={route(`${prefijo}.servicios.recibo80mm`, s.id)} icon={Printer} label="Recibo térmico" />
@@ -106,14 +106,15 @@ function Acciones({ s, prefijo }) {
       <Divisor />
       {/* Gestión del servicio */}
       {puedePresupuestar && (
-        <button type="button" onClick={() => setPresupuesto(true)} title={`Cargar el presupuesto de ${s.codigo_nota}`}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#011446] bg-[#011446] px-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#0a1f5c]">
-          <Receipt className="h-3.5 w-3.5" /> Presupuesto
+        <button type="button" onClick={() => setPresupuesto(true)} aria-label={`Cargar el presupuesto de ${s.codigo_nota}`}
+          title={`Cargar el presupuesto de ${s.codigo_nota}`}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#011446] bg-[#011446] text-white transition-colors hover:bg-[#0a1f5c]">
+          <Receipt className="h-4 w-4" />
         </button>
       )}
       <Link href={route(`${prefijo}.servicios.edit`, s.id)} title={`Editar ${s.codigo_nota}`} aria-label={`Editar ${s.codigo_nota}`}
-        className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
-        <Pencil className="h-3.5 w-3.5" />
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-[#011446] hover:bg-[#011446] hover:text-white">
+        <Pencil className="h-4 w-4" />
       </Link>
       {presupuesto && <ModalPresupuesto servicio={s} prefijo={prefijo} onCerrar={() => setPresupuesto(false)} />}
     </div>
@@ -164,12 +165,12 @@ function EstadoServicio({ s, prefijo }) {
 
   return (
     <>
-      <label className="inline-flex items-center gap-1.5">
+      <label className="inline-flex flex-col items-start gap-1.5">
         <span className="sr-only">Estado de {s.codigo_nota}</span>
         <Badge tone={actual[1]}>{actual[0]}</Badge>
         <select value={s.estado || 'recibido'} onChange={(e) => e.target.value !== s.estado && setPendiente(e.target.value)}
           aria-label={`Cambiar el estado de ${s.codigo_nota || 'este servicio'}`} title="Cambiar el estado: el cliente recibe un aviso por correo"
-          className="h-7 rounded-md border border-slate-200 bg-white px-1.5 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
+          className="h-7 w-[140px] rounded-md border border-slate-200 bg-white pl-2 pr-6 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]">
           {opciones.map((k) => <option key={k} value={k}>{ESTADO_INFO[k][0]}</option>)}
         </select>
       </label>
@@ -685,7 +686,7 @@ export default function ServiciosIndex({ servicios = [], filtros = {}, vendedore
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {visibles.map((s) => (
-                        <tr key={s.id} className="align-top transition-colors hover:bg-slate-50/70">
+                        <tr key={s.id} className="align-middle transition-colors hover:bg-slate-50/70">
                           <td className="px-5 py-3">
                             <p className="font-mono text-[13px] font-bold text-[color:var(--ab-acento)]">{s.codigo_nota || '—'}</p>
                             <p className="mt-0.5 whitespace-nowrap text-xs text-slate-400">{fechaCorta(s.fecha)}</p>
