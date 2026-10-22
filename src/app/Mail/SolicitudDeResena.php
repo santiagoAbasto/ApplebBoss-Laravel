@@ -34,9 +34,13 @@ class SolicitudDeResena extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
-        return new Content(view: 'emails.solicitud-resena', with: [
-            'nombre' => Documento::nombreDePila($this->venta),
-            'enlace' => Solicitud::enlace(),
-        ]);
+        return new Content(
+            view: 'emails.solicitud-resena',
+            text: 'emails.solicitud-resena-text', // versión en texto plano: multipart entrega mejor (iCloud marcaba el solo-HTML)
+            with: [
+                'nombre' => Documento::nombreDePila($this->venta),
+                'enlace' => Solicitud::enlaceCorreo(), // enlace directo de Google, no el g.page (los acortadores los filtra Apple)
+            ],
+        );
     }
 }

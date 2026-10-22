@@ -33,6 +33,18 @@ final class Solicitud
         return (string) (ResenasDeGoogle::resumen()['escribir'] ?? self::ENLACE_POR_DEFECTO);
     }
 
+    /**
+     * El enlace para el CORREO: el directo de Google (search.google.com/local/writereview), no el g.page.
+     * Apple y otros filtros ven los acortadores/redirecciones como señal de spam; el enlace directo pasa mejor.
+     * En WhatsApp se usa igual el de `enlace()` (más corto y prolijo para un chat).
+     */
+    public static function enlaceCorreo(): string
+    {
+        $directo = (string) (ResenasDeGoogle::resumen()['escribir'] ?? '');
+
+        return str_contains($directo, 'search.google.com') ? $directo : self::enlace();
+    }
+
     /** El mensaje de WhatsApp: saludo con el nombre, agradecimiento y el enlace para calificar. */
     public static function mensajeWhatsapp(Venta $venta): string
     {
