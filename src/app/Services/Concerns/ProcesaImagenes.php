@@ -64,7 +64,7 @@ trait ProcesaImagenes
      * margen fijo. Así una foto con mucho aire alrededor queda con el mismo zoom que una ajustada. Si las esquinas no
      * son un fondo liso (una foto con escena), no toca nada.
      */
-    private function recortarYEncuadrar(\GdImage $src, float $margen = 0.08): \GdImage
+    private function recortarYEncuadrar(\GdImage $src, float $margen = 0.05): \GdImage
     {
         $w = imagesx($src);
         $h = imagesy($src);
@@ -83,14 +83,14 @@ trait ProcesaImagenes
         ];
         if (! $porAlpha) {
             foreach ($esquinas as $c) {
-                if (abs($c[0] - $bg[0]) + abs($c[1] - $bg[1]) + abs($c[2] - $bg[2]) > 60) {
-                    return $src; // esquinas distintas: la foto no tiene fondo liso
+                if (abs($c[0] - $bg[0]) + abs($c[1] - $bg[1]) + abs($c[2] - $bg[2]) > 120) {
+                    return $src; // esquinas muy distintas entre sí: la foto tiene escena, no fondo liso
                 }
             }
         }
 
         // Caja del contenido (píxeles visibles distintos del fondo), con submuestreo para no recorrer millones de píxeles.
-        $tol = 28;
+        $tol = 38;
         $paso = max(1, (int) floor(min($w, $h) / 500));
         $minX = $w; $minY = $h; $maxX = -1; $maxY = -1;
         for ($y = 0; $y < $h; $y += $paso) {
