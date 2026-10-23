@@ -35,21 +35,35 @@ class CatalogoImagen extends Model
 
     public function urlCard(): ?string
     {
-        return $this->ruta_card ? asset('storage/' . $this->ruta_card) : null;
+        return $this->url($this->ruta_card);
     }
 
     public function urlThumb(): ?string
     {
-        return $this->ruta_thumb ? asset('storage/' . $this->ruta_thumb) : null;
+        return $this->url($this->ruta_thumb);
     }
 
     public function urlDetail(): ?string
     {
-        return $this->ruta_detail ? asset('storage/' . $this->ruta_detail) : null;
+        return $this->url($this->ruta_detail);
     }
 
     public function urlMedium(): ?string
     {
-        return $this->ruta_medium ? asset('storage/' . $this->ruta_medium) : null;
+        return $this->url($this->ruta_medium);
+    }
+
+    /**
+     * URL pública con cache-buster. Al reprocesar una foto el archivo mantiene su nombre (misma ruta), así que sin
+     * el ?v el CDN/navegador seguiría sirviendo la versión vieja. updated_at cambia en cada reproceso -> URL nueva.
+     */
+    private function url(?string $ruta): ?string
+    {
+        if (! $ruta) {
+            return null;
+        }
+        $v = $this->updated_at?->timestamp;
+
+        return asset('storage/' . $ruta) . ($v ? '?v=' . $v : '');
     }
 }
