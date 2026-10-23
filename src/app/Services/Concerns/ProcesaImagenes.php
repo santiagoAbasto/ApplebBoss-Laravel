@@ -64,7 +64,7 @@ trait ProcesaImagenes
      * margen fijo. Así una foto con mucho aire alrededor queda con el mismo zoom que una ajustada. Si las esquinas no
      * son un fondo liso (una foto con escena), no toca nada.
      */
-    private function recortarYEncuadrar(\GdImage $src, float $margen = 0.05): \GdImage
+    private function recortarYEncuadrar(\GdImage $src, float $margen = 0.02): \GdImage
     {
         $w = imagesx($src);
         $h = imagesy($src);

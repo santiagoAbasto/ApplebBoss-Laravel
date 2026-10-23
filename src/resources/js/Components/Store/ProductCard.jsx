@@ -39,28 +39,58 @@ export default function ProductCard({ product, onAdd, priority = false }) {
     const compared = inCompare(product.slug);
     const full = items.length >= max && !compared;
 
+    const Precio = () =>
+        product.promo_price ? (
+            <>
+                <p className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
+                        {money(product.promo_price)}
+                    </span>
+                    <span className="text-[11px] font-semibold tabular-nums line-through" style={{ color: 'var(--text-muted)' }}>
+                        {money(product.price)}
+                    </span>
+                </p>
+                {enUsdt(product.promo_price) && (
+                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                        ≈ {enUsdt(product.promo_price)}
+                    </p>
+                )}
+            </>
+        ) : (
+            <>
+                <p className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
+                    {money(product.price)}
+                </p>
+                {enUsdt(product.price) && (
+                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
+                        ≈ {enUsdt(product.price)}
+                    </p>
+                )}
+            </>
+        );
+
     return (
-        <article className="group min-w-0">
-            {/* Imagen */}
+        <article className="group flex h-full min-w-0 flex-col">
+            {/* Imagen — tile blanco con borde sutil, igual para todas las cards (foto o placeholder) */}
             <Link
                 href={product.url}
                 aria-label={product.name}
-                className="block overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                style={{ '--tw-ring-color': 'var(--ab-periwinkle)' }}
+                className="block overflow-hidden rounded-2xl border transition-shadow duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 group-hover:shadow-md"
+                style={{ borderColor: 'rgba(1,20,70,0.08)', '--tw-ring-color': 'var(--ab-periwinkle)' }}
                 tabIndex={0}
             >
                 <ProductVisual
                     product={product}
-                    style={{ aspectRatio: '4 / 3' }}
-                    className="transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                    style={{ aspectRatio: '1 / 1' }}
+                    className="transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     priority={priority}
                 />
             </Link>
 
-            {/* Info */}
-            <div className="pt-3.5">
+            {/* Info — columna; el precio y las acciones quedan pegados abajo para que todas las cards alineen */}
+            <div className="flex flex-1 flex-col pt-3.5">
                 {/* Badges */}
-                <div className="mb-1.5 flex items-center gap-2">
+                <div className="mb-1.5 flex flex-wrap items-center gap-2">
                     {isMyskin ? (
                         <span
                             className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide"
@@ -87,59 +117,28 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                     )}
                 </div>
 
-                {/* Nombre y precio */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                        <Link
-                            href={product.url}
-                            className="block text-[15px] font-bold leading-tight transition-opacity hover:opacity-70 focus:outline-none focus-visible:underline"
-                            style={{ color: 'var(--text-primary)' }}
-                        >
-                            <span className="line-clamp-2 block min-h-[2.5em]">{product.name}</span>
-                        </Link>
+                {/* Nombre */}
+                <Link
+                    href={product.url}
+                    className="block text-[15px] font-bold leading-tight transition-opacity hover:opacity-70 focus:outline-none focus-visible:underline"
+                    style={{ color: 'var(--text-primary)' }}
+                >
+                    <span className="line-clamp-2 block min-h-[2.5em]">{product.name}</span>
+                </Link>
 
-                        {/* Specs clave */}
-                        {product.specs?.length > 0 && (
-                            <p
-                                className="mt-1 truncate text-[11px]"
-                                style={{ color: 'var(--text-muted)' }}
-                            >
-                                {product.specs.slice(0, 2).join(' · ')}
-                            </p>
-                        )}
+                {/* Specs clave */}
+                {product.specs?.length > 0 && (
+                    <p className="mt-1 truncate text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                        {product.specs.slice(0, 2).join(' · ')}
+                    </p>
+                )}
 
-                        {/* El precio va en Bs con su equivalente en USDT al dólar paralelo */}
-                        {product.promo_price ? (
-                            <div className="mt-2">
-                                <p className="flex flex-wrap items-baseline gap-x-2">
-                                    <span className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
-                                        {money(product.promo_price)}
-                                    </span>
-                                    <span className="text-[11px] font-semibold tabular-nums line-through" style={{ color: 'var(--text-muted)' }}>
-                                        {money(product.price)}
-                                    </span>
-                                </p>
-                                {enUsdt(product.promo_price) && (
-                                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                                        ≈ {enUsdt(product.promo_price)}
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="mt-2">
-                                <p className="text-base font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>
-                                    {money(product.price)}
-                                </p>
-                                {enUsdt(product.price) && (
-                                    <p className="text-[11px] font-semibold tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                                        ≈ {enUsdt(product.price)}
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                {/* Precio (Bs + USDT) y acciones — pegados al fondo de la card */}
+                <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                    <div className="min-w-0">
+                        <Precio />
                     </div>
 
-                    {/* Actions */}
                     <div className="flex shrink-0 flex-col items-center gap-1.5">
                         <button
                             type="button"
