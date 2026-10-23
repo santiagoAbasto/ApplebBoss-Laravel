@@ -89,25 +89,39 @@ trait ProcesaImagenes
             }
         }
 
-        // Caja del contenido (píxeles visibles distintos del fondo), con submuestreo para no recorrer millones de píxeles.
-        $tol = 38;
-        $paso = max(1, (int) floor(min($w, $h) / 500));
-        $minX = $w; $minY = $h; $maxX = -1; $maxY = -1;
+        // Caja del contenido por PERFIL de columnas/filas (no por píxel suelto): una columna/fila cuenta como
+        // producto solo si tiene suficientes píxeles visibles. Así el ruido o la sombra tenue del borde deja de
+        // inflar la caja en fotos de equipos claros sobre blanco (p. ej. titanio natural), que antes quedaban chicos.
+        $tol = 42;
+        $paso = max(1, (int) floor(min($w, $h) / 600));
+        $colVis = array_fill(0, $w, 0);
+        $rowVis = array_fill(0, $h, 0);
         for ($y = 0; $y < $h; $y += $paso) {
             for ($x = 0; $x < $w; $x += $paso) {
                 $c = $this->colorEn($src, $x, $y);
                 $visible = $porAlpha
                     ? $c[3] < 100
                     : ($c[3] < 100 && abs($c[0] - $bg[0]) + abs($c[1] - $bg[1]) + abs($c[2] - $bg[2]) > $tol);
-                if ($visible) {
-                    if ($x < $minX) $minX = $x;
-                    if ($y < $minY) $minY = $y;
-                    if ($x > $maxX) $maxX = $x;
-                    if ($y > $maxY) $maxY = $y;
-                }
+                if ($visible) { $colVis[$x]++; $rowVis[$y]++; }
             }
         }
-        if ($maxX < 0) {
+        $picoCol = max($colVis);
+        $picoRow = max($rowVis);
+        if ($picoCol === 0 || $picoRow === 0) {
+            return $src; // todo era fondo
+        }
+        // Umbral: 2.5% del pico. Una columna/fila de ruido tiene 1-2 píxeles; una del producto, muchos.
+        $umbralCol = max(2, (int) ceil($picoCol * 0.025));
+        $umbralRow = max(2, (int) ceil($picoRow * 0.025));
+        $minX = $w; $maxX = -1;
+        for ($x = 0; $x < $w; $x++) {
+            if ($colVis[$x] >= $umbralCol) { if ($x < $minX) $minX = $x; $maxX = $x; }
+        }
+        $minY = $h; $maxY = -1;
+        for ($y = 0; $y < $h; $y++) {
+            if ($rowVis[$y] >= $umbralRow) { if ($y < $minY) $minY = $y; $maxY = $y; }
+        }
+        if ($maxX < 0 || $maxY < 0) {
             return $src; // todo era fondo
         }
 
