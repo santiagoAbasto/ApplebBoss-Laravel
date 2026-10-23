@@ -124,6 +124,36 @@ class ImagenProductoService
 
     private function generarVariantes(UploadedFile $archivo, string $prefijo, string $baseName, string $mime): array
     {
-        return $this->variantes($archivo, $mime, $prefijo, $baseName, self::VARIANTES);
+        return $this->variantes($archivo, $mime, $prefijo, $baseName, self::VARIANTES, encuadrar: true);
+    }
+
+    /**
+     * Regenera las variantes de una imagen ya guardada, desde su original, con el recorte+encuadre nuevo. Sobrescribe
+     * las variantes (mismo nombre) y conserva el original. Devuelve true si pudo. Para reprocesar las fotos viejas.
+     */
+    public function reprocesar(CatalogoImagen $imagen): bool
+    {
+        if (! $imagen->ruta_original || ! Storage::disk('public')->exists($imagen->ruta_original)) {
+            return false;
+        }
+
+        $realPath = Storage::disk('public')->path($imagen->ruta_original);
+        $mime = Storage::disk('public')->mimeType($imagen->ruta_original) ?: 'image/jpeg';
+        $base = pathinfo($imagen->ruta_original, PATHINFO_FILENAME);
+        $prefijo = "catalogo/{$imagen->publicacion_id}";
+
+        $variantes = $this->variantesDesdePath($realPath, $mime, $prefijo, $base, self::VARIANTES, encuadrar: true);
+        if (! isset($variantes['card'])) {
+            return false;
+        }
+
+        $imagen->update([
+            'ruta_thumb'  => $variantes['thumb'] ?? $imagen->ruta_thumb,
+            'ruta_card'   => $variantes['card'] ?? $imagen->ruta_card,
+            'ruta_medium' => $variantes['medium'] ?? $imagen->ruta_medium,
+            'ruta_detail' => $variantes['detail'] ?? $imagen->ruta_detail,
+        ]);
+
+        return true;
     }
 }

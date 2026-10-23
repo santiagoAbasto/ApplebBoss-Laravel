@@ -95,7 +95,7 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                             className="block text-[15px] font-bold leading-tight transition-opacity hover:opacity-70 focus:outline-none focus-visible:underline"
                             style={{ color: 'var(--text-primary)' }}
                         >
-                            <span className="line-clamp-2">{product.name}</span>
+                            <span className="line-clamp-2 block min-h-[2.5em]">{product.name}</span>
                         </Link>
 
                         {/* Specs clave */}

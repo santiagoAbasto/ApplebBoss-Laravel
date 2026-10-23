@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { AlertTriangle, CheckCircle2, Fingerprint, Smartphone, Wallet } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { AlertTriangle, Check, CheckCircle2, ChevronDown, Fingerprint, Search, Smartphone, Wallet } from 'lucide-react';
 import { Badge, Field, Input, Segmented, StepCard } from '@/Components/Admin/ui';
 import { MENSAJE_CONDICION } from '@/Components/Admin/condicion';
 import {
@@ -71,6 +71,7 @@ export function datosDesde(c) {
   const bateria = leerBateria(c?.bateria);
   return {
     modelo: c?.modelo ?? '',
+    marca: c?.marca ?? 'iphone',
     condicion: c?.condicion ?? '',
     capacidad: c?.capacidad ?? '',
     color: c?.color ?? '',
@@ -92,6 +93,7 @@ export function validarCelular(d, original = null) {
   const e = {};
   const cambianImeis = !original || d.imei_1 !== original.imei_1 || d.imei_2 !== original.imei_2;
   if (!d.modelo.trim()) e.modelo = 'Escribe el modelo.';
+  if (!d.marca) e.marca = 'Elige la marca.';
   if (!d.condicion) e.condicion = MENSAJE_CONDICION;
   if (!d.capacidad.trim()) e.capacidad = 'Elige o escribe la capacidad.';
   if (!d.color.trim()) e.color = 'Escribe el color.';
@@ -109,6 +111,7 @@ export function validarCelular(d, original = null) {
 
 export const payloadDe = (d) => ({
   modelo: d.modelo.trim(),
+  marca: d.marca,
   condicion: d.condicion || null,
   capacidad: d.capacidad.trim(),
   color: d.color.trim(),
@@ -153,8 +156,63 @@ function CampoImei({ label, valor, error, onChange, inputRef, onEnter }) {
   );
 }
 
+/** Marca del teléfono: chips para las comunes (iPhone, Samsung, Xiaomi, Realme, Honor) y «Otra marca» con buscador. */
+function MarcaSelector({ marcas = {}, valor, error, onChange }) {
+  const todas = marcas.todas ?? [];
+  const chipsKeys = marcas.chips ?? [];
+  const [abierto, setAbierto] = useState(false);
+  const [buscar, setBuscar] = useState('');
+
+  const chips = chipsKeys.map((k) => todas.find((m) => m.value === k)).filter(Boolean);
+  const esChip = chipsKeys.includes(valor);
+  const etiqueta = todas.find((m) => m.value === valor)?.label ?? '';
+  const q = buscar.trim().toLowerCase();
+  const filtradas = q ? todas.filter((m) => m.label.toLowerCase().includes(q) || m.value.includes(q)) : todas;
+  const elegir = (v) => { onChange(v); setAbierto(false); setBuscar(''); };
+
+  const chipCls = (activo) => `inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition-colors ${
+    activo ? 'border-[#011446] bg-[#011446] text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900'}`;
+
+  return (
+    <Field label="Marca" error={error}>
+      <div className="flex flex-wrap gap-2">
+        {chips.map((m) => (
+          <button key={m.value} type="button" onClick={() => elegir(m.value)} className={chipCls(valor === m.value)}>
+            {valor === m.value && <Check className="h-3.5 w-3.5" />} {m.label}
+          </button>
+        ))}
+        <button type="button" onClick={() => setAbierto((o) => !o)} className={chipCls(!esChip && Boolean(valor))} aria-expanded={abierto}>
+          {!esChip && valor ? etiqueta : 'Otra marca'} <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {abierto && (
+        <div className="relative">
+          <div className="absolute z-30 mt-2 w-full max-w-xs rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input autoFocus value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar marca…"
+                className="h-9 w-full rounded-lg border border-slate-200 pl-8 pr-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[color:var(--ab-acento)]" />
+            </div>
+            <ul className="mt-2 max-h-56 overflow-y-auto">
+              {filtradas.length === 0 && <li className="px-2 py-2 text-sm text-slate-400">Sin resultados</li>}
+              {filtradas.map((m) => (
+                <li key={m.value}>
+                  <button type="button" onClick={() => elegir(m.value)}
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm hover:bg-slate-50 ${valor === m.value ? 'font-bold text-[#011446]' : 'text-slate-700'}`}>
+                    {m.label} {valor === m.value && <Check className="h-4 w-4" />}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </Field>
+  );
+}
+
 /** Los tres bloques del formulario. `refs` permite enfocar un campo desde la página (por ejemplo, el color). */
-export function CamposCelular({ form, sugerencias = {}, pasos = false, refs = {}, avisoEstado = null }) {
+export function CamposCelular({ form, sugerencias = {}, marcas = {}, pasos = false, refs = {}, avisoEstado = null }) {
   const { data, errores, cambiar } = form;
   const imei2Ref = useRef(null);
   const serieRef = useRef(null);
@@ -169,6 +227,10 @@ export function CamposCelular({ form, sugerencias = {}, pasos = false, refs = {}
                 onChange={(e) => cambiar('modelo', e.target.value)} />
             </Field>
             <Sugerencias id="celulares-modelos" valores={sugerencias.modelos} />
+          </div>
+
+          <div className="md:col-span-2">
+            <MarcaSelector marcas={marcas} valor={data.marca} error={errores.marca} onChange={(v) => cambiar('marca', v)} />
           </div>
 
           <div className="md:col-span-2">

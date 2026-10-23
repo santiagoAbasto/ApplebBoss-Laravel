@@ -56,7 +56,7 @@ class CondicionInventarioTest extends TestCase
         return array_merge($celular->only([
             'modelo', 'capacidad', 'color', 'bateria', 'imei_1', 'imei_2', 'numero_serie',
             'estado_imei', 'procedencia', 'precio_costo', 'precio_venta', 'estado', 'condicion',
-        ]), $cambios);
+        ]), ['marca' => $celular->marca ?: 'iphone'], $cambios);
     }
 
     /** Accesorio como los que había antes: sin condición (salvo que se indique). */
@@ -79,6 +79,7 @@ class CondicionInventarioTest extends TestCase
         $admin = $this->admin();
         $datos = [
             'modelo'       => 'iPhone 16',
+            'marca'        => 'iphone',
             'capacidad'    => '128 GB',
             'color'        => 'Negro',
             'bateria'      => '100 SELLADO',

@@ -13,7 +13,7 @@ import {
   CamposCelular, ResumenCelular, datosDesde, detalleEquipo, nombreEquipo, payloadDe, useFormularioCelular, validarCelular,
 } from '@/Components/Admin/celulares';
 
-export default function Edit({ celular, historial = [], publicacion = null, bloqueo = null, sugerencias = {} }) {
+export default function Edit({ celular, historial = [], publicacion = null, bloqueo = null, sugerencias = {}, marcas = {} }) {
   const original = datosDesde(celular);
   const form = useFormularioCelular(original);
   const { data, errores, setErrores } = form;
@@ -78,7 +78,7 @@ export default function Edit({ celular, historial = [], publicacion = null, bloq
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-5">
-            <CamposCelular form={form} sugerencias={sugerencias} avisoEstado={avisoEstado} />
+            <CamposCelular form={form} sugerencias={sugerencias} marcas={marcas} avisoEstado={avisoEstado} />
             <HistorialEquipo historial={historial} />
             <TiendaYEliminar
               publicacion={publicacion}

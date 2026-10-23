@@ -7,6 +7,7 @@ use App\Models\Celular;
 use App\Models\User;
 use App\Models\Venta;
 use App\Models\VentaItem;
+use App\Support\Celulares\Marcas;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -40,6 +41,7 @@ class CelularesTest extends TestCase
     {
         return array_merge([
             'modelo'       => 'iPhone 16 Pro Max',
+            'marca'        => 'iphone',
             'capacidad'    => '256 GB',
             'color'        => 'Natural',
             'bateria'      => '100 SELLADO',
@@ -118,6 +120,36 @@ class CelularesTest extends TestCase
         $this->actingAs($vendedor)
             ->get(route('vendedor.celulares.index'))
             ->assertRedirect(route('vendedor.productos.index'));
+    }
+
+    public function test_la_marca_se_detecta_por_el_nombre(): void
+    {
+        $this->assertSame('google', Marcas::detectar('Google Pixel 11 Pro'));
+        $this->assertSame('samsung', Marcas::detectar('Samsung Galaxy S24 Ultra'));
+        $this->assertSame('realme', Marcas::detectar('realme 12 Pro+'));
+        $this->assertSame('xiaomi', Marcas::detectar('Redmi Note 13'));
+        $this->assertSame('honor', Marcas::detectar('Honor Magic 6'));
+        $this->assertSame('iphone', Marcas::detectar('iPhone 15 Pro Max'));
+        $this->assertSame('iphone', Marcas::detectar('Equipo raro sin marca conocida'));
+    }
+
+    public function test_el_formulario_exige_la_marca_y_la_guarda(): void
+    {
+        $admin = $this->admin();
+
+        // Sin marca: error claro
+        $this->actingAs($admin)->from(route('admin.celulares.create'))
+            ->post(route('admin.celulares.store'), $this->datosValidos(['marca' => '']))
+            ->assertSessionHasErrors('marca');
+
+        // Con marca válida: se guarda tal cual (un Pixel queda como google)
+        $this->actingAs($admin)
+            ->post(route('admin.celulares.store'), $this->datosValidos([
+                'modelo' => 'Google Pixel 9', 'marca' => 'google', 'imei_1' => '356789012345670', 'numero_serie' => 'g9abcd',
+            ]))
+            ->assertRedirect();
+
+        $this->assertSame('google', Celular::where('modelo', 'Google Pixel 9')->value('marca'));
     }
 
     public function test_registrar_muestra_mensajes_claros(): void

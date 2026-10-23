@@ -18,16 +18,29 @@ trait ProcesaImagenes
      *
      * @return array<string, string>
      */
-    private function variantes(UploadedFile $archivo, string $mime, string $prefijo, string $baseName, array $variantes): array
+    private function variantes(UploadedFile $archivo, string $mime, string $prefijo, string $baseName, array $variantes, bool $encuadrar = false): array
     {
-        $gdImage = $this->cargarGD($archivo->getRealPath(), $mime);
+        return $this->variantesDesdePath($archivo->getRealPath(), $mime, $prefijo, $baseName, $variantes, $encuadrar);
+    }
+
+    /**
+     * Igual que variantes() pero desde un archivo ya guardado (para reprocesar fotos existentes desde su original).
+     * `$encuadrar`: recorta el fondo liso y centra el producto en un cuadro con margen fijo, para que todas las fotos
+     * de producto queden con el mismo zoom. No se usa en banners/portadas (ahí la foto va a sangre).
+     */
+    private function variantesDesdePath(string $realPath, string $mime, string $prefijo, string $baseName, array $variantes, bool $encuadrar = false): array
+    {
+        $gdImage = $this->cargarGD($realPath, $mime);
         if (! $gdImage) {
             return [];
         }
 
-        $gdImage = $this->corregirOrientacionExif($gdImage, $archivo->getRealPath());
-        $rutas = [];
+        $gdImage = $this->corregirOrientacionExif($gdImage, $realPath);
+        if ($encuadrar) {
+            $gdImage = $this->recortarYEncuadrar($gdImage);
+        }
 
+        $rutas = [];
         foreach ($variantes as $nombre => ['w' => $w, 'h' => $h, 'q' => $q]) {
             $resized = $this->resize($gdImage, $w, $h);
             $ruta = "{$prefijo}/{$nombre}/{$baseName}.{$this->outputExtension()}";
@@ -44,6 +57,81 @@ trait ProcesaImagenes
         unset($gdImage);
 
         return $rutas;
+    }
+
+    /**
+     * Recorta el fondo liso (blanco o transparente) alrededor del producto y lo centra en un lienzo cuadrado con un
+     * margen fijo. Así una foto con mucho aire alrededor queda con el mismo zoom que una ajustada. Si las esquinas no
+     * son un fondo liso (una foto con escena), no toca nada.
+     */
+    private function recortarYEncuadrar(\GdImage $src, float $margen = 0.08): \GdImage
+    {
+        $w = imagesx($src);
+        $h = imagesy($src);
+        if ($w < 16 || $h < 16) {
+            return $src;
+        }
+
+        // ¿Las esquinas son un fondo liso? (transparente, o un color parecido entre las cuatro). Si no, hay escena.
+        $esquinas = [$this->colorEn($src, 0, 0), $this->colorEn($src, $w - 1, 0), $this->colorEn($src, 0, $h - 1), $this->colorEn($src, $w - 1, $h - 1)];
+        $transparentes = count(array_filter($esquinas, fn ($c) => $c[3] > 100));
+        $porAlpha = $transparentes >= 2;
+        $bg = [
+            (int) round(array_sum(array_column($esquinas, 0)) / 4),
+            (int) round(array_sum(array_column($esquinas, 1)) / 4),
+            (int) round(array_sum(array_column($esquinas, 2)) / 4),
+        ];
+        if (! $porAlpha) {
+            foreach ($esquinas as $c) {
+                if (abs($c[0] - $bg[0]) + abs($c[1] - $bg[1]) + abs($c[2] - $bg[2]) > 60) {
+                    return $src; // esquinas distintas: la foto no tiene fondo liso
+                }
+            }
+        }
+
+        // Caja del contenido (píxeles visibles distintos del fondo), con submuestreo para no recorrer millones de píxeles.
+        $tol = 28;
+        $paso = max(1, (int) floor(min($w, $h) / 500));
+        $minX = $w; $minY = $h; $maxX = -1; $maxY = -1;
+        for ($y = 0; $y < $h; $y += $paso) {
+            for ($x = 0; $x < $w; $x += $paso) {
+                $c = $this->colorEn($src, $x, $y);
+                $visible = $porAlpha
+                    ? $c[3] < 100
+                    : ($c[3] < 100 && abs($c[0] - $bg[0]) + abs($c[1] - $bg[1]) + abs($c[2] - $bg[2]) > $tol);
+                if ($visible) {
+                    if ($x < $minX) $minX = $x;
+                    if ($y < $minY) $minY = $y;
+                    if ($x > $maxX) $maxX = $x;
+                    if ($y > $maxY) $maxY = $y;
+                }
+            }
+        }
+        if ($maxX < 0) {
+            return $src; // todo era fondo
+        }
+
+        // Pad de seguridad y recorte
+        $minX = max(0, $minX - $paso); $minY = max(0, $minY - $paso);
+        $maxX = min($w - 1, $maxX + $paso); $maxY = min($h - 1, $maxY + $paso);
+        $cw = $maxX - $minX + 1; $ch = $maxY - $minY + 1;
+
+        // Lienzo cuadrado: el contenido ocupa (1 - 2*margen) del lado, centrado. Fondo transparente.
+        $lado = (int) ceil(max($cw, $ch) / max(0.5, 1 - 2 * $margen));
+        $dst = imagecreatetruecolor($lado, $lado);
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        imagefilledrectangle($dst, 0, 0, $lado, $lado, imagecolorallocatealpha($dst, 255, 255, 255, 127));
+        imagecopy($dst, $src, (int) round(($lado - $cw) / 2), (int) round(($lado - $ch) / 2), $minX, $minY, $cw, $ch);
+
+        return $dst;
+    }
+
+    /** [r, g, b, alpha(0-127)] de un píxel. */
+    private function colorEn(\GdImage $img, int $x, int $y): array
+    {
+        $rgba = imagecolorat($img, $x, $y);
+        return [($rgba >> 16) & 0xFF, ($rgba >> 8) & 0xFF, $rgba & 0xFF, ($rgba >> 24) & 0x7F];
     }
 
     private function cargarGD(string $path, string $mime): ?\GdImage

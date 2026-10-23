@@ -20,6 +20,7 @@ class Celular extends Model
      */
     protected $fillable = [
         'modelo',
+        'marca',
         'capacidad',
         'color',
         'bateria',

@@ -36,7 +36,7 @@ class FotoModeloService
         $prefijo = "modelos/{$modelo->slug}";
         $base = Str::uuid()->toString();
         $original = $archivo->storeAs("{$prefijo}/original", "{$base}.{$archivo->extension()}", 'public');
-        $variantes = $this->variantes($archivo, $mime, $prefijo, $base, self::VARIANTES);
+        $variantes = $this->variantes($archivo, $mime, $prefijo, $base, self::VARIANTES, encuadrar: true);
 
         if (! isset($variantes['card'])) {
             Storage::disk('public')->delete($original);

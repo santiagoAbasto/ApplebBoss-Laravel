@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\EquipoDeInventario;
 use App\Models\Celular;
+use App\Support\Celulares\Marcas;
 use App\Support\CondicionInventario;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -75,6 +76,7 @@ class CelularController extends Controller
     {
         return Inertia::render('Admin/Celulares/Create', [
             'sugerencias' => $this->sugerencias(),
+            'marcas'      => Marcas::paraFormulario(),
         ]);
     }
 
@@ -99,6 +101,7 @@ class CelularController extends Controller
             'publicacion' => $this->publicacionDe($celular),
             'bloqueo'     => $this->motivoBloqueo($celular),
             'sugerencias' => $this->sugerencias(),
+            'marcas'      => Marcas::paraFormulario(),
         ]);
     }
 
@@ -138,6 +141,7 @@ class CelularController extends Controller
 
         $celular = new Celular();
         $celular->modelo = $data['modelo'];
+        $celular->marca = Marcas::detectar($data['modelo']);
         $celular->imei_1 = $data['imei_1'];
         $celular->precio_costo = $data['precio_costo'];
         $celular->precio_venta = $data['precio_venta'];
@@ -173,6 +177,7 @@ class CelularController extends Controller
 
         $datos = $request->validate([
             'modelo'       => 'required|string|max:255',
+            'marca'        => ['required', Rule::in(array_keys(Marcas::MARCAS))],
             'capacidad'    => 'required|string|max:100',
             'color'        => 'required|string|max:100',
             'bateria'      => 'nullable|string|max:100',

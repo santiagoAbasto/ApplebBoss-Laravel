@@ -8,6 +8,7 @@ use App\Models\CatalogCollection;
 use App\Models\Faq;
 use App\Models\HomeSection;
 use App\Models\Novedad;
+use App\Support\Celulares\Marcas;
 use App\Models\ModeloReferencia;
 use App\Models\StoreLocation;
 use App\Models\StoreService;
@@ -408,10 +409,9 @@ class PublicCatalogController extends Controller
             'promo_price'    => $pub->promocionActiva() && $pub->precio_promocional ? (float) $pub->precio_promocional : null,
             'category'       => $pub->categoria,
             'category_label' => $this->categoryLabel($pub),
-            // Un producto de otra marca cargado en «Productos Apple» muestra su marca, no la categoría «Apple»
-            'marca'          => $pub->producto_tipo === 'producto_apple' && $pub->modeloReferencia?->familia === 'otra_marca'
-                ? ($pub->atributos['fabricante'] ?? $pub->modeloReferencia->datos['ficha']['fabricante'] ?? null)
-                : null,
+            // La marca real del producto para la etiqueta de la tarjeta: en celulares sale de su campo `marca` (un
+            // Pixel muestra «Google», no «iPhone»); en «Productos Apple» de otra marca, su fabricante.
+            'marca'          => $this->marcaProducto($pub),
             'specs'          => $this->buildSpecs($pub),
             'summary'        => $pub->resumen,
             'condition'      => $pub->condicion,  // explícito, nunca inferido
@@ -468,6 +468,21 @@ class PublicCatalogController extends Controller
             'es_principal' => $img->es_principal,
             'orden'        => $img->orden,
         ])->toArray();
+    }
+
+    /** La marca que muestra la tarjeta: en celulares, su marca real (un Pixel es «Google»); en Apple de otra marca, su fabricante. */
+    private function marcaProducto(CatalogoPublicacion $pub): ?string
+    {
+        if ($pub->producto_tipo === 'celular') {
+            $celular = $pub->inventario();
+            return $celular ? Marcas::etiqueta($celular->marca) : null;
+        }
+
+        if ($pub->producto_tipo === 'producto_apple' && $pub->modeloReferencia?->familia === 'otra_marca') {
+            return $pub->atributos['fabricante'] ?? $pub->modeloReferencia->datos['ficha']['fabricante'] ?? null;
+        }
+
+        return null;
     }
 
     private function categoryLabel(CatalogoPublicacion $pub): string

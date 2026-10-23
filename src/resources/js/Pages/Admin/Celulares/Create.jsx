@@ -11,7 +11,7 @@ import {
   CamposCelular, ResumenCelular, datosDesde, payloadDe, useFormularioCelular, validarCelular,
 } from '@/Components/Admin/celulares';
 
-export default function Create({ sugerencias = {} }) {
+export default function Create({ sugerencias = {}, marcas = {} }) {
   const form = useFormularioCelular(datosDesde(null));
   const { data, setData, errores, setErrores } = form;
   const [guardando, setGuardando] = useState(null);
@@ -68,7 +68,7 @@ export default function Create({ sugerencias = {} }) {
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-5">
-            <CamposCelular form={form} sugerencias={sugerencias} pasos refs={refs} />
+            <CamposCelular form={form} sugerencias={sugerencias} marcas={marcas} pasos refs={refs} />
           </div>
 
           <aside className="xl:sticky xl:top-24">
