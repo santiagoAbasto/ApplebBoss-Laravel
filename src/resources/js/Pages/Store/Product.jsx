@@ -588,20 +588,22 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
                             )}
                         </div>
 
-                        {/* Equivalente en USDT (al dólar paralelo, en vivo) */}
+                        {/* Equivalente en USDT (al dólar paralelo, en vivo) — chip compacto que abraza su contenido */}
                         {enUsdt(product.promo_price ?? product.price) && (
                             <div
-                                className="mt-3 inline-flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3.5"
-                                style={{ background: 'rgba(38,161,123,0.08)', border: '1px solid rgba(38,161,123,0.18)' }}
+                                className="mt-3 inline-flex w-fit max-w-full items-center gap-2.5 self-start rounded-2xl py-1.5 pl-1.5 pr-4"
+                                style={{ background: 'var(--surface-muted)' }}
                             >
-                                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px] font-black text-white" style={{ background: '#26A17B' }}>
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-black text-white" style={{ background: '#26A17B' }}>
                                     ₮
                                 </span>
-                                <span className="text-[15px] font-bold tabular-nums" style={{ color: '#1E8D6B' }}>
-                                    ≈ {enUsdt(product.promo_price ?? product.price)}
-                                </span>
-                                <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>
-                                    al dólar paralelo
+                                <span className="leading-tight">
+                                    <span className="block text-[15px] font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                                        ≈ {enUsdt(product.promo_price ?? product.price)}
+                                    </span>
+                                    <span className="block text-[9.5px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
+                                        al dólar paralelo
+                                    </span>
                                 </span>
                             </div>
                         )}
