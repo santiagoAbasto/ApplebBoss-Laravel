@@ -1,0 +1,15 @@
+{
+  "proveedor": "Planet Cell",
+  "items": [
+    {"tipo": "celular", "modelo": "iPhone 18 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Negro", "Azul", "Silver", "Burdeos"], "usd": 1690},
+    {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "1 TB", "sim": "eSIM", "colores": ["Azul"], "usd": 1780},
+    {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "512 GB", "sim": "eSIM", "colores": ["Silver", "Azul"], "usd": 1430},
+    {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Silver"], "usd": 1260},
+    {"tipo": "celular", "modelo": "iPhone 17 Pro", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Silver", "Naranja"], "usd": 1170},
+    {"tipo": "celular", "modelo": "iPhone 17", "capacidad": "256 GB", "sim": "chip", "colores": ["Negro", "Azul", "Lavanda", "Sage", "Blanco"], "usd": 880},
+    {"tipo": "celular", "modelo": "iPhone 17e", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Negro", "Blanco", "Rosa"], "usd": 590},
+    {"tipo": "celular", "modelo": "iPhone 16", "capacidad": "128 GB", "sim": "chip", "colores": ["Negro", "Teal", "Blanco"], "usd": 730},
+    {"tipo": "celular", "modelo": "iPhone 15", "capacidad": "128 GB", "sim": "chip", "colores": [], "usd": 630},
+    {"tipo": "celular", "modelo": "iPhone 13", "capacidad": "128 GB", "sim": "chip", "colores": ["Negro"], "usd": 480}
+  ]
+}
