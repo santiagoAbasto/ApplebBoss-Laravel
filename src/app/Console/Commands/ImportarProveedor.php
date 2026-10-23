@@ -29,8 +29,8 @@ class ImportarProveedor extends Command
         'producto_apple' => ProductoApple::class,
     ];
 
-    /** Colores cuyo costo está dentro de este rango (USD) van en la misma tarjeta; uno más caro (Vino) va aparte. */
-    private const UMBRAL = 50;
+    /** Colores cuyo costo difiere en más de esto (USD) van en tarjetas distintas; uno más caro (Vino) queda aparte. */
+    private const UMBRAL = 40;
 
     public function handle(): int
     {
