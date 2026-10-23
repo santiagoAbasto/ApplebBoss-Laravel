@@ -41,24 +41,36 @@ class ImportarProveedor extends Command
             return self::FAILURE;
         }
 
-        // 1) Una fila por COLOR de cada lista (un color caro no se mezcla con los baratos)
-        $filas = collect();
+        // 1) Juntar los equipos de todas las listas (sin explotar: una entrada puede traer varios colores a un precio)
+        $entradas = collect();
         foreach ($archivos as $f) {
             $data = json_decode((string) file_get_contents($f), true) ?: [];
             $prov = $data['proveedor'] ?? pathinfo($f, PATHINFO_FILENAME);
             foreach ($data['items'] ?? [] as $it) {
-                foreach (($it['colores'] ?? []) ?: [''] as $color) {
-                    $filas->push([
-                        'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
-                        'color' => $color, 'usd' => (float) $it['usd'], 'sim' => $it['sim'] ?? null, 'proveedor' => $prov,
-                    ]);
-                }
+                $entradas->push([
+                    'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
+                    'colores' => $it['colores'] ?? [], 'usd' => (float) $it['usd'], 'sim' => $it['sim'] ?? null, 'proveedor' => $prov,
+                ]);
             }
         }
 
-        // 2) El MÁS BARATO por color (entre todas las listas)
-        $porColor = $filas->groupBy(fn ($f) => $this->clave($f) . '|' . mb_strtolower($f['color']))
-            ->map(fn ($g) => $g->sortBy('usd')->first());
+        // 2) Por equipo, el precio MÁS BARATO de cada color. Los colores salen de la unión de todas las listas; una
+        //    entrada SIN colores es un precio para cualquier color (así un proveedor que no detalla color igual compite).
+        $porColor = collect();
+        $entradas->groupBy(fn ($e) => $this->clave($e))->each(function ($g) use ($porColor) {
+            $nombrados = $g->flatMap(fn ($e) => $e['colores'])->filter()->unique()->values();
+            $colores = $nombrados->isEmpty() ? collect(['']) : $nombrados;
+            foreach ($colores as $color) {
+                $cand = $g->filter(fn ($e) => $color === '' || empty($e['colores']) || in_array($color, $e['colores'], true));
+                $barato = $cand->sortBy('usd')->first();
+                if ($barato) {
+                    $porColor->push([
+                        'tipo' => $barato['tipo'], 'modelo' => $barato['modelo'], 'capacidad' => $barato['capacidad'],
+                        'color' => $color, 'usd' => (float) $barato['usd'], 'sim' => $barato['sim'], 'proveedor' => $barato['proveedor'],
+                    ]);
+                }
+            }
+        });
 
         // 3) Dentro de cada modelo+capacidad, agrupar colores de costo parecido; el precio del grupo = el costo MÁS ALTO
         //    (así ningún color pierde margen). Un color notablemente más caro (Vino) queda en su propia tarjeta.
@@ -111,6 +123,14 @@ class ImportarProveedor extends Command
             if ($c['tipo'] === 'celular') {
                 $datos['marca'] = Marcas::detectar($c['modelo']);
                 $datos['estado_imei'] = 'libre';
+            }
+            if ($c['tipo'] === 'computadora') {
+                // Una Mac usa `nombre` (no `modelo`) y `almacenamiento` (no `capacidad`).
+                unset($datos['modelo'], $datos['capacidad']);
+                $datos['nombre'] = $c['modelo'];
+                $datos['procesador'] = '';
+                $datos['ram'] = '';
+                $datos['almacenamiento'] = $c['capacidad'] ?: '';
             }
             $reg = $clase::create($datos);
 

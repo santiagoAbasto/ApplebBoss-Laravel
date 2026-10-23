@@ -11,6 +11,20 @@
     {"tipo": "celular", "modelo": "iPhone 17e", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Negro", "Blanco", "Rosa"], "usd": 590},
     {"tipo": "celular", "modelo": "iPhone 16", "capacidad": "128 GB", "sim": "chip", "colores": ["Negro", "Teal", "Blanco"], "usd": 730},
     {"tipo": "celular", "modelo": "iPhone 15", "capacidad": "128 GB", "sim": "chip", "colores": [], "usd": 630},
-    {"tipo": "celular", "modelo": "iPhone 13", "capacidad": "128 GB", "sim": "chip", "colores": ["Negro"], "usd": 480}
+    {"tipo": "celular", "modelo": "iPhone 13", "capacidad": "128 GB", "sim": "chip", "colores": ["Negro"], "usd": 480},
+
+    {"tipo": "producto_apple", "modelo": "iPad Pro de 13 pulgadas (M5)", "capacidad": "256 GB", "colores": [], "usd": 1450},
+    {"tipo": "producto_apple", "modelo": "iPad Pro de 11 pulgadas (M4)", "capacidad": "256 GB", "colores": [], "usd": 950},
+    {"tipo": "producto_apple", "modelo": "iPad (A16)", "capacidad": "128 GB", "colores": [], "usd": 470},
+    {"tipo": "producto_apple", "modelo": "iPad (10.ª generación)", "capacidad": "256 GB", "colores": ["Rosa"], "usd": 470},
+    {"tipo": "producto_apple", "modelo": "Apple TV 4K", "capacidad": "64 GB", "colores": [], "usd": 140},
+    {"tipo": "producto_apple", "modelo": "AirPods 4 con cancelación activa de ruido", "capacidad": "", "colores": [], "usd": 190},
+    {"tipo": "producto_apple", "modelo": "AirPods (2.ª generación)", "capacidad": "", "colores": [], "usd": 120},
+    {"tipo": "producto_apple", "modelo": "Apple Watch Ultra", "capacidad": "49 mm", "colores": [], "usd": 490},
+    {"tipo": "producto_apple", "modelo": "Apple Watch Series 11", "capacidad": "46 mm", "colores": ["Negro"], "usd": 420},
+    {"tipo": "producto_apple", "modelo": "Apple Watch Series 11", "capacidad": "42 mm", "colores": ["Gold Pink"], "usd": 390},
+    {"tipo": "producto_apple", "modelo": "Apple Pencil Pro", "capacidad": "", "colores": [], "usd": 140},
+    {"tipo": "producto_apple", "modelo": "Apple Pencil (USB-C)", "capacidad": "", "colores": [], "usd": 110},
+    {"tipo": "producto_apple", "modelo": "Magic Keyboard para iPad Pro 12.9", "capacidad": "", "colores": ["White Gray"], "usd": 200}
   ]
 }
