@@ -100,8 +100,9 @@ class HomeSection extends Model
     public static function filtrar(string $tipo, array $settings, Collection $disponibles, ?Collection $coleccion = null): Collection
     {
         return match ($tipo) {
-            'featured'           => $disponibles->where('is_featured', true)->values(),
-            'category_products'  => $disponibles->where('is_myskin', false)->where('category', $settings['categoria'] ?? '')->values(),
+            // Mismo orden que el catálogo: modelo más nuevo primero y, dentro del modelo, más capacidad primero.
+            'featured'           => \App\Support\Catalogo\OrdenModelo::aplicar($disponibles->where('is_featured', true)),
+            'category_products'  => \App\Support\Catalogo\OrdenModelo::aplicar($disponibles->where('is_myskin', false)->where('category', $settings['categoria'] ?? '')),
             'product_collection' => self::enOrdenDeColeccion($disponibles, $coleccion),
             'myskin'             => $disponibles->where('is_myskin', true)->sortByDesc('id')->values(),
             'semiused'           => $disponibles->whereIn('condition', ['Seminuevo', 'Open Box'])->sortByDesc('id')->values(),
