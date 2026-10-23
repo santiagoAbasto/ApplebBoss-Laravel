@@ -29,6 +29,9 @@ class ImportarProveedor extends Command
         'producto_apple' => ProductoApple::class,
     ];
 
+    /** Colores cuyo costo está dentro de este rango (USD) van en la misma tarjeta; uno más caro (Vino) va aparte. */
+    private const UMBRAL = 50;
+
     public function handle(): int
     {
         $dir = $this->option('dir') ?: database_path('data/proveedores');
@@ -38,107 +41,126 @@ class ImportarProveedor extends Command
             return self::FAILURE;
         }
 
-        // 1) Juntar todos los equipos de todas las listas, con su proveedor
-        $items = collect();
+        // 1) Una fila por COLOR de cada lista (un color caro no se mezcla con los baratos)
+        $filas = collect();
         foreach ($archivos as $f) {
             $data = json_decode((string) file_get_contents($f), true) ?: [];
             $prov = $data['proveedor'] ?? pathinfo($f, PATHINFO_FILENAME);
             foreach ($data['items'] ?? [] as $it) {
-                $items->push($it + ['proveedor' => $prov]);
+                foreach (($it['colores'] ?? []) ?: [''] as $color) {
+                    $filas->push([
+                        'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
+                        'color' => $color, 'usd' => (float) $it['usd'], 'sim' => $it['sim'] ?? null, 'proveedor' => $prov,
+                    ]);
+                }
             }
         }
 
-        // 2) Agrupar por equipo (tipo|modelo|capacidad) y quedarse con el MÁS BARATO; juntar colores
-        $merged = $items->groupBy(fn ($i) => $this->clave($i))->map(function ($g) {
-            $barato = $g->sortBy('usd')->first();
-            return [
-                'tipo'      => $barato['tipo'],
-                'modelo'    => $barato['modelo'],
-                'capacidad' => $barato['capacidad'] ?? '',
-                'usd'       => (float) $barato['usd'],
-                'proveedor' => $barato['proveedor'],
-                'sim'       => $barato['sim'] ?? null,
-                'colores'   => $g->flatMap(fn ($i) => $i['colores'] ?? [])->unique()->values()->all(),
-            ];
-        })->values();
+        // 2) El MÁS BARATO por color (entre todas las listas)
+        $porColor = $filas->groupBy(fn ($f) => $this->clave($f) . '|' . mb_strtolower($f['color']))
+            ->map(fn ($g) => $g->sortBy('usd')->first());
 
-        $this->info("Equipos: {$merged->count()} (desde " . count($archivos) . ' listas)');
+        // 3) Dentro de cada modelo+capacidad, agrupar colores de costo parecido; el precio del grupo = el costo MÁS ALTO
+        //    (así ningún color pierde margen). Un color notablemente más caro (Vino) queda en su propia tarjeta.
+        $cards = collect();
+        $porColor->groupBy(fn ($f) => $this->clave($f))->each(function ($g) use ($cards) {
+            $orden = $g->sortBy('usd')->values();
+            $grupo = collect();
+            $base = null;
+            foreach ($orden as $f) {
+                if ($base !== null && $f['usd'] - $base > self::UMBRAL) {
+                    $cards->push($this->armarCard($grupo));
+                    $grupo = collect();
+                    $base = null;
+                }
+                $grupo->push($f);
+                $base ??= $f['usd'];
+            }
+            if ($grupo->isNotEmpty()) {
+                $cards->push($this->armarCard($grupo));
+            }
+        });
+
+        $this->info("Tarjetas: {$cards->count()} (desde " . count($archivos) . ' listas, por color)');
+
+        if ($this->option('dry')) {
+            foreach ($cards as $c) {
+                $this->line(sprintf('  %-26s %-7s  %-12s $%.0f  [%s]  %s',
+                    $c['modelo'], $c['capacidad'], $c['proveedor'], $c['usd'], $c['sim'] ?? '-', implode('/', $c['colores']) ?: '—'));
+            }
+            return self::SUCCESS;
+        }
+
+        // Reconstruir: borrar los de proveedor DISPONIBLES (derivados de las listas) y volver a crearlos; los vendidos no se tocan
+        $this->limpiarDisponibles();
 
         $creados = 0;
-        $actualizados = 0;
-        $publicados = 0;
-
-        foreach ($merged as $sku) {
-            $clase = self::MODELOS[$sku['tipo']] ?? null;
+        foreach ($cards as $c) {
+            $clase = self::MODELOS[$c['tipo']] ?? null;
             if (! $clase) {
-                $this->warn("Tipo desconocido: {$sku['tipo']} ({$sku['modelo']})");
+                $this->warn("Tipo desconocido: {$c['tipo']} ({$c['modelo']})");
                 continue;
             }
 
-            if ($this->option('dry')) {
-                $this->line(sprintf('  %-28s %-7s  %-12s $%.0f  [%s]  %s',
-                    $sku['modelo'], $sku['capacidad'], $sku['proveedor'], $sku['usd'], $sku['sim'] ?? '-', implode('/', $sku['colores'])));
-                continue;
-            }
-
-            // Un registro de inventario por modelo+capacidad, marcado de proveedor (sin IMEI: aún no está físicamente)
+            $colorUnico = count($c['colores']) === 1 ? $c['colores'][0] : '';
             $datos = [
-                'modelo'       => $sku['modelo'],
-                'capacidad'    => $sku['capacidad'],
-                'color'        => '',
-                'bateria'      => '',
-                'procedencia'  => $sku['proveedor'],
-                'estado'       => 'disponible',
-                'condicion'    => 'Nuevo',
-                'es_proveedor' => true,
-                'proveedor'    => $sku['proveedor'],
-                'costo_usd'    => $sku['usd'],
+                'modelo' => $c['modelo'], 'capacidad' => $c['capacidad'], 'color' => $colorUnico, 'bateria' => '',
+                'procedencia' => $c['proveedor'], 'estado' => 'disponible', 'condicion' => 'Nuevo',
+                'es_proveedor' => true, 'proveedor' => $c['proveedor'], 'costo_usd' => $c['usd'],
             ];
-            if ($sku['tipo'] === 'celular') {
-                $datos['marca'] = Marcas::detectar($sku['modelo']);
+            if ($c['tipo'] === 'celular') {
+                $datos['marca'] = Marcas::detectar($c['modelo']);
                 $datos['estado_imei'] = 'libre';
             }
+            $reg = $clase::create($datos);
 
-            $reg = $clase::where('es_proveedor', true)
-                ->where('modelo', $sku['modelo'])
-                ->where('capacidad', $sku['capacidad'])
-                ->first();
-
-            if ($reg) {
-                $reg->update($datos);
-                $actualizados++;
-            } else {
-                $reg = $clase::create($datos);
-                $creados++;
-            }
-
-            // Publicar reusando el flujo normal (enlaza ficha técnica + foto si el modelo existe)
-            $pub = CatalogoPublicacion::where('producto_tipo', $sku['tipo'])->where('producto_id', $reg->id)->first();
-            if (! $pub) {
-                $pub = InventarioCatalogo::crear($sku['tipo'], $reg, 'Nuevo', true);
-                $publicados++;
-            }
-
-            // Colores disponibles y tipo de SIM, visibles en la tarjeta/ficha
+            $pub = InventarioCatalogo::crear($c['tipo'], $reg, 'Nuevo', true);
             $extra = array_filter([
-                'capacidad' => $sku['capacidad'] ?: null,
-                'color'     => $sku['colores'] ? implode(', ', $sku['colores']) : null,
-                'sim'       => $sku['sim'] ?? null,
+                'capacidad' => $c['capacidad'] ?: null,
+                'color'     => $c['colores'] ? implode(', ', $c['colores']) : null,
+                'sim'       => $c['sim'] ?? null,
             ]);
-            $pub->update([
-                'atributos' => array_merge($pub->atributos ?? [], $extra),
-                'publicado' => true,
-            ]);
+            $pub->update(['atributos' => array_merge($pub->atributos ?? [], $extra), 'publicado' => true]);
+            $creados++;
         }
 
         $this->newLine();
-        $this->info("Listo. Creados: {$creados} · Actualizados: {$actualizados} · Publicados nuevos: {$publicados}");
+        $this->info("Listo. Tarjetas publicadas: {$creados}");
 
         return self::SUCCESS;
     }
 
+    /** @param \Illuminate\Support\Collection $grupo filas de color */
+    private function armarCard($grupo): array
+    {
+        $caro = $grupo->sortByDesc('usd')->first(); // el precio del grupo = el costo más alto (nadie pierde margen)
+
+        return [
+            'tipo'      => $caro['tipo'],
+            'modelo'    => $caro['modelo'],
+            'capacidad' => $caro['capacidad'],
+            'usd'       => (float) $caro['usd'],
+            'proveedor' => $caro['proveedor'],
+            'sim'       => $caro['sim'] ?? null,
+            'colores'   => $grupo->pluck('color')->filter()->unique()->values()->all(),
+        ];
+    }
+
+    /** Borra los productos de proveedor DISPONIBLES y sus publicaciones (se reconstruyen). Los vendidos se conservan. */
+    private function limpiarDisponibles(): void
+    {
+        foreach (self::MODELOS as $tipo => $clase) {
+            $ids = $clase::where('es_proveedor', true)->where('estado', 'disponible')->pluck('id');
+            if ($ids->isEmpty()) {
+                continue;
+            }
+            CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $ids)->delete();
+            $clase::whereIn('id', $ids)->delete();
+        }
+    }
+
     private function clave(array $i): string
     {
-        return strtolower(trim($i['tipo'] . '|' . $i['modelo'] . '|' . ($i['capacidad'] ?? '')));
+        return mb_strtolower(trim($i['tipo'] . '|' . $i['modelo'] . '|' . ($i['capacidad'] ?? '')));
     }
 }

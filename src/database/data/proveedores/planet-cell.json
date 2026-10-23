@@ -1,7 +1,8 @@
 {
   "proveedor": "Planet Cell",
   "items": [
-    {"tipo": "celular", "modelo": "iPhone 18 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Negro", "Azul", "Silver", "Burdeos"], "usd": 1690},
+    {"tipo": "celular", "modelo": "iPhone 18 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Negro", "Azul", "Silver"], "usd": 1690},
+    {"tipo": "celular", "modelo": "iPhone 18 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Vino"], "usd": 1730},
     {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "1 TB", "sim": "eSIM", "colores": ["Azul"], "usd": 1780},
     {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "512 GB", "sim": "eSIM", "colores": ["Silver", "Azul"], "usd": 1430},
     {"tipo": "celular", "modelo": "iPhone 17 Pro Max", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Silver"], "usd": 1260},
