@@ -138,11 +138,16 @@ class PublicCatalogController extends Controller
             ->when($modelo !== '',                                      fn (Collection $items) => $items->where('modelo_slug', $modelo))
             ->when($tipo !== '',                                        fn (Collection $items) => $items->where('tipo_accesorio', $tipo));
 
+        // En las categorías de celulares (iPhone y Android) el orden por defecto es «como Apple»: modelo más nuevo
+        // primero y, dentro del modelo, más capacidad primero. En «Todo el catálogo» y el resto, no cambia.
+        $esCategoriaTelefono = in_array($category, ['celulares', 'celulares-android'], true);
         $products = match ($sort) {
             'precio-menor' => $products->sortBy('price'),
             'precio-mayor' => $products->sortByDesc('price'),
             'nombre'       => $products->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE),
-            default        => $products->sortByDesc('orden'),
+            default        => $esCategoriaTelefono
+                ? \App\Support\Catalogo\OrdenModelo::aplicar($products)
+                : $products->sortByDesc('orden'),
         };
 
         $page     = max(1, $request->integer('page', 1));

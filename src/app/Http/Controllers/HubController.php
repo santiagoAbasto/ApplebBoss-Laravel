@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CatalogoPublicacion;
 use App\Models\Faq;
+use App\Support\Catalogo\OrdenModelo;
 use App\Support\Seo;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -14,8 +15,9 @@ class HubController extends Controller
     public function iphone(): Response
     {
         $all      = $this->publicaciones();
-        $nuevos   = $all->where('category', 'celulares')->where('condition', 'Nuevo')->values();
-        $usados   = $all->where('category', 'celulares')->whereIn('condition', ['Seminuevo', 'Open Box'])->values();
+        // Orden «como Apple»: modelo más nuevo primero y, dentro del modelo, más capacidad primero.
+        $nuevos   = OrdenModelo::aplicar($all->where('category', 'celulares')->where('condition', 'Nuevo'));
+        $usados   = OrdenModelo::aplicar($all->where('category', 'celulares')->whereIn('condition', ['Seminuevo', 'Open Box']));
         $myskin   = $all->where('is_myskin', true)->take(4)->values();
 
         $modelos = $nuevos->merge($usados)
@@ -68,7 +70,7 @@ class HubController extends Controller
     {
         $all      = $this->publicaciones();
         $sem      = $all->whereIn('condition', ['Seminuevo', 'Open Box'])->values();
-        $celulares = $sem->where('category', 'celulares')->take(8)->values();
+        $celulares = OrdenModelo::aplicar($sem->where('category', 'celulares'))->take(8)->values();
         $mac       = $sem->where('category', 'computadoras')->take(4)->values();
         $otros     = $sem->whereNotIn('category', ['celulares', 'computadoras'])->take(4)->values();
 
