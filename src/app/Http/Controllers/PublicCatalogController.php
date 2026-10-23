@@ -237,7 +237,6 @@ class PublicCatalogController extends Controller
                 $price     = $pub->precioVigente();
                 $available = $pub->productoDisponible();
                 $item      = $this->serialize($pub, $price, $available);
-                $item['garantia']  = $pub->garantia;
                 $item['atributos'] = $pub->atributosPublicos();
                 $products->push($item);
             }
@@ -420,7 +419,9 @@ class PublicCatalogController extends Controller
             'specs'          => $this->buildSpecs($pub),
             'summary'        => $pub->resumen,
             'condition'      => $pub->condicion,  // explícito, nunca inferido
-            'garantia'       => $pub->garantia,
+            // La garantía se deriva de la condición (nunca texto a mano): 12 meses nuevo, 4 seminuevo (config/documentos).
+            'garantia'          => ($g = $pub->garantiaCobertura()) ? "{$g['meses']} meses de garantía por el negocio" : null,
+            'garantia_extendida' => $g['extra'] ?? 0,
             'is_myskin'      => $pub->esMyskin(),
             'is_featured'    => $pub->destacado,
             'available'      => $available,

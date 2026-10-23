@@ -17,7 +17,6 @@ import { noTiene } from '@/Components/Store/comparativa';
 
 // Editor de una publicación de la tienda: lo que se ve en la ficha pública del producto.
 
-const GARANTIAS = ['1 mes por el negocio', '3 meses por el negocio', '6 meses por el negocio', '12 meses por el negocio', 'Sin garantía'];
 const ETIQUETAS = ['OFERTA', 'NUEVO INGRESO', 'ÚLTIMAS UNIDADES', 'RECOMENDADO', 'MÁS VENDIDO'];
 
 const FAMILIAS = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', watch: 'Apple Watch', airpods: 'AirPods', general: 'General' };
@@ -45,7 +44,7 @@ const escaparHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'
  * la salud de batería (seminuevos), qué incluye, observaciones y garantía. No inventa datos: solo usa lo que hay.
  * Devuelve las mismas etiquetas que entiende el editor (h3, ul/li, strong, p), que el servidor luego limpia.
  */
-function generarDescripcion({ data, grupos, bateria }) {
+function generarDescripcion({ data, grupos, bateria, garantia }) {
   const a = data.atributos ?? {};
   const nombre = (data.titulo ?? '').trim() || 'Este equipo';
   const cond = (data.condicion ?? '').trim();
@@ -82,7 +81,7 @@ function generarDescripcion({ data, grupos, bateria }) {
   }
 
   const cierre = [];
-  if (data.garantia?.trim()) cierre.push(`<strong>Garantía:</strong> ${escaparHtml(data.garantia.trim())}.`);
+  if (garantia) cierre.push(`<strong>Garantía:</strong> ${escaparHtml(garantia)}.`);
   cierre.push('Equipo revisado y stock confirmado. Recojo en Cochabamba sin costo y envíos a todo el país; atención directa por WhatsApp.');
   p.push(`<p>${cierre.join(' ')}</p>`);
 
@@ -364,7 +363,7 @@ function Compatibilidad({ publicacion, iniciales, targets, avisar }) {
 
 export default function Edit({
   publicacion, inventario, condiciones = [], estadoPublicacion, compatibilidades = [], compatibility_targets = [], modelosReferencia = [], modeloSugerido = null,
-  familiaAccesorio = null,
+  familiaAccesorio = null, garantiaMeses = {},
 }) {
   const [toast, avisar] = useToast();
   const [imagenes, setImagenes] = useState(publicacion.imagenes ?? []);
@@ -382,6 +381,7 @@ export default function Edit({
     que_incluye: publicacion.que_incluye ?? '',
     observaciones: publicacion.observaciones ?? '',
     garantia: publicacion.garantia ?? '',
+    garantia_meses: publicacion.garantia_meses ?? '',
     condicion: publicacion.condicion ?? '',
     categoria: publicacion.categoria ?? '',
     subcategoria: publicacion.subcategoria ?? '',
@@ -414,8 +414,16 @@ export default function Edit({
     promocion_desde: d.promocion_desde || null,
     promocion_hasta: d.promocion_hasta || null,
     orden: Number(d.orden) || 0,
+    garantia_meses: d.garantia_meses === '' || d.garantia_meses == null ? null : Number(d.garantia_meses),
     modelo_referencia_id: d.modelo_referencia_id ? Number(d.modelo_referencia_id) : null,
   }));
+
+  // Garantía: el estándar sale de la condición (los meses del footer/legales). Si se pone más, es extendida.
+  const garantiaEstandar = data.condicion === 'Nuevo' ? (garantiaMeses.equipo_nuevo ?? null)
+    : ['Seminuevo', 'Open Box', 'Reacondicionado'].includes(data.condicion) ? (garantiaMeses.equipo_seminuevo ?? null)
+    : null;
+  const garantiaTotal = data.garantia_meses !== '' && data.garantia_meses != null ? Number(data.garantia_meses) : garantiaEstandar;
+  const garantiaExtra = garantiaEstandar != null && garantiaTotal != null ? Math.max(0, garantiaTotal - garantiaEstandar) : 0;
 
   useEffect(() => {
     if (!isDirty) return undefined;
@@ -590,7 +598,8 @@ export default function Edit({
                   </Field>
                   <Field label="Descripción completa (opcional)" error={errors.descripcion}>
                     <EditorDescripcion value={data.descripcion} onChange={(v) => cambiar('descripcion', v)}
-                      onGenerar={() => generarDescripcion({ data, grupos, bateria })} />
+                      onGenerar={() => generarDescripcion({ data, grupos, bateria,
+                        garantia: garantiaTotal != null ? `${garantiaTotal} meses por el negocio${garantiaExtra > 0 ? ` (extendida, +${garantiaExtra})` : ''}` : null })} />
                   </Field>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Qué incluye" error={errors.que_incluye} hint="Ej.: caja original y cable USB-C.">
@@ -600,9 +609,24 @@ export default function Edit({
                       <Textarea rows={2} value={data.observaciones} onChange={(e) => cambiar('observaciones', e.target.value)} />
                     </Field>
                   </div>
-                  <Field label="Garantía" error={errors.garantia}>
-                    <Input value={data.garantia} maxLength={255} onChange={(e) => cambiar('garantia', e.target.value)} placeholder="Ej.: 3 meses por el negocio" />
-                    <Sugeridos opciones={GARANTIAS} onElegir={(g) => cambiar('garantia', g)} />
+                  <Field
+                    label="Garantía (meses)"
+                    error={errors.garantia_meses}
+                    hint={garantiaEstandar != null
+                      ? `Estándar para ${(data.condicion || 'esta condición').toLowerCase()}: ${garantiaEstandar} meses (del footer). Déjalo así o pon más para garantía extendida.`
+                      : 'Elige la condición arriba para ver la garantía estándar.'}
+                  >
+                    <Input
+                      type="number" min={0} max={120}
+                      value={data.garantia_meses === '' || data.garantia_meses == null ? (garantiaEstandar ?? '') : data.garantia_meses}
+                      onChange={(e) => cambiar('garantia_meses', e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder={garantiaEstandar != null ? String(garantiaEstandar) : 'Meses'}
+                    />
+                    {garantiaExtra > 0 && (
+                      <p className="mt-1 text-[12px] font-semibold text-emerald-700">
+                        En la tienda saldrá: Garantía extendida · +{garantiaExtra} {garantiaExtra === 1 ? 'mes' : 'meses'}
+                      </p>
+                    )}
                   </Field>
                 </div>
               </StepCard>

@@ -31,6 +31,7 @@ class CatalogoPublicacion extends Model
         'que_incluye',
         'observaciones',
         'garantia',
+        'garantia_meses',
         'condicion',
         'categoria',
         'subcategoria',
@@ -52,9 +53,39 @@ class CatalogoPublicacion extends Model
         'promocion_desde'    => 'datetime',
         'promocion_hasta'    => 'datetime',
         'precio_promocional' => 'float',
+        'garantia_meses'     => 'integer',
         'tags'               => 'array',
         'atributos'          => 'array',
     ];
+
+    /**
+     * La garantía que le toca al producto, derivada de su condición con los meses de config/documentos.php
+     * (los mismos del footer/legales). Si `garantia_meses` tiene un total mayor al estándar, es garantía extendida.
+     * Devuelve null cuando la condición no tiene un plazo definido (no se inventa).
+     *
+     * @return array{meses:int, estandar:int, extra:int, extendida:bool}|null
+     */
+    public function garantiaCobertura(): ?array
+    {
+        $meses = (array) config('documentos.garantia.meses', []);
+        $estandar = match ($this->condicion) {
+            'Nuevo'                                    => $meses['equipo_nuevo'] ?? null,
+            'Seminuevo', 'Open Box', 'Reacondicionado' => $meses['equipo_seminuevo'] ?? null,
+            default                                    => null,
+        };
+        if ($estandar === null) {
+            return null;
+        }
+        $estandar = (int) $estandar;
+        $total = $this->garantia_meses !== null ? (int) $this->garantia_meses : $estandar;
+
+        return [
+            'meses'     => $total,
+            'estandar'  => $estandar,
+            'extra'     => max(0, $total - $estandar),
+            'extendida' => $total > $estandar,
+        ];
+    }
 
     // Storefronts válidos
     public const STOREFRONT_APPLE_BOSS = 'APPLE_BOSS';

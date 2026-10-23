@@ -131,6 +131,7 @@ class CatalogoPublicacionController extends Controller
             'que_incluye'   => 'nullable|string',
             'observaciones' => 'nullable|string',
             'garantia'      => 'nullable|string|max:255',
+            'garantia_meses' => 'nullable|integer|min:0|max:120',
             'condicion'     => 'nullable|in:Nuevo,Seminuevo,Open Box,Reacondicionado',
             'categoria'     => 'required|string|max:100',
             'subcategoria'  => 'nullable|string|max:100',
@@ -205,6 +206,8 @@ class CatalogoPublicacionController extends Controller
                 ? null
                 : ModeloReferencia::deInventario($publicacion->producto_tipo, $producto, $modelos)?->id,
             'condiciones'       => CatalogoPublicacion::CONDICIONES,
+            // Meses de garantía estándar por condición (los del footer/legales): el form autollenan y detecta si es extendida
+            'garantiaMeses'     => config('documentos.garantia.meses'),
             'storefronts'       => [CatalogoPublicacion::STOREFRONT_APPLE_BOSS, CatalogoPublicacion::STOREFRONT_MYSKIN],
             'camposFaltantes'   => $publicacion->camposFaltantes(),
             'estadoPublicacion' => $publicacion->estadoPublicacion(),
@@ -231,6 +234,7 @@ class CatalogoPublicacionController extends Controller
             'que_incluye'        => 'nullable|string',
             'observaciones'      => 'nullable|string',
             'garantia'           => 'nullable|string|max:255',
+            'garantia_meses'     => 'nullable|integer|min:0|max:120',
             'condicion'          => 'nullable|in:Nuevo,Seminuevo,Open Box,Reacondicionado',
             'categoria'          => 'required|string|max:100',
             'subcategoria'       => 'nullable|string|max:100',

@@ -859,8 +859,13 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
                             style={{ background: 'var(--surface-muted)' }}>
                             <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0" style={{ color: 'var(--ab-periwinkle)' }} />
                             <div>
-                                <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                                <p className="flex flex-wrap items-center gap-2 text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
                                     {product.garantia}
+                                    {product.garantia_extendida > 0 && (
+                                        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style={{ background: 'rgba(46,139,46,0.12)', color: '#1A6B1A' }}>
+                                            Garantía extendida · +{product.garantia_extendida} {product.garantia_extendida === 1 ? 'mes' : 'meses'}
+                                        </span>
+                                    )}
                                 </p>
                                 <p className="mt-1 text-[13px]" style={{ color: 'var(--text-muted)' }}>
                                     La garantía aplica sobre defectos de fabricación. No cubre daños físicos ni por líquidos.
