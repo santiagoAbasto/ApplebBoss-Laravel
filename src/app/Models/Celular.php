@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ProductoDeProveedor;
 use App\Models\Concerns\TieneCondicion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Celular extends Model
 {
-    use HasFactory, TieneCondicion;
+    use HasFactory, TieneCondicion, ProductoDeProveedor;
+
+    /** Tipo de inventario (para el margen de proveedor). */
+    public const TIPO_INVENTARIO = 'celular';
 
     /**
      * Nombre explícito de la tabla en la base de datos.
@@ -31,8 +35,18 @@ class Celular extends Model
         'procedencia',
         'precio_costo',
         'precio_venta',
+        'es_proveedor',
+        'proveedor',
+        'costo_usd',
+        'margen_usd',
         'estado',
         'condicion',
+    ];
+
+    protected $casts = [
+        'es_proveedor' => 'boolean',
+        'costo_usd'    => 'float',
+        'margen_usd'   => 'float',
     ];
 
     // 🔖 Constantes de estado del IMEI
