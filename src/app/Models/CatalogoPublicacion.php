@@ -365,6 +365,22 @@ class CatalogoPublicacion extends Model
         return InventarioCatalogo::modelo((string) $this->producto_tipo, (int) $this->producto_id);
     }
 
+    /**
+     * La categoría con la que se agrupa en la tienda. Igual a `categoria`, salvo los celulares que NO son iPhone
+     * (Pixel, Samsung, Xiaomi, Realme…): esos van a «Android» (slug celulares-android) para que la categoría «iPhone»
+     * sea solo Apple. Se deriva de la marca del equipo, sin tocar la `categoria` guardada.
+     */
+    public function categoriaPublica(): string
+    {
+        if ($this->categoria === 'celulares' && $this->producto_tipo === 'celular') {
+            $marca = $this->inventario()?->marca;
+            if ($marca && $marca !== 'iphone') {
+                return 'celulares-android';
+            }
+        }
+        return (string) $this->categoria;
+    }
+
     private static function idsReservados(string $tipo): array
     {
         return ReservaItem::query()

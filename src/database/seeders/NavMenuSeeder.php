@@ -24,6 +24,16 @@ class NavMenuSeeder extends Seeder
                 ],
             ],
             [
+                'label'  => 'Android',
+                'url'    => '/catalogo?categoria=celulares-android',
+                'myskin' => false,
+                'children' => [
+                    ['label' => 'Ver todos los Android', 'url' => '/catalogo?categoria=celulares-android'],
+                    ['label' => 'Nuevos', 'url' => '/catalogo?categoria=celulares-android&condicion=Nuevo'],
+                    ['label' => 'Seminuevos', 'url' => '/catalogo?categoria=celulares-android&condicion=Seminuevo'],
+                ],
+            ],
+            [
                 'label'  => 'Mac',
                 'url'    => '/mac',
                 'myskin' => false,

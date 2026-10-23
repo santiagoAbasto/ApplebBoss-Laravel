@@ -23,6 +23,18 @@ class CatalogCategorySeeder extends Seeder
                 'meta_description' => 'iPhone nuevos y seminuevos en Cochabamba a buen precio, con asesoría para elegir y una postventa que responde.',
             ],
             [
+                'name'            => 'Android',
+                'slug'            => 'celulares-android',
+                'description'     => 'Celulares Android: Google Pixel, Samsung, Xiaomi y más.',
+                'active'          => true,
+                'show_home'       => false,
+                'show_navigation' => true,
+                'is_myskin'       => false,
+                'sort_order'      => 2,
+                'meta_title'      => 'Celulares Android en Cochabamba — Apple Boss',
+                'meta_description' => 'Celulares Android (Google Pixel, Samsung, Xiaomi) en Cochabamba, con garantía real y atención directa.',
+            ],
+            [
                 'name'            => 'Mac',
                 'slug'            => 'computadoras',
                 'description'     => 'Potencia para crear y trabajar.',

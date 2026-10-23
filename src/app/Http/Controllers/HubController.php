@@ -198,7 +198,7 @@ class HubController extends Controller
             'price'       => (float) ($price ?? 0),
             'promo_price' => $pub->promocionActiva() ? (float) $pub->precio_promocional : null,
             'badge'       => $pub->badge,
-            'category'    => $pub->categoria,
+            'category'    => $pub->categoriaPublica(),
             'condition'   => $pub->condicion,
             'garantia'    => $pub->garantia,
             'is_myskin'   => $pub->esMyskin(),

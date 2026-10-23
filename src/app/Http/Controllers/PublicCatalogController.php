@@ -407,7 +407,7 @@ class PublicCatalogController extends Controller
             'price'          => (float) ($price ?? 0),
             // Precio rebajado vigente (se carga en la publicación): la tarjeta lo muestra tachando el anterior
             'promo_price'    => $pub->promocionActiva() && $pub->precio_promocional ? (float) $pub->precio_promocional : null,
-            'category'       => $pub->categoria,
+            'category'       => $pub->categoriaPublica(),
             'category_label' => $this->categoryLabel($pub),
             // La marca real del producto para la etiqueta de la tarjeta: en celulares sale de su campo `marca` (un
             // Pixel muestra «Google», no «iPhone»); en «Productos Apple» de otra marca, su fabricante.
@@ -488,11 +488,12 @@ class PublicCatalogController extends Controller
     private function categoryLabel(CatalogoPublicacion $pub): string
     {
         if ($pub->esMyskin()) return 'MYSKIN';
-        return match ($pub->categoria) {
-            'celulares'       => 'iPhone',
-            'computadoras'    => 'Mac',
-            'productos-apple' => 'Apple',
-            default           => ucfirst($pub->subcategoria ?? $pub->categoria),
+        return match ($pub->categoriaPublica()) {
+            'celulares'         => 'iPhone',
+            'celulares-android' => 'Android',
+            'computadoras'      => 'Mac',
+            'productos-apple'   => 'Apple',
+            default             => ucfirst($pub->subcategoria ?? $pub->categoria),
         };
     }
 
