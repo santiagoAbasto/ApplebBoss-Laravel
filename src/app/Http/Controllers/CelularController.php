@@ -82,10 +82,33 @@ class CelularController extends Controller
 
     public function store(Request $request)
     {
+        // ¿Es un equipo que VOLVIÓ? Mismo IMEI, pero el registro que existe está vendido (ya no estaba en stock).
+        // En vez de bloquear por IMEI repetido, reactivamos ese mismo registro con los datos nuevos (lo recompramos):
+        // así su historial de venta se conserva y vuelve a estar disponible.
+        if ($volvio = $this->celularQueVolvio($request->input('imei_1'), $request->input('imei_2'))) {
+            $volvio->update($this->validar($request, $volvio));
+
+            return redirect($this->destinoSeguro($request->input('return_to'), route('admin.celulares.index')))
+                ->with('success', 'Este equipo figuraba como vendido y volvió al stock. Lo reactivamos con los datos nuevos; su historial se conserva.');
+        }
+
         Celular::create($this->validar($request));
 
         return redirect($this->destinoSeguro($request->input('return_to'), route('admin.celulares.index')))
             ->with('success', 'Celular registrado correctamente.');
+    }
+
+    /** El equipo que vuelve: un celular ya VENDIDO con ese mismo IMEI. (Si estuviera disponible, sería un duplicado real.) */
+    private function celularQueVolvio(?string $imei1, ?string $imei2): ?Celular
+    {
+        $imeis = array_filter([$imei1, $imei2], fn ($i) => filled($i) && strlen((string) $i) === 15);
+        if (! $imeis) {
+            return null;
+        }
+
+        return Celular::where('estado', Celular::ESTADO_VENDIDO)
+            ->where(fn ($q) => $q->whereIn('imei_1', $imeis)->orWhereIn('imei_2', $imeis))
+            ->first();
     }
 
     public function show(Celular $celular)

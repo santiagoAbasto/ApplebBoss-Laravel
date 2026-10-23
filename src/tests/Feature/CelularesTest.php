@@ -269,4 +269,41 @@ class CelularesTest extends TestCase
             ]))
             ->assertSessionHasErrors(['imei_1' => 'Ya hay un celular registrado con este IMEI.']);
     }
+
+    public function test_un_equipo_vendido_que_vuelve_se_reactiva_con_el_mismo_imei(): void
+    {
+        $admin = $this->admin();
+        $vendido = $this->celular(['imei_1' => '356789012345678', 'estado' => 'vendido']);
+        $this->vender($vendido, $admin); // deja historial de venta
+
+        // Lo recompramos: se registra de nuevo con el MISMO IMEI y datos nuevos. No bloquea: reactiva ese registro.
+        $this->actingAs($admin)
+            ->post(route('admin.celulares.store'), $this->datosValidos([
+                'imei_1' => '356789012345678', 'numero_serie' => null,
+                'modelo' => 'iPhone 17 Pro Max', 'precio_costo' => 8000, 'precio_venta' => 9500, 'estado' => 'disponible',
+            ]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        // No se duplicó; el mismo registro vuelve a estar disponible con los datos nuevos
+        $this->assertSame(1, Celular::where('imei_1', '356789012345678')->count());
+        $this->assertDatabaseHas('celulares', [
+            'id' => $vendido->id, 'estado' => 'disponible', 'precio_venta' => 9500, 'modelo' => 'iPhone 17 Pro Max',
+        ]);
+        // El historial de la venta anterior se conserva (sigue apuntando a este celular)
+        $this->assertDatabaseHas('ventas_items', ['tipo' => 'celular', 'producto_id' => $vendido->id]);
+    }
+
+    public function test_un_imei_de_un_equipo_disponible_sigue_bloqueado(): void
+    {
+        // Si el IMEI pertenece a un equipo que SÍ está en stock, es un duplicado real: se bloquea.
+        $this->celular(['imei_1' => '356789012345678', 'estado' => 'disponible']);
+
+        $this->actingAs($this->admin())
+            ->from(route('admin.celulares.create'))
+            ->post(route('admin.celulares.store'), $this->datosValidos([
+                'imei_1' => '356789012345678', 'numero_serie' => null,
+            ]))
+            ->assertSessionHasErrors(['imei_1' => 'Ya hay un celular registrado con este IMEI.']);
+    }
 }
