@@ -346,8 +346,8 @@ function Destacado({ lamina, producto, quieto, vidrio, tinta, tintaSuave, fotoPa
                 style={vidrio}
                 initial={quieto ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={quieto ? { opacity: 0 } : { opacity: 0, y: -8 }} transition={{ duration: 0.28, ease: SUAVE }}>
-                <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white">
-                    <img src={foto ?? fotoPantalla(lamina.clave, 'chica')} alt="" className="h-full w-full object-cover" />
+                <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white p-1.5">
+                    <img src={foto ?? fotoPantalla(lamina.clave, 'chica')} alt="" className="h-full w-full object-contain" />
                 </span>
                 <span className="min-w-0 flex-1">
                     <span className="block text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: lamina.acento }}>

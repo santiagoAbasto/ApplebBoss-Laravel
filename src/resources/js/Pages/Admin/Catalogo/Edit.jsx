@@ -38,10 +38,67 @@ function Sugeridos({ opciones, onElegir }) {
   );
 }
 
+const escaparHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Arma una descripción en HTML con TODO el contexto del producto: nombre, condición, la ficha técnica cargada,
+ * la salud de batería (seminuevos), qué incluye, observaciones y garantía. No inventa datos: solo usa lo que hay.
+ * Devuelve las mismas etiquetas que entiende el editor (h3, ul/li, strong, p), que el servidor luego limpia.
+ */
+function generarDescripcion({ data, grupos, bateria }) {
+  const a = data.atributos ?? {};
+  const nombre = (data.titulo ?? '').trim() || 'Este equipo';
+  const cond = (data.condicion ?? '').trim();
+  const esNuevo = !cond || cond.toLowerCase() === 'nuevo';
+
+  // Ficha: label + valor no vacíos, en el orden de los grupos, sin los campos automáticos ni repetidos
+  const vistos = new Set();
+  const specs = grupos.flatMap((g) => g.campos)
+    .filter((c) => !CAMPOS_AUTOMATICOS.includes(c.key) && a[c.key] != null && String(a[c.key]).trim() !== '')
+    .filter((c) => (vistos.has(c.label) ? false : vistos.add(c.label)))
+    .map((c) => ({ label: c.label, valor: String(a[c.key]).trim() }));
+
+  const p = [];
+  const estado = esNuevo
+    ? 'nuevo y sellado'
+    : `seminuevo en excelente estado${cond.toLowerCase() !== 'seminuevo' ? ` (${cond.toLowerCase()})` : ''}`;
+  p.push(`<p><strong>${escaparHtml(nombre)}</strong> ${estado}, disponible en Cochabamba y listo para entrega inmediata.`
+    + `${data.resumen?.trim() ? ' ' + escaparHtml(data.resumen.trim()) : ''}</p>`);
+
+  if (specs.length) {
+    p.push('<h3>Características</h3>', '<ul>');
+    specs.slice(0, 10).forEach((s) => p.push(`  <li><strong>${escaparHtml(s.label)}:</strong> ${escaparHtml(s.valor)}</li>`));
+    if (!esNuevo && bateria?.salud) {
+      p.push(`  <li><strong>Salud de batería:</strong> ${escaparHtml(String(bateria.salud))}%${bateria.sellado ? ' (sellada)' : ''}</li>`);
+    }
+    p.push('</ul>');
+  }
+
+  if (data.que_incluye?.trim()) {
+    p.push('<h3>Qué incluye</h3>', `<p>${escaparHtml(data.que_incluye.trim())}</p>`);
+  }
+  if (data.observaciones?.trim()) {
+    p.push(`<p><strong>Estado:</strong> ${escaparHtml(data.observaciones.trim())}</p>`);
+  }
+
+  const cierre = [];
+  if (data.garantia?.trim()) cierre.push(`<strong>Garantía:</strong> ${escaparHtml(data.garantia.trim())}.`);
+  cierre.push('Equipo revisado y stock confirmado. Recojo en Cochabamba sin costo y envíos a todo el país; atención directa por WhatsApp.');
+  p.push(`<p>${cierre.join(' ')}</p>`);
+
+  return p.join('\n');
+}
+
 /** Descripción con botones de formato. El servidor limpia el HTML (solo etiquetas seguras). */
-function EditorDescripcion({ value, onChange }) {
+function EditorDescripcion({ value, onChange, onGenerar }) {
   const ref = useRef(null);
   const [vista, setVista] = useState(false);
+
+  const generar = () => {
+    if (value.trim() && !window.confirm('¿Reemplazar la descripción actual por una generada con los datos del producto?')) return;
+    onChange(onGenerar());
+    setVista(true); // mostrar la vista previa de lo generado
+  };
 
   const envolver = (antes, despues = '') => {
     const ta = ref.current;
@@ -65,9 +122,15 @@ function EditorDescripcion({ value, onChange }) {
           <button key={label} type="button" title={title} onClick={accion}
             className={`rounded-lg px-2.5 py-1 text-xs text-slate-600 hover:bg-white hover:text-slate-900 ${cls ?? 'font-semibold'}`}>{label}</button>
         ))}
-        <button type="button" onClick={() => setVista((v) => !v)} className="ml-auto rounded-lg px-2.5 py-1 text-xs font-semibold text-[#585E9F] hover:bg-white">
-          {vista ? 'Editar' : 'Vista previa'}
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          {onGenerar && (
+            <button type="button" onClick={generar} title="Armar la descripción con los datos del producto"
+              className="rounded-lg bg-[#585E9F] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#474d85]">✨ Generar</button>
+          )}
+          <button type="button" onClick={() => setVista((v) => !v)} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-[#585E9F] hover:bg-white">
+            {vista ? 'Editar' : 'Vista previa'}
+          </button>
+        </div>
       </div>
       {vista ? (
         // Vista previa solo para quien edita; lo que se guarda pasa por la limpieza del servidor
@@ -526,7 +589,8 @@ export default function Edit({
                     <Textarea rows={2} value={data.resumen} maxLength={1000} onChange={(e) => cambiar('resumen', e.target.value)} placeholder="Una o dos frases que resuman el producto." />
                   </Field>
                   <Field label="Descripción completa (opcional)" error={errors.descripcion}>
-                    <EditorDescripcion value={data.descripcion} onChange={(v) => cambiar('descripcion', v)} />
+                    <EditorDescripcion value={data.descripcion} onChange={(v) => cambiar('descripcion', v)}
+                      onGenerar={() => generarDescripcion({ data, grupos, bateria })} />
                   </Field>
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Qué incluye" error={errors.que_incluye} hint="Ej.: caja original y cable USB-C.">

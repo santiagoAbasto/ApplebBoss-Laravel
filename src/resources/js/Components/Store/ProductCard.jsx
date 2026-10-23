@@ -70,7 +70,7 @@ export default function ProductCard({ product, onAdd, priority = false }) {
         );
 
     return (
-        <article className="group flex h-full min-w-0 flex-col">
+        <article className="group min-w-0">
             {/* Imagen — tile blanco con borde sutil, igual para todas las cards (foto o placeholder) */}
             <Link
                 href={product.url}
@@ -87,8 +87,8 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                 />
             </Link>
 
-            {/* Info — columna; el precio y las acciones quedan pegados abajo para que todas las cards alineen */}
-            <div className="flex flex-1 flex-col pt-3.5">
+            {/* Info — slots de alto fijo (título 2 líneas, specs 1 línea) para que todas las cards queden parejas sin huecos */}
+            <div className="pt-3.5">
                 {/* Badges */}
                 <div className="mb-1.5 flex flex-wrap items-center gap-2">
                     {isMyskin ? (
@@ -126,15 +126,13 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                     <span className="line-clamp-2 block min-h-[2.5em]">{product.name}</span>
                 </Link>
 
-                {/* Specs clave */}
-                {product.specs?.length > 0 && (
-                    <p className="mt-1 truncate text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                        {product.specs.slice(0, 2).join(' · ')}
-                    </p>
-                )}
+                {/* Specs clave — siempre ocupa una línea (aunque no haya) para que el precio quede a la misma altura */}
+                <p className="mt-1 truncate text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                    {product.specs?.length > 0 ? product.specs.slice(0, 2).join(' · ') : ' '}
+                </p>
 
-                {/* Precio (Bs + USDT) y acciones — pegados al fondo de la card */}
-                <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+                {/* Precio (Bs + USDT) y acciones */}
+                <div className="mt-3 flex items-end justify-between gap-3">
                     <div className="min-w-0">
                         <Precio />
                     </div>

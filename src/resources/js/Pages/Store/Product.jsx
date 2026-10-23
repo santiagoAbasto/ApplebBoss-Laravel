@@ -5,7 +5,7 @@ import {
     GitCompare, HardDrive, Layers, Link as Enlace, MapPin, Memory, MessageCircle, Package, Palette, ScreenSize, SecureBox, ShieldCheck,
     ShoppingBag, Signal, SmartHome, Smartphone, Speaker, Store, StorePickup, Truck, UsbC, Voice, X, Zap, ZoomIn,
 } from '@/Components/Store/Icons';
-import StoreLayout, { StoreContainer, useStoreCart, useWhatsApp } from '@/Layouts/StoreLayout';
+import StoreLayout, { StoreContainer, useStoreCart, useWhatsApp, useUsdt } from '@/Layouts/StoreLayout';
 import ProductCard from '@/Components/Store/ProductCard';
 import ProductVisual from '@/Components/Store/ProductVisual';
 import { BateriaNivel, FichaTecnica, porcentajeBateria, valorCorto, valorDe } from '@/Components/Store/fichaTecnica';
@@ -429,6 +429,7 @@ function CompraConfianza({ product, ciudad }) {
 function ProductInner({ product, related, crossSell, faqs = [] }) {
     const { add } = useStoreCart();
     const wa = useWhatsApp();
+    const enUsdt = useUsdt();
     const { tienda } = usePage().props;
     const [activeSection, setActiveSection] = useState('descripcion');
     const [showBuyBar, setShowBuyBar] = useState(false);
@@ -586,6 +587,24 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
                                 </span>
                             )}
                         </div>
+
+                        {/* Equivalente en USDT (al dólar paralelo, en vivo) */}
+                        {enUsdt(product.promo_price ?? product.price) && (
+                            <div
+                                className="mt-3 inline-flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3.5"
+                                style={{ background: 'rgba(38,161,123,0.08)', border: '1px solid rgba(38,161,123,0.18)' }}
+                            >
+                                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px] font-black text-white" style={{ background: '#26A17B' }}>
+                                    ₮
+                                </span>
+                                <span className="text-[15px] font-bold tabular-nums" style={{ color: '#1E8D6B' }}>
+                                    ≈ {enUsdt(product.promo_price ?? product.price)}
+                                </span>
+                                <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>
+                                    al dólar paralelo
+                                </span>
+                            </div>
+                        )}
 
                         {/* Resumen */}
                         {product.summary && (
