@@ -90,7 +90,8 @@ final class GeneradorDescripcion
         if (! $x) {
             return null;
         }
-        $x = trim((string) preg_split('/\s*[·,(;]/u', $x)[0]);
+        // Corta en · ( o ; pero NO en coma: en español la coma es decimal ("6,9 pulgadas", "ƒ/1,48").
+        $x = trim((string) preg_split('/\s*[·(;]/u', $x)[0]);
         $x = rtrim($x, " \t.·-");
 
         return $x !== '' ? Str::limit($x, 36, '') : null;
