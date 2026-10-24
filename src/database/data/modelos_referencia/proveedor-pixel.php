@@ -3,8 +3,8 @@
 /**
  * Ficha de un celular que NO es Apple (Google Pixel). Usa el mismo EsquemaCelular que los iPhone: los campos propios de
  * Apple (Face ID, Dynamic Island, MagSafe, Dolby Vision, ProRaw, Apple Intelligence, etc.) van en false, y los genéricos
- * con los datos reales del Pixel Pro. «Pixel 11 Pro» va por delante de lo que existe hoy: se basa en el Pixel 10 Pro
- * (Tensor G5, 6,3" LTPO OLED 120 Hz, 50+48+48 MP, 4870 mAh) con proyección 2026.
+ * con los datos reales del Pixel. El Pixel 11 Pro es REAL (lanzado el 20-ago-2026): 6,3" LTPO OLED 120 Hz, Tensor G6
+ * (3 nm), 16 GB, 50+48+48 MP, Android 17 con 7 años de actualizaciones. Datos de la Google Store / GSMArena.
  * Enlaza al producto por el nombre (celular se detecta por `nombre`/`alias`, no por `detectar`).
  */
 return [
@@ -45,7 +45,7 @@ return [
                 'apple_pencil'           => false,
             ],
             'rendimiento'  => [
-                'chip'                    => 'Google Tensor G5',
+                'chip'                    => 'Google Tensor G6',
                 'cpu_nucleos'             => 8,
                 'cpu_rendimiento'         => 6,
                 'cpu_eficiencia'          => 2,
@@ -151,7 +151,7 @@ return [
                 'doble'                          => false,
                 'video_exterior_h'               => false,
                 'streaming_exterior_h'           => false,
-                'capacidad_mah'                  => 4870,
+                'capacidad_mah'                  => 4850,
                 'capacidad_mah_solo_esim'        => false,
             ],
             'conectividad' => [
@@ -193,14 +193,14 @@ return [
                 'abierto_grosor_mm' => false,
                 'peso_g'            => 207,
                 'colores'           => ['Porcelana', 'Obsidiana', 'Jade', 'Rosa Cuarzo'],
-                'capacidades_gb'    => [128, 256, 512, 1024],
+                'capacidades_gb'    => [256, 512, 1024],
                 'boton_accion'      => false,
                 'control_camara'    => false,
             ],
             'sistema'      => [
                 'anio'               => 2026,
-                'ios_lanzamiento'    => 'Android 16',
-                'ios_maximo'         => 'Android 23 (7 años de actualizaciones)',
+                'ios_lanzamiento'    => 'Android 17',
+                'ios_maximo'         => 'Android 24 (7 años de actualizaciones)',
                 'numeros_modelo'     => ['GFQ11'],
                 'apple_intelligence' => false,
             ],

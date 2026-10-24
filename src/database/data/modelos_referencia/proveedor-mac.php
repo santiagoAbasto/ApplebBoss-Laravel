@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Fichas de Mac que faltaban para los productos de proveedor. Dos fichas cubren los tres productos:
- * la de 16" M5 Pro sirve para las versiones de 24 GB y 48 GB. Son modelos 2026 (M5 Pro/M5 Max): internos del
- * M5 Pro ya en la base, chasis de 16"/14" como los M3/M4 equivalentes. El identificador (MacXX,X) queda pendiente
- * porque Apple aún no lo publica para estos modelos.
+ * Fichas de Mac que faltaban para los productos de proveedor (las demás ya están en computadora.php). Son modelos
+ * REALES lanzados el 11-mar-2026; los datos salen de apple.com/macbook-pro/specs. La de 16" M5 Pro cubre las
+ * versiones de 24 GB y 48 GB. Lo único pendiente es el identificador (MacXX,X), que Apple no lista en la ficha
+ * (se puede completar desde everymac.com).
  */
 return [
     [
@@ -48,7 +48,7 @@ return [
                 'cpu'                   => ['15 núcleos (5 supernúcleos y 10 de rendimiento)', '18 núcleos (6 supernúcleos y 12 de rendimiento)'],
                 'gpu'                   => ['16 núcleos', '20 núcleos'],
                 'ancho_banda_gbs'       => 307,
-                'ram_gb'                => [24, 48, 64],
+                'ram_gb'                => [24, 36, 48, 64],
                 'ram_tipo'              => 'memoria unificada',
                 'almacenamiento_gb'     => [1024, 2048, 4096],
                 'pantallas_externas'    => 'Hasta tres monitores de hasta 6K a 60 Hz o 4K a 144 Hz, o uno de hasta 8K a 60 Hz más otro de hasta 5K a 120 Hz',
@@ -58,7 +58,7 @@ return [
                 'wh'           => 100.0,
                 'video_h'      => 24,
                 'video_fuente' => 'streaming',
-                'web_h'        => 15,
+                'web_h'        => 17,
                 'adaptador'    => 'USB‑C de 140 W',
                 'carga_rapida' => 'con el adaptador de corriente USB‑C de 140 W incluido',
             ],
@@ -139,8 +139,8 @@ return [
                 'trazado_rayos'         => true,
                 'apple_intelligence'    => true,
                 'chip'                  => 'Apple M5 Max',
-                'cpu'                   => ['16 núcleos (12 de rendimiento y 4 de eficiencia)'],
-                'gpu'                   => ['40 núcleos'],
+                'cpu'                   => ['18 núcleos (6 supernúcleos y 12 de rendimiento)'],
+                'gpu'                   => ['32 núcleos', '40 núcleos'],
                 'ancho_banda_gbs'       => 614,
                 'ram_gb'                => [36, 48, 64, 128],
                 'ram_tipo'              => 'memoria unificada',
@@ -150,9 +150,9 @@ return [
             'bateria'      => [
                 'magsafe'      => 'MagSafe 3',
                 'wh'           => 72.4,
-                'video_h'      => 22,
+                'video_h'      => 20,
                 'video_fuente' => 'streaming',
-                'web_h'        => 14,
+                'web_h'        => 13,
                 'adaptador'    => 'USB‑C de 96 W',
                 'carga_rapida' => 'con el adaptador de corriente USB‑C de 96 W incluido',
             ],

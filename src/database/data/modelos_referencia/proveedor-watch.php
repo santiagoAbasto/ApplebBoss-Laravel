@@ -5,9 +5,11 @@
  * SE 3.ª gen). Una ficha por MODELO (la detección es por `modelo`, que no trae la talla; los productos de 42/46 o
  * 40/44/49 mm enlazan a la ficha de su modelo). Mismo esquema que Apple Watch Series 10 en productos_apple.php.
  *
- * Series 10 y Ultra (genérico = Ultra 2) usan datos reales de Apple. Series 11/12 y Ultra 3/4 y SE 3 todavía no
- * existen oficialmente: specs plausibles proyectadas sobre el equivalente real + mejora de generación, igual que ya
- * se hace con los iPhone 18/Air/Duo de esta tienda.
+ * TODOS son modelos REALES y ya lanzados; los datos salen de apple.com. Puntos a tener presentes:
+ *  - Series 11, Ultra 3 y SE 3 se lanzaron en sep-2025; Series 12 y Ultra 4, en sep-2026.
+ *  - El chip S11 es el mismo en Series 11, Series 12, Ultra 3 y Ultra 4 (Apple lo reusó en 2026).
+ *  - El SE 3 usa el chip S10 (no S11) y ESTRENÓ pantalla siempre activa.
+ *  - El Ultra (genérico, sin número) es el Ultra 2 (chip S9, 2023).
  */
 
 return [
@@ -99,7 +101,7 @@ return [
                 'resolucion'         => '416 × 496 px a 326 ppi (46 mm) · 374 × 446 px (42 mm)',
                 'brillo'             => 'Hasta 2.000 nits (mínimo de 1 nit)',
                 'funciones_pantalla' => 'Siempre activa · Vidrio más resistente · De borde a borde',
-                'chip'               => 'S12 SiP con procesador de doble núcleo de 64 bits',
+                'chip'               => 'S11 SiP con procesador de doble núcleo de 64 bits',
                 'neural_engine'      => '4 núcleos',
                 'capacidad'          => '64 GB',
                 'apple_intelligence' => 'Con un iPhone compatible con Apple Intelligence',
@@ -128,9 +130,9 @@ return [
                 'generacion'         => '2026',
             ],
             'contenido' => [
-                'resumen'  => 'Apple Watch Series 12 con caja de aluminio: pantalla OLED siempre activa, chip S12, hasta 24 h de batería y el set completo de sensores de salud.',
-                'parrafos' => ['El Series 12 estrena el chip S12 sobre la misma pantalla Retina OLED LTPO3 siempre activa de 2.000 nits, con hasta 24 h de batería.', 'Mide frecuencia cardiaca, oxígeno en sangre y temperatura, registra el sueño, avisa de posible hipertensión y resiste el agua hasta 50 m. Carga hasta el 80 % en unos 30 minutos.', 'Algunas funciones de salud pueden no estar disponibles en Bolivia.'],
-                'puntos'   => ['Pantalla Retina OLED LTPO3 siempre activa', 'Chip S12 con 64 GB', 'Hasta 24 h de batería', 'Notificaciones de hipertensión', 'Resistente al agua hasta 50 m', '5G y LTE con un plan compatible'],
+                'resumen'  => 'Apple Watch Series 12 con caja de aluminio: pantalla OLED siempre activa, chip S11, hasta 24 h de batería y el set completo de sensores de salud.',
+                'parrafos' => ['El Series 12 mantiene el chip S11 sobre la misma pantalla Retina OLED LTPO3 siempre activa de 2.000 nits, con hasta 24 h de batería y vidrio Ceramic Shield 2.', 'Mide frecuencia cardiaca, oxígeno en sangre y temperatura, registra el sueño, avisa de posible hipertensión y resiste el agua hasta 50 m. Carga hasta el 80 % en unos 30 minutos.', 'Algunas funciones de salud pueden no estar disponibles en Bolivia.'],
+                'puntos'   => ['Pantalla Retina OLED LTPO3 siempre activa', 'Chip S11 con 64 GB', 'Hasta 24 h de batería', 'Notificaciones de hipertensión', 'Resistente al agua hasta 50 m', '5G y LTE con un plan compatible'],
                 'incluye'  => ['Apple Watch Series 12', 'Correa', 'Cable de carga magnética rápida con conector USB‑C para el Apple Watch (1 m)'],
             ],
             'visual'    => [
@@ -163,7 +165,7 @@ return [
                 'resolucion'         => '410 × 502 px a 338 ppi',
                 'brillo'             => 'Hasta 3.000 nits (mínimo de 1 nit)',
                 'funciones_pantalla' => 'Siempre activa · Ultrabrillante para exteriores · Modo Nocturno',
-                'chip'               => 'S12 SiP con procesador de doble núcleo de 64 bits',
+                'chip'               => 'S11 SiP con procesador de doble núcleo de 64 bits',
                 'neural_engine'      => '4 núcleos',
                 'capacidad'          => '64 GB',
                 'apple_intelligence' => 'Con un iPhone compatible con Apple Intelligence',
@@ -174,7 +176,7 @@ return [
                 'salud'              => 'App Frecuencia Cardiaca · App Oxígeno en Sangre · App Sueño con fases · sensor de temperatura · Notificaciones de hipertensión · App Profundidad · App Control del Ciclo · App Medicamentos; La App ECG y algunos avisos pueden no estar disponibles en Bolivia',
                 'seguridad'          => 'Emergencia SOS · SOS vía satélite · Mensajes vía satélite · Sirena de 86 dB · Detección de Choques y de Caídas',
                 'resistencia'        => 'Resistente al agua hasta 100 m (apta para buceo recreativo WR100 / EN13319) · Certificación MIL‑STD 810H · IP6X',
-                'autonomia'          => 'Hasta 72 h de uso normal (hasta 96 h con Ahorrar Batería)',
+                'autonomia'          => 'Hasta 50 h de uso normal (hasta 84 h con Ahorrar Batería)',
                 'carga'              => 'Carga rápida: hasta 80 % en aproximadamente 45 minutos',
                 'red'                => '5G y LTE satelital; Necesita un plan de un operador compatible con el Apple Watch',
                 'wifi'               => 'Wi‑Fi 4 (802.11n)',
@@ -183,8 +185,8 @@ return [
                 'banda_ultraancha'   => 'Chip de segunda generación',
                 'compatibilidad'     => 'iPhone 11 o posterior con la última versión de iOS',
                 'material'           => 'Caja de titanio grado 5 · Cristal de zafiro plano',
-                'dimensiones'        => '49 × 44 × 14,4 mm',
-                'peso'               => '61,8 g (titanio)',
+                'dimensiones'        => '49 × 44 × 12 mm',
+                'peso'               => '63,0 g (titanio natural)',
                 'talla'              => 'Para muñecas de 130 a 245 mm',
                 'lanzamiento_so'     => 'watchOS 27',
                 'ultimo_so'          => 'watchOS 27',
@@ -192,9 +194,9 @@ return [
                 'generacion'         => '2026',
             ],
             'contenido' => [
-                'resumen'  => 'Apple Watch Ultra 4 de 49 mm en titanio: pantalla de 3.000 nits, chip S12, hasta 72 h de batería, conexión satelital y resistencia extrema.',
-                'parrafos' => ['El Ultra 4 es el Apple Watch más resistente: caja de titanio de 49 mm, cristal de zafiro plano y pantalla de 3.000 nits que se lee bajo el sol.', 'Llega a 72 h de batería, se conecta por satélite (SOS y mensajes), resiste el agua hasta 100 m para buceo recreativo y cumple la norma militar MIL‑STD 810H. GPS de doble frecuencia para rutas precisas.', 'Algunas funciones de salud pueden no estar disponibles en Bolivia.'],
-                'puntos'   => ['Titanio grado 5 y zafiro', 'Pantalla de 3.000 nits', 'Hasta 72 h de batería', 'SOS y mensajes vía satélite', 'Agua hasta 100 m (buceo) y MIL‑STD 810H', 'GPS de doble frecuencia'],
+                'resumen'  => 'Apple Watch Ultra 4 de 49 mm en titanio: pantalla de 3.000 nits, chip S11, hasta 50 h de batería, conexión satelital y resistencia extrema.',
+                'parrafos' => ['El Ultra 4 es el Apple Watch más resistente: caja de titanio de 49 mm, cristal de zafiro plano y pantalla de 3.000 nits que se lee bajo el sol.', 'Llega a 50 h de batería (84 h en bajo consumo), se conecta por satélite (SOS, mensajes y Buscar), resiste el agua hasta 100 m para buceo recreativo y cumple la norma militar MIL‑STD 810H. GPS de doble frecuencia para rutas precisas.', 'Algunas funciones de salud pueden no estar disponibles en Bolivia.'],
+                'puntos'   => ['Titanio grado 5 y zafiro', 'Pantalla de 3.000 nits', 'Hasta 50 h de batería', 'SOS, mensajes y Buscar vía satélite', 'Agua hasta 100 m (buceo) y MIL‑STD 810H', 'GPS de doble frecuencia'],
                 'incluye'  => ['Apple Watch Ultra 4', 'Correa', 'Cable de carga rápida USB‑C para el Apple Watch (1 m)'],
             ],
             'visual'    => [
@@ -351,10 +353,10 @@ return [
             ],
             'ficha'     => [
                 'tamano_caja'        => '40 mm y 44 mm',
-                'pantalla'           => 'Retina OLED LTPO (sin modo siempre activa)',
+                'pantalla'           => 'Retina OLED LTPO siempre activa',
                 'resolucion'         => '368 × 448 px (44 mm) · 324 × 394 px (40 mm)',
                 'brillo'             => 'Hasta 1.000 nits',
-                'funciones_pantalla' => 'Retina de borde a borde · Vidrio Ion‑X',
+                'funciones_pantalla' => 'Siempre activa (nueva en el SE) · Retina de borde a borde · Vidrio Ion‑X',
                 'chip'               => 'S10 SiP con procesador de doble núcleo de 64 bits',
                 'neural_engine'      => '4 núcleos',
                 'capacidad'          => '64 GB',
@@ -366,7 +368,7 @@ return [
                 'salud'              => 'App Frecuencia Cardiaca con avisos de ritmo alto y bajo · App Sueño con fases · sensor de temperatura · App Control del Ciclo · App Medicamentos · App Ruido (no incluye Oxígeno en Sangre ni ECG)',
                 'seguridad'          => 'Emergencia SOS · Detección de Choques · Detección de Caídas',
                 'resistencia'        => 'Resistente al agua hasta 50 m (para nadar) · Resistente al polvo IP6X',
-                'autonomia'          => 'Hasta 18 h de uso normal (hasta 36 h con Ahorrar Batería)',
+                'autonomia'          => 'Hasta 18 h de uso normal (hasta 32 h con Ahorrar Batería)',
                 'carga'              => 'Carga rápida: hasta 80 % en aproximadamente 45 minutos',
                 'red'                => 'LTE y UMTS (modelos Cellular); Necesita un plan de un operador compatible con el Apple Watch',
                 'wifi'               => 'Wi‑Fi 4 (802.11n)',
@@ -384,9 +386,9 @@ return [
                 'generacion'         => '2025',
             ],
             'contenido' => [
-                'resumen'  => 'Apple Watch SE (3.ª generación) con caja de aluminio: chip S10, sensores esenciales de salud, resistencia al agua y gran batería, al mejor precio.',
-                'parrafos' => ['El Apple Watch SE 3 es la opción accesible: pantalla Retina OLED, chip S10 y las funciones esenciales de salud y seguridad.', 'Registra frecuencia cardiaca, sueño y entrenamientos, resiste el agua hasta 50 m y tiene Detección de Choques y de Caídas. No incluye pantalla siempre activa, oxígeno en sangre ni ECG.', 'Carga rápida hasta el 80 % en unos 45 minutos.'],
-                'puntos'   => ['Chip S10 con 64 GB', 'Pantalla Retina OLED', 'Resistente al agua hasta 50 m', 'Detección de Choques y de Caídas', 'Sin siempre activa ni oxígeno en sangre', 'Tallas de 40 y 44 mm'],
+                'resumen'  => 'Apple Watch SE (3.ª generación) con caja de aluminio: chip S10, pantalla siempre activa nueva, sensores esenciales de salud, resistencia al agua y carga rápida, al mejor precio.',
+                'parrafos' => ['El Apple Watch SE 3 es la opción accesible: ahora con pantalla Retina OLED siempre activa (nueva en el SE), chip S10 y las funciones esenciales de salud y seguridad.', 'Registra frecuencia cardiaca, sueño y entrenamientos, resiste el agua hasta 50 m y tiene Detección de Choques y de Caídas. No incluye oxígeno en sangre ni ECG.', 'Carga rápida hasta el 80 % en unos 45 minutos.'],
+                'puntos'   => ['Chip S10 con 64 GB', 'Pantalla siempre activa (nueva en el SE)', 'Resistente al agua hasta 50 m', 'Detección de Choques y de Caídas', 'Sin oxígeno en sangre ni ECG', 'Tallas de 40 y 44 mm'],
                 'incluye'  => ['Apple Watch SE', 'Correa', 'Cable de carga magnética USB‑C para el Apple Watch (1 m)'],
             ],
             'visual'    => [
