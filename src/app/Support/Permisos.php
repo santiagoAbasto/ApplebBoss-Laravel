@@ -35,7 +35,7 @@ class Permisos
         'reportes'     => ['Reportes',             'Ventas y operación',  ['admin.reportes', 'admin.automation']],
         'clientes'     => ['Clientes',             'Ventas y operación',  ['admin.clientes']],
 
-        'inventario'   => ['Inventario',           'Inventario',          ['admin.celulares', 'admin.computadoras', 'admin.productos-apple', 'admin.productos-generales']],
+        'inventario'   => ['Inventario',           'Inventario',          ['admin.celulares', 'admin.computadoras', 'admin.productos-apple', 'admin.productos-generales', 'admin.proveedores']],
         'auditoria'    => ['Auditoría',            'Inventario',          ['admin.inventory-audits']],
 
         'trafico'      => ['Tráfico de la web',    'Tienda online',       ['admin.trafico']],

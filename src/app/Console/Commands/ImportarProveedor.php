@@ -34,10 +34,11 @@ class ImportarProveedor extends Command
 
     public function handle(): int
     {
-        $dir = $this->option('dir') ?: database_path('data/proveedores');
-        $archivos = glob(rtrim($dir, '/') . '/*.json');
+        $archivos = $this->option('dir')
+            ? (glob(rtrim($this->option('dir'), '/') . '/*.json') ?: [])
+            : self::listasVigentes();
         if (! $archivos) {
-            $this->error("No hay listas de proveedor en {$dir}");
+            $this->error('No hay listas de proveedor.');
             return self::FAILURE;
         }
 
@@ -268,5 +269,20 @@ class ImportarProveedor extends Command
             'chip', 'fisico', 'física', 'fisica', 'chip físico', 'chip fisico', 'physical' => 'fisico',
             default => null,
         };
+    }
+
+    /**
+     * Las listas vigentes: las de base (database/data/proveedores, vienen con la imagen) más las SUBIDAS por el dueño
+     * desde el panel (storage/app/proveedores, que persisten). Una subida reemplaza a la de base del mismo proveedor,
+     * por nombre de archivo (apple-land.json, planet-cell.json…).
+     *
+     * @return list<string>
+     */
+    public static function listasVigentes(): array
+    {
+        $base = collect(glob(database_path('data/proveedores/*.json')) ?: [])->keyBy(fn ($f) => basename($f));
+        $subidas = collect(glob(storage_path('app/proveedores/*.json')) ?: [])->keyBy(fn ($f) => basename($f));
+
+        return $base->merge($subidas)->values()->all();
     }
 }

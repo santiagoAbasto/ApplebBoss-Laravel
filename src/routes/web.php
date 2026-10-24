@@ -356,6 +356,14 @@ Route::middleware(['auth', 'verified', 'permiso'])
             ->names('celulares')
             ->parameters(['celulares' => 'celular']);
 
+        // 📦 Listas de proveedor: subir Excel/PDF, ver vista previa y publicar (con el margen y el Bs al paralelo)
+        Route::controller(\App\Http\Controllers\Admin\ProveedorController::class)
+            ->prefix('proveedores')->name('proveedores.')->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::post('/previsualizar', 'previsualizar')->name('previsualizar');
+                Route::post('/aplicar', 'aplicar')->name('aplicar');
+            });
+
         // ========================
         // 💻 CRUD Computadoras
         // ========================

@@ -1,5 +1,5 @@
 import {
-  CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, Hammer, House, Images, Laptop,
+  CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, FileUp, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
   Plug, ShoppingCart, SlidersHorizontal, Smartphone, Star, Stethoscope, Store, Tablet, Tag, Truck, UserRound, Users, Wallet,
   Wrench,
@@ -30,6 +30,7 @@ const NAV = [
     { r: 'admin.computadoras.index', icon: Laptop, label: 'Computadoras', modulo: 'inventario' },
     { r: 'admin.productos-apple.index', icon: Tablet, label: 'Productos Apple', modulo: 'inventario' },
     { r: 'admin.productos-generales.index', icon: Package, label: 'Productos generales', modulo: 'inventario' },
+    { r: 'admin.proveedores.index', icon: FileUp, label: 'Listas de proveedor', modulo: 'inventario' },
     { r: 'admin.inventory-audits.index', icon: ClipboardCheck, label: 'Auditoría', modulo: 'auditoria' },
   ] },
   { key: 'tienda', label: 'Tienda online', items: [
