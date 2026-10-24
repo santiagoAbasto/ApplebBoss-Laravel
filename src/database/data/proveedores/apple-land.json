@@ -3,7 +3,7 @@
   "items": [
     {"tipo": "celular", "modelo": "iPhone 15", "capacidad": "128 GB", "sim": "chip", "colores": ["Azul", "Negro"], "usd": 640},
     {"tipo": "celular", "modelo": "iPhone 16", "capacidad": "128 GB", "sim": "chip", "colores": ["Blanco", "Rosado", "Negro", "Teal", "Azul"], "usd": 740},
-    {"tipo": "celular", "modelo": "iPhone 17", "capacidad": "256 GB", "sim": "chip", "colores": ["Lila", "Negro", "Verde", "Azul", "Blanco"], "usd": 930},
+    {"tipo": "celular", "modelo": "iPhone 17", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Lila", "Negro", "Verde", "Azul", "Blanco"], "usd": 930},
     {"tipo": "celular", "modelo": "iPhone 17 Air", "capacidad": "256 GB", "sim": "eSIM", "colores": [], "usd": 920},
     {"tipo": "celular", "modelo": "iPhone 17 Pro", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Cosmic", "Deep"], "usd": 1150},
     {"tipo": "celular", "modelo": "iPhone 17 Pro", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Silver"], "usd": 1190},
