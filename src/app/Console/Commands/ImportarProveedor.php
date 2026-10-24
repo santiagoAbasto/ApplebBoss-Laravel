@@ -103,7 +103,9 @@ class ImportarProveedor extends Command
             return self::SUCCESS;
         }
 
-        // Reconstruir: borrar los de proveedor DISPONIBLES (derivados de las listas) y volver a crearlos; los vendidos no se tocan
+        // Reconstruir: borrar los de proveedor DISPONIBLES (derivados de las listas) y volver a crearlos; los vendidos no se tocan.
+        // Antes de borrar, guardar las fotos que cargó el dueño para volver a colgarlas de la tarjeta equivalente.
+        $fotos = $this->capturarFotos();
         $this->limpiarDisponibles();
 
         $creados = 0;
@@ -145,10 +147,81 @@ class ImportarProveedor extends Command
             $creados++;
         }
 
+        $this->restaurarFotos($fotos);
+
         $this->newLine();
         $this->info("Listo. Tarjetas publicadas: {$creados}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Guarda las fotos de los productos de proveedor DISPONIBLES antes de reconstruirlos, por el título de la tarjeta
+     * SIN el sufijo de SIM. Los archivos en disco no se tocan (el borrado es en bloque, sin eventos): solo se pierden
+     * los registros, que se recrean en restaurarFotos(). Así el dueño no pierde las fotos que subió al re-importar.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function capturarFotos(): array
+    {
+        $fotos = [];
+        foreach (self::MODELOS as $tipo => $clase) {
+            $ids = $clase::where('es_proveedor', true)->where('estado', 'disponible')->pluck('id');
+            if ($ids->isEmpty()) {
+                continue;
+            }
+            $pubs = CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $ids)->with('imagenes')->get();
+            foreach ($pubs as $pub) {
+                if ($pub->imagenes->isEmpty()) {
+                    continue;
+                }
+                $fotos[$this->claveFoto($pub->titulo)] = $pub->imagenes->map(fn ($img) => collect($img->getAttributes())->only([
+                    'nombre_original', 'ruta_original', 'ruta_thumb', 'ruta_card', 'ruta_medium', 'ruta_detail', 'alt', 'orden', 'es_principal', 'metadata',
+                ])->all())->all();
+            }
+        }
+
+        return $fotos;
+    }
+
+    /** Vuelve a colgar las fotos guardadas de la tarjeta de proveedor cuyo título (sin el SIM) coincide. */
+    private function restaurarFotos(array $fotos): void
+    {
+        if (! $fotos) {
+            return;
+        }
+        $ok = 0;
+        foreach (self::MODELOS as $tipo => $clase) {
+            $ids = $clase::where('es_proveedor', true)->where('estado', 'disponible')->pluck('id');
+            if ($ids->isEmpty()) {
+                continue;
+            }
+            $pubs = CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $ids)->get();
+            foreach ($pubs as $pub) {
+                $imgs = $fotos[$this->claveFoto($pub->titulo)] ?? null;
+                if (! $imgs || $pub->imagenes()->exists()) {
+                    continue;
+                }
+                foreach ($imgs as $img) {
+                    $pub->imagenes()->create($img);
+                }
+                $ok++;
+            }
+        }
+        if ($ok) {
+            $this->info("Fotos re-enlazadas a {$ok} tarjetas (no se pierden al re-importar).");
+        }
+    }
+
+    /**
+     * Clave de una tarjeta para re-enlazar fotos: el título sin el sufijo « · eSIM» o « · Chip físico». Así una foto
+     * subida antes de separar físico/eSIM se vuelve a colgar de las dos tarjetas (es el mismo equipo).
+     */
+    private function claveFoto(?string $titulo): string
+    {
+        $t = preg_replace('/\s*·\s*(eSIM|Chip f[ií]sico)\s*$/u', '', (string) $titulo);
+
+        return mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $t)));
     }
 
     /** @param \Illuminate\Support\Collection $grupo filas de color */

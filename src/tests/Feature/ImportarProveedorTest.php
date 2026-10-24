@@ -71,6 +71,26 @@ class ImportarProveedorTest extends TestCase
         $this->assertSame(2, Celular::where('es_proveedor', true)->where('modelo', 'iPhone 18 Pro Max')->count());
     }
 
+    public function test_las_fotos_del_dueno_no_se_pierden_al_re_importar(): void
+    {
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        // El dueño sube una foto a una tarjeta de proveedor
+        $pub = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail();
+        $pub->imagenes()->create([
+            'nombre_original' => 'foto.jpg',
+            'ruta_original'   => 'catalogo/foto-16.jpg',
+            'orden'           => 0,
+            'es_principal'    => true,
+        ]);
+
+        // Re-importar borra y recrea los productos, pero la foto se re-engancha a la tarjeta equivalente
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        $pub2 = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail();
+        $this->assertSame('catalogo/foto-16.jpg', $pub2->imagenes()->first()?->ruta_original);
+    }
+
     public function test_el_chip_fisico_y_el_esim_son_tarjetas_distintas(): void
     {
         $dir = sys_get_temp_dir() . '/provsim_' . uniqid();
