@@ -61,20 +61,20 @@ final class GeneradorDescripcion
 
         $frases = [];
         if ($tipo === 'celular') {
-            if ($x = $v('tamano_pantalla')) $frases[] = 'pantalla de ' . $x;
-            if ($x = $v('chip')) $frases[] = 'chip ' . $x;
-            if ($x = $v('camara_principal', 'sistema_camaras')) $frases[] = 'cámara principal de ' . Str::limit($x, 40, '');
-            if ($x = $v('bateria_mah', 'autonomia')) $frases[] = 'batería de ' . $x;
+            if ($x = self::limpio($v('tamano_pantalla'))) $frases[] = 'pantalla de ' . $x;
+            if ($x = self::limpio($v('chip'))) $frases[] = 'chip ' . $x;
+            if ($x = self::limpio($v('camara_principal', 'sistema_camaras'))) $frases[] = 'cámara de ' . $x;
+            if ($x = self::limpio($v('bateria_mah', 'autonomia'))) $frases[] = 'batería de ' . $x;
         } elseif ($tipo === 'computadora') {
-            if ($x = $v('chip', 'procesador')) $frases[] = 'chip ' . $x;
-            if ($x = $v('tamano_pantalla', 'pantalla')) $frases[] = 'pantalla ' . Str::limit($x, 40, '');
-            if ($x = $v('ram', 'memoria')) $frases[] = $x . ' de memoria';
-            if ($x = $v('almacenamiento')) $frases[] = $x . ' de almacenamiento';
+            if ($x = self::limpio($v('chip', 'procesador'))) $frases[] = 'chip ' . $x;
+            if ($x = self::limpio($v('tamano_pantalla', 'pantalla'))) $frases[] = 'pantalla ' . $x;
+            if ($x = self::limpio($v('ram', 'memoria'))) $frases[] = $x . ' de memoria';
+            if ($x = self::limpio($v('almacenamiento'))) $frases[] = $x . ' de almacenamiento';
         } elseif ($tipo === 'producto_apple') {
-            if ($x = $v('chip')) $frases[] = 'chip ' . $x;
-            if ($x = $v('tamano_pantalla', 'pantalla')) $frases[] = 'pantalla ' . Str::limit($x, 40, '');
-            if ($x = $v('capacidad', 'almacenamiento')) $frases[] = $x;
-            if ($x = $v('autonomia')) $frases[] = $x . ' de autonomía';
+            if ($x = self::limpio($v('chip'))) $frases[] = 'chip ' . $x;
+            if ($x = self::limpio($v('tamano_pantalla', 'pantalla'))) $frases[] = 'pantalla ' . $x;
+            if ($x = self::limpio($v('capacidad', 'almacenamiento'))) $frases[] = $x;
+            if ($x = self::limpio($v('autonomia'))) $frases[] = $x . ' de autonomía';
         }
 
         if (! $frases) {
@@ -82,6 +82,18 @@ final class GeneradorDescripcion
         }
 
         return 'Destaca por su ' . self::unir($frases) . '.';
+    }
+
+    /** Toma el primer segmento legible de una spec (antes de · , ( o ;) y lo acorta, para que la frase no quede larga. */
+    private static function limpio(?string $x): ?string
+    {
+        if (! $x) {
+            return null;
+        }
+        $x = trim((string) preg_split('/\s*[·,(;]/u', $x)[0]);
+        $x = rtrim($x, " \t.·-");
+
+        return $x !== '' ? Str::limit($x, 36, '') : null;
     }
 
     private static function unir(array $frases): string
