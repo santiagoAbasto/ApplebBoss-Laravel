@@ -19,7 +19,7 @@ return [
         'familia'    => 'ipad',
         'nombre'     => 'iPad (A16) Wi‑Fi',
         'slug'       => 'ipad-a16-wifi',
-        'alias'      => ['IPAD A16', 'IPAD A16 WIFI'],
+        'alias'      => ['IPAD A16', 'IPAD A16 WIFI', 'iPad (11.ª generación)', 'IPAD 11MA GEN', 'IPAD 11VA', 'IPAD 11 GENERACION'],
         'pendientes' => [],
         'datos'      => [
             'sistema'   => [
