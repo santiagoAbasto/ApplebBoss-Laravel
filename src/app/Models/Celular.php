@@ -27,6 +27,7 @@ class Celular extends Model
         'marca',
         'capacidad',
         'color',
+        'sim',
         'bateria',
         'imei_1',
         'imei_2',

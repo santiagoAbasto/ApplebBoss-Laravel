@@ -8,6 +8,7 @@ import {
 import StoreLayout, { StoreContainer, useStoreCart, useWhatsApp, useUsdt } from '@/Layouts/StoreLayout';
 import ProductCard from '@/Components/Store/ProductCard';
 import ProductVisual from '@/Components/Store/ProductVisual';
+import GuiaEsim from '@/Components/Store/GuiaEsim';
 import { BateriaNivel, FichaTecnica, porcentajeBateria, valorCorto, valorDe } from '@/Components/Store/fichaTecnica';
 import { useNombreTienda } from '@/Components/Store/tienda';
 
@@ -452,6 +453,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
     const compatibilidades = product.compatibilidades ?? {};
     const hasCompat = Object.keys(compatibilidades).length > 0;
     const hasSpecs = Object.keys(product.atributos ?? {}).length > 0;
+    const esEsim = product.atributos?.sim === 'eSIM';
 
     // Construir secciones dinámicas
     const sections = [
@@ -460,6 +462,7 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
         { id: 'compatibilidad',   label: 'Compatibilidad',     show: hasCompat },
         { id: 'condicion',        label: 'Condición',          show: product.condition && product.condition !== 'Nuevo' },
         { id: 'incluye',          label: '¿Qué incluye?',      show: !!product.que_incluye },
+        { id: 'esim',             label: 'Activar eSIM',       show: esEsim },
         { id: 'garantia',         label: 'Garantía',           show: !!product.garantia },
         { id: 'entrega',          label: 'Entrega',            show: true },
         { id: 'faq',              label: 'Preguntas',          show: faqs.length > 0 },
@@ -849,6 +852,13 @@ function ProductInner({ product, related, crossSell, faqs = [] }) {
                                 </div>
                             ))}
                         </div>
+                    </PdpSection>
+                )}
+
+                {/* Cómo activar el eSIM (solo celulares con chip virtual) */}
+                {esEsim && (
+                    <PdpSection id="esim" title="¿Cómo activar tu eSIM?">
+                        <GuiaEsim />
                     </PdpSection>
                 )}
 

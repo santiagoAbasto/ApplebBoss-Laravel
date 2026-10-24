@@ -49,7 +49,7 @@ class ImportarProveedor extends Command
             foreach ($data['items'] ?? [] as $it) {
                 $entradas->push([
                     'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
-                    'colores' => $it['colores'] ?? [], 'usd' => (float) $it['usd'], 'sim' => $it['sim'] ?? null, 'proveedor' => $prov,
+                    'colores' => $it['colores'] ?? [], 'usd' => (float) $it['usd'], 'sim' => self::normalizarSim($it['sim'] ?? null), 'proveedor' => $prov,
                 ]);
             }
         }
@@ -123,6 +123,7 @@ class ImportarProveedor extends Command
             if ($c['tipo'] === 'celular') {
                 $datos['marca'] = Marcas::detectar($c['modelo']);
                 $datos['estado_imei'] = 'libre';
+                $datos['sim'] = $c['sim'] ?? null;
             }
             if ($c['tipo'] === 'computadora') {
                 // Una Mac usa `nombre` (no `modelo`) y `almacenamiento` (no `capacidad`).
@@ -135,10 +136,10 @@ class ImportarProveedor extends Command
             $reg = $clase::create($datos);
 
             $pub = InventarioCatalogo::crear($c['tipo'], $reg, 'Nuevo', true);
+            // El SIM ya lo pone InventarioCatalogo::atributos (desde el equipo) con su etiqueta pública; aquí solo lo propio.
             $extra = array_filter([
                 'capacidad' => $c['capacidad'] ?: null,
                 'color'     => $c['colores'] ? implode(', ', $c['colores']) : null,
-                'sim'       => $c['sim'] ?? null,
             ]);
             $pub->update(['atributos' => array_merge($pub->atributos ?? [], $extra), 'publicado' => true]);
             $creados++;
@@ -181,6 +182,18 @@ class ImportarProveedor extends Command
 
     private function clave(array $i): string
     {
-        return mb_strtolower(trim($i['tipo'] . '|' . $i['modelo'] . '|' . ($i['capacidad'] ?? '')));
+        // El SIM entra en la clave: un mismo modelo+capacidad con chip físico y con eSIM son DOS productos (distinto
+        // precio, distinta activación), nunca se agrupan ni se comparan en precio entre sí.
+        return mb_strtolower(trim($i['tipo'] . '|' . $i['modelo'] . '|' . ($i['capacidad'] ?? '') . '|' . ($i['sim'] ?? '')));
+    }
+
+    /** El tipo de SIM de la lista a un valor fijo: 'esim', 'fisico' o null (no lo dice). */
+    private static function normalizarSim(?string $valor): ?string
+    {
+        return match (mb_strtolower(trim((string) $valor))) {
+            'esim', 'e-sim', 'virtual' => 'esim',
+            'chip', 'fisico', 'física', 'fisica', 'chip físico', 'chip fisico', 'physical' => 'fisico',
+            default => null,
+        };
     }
 }

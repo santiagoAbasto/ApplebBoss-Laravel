@@ -70,4 +70,38 @@ class ImportarProveedorTest extends TestCase
         $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
         $this->assertSame(2, Celular::where('es_proveedor', true)->where('modelo', 'iPhone 18 Pro Max')->count());
     }
+
+    public function test_el_chip_fisico_y_el_esim_son_tarjetas_distintas(): void
+    {
+        $dir = sys_get_temp_dir() . '/provsim_' . uniqid();
+        mkdir($dir);
+        // El chip físico se paga más caro que el eSIM; son dos productos distintos del mismo modelo+capacidad.
+        file_put_contents($dir . '/x.json', json_encode(['proveedor' => 'Apple Land', 'items' => [
+            ['tipo' => 'celular', 'modelo' => 'iPhone 17', 'capacidad' => '256 GB', 'sim' => 'chip', 'colores' => ['Negro'], 'usd' => 930],
+            ['tipo' => 'celular', 'modelo' => 'iPhone 17', 'capacidad' => '256 GB', 'sim' => 'eSIM', 'colores' => ['Negro'], 'usd' => 880],
+        ]]));
+
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $dir])->assertExitCode(0);
+
+        // Mismo modelo y capacidad, pero chip físico y eSIM NO se mezclan: dos productos, cada uno con su precio.
+        $phones = Celular::where('es_proveedor', true)->where('modelo', 'iPhone 17')->get();
+        $this->assertCount(2, $phones);
+        $this->assertSame(['esim', 'fisico'], $phones->pluck('sim')->sort()->values()->all());
+
+        $esim = $phones->firstWhere('sim', 'esim');
+        $fisico = $phones->firstWhere('sim', 'fisico');
+        $this->assertSame(930.0, $fisico->costo_usd);
+        $this->assertSame(880.0, $esim->costo_usd);
+
+        // El tipo de SIM aparece en el título y en los atributos públicos de cada tarjeta.
+        $pubEsim = CatalogoPublicacion::where('producto_tipo', 'celular')->where('producto_id', $esim->id)->first();
+        $pubFisico = CatalogoPublicacion::where('producto_tipo', 'celular')->where('producto_id', $fisico->id)->first();
+        $this->assertStringContainsString('eSIM', $pubEsim->titulo);
+        $this->assertStringContainsString('Chip físico', $pubFisico->titulo);
+        $this->assertSame('eSIM', $pubEsim->atributos['sim'] ?? null);
+        $this->assertSame('Chip físico', $pubFisico->atributos['sim'] ?? null);
+
+        array_map('unlink', glob($dir . '/*'));
+        @rmdir($dir);
+    }
 }

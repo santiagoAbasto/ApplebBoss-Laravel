@@ -203,6 +203,7 @@ class CelularController extends Controller
             'marca'        => ['required', Rule::in(array_keys(Marcas::MARCAS))],
             'capacidad'    => 'required|string|max:100',
             'color'        => 'required|string|max:100',
+            'sim'          => ['nullable', Rule::in(['fisico', 'esim'])],
             'bateria'      => 'nullable|string|max:100',
             'imei_1'       => array_values(array_filter([
                 'required',

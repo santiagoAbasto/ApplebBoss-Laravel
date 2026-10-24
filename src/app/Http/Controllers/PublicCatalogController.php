@@ -507,7 +507,7 @@ class PublicCatalogController extends Controller
     {
         $atributos = $pub->atributos ?? [];
         $specs = [];
-        foreach (['capacidad', 'color', 'ram', 'almacenamiento', 'chip', 'material', 'modelo_compatible'] as $campo) {
+        foreach (['capacidad', 'sim', 'color', 'ram', 'almacenamiento', 'chip', 'material', 'modelo_compatible'] as $campo) {
             if (! empty($atributos[$campo])) $specs[] = $atributos[$campo];
         }
         return array_slice($specs, 0, 4);

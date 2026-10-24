@@ -18,6 +18,11 @@ export const ESTADOS_IMEI = [
 
 export const CAPACIDADES = ['64 GB', '128 GB', '256 GB', '512 GB', '1 TB', '2 TB'];
 
+export const TIPOS_SIM = [
+  { value: 'fisico', label: 'Chip físico' },
+  { value: 'esim', label: 'eSIM' },
+];
+
 // "128", "128GB" y "128 GB" son lo mismo
 const clave = (v) => {
   const t = String(v ?? '').toLowerCase().replace(/\s+/g, '');
@@ -75,6 +80,7 @@ export function datosDesde(c) {
     condicion: c?.condicion ?? '',
     capacidad: c?.capacidad ?? '',
     color: c?.color ?? '',
+    sim: c?.sim ?? '',
     bateria_pct: bateria.pct != null ? String(bateria.pct) : '',
     sellado: bateria.sellado,
     imei_1: c?.imei_1 ?? '',
@@ -115,6 +121,7 @@ export const payloadDe = (d) => ({
   condicion: d.condicion || null,
   capacidad: d.capacidad.trim(),
   color: d.color.trim(),
+  sim: d.sim || null,
   bateria: d.sellado ? '100 SELLADO' : (d.bateria_pct !== '' ? String(Number(d.bateria_pct)) : null),
   imei_1: d.imei_1,
   imei_2: d.imei_2 || null,
@@ -247,6 +254,12 @@ export function CamposCelular({ form, sugerencias = {}, marcas = {}, pasos = fal
               onChange={(e) => cambiar('color', e.target.value)} />
           </Field>
 
+          <Field label="Tipo de SIM" error={errores.sim}
+            hint="Chip físico o eSIM (chip virtual). Cambia el precio y la tarjeta en la tienda. Opcional.">
+            <Segmented cols="grid-cols-2" options={TIPOS_SIM} value={data.sim} ariaLabel="Tipo de SIM"
+              onChange={(v) => cambiar('sim', data.sim === v ? '' : v)} />
+          </Field>
+
           <Field label="Salud de la batería" error={errores.bateria}
             hint={data.sellado ? 'Equipo nuevo en su caja sellada.' : 'En iPhone: Ajustes › Batería. Déjalo vacío si no se sabe.'}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -332,6 +345,7 @@ export function ResumenCelular({ data, titulo = 'Resumen', children }) {
 
         <dl className="space-y-1.5 text-sm">
           <Linea label="Condición" valor={data.condicion} />
+          <Linea label="Tipo de SIM" valor={TIPOS_SIM.find((o) => o.value === data.sim)?.label} />
           <Linea label="Batería" valor={bateria} />
           <Linea label="IMEI 1" valor={data.imei_1} mono />
           {data.imei_2 && <Linea label="IMEI 2" valor={data.imei_2} mono />}

@@ -205,7 +205,25 @@ class InventarioCatalogo
             default            => ['Producto'],
         };
 
-        return Str::limit(self::bonito(implode(' ', array_filter($partes, fn ($p) => self::util($p)))), 250, '');
+        $base = Str::limit(self::bonito(implode(' ', array_filter($partes, fn ($p) => self::util($p)))), 250, '');
+
+        // El tipo de SIM distingue dos celulares iguales de distinto precio (chip físico vs eSIM). Se agrega después de
+        // bonito() para no mangear «eSIM», y solo cuando está declarado (equipos viejos sin dato no cambian de título).
+        if ($tipo === 'celular' && ($sim = self::simLabel($m->sim ?? null)) !== '') {
+            $base = Str::limit($base, 230, '') . ' · ' . $sim;
+        }
+
+        return $base;
+    }
+
+    /** Etiqueta pública del tipo de SIM del celular. '' si no está declarado. */
+    public static function simLabel(?string $sim): string
+    {
+        return match (mb_strtolower(trim((string) $sim))) {
+            'esim', 'e-sim', 'esim virtual', 'virtual' => 'eSIM',
+            'fisico', 'física', 'fisica', 'chip', 'chip físico', 'chip fisico', 'physical' => 'Chip físico',
+            default => '',
+        };
     }
 
     public static function resumen(string $tipo, mixed $m): string
@@ -242,7 +260,7 @@ class InventarioCatalogo
         $disco = ModeloReferencia::gb($m->almacenamiento ?? null);
 
         $attrs = match ($tipo) {
-            'celular'          => ['capacidad' => $m->capacidad, 'color' => self::bonito($m->color), 'salud_bateria' => $bateria],
+            'celular'          => ['capacidad' => $m->capacidad, 'sim' => self::simLabel($m->sim ?? null), 'color' => self::bonito($m->color), 'salud_bateria' => $bateria],
             'computadora'      => [
                 'chip'           => $modelo?->chipDelEquipo($m->procesador ?? null) ?? self::bonito($m->procesador ?? ''),
                 'ram'            => $ram ? ($modelo ? TextosComputadora::memoria($ram, $modelo->datos) : "{$ram} GB") : null,
