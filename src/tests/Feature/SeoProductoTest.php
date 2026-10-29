@@ -73,4 +73,23 @@ class SeoProductoTest extends TestCase
         $this->artisan('seo:generar-productos --forzar')->assertSuccessful();
         $this->assertNotSame('Mi título', $aMano->refresh()->seo_title);
     }
+
+    public function test_al_compartir_en_redes_sale_la_foto_del_producto_y_su_titulo_propio(): void
+    {
+        config(['seo.public_url' => 'https://appleboss.com.bo']);
+        $pub = $this->publicar();
+        $pub->imagenes()->forceCreate(['nombre_original' => 'iphone-15.jpg', 'ruta_original' => 'catalogo/iphone-15.jpg', 'ruta_card' => 'catalogo/iphone-15.jpg', 'es_principal' => true, 'orden' => 0]);
+
+        $this->artisan('seo:generar-productos')->assertSuccessful();
+
+        $html = $this->get('/productos/' . $pub->slug)->assertOk()->getContent();
+
+        // La imagen del preview es la foto del propio producto (no la genérica de la empresa)
+        $this->assertMatchesRegularExpression('#<meta property="og:image" content="https://appleboss\.com\.bo/storage/catalogo/iphone-15\.jpg#', $html);
+        $this->assertStringContainsString('<meta name="twitter:card" content="summary_large_image"', $html);
+        // Título y descripción propios del producto
+        $this->assertStringContainsString('<meta property="og:title" content="' . e($pub->refresh()->seo_title) . '"', $html);
+        // El favicon de la empresa sigue siendo el global (no cambia por producto)
+        $this->assertStringContainsString('rel="icon" type="image/x-icon" href="' . asset('favicon.ico'), $html);
+    }
 }

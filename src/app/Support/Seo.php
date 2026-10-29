@@ -119,7 +119,7 @@ class Seo
         return [
             'title'       => Str::limit(strip_tags($title), 120, ''),
             'description' => $description ? Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($description))), 300, '…') : null,
-            'image'       => $image ? self::absolute($image) : null,
+            'image'       => $image ? self::enDominioOficial(self::absolute($image)) : null,
             'url'         => $propia,
             'canonical'   => $canonical,
             'robots'      => $noindex ? 'noindex,nofollow' : 'index,follow',
@@ -175,6 +175,22 @@ class Seo
     }
 
     /** Convierte rutas relativas o del disco public en URL absoluta. */
+    /**
+     * Pasa al dominio oficial una URL que apunta a nuestro propio host (APP_URL o el host de la petición), conservando
+     * ruta y ?v=. Así la og:image al compartir no queda en localhost ni en un túnel. Una URL externa (Google, etc.) no se toca.
+     */
+    private static function enDominioOficial(string $url): string
+    {
+        $oficial = rtrim(UrlPublica::de(), '/');
+        foreach ([config('app.url'), request()?->getSchemeAndHttpHost()] as $propio) {
+            $propio = $propio ? rtrim($propio, '/') : null;
+            if ($propio && $propio !== $oficial && Str::startsWith($url, $propio . '/')) {
+                return $oficial . Str::after($url, $propio);
+            }
+        }
+        return $url;
+    }
+
     public static function absolute(string $value): string
     {
         if (Str::startsWith($value, ['http://', 'https://'])) {
