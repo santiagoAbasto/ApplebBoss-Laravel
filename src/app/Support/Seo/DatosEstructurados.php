@@ -269,10 +269,13 @@ class DatosEstructurados
             'description' => $seo['description'] ?? null,
             'image'       => $seo['image'] ?? null,
             'brand'       => ['@type' => 'Brand', 'name' => 'Apple'],
+            // AggregateOffer necesita lowPrice Y highPrice (Google marca «falta highPrice» si no está). Si hay un solo
+            // precio, highPrice = lowPrice (válido). «hasta» sale de la oferta; si no vino, se usa «desde».
             'offers'      => [
                 '@type'         => 'AggregateOffer',
                 'priceCurrency' => 'BOB',
                 'lowPrice'      => number_format((float) $modelo['oferta']['desde'], 2, '.', ''),
+                'highPrice'     => number_format((float) ($modelo['oferta']['hasta'] ?? $modelo['oferta']['desde']), 2, '.', ''),
                 'offerCount'    => (int) $modelo['oferta']['unidades'],
                 'availability'  => 'https://schema.org/InStock',
                 'seller'        => ['@id' => UrlPublica::de() . '#tienda'],

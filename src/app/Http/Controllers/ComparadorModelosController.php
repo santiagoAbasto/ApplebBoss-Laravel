@@ -176,7 +176,7 @@ class ComparadorModelosController extends Controller
      * Lo publicado y disponible de cada modelo: cuántos hay, desde qué precio y en qué condición. En los equipos cuenta
      * las publicaciones (cada una es un equipo); en los accesorios, las unidades de todos sus artículos.
      *
-     * @return array<int, array{unidades: int, desde: float, condiciones: array, url: string}>
+     * @return array<int, array{unidades: int, desde: float, hasta: float, condiciones: array, url: string}>
      */
     public static function ofertas(Collection $modelos, string $categoria): array
     {
@@ -196,6 +196,9 @@ class ComparadorModelosController extends Controller
                 'desde'       => (float) $grupo->map(fn (CatalogoPublicacion $p) => $p->promocionActiva()
                     ? (float) $p->precio_promocional
                     : $p->precioVigente())->min(),
+                'hasta'       => (float) $grupo->map(fn (CatalogoPublicacion $p) => $p->promocionActiva()
+                    ? (float) $p->precio_promocional
+                    : $p->precioVigente())->max(),
                 'condiciones' => $grupo->pluck('condicion')->filter()->unique()->sort()->values()->all(),
                 'url'         => $grupo->count() === 1
                     ? route('store.product', $grupo->first()->slug)

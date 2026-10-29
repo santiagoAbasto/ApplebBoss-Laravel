@@ -59,7 +59,8 @@ class PaginaDeModeloTest extends TestCase
         $html = $respuesta->getContent();
         $this->assertStringContainsString('<title data-inertia>iPhone 14 Plus en Cochabamba: precio y ficha técnica</title>', $html);
         $this->assertMatchesRegularExpression('/<meta name="description" content="iPhone 14 Plus en Cochabamba desde Bs 4\.500: 1 disponible hoy/u', $html);
-        $this->assertStringContainsString('"@type":"AggregateOffer","priceCurrency":"BOB","lowPrice":"4500.00","offerCount":1', $html);
+        // AggregateOffer con lowPrice Y highPrice: Google marca «falta highPrice» si no está (con un solo equipo, iguales).
+        $this->assertStringContainsString('"@type":"AggregateOffer","priceCurrency":"BOB","lowPrice":"4500.00","highPrice":"4500.00","offerCount":1', $html);
         $this->assertStringContainsString('"name":"iPhone 14 Plus","item":"https://appleboss.com.bo/iphone/iphone-14-plus"', $html);
 
         // Sin JavaScript se lee la ficha y se llega al equipo publicado
@@ -71,6 +72,26 @@ class PaginaDeModeloTest extends TestCase
         foreach ([self::IMEI, '3111', 'IMPORTADORA SECRETA'] as $interno) {
             $this->assertStringNotContainsString($interno, $html);
         }
+    }
+
+    public function test_con_varios_equipos_el_rango_de_precio_va_de_menor_a_mayor(): void
+    {
+        $modelo = ModeloReferencia::where('slug', 'iphone-14-plus')->firstOrFail();
+        foreach ([[4500, '128 GB', 'azul'], [7200, '256 GB', 'negro']] as $i => [$precio, $cap, $color]) {
+            $celular = Celular::create([
+                'modelo' => mb_strtoupper($modelo->nombre), 'capacidad' => $cap, 'color' => mb_strtoupper($color), 'bateria' => '100',
+                'imei_1' => '35678901234567' . $i, 'estado_imei' => 'registrado', 'procedencia' => 'X',
+                'precio_costo' => 3000, 'precio_venta' => $precio, 'estado' => 'disponible', 'condicion' => 'Seminuevo',
+            ]);
+            CatalogoPublicacion::create([
+                'producto_tipo' => 'celular', 'producto_id' => $celular->id, 'storefront' => 'APPLE_BOSS', 'publicado' => true,
+                'titulo' => "{$modelo->nombre} {$cap} {$color}", 'slug' => "iphone-14-plus-{$i}", 'resumen' => 'Disponible.',
+                'condicion' => 'Seminuevo', 'categoria' => 'celulares', 'modelo_referencia_id' => $modelo->id,
+            ]);
+        }
+
+        $html = $this->get('/iphone/iphone-14-plus')->assertOk()->getContent();
+        $this->assertStringContainsString('"lowPrice":"4500.00","highPrice":"7200.00","offerCount":2', $html);
     }
 
     public function test_sin_stock_la_pagina_sigue_en_pie_y_no_inventa_una_oferta(): void
