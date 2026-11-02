@@ -18,6 +18,7 @@ function ConditionBadge({ condition }) {
     const styles = {
         Seminuevo: { bg: 'rgba(88,94,159,0.12)', color: '#28224F' },
         'Open Box': { bg: 'rgba(198,203,54,0.20)', color: '#3A3F00' },
+        Reacondicionado: { bg: 'rgba(16,122,87,0.14)', color: '#0B5E43' },
     };
 
     const style = styles[condition] ?? { bg: 'rgba(0,0,0,0.07)', color: '#55556A' };

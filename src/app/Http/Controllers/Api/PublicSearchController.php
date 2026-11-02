@@ -39,15 +39,17 @@ class PublicSearchController extends Controller
         $publicaciones = CatalogoPublicacion::with('imagenes')
             ->publicadoAhora()
             ->when($categoria && $categoria !== 'seminuevos', fn ($query) => $query->where('categoria', $categoria))
-            ->when($categoria === 'seminuevos', fn ($query) => $query->where('condicion', 'Seminuevo'))
+            ->when($categoria === 'seminuevos', fn ($query) => $query->whereIn('condicion', \App\Models\CatalogoPublicacion::USADAS))
             ->orderByDesc('destacado')
             ->latest('id')
             ->get();
 
         if (mb_strlen($q) >= 2) {
-            // Primero lo que coincide en el nombre; después lo que solo coincide en la ficha o la categoría.
+            // Coincide por PALABRAS (todas presentes, en cualquier orden), no por la frase exacta: así «magic keyboard
+            // 12.9» encuentra «Magic Keyboard para iPad Pro 12.9». Primero lo que coincide en el nombre; después lo que
+            // solo coincide en la ficha o la categoría.
             $publicaciones = $publicaciones
-                ->filter(fn (CatalogoPublicacion $pub) => Str::contains($this->textoDe($pub), $q))
+                ->filter(fn (CatalogoPublicacion $pub) => \App\Support\Catalogo\Busqueda::coincide($this->textoDe($pub), $q))
                 ->sortByDesc(fn (CatalogoPublicacion $pub) => match (true) {
                     Str::startsWith($this->normalizar($pub->titulo), $q) => 3,
                     Str::contains($this->normalizar($pub->titulo), $q)   => 2,

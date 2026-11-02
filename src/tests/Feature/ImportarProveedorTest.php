@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CatalogoPublicacion;
 use App\Models\Celular;
+use App\Models\ProductoApple;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -120,6 +121,27 @@ class ImportarProveedorTest extends TestCase
         $this->assertStringContainsString('Chip físico', $pubFisico->titulo);
         $this->assertSame('eSIM', $pubEsim->atributos['sim'] ?? null);
         $this->assertSame('Chip físico', $pubFisico->atributos['sim'] ?? null);
+
+        array_map('unlink', glob($dir . '/*'));
+        @rmdir($dir);
+    }
+
+    public function test_un_equipo_cpo_se_publica_como_reacondicionado_no_como_nuevo(): void
+    {
+        $dir = sys_get_temp_dir() . '/provcpo_' . uniqid();
+        mkdir($dir);
+        // CPO (Certified Pre-Owned) = reacondicionado certificado, NO nuevo. La condición de la lista manda.
+        file_put_contents($dir . '/x.json', json_encode(['proveedor' => 'Planet Cell', 'items' => [
+            ['tipo' => 'producto_apple', 'modelo' => 'Apple Watch Ultra', 'capacidad' => '49 mm', 'colores' => [], 'condicion' => 'Reacondicionado', 'usd' => 490],
+        ]]));
+
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $dir])->assertExitCode(0);
+
+        $reg = ProductoApple::where('es_proveedor', true)->where('modelo', 'Apple Watch Ultra')->firstOrFail();
+        $this->assertSame('Reacondicionado', $reg->condicion);
+
+        $pub = CatalogoPublicacion::where('producto_tipo', 'producto_apple')->where('producto_id', $reg->id)->firstOrFail();
+        $this->assertSame('Reacondicionado', $pub->condicion, 'la publicación muestra la condición real, no «Nuevo»');
 
         array_map('unlink', glob($dir . '/*'));
         @rmdir($dir);

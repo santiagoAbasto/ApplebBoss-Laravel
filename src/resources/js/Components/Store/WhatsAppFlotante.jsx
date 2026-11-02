@@ -7,8 +7,9 @@ import { useEffect, useRef, useState } from 'react';
  *   oficial. Antes se dibujaba el contorno, que a 28 px se veía delgado y sucio.
  * - **Se mueve, sin molestar:** entra con un rebote, respira con dos ondas, cada tanto hace un guiño que se apaga
  *   apenas el cliente lo toca o lo apunta, y una sola vez por visita abre una burbuja de saludo que se cierra sola.
- * - **Se frena en la línea del copyright:** al llegar al pie no se monta encima del texto ni de la barra de comparar;
- *   se queda apoyado justo arriba de esa línea (`data-tope-flotante`).
+ * - **Acompaña en toda la pantalla:** va fijo en la esquina y SOLO se levanta cuando una barra FIJA de abajo lo taparía
+ *   (la barra de compra de la ficha en celular o la de comparar). No sigue al pie de página (que va en el flujo), así no
+ *   se «trepa» al bajar: antes seguía al copyright y parecía que dejaba de acompañar al cliente.
  * - Con «reducir movimiento» del sistema queda quieto y sin ondas, pero se sigue viendo y usando igual.
  */
 
@@ -43,7 +44,11 @@ function useTope() {
 
         const medir = () => {
             pendiente = false;
+            // Solo barras FIJAS (position: fixed) cuentan como tope: la de compra de la ficha y la de comparar, que se
+            // quedan pegadas abajo y sí taparían el botón. El pie de página va en el flujo; si lo tomáramos, el botón se
+            // treparía siguiéndolo al hacer scroll y dejaría de acompañar en la esquina.
             const topes = [...document.querySelectorAll('[data-tope-flotante]')]
+                .filter((el) => getComputedStyle(el).position === 'fixed')
                 .map((el) => el.getBoundingClientRect().top)
                 .filter((t) => Number.isFinite(t));
             if (topes.length === 0) { setSubir(0); return; }

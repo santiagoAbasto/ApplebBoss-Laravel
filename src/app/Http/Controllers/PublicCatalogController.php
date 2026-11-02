@@ -125,8 +125,8 @@ class PublicCatalogController extends Controller
 
         $products = $all
             ->when($query, fn (Collection $items) => $items->filter(
-                fn ($p) => Str::contains(
-                    Str::lower(implode(' ', array_filter([$p['name'], $p['category_label'], ...$p['specs']]))),
+                fn ($p) => \App\Support\Catalogo\Busqueda::coincide(
+                    implode(' ', array_filter([$p['name'], $p['category_label'], ...$p['specs']])),
                     $query
                 )
             ))

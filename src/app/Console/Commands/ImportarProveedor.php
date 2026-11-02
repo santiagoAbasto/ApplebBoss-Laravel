@@ -51,6 +51,8 @@ class ImportarProveedor extends Command
                 $entradas->push([
                     'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
                     'colores' => $it['colores'] ?? [], 'usd' => (float) $it['usd'], 'sim' => self::normalizarSim($it['sim'] ?? null), 'proveedor' => $prov,
+                    // Condición de la lista: casi todo es 'Nuevo'; un equipo marcado CPO (Certified Pre-Owned) entra como 'Reacondicionado'.
+                    'condicion' => $it['condicion'] ?? 'Nuevo',
                 ]);
             }
         }
@@ -68,6 +70,7 @@ class ImportarProveedor extends Command
                     $porColor->push([
                         'tipo' => $barato['tipo'], 'modelo' => $barato['modelo'], 'capacidad' => $barato['capacidad'],
                         'color' => $color, 'usd' => (float) $barato['usd'], 'sim' => $barato['sim'], 'proveedor' => $barato['proveedor'],
+                        'condicion' => $barato['condicion'] ?? 'Nuevo',
                     ]);
                 }
             }
@@ -120,7 +123,7 @@ class ImportarProveedor extends Command
             $colorUnico = count($c['colores']) === 1 ? $c['colores'][0] : '';
             $datos = [
                 'modelo' => $c['modelo'], 'capacidad' => $c['capacidad'], 'color' => $colorUnico, 'bateria' => '',
-                'procedencia' => $c['proveedor'], 'estado' => 'disponible', 'condicion' => 'Nuevo',
+                'procedencia' => $c['proveedor'], 'estado' => 'disponible', 'condicion' => $c['condicion'] ?? 'Nuevo',
                 'es_proveedor' => true, 'proveedor' => $c['proveedor'], 'costo_usd' => $c['usd'],
             ];
             if ($c['tipo'] === 'celular') {
@@ -138,7 +141,7 @@ class ImportarProveedor extends Command
             }
             $reg = $clase::create($datos);
 
-            $pub = InventarioCatalogo::crear($c['tipo'], $reg, 'Nuevo', true);
+            $pub = InventarioCatalogo::crear($c['tipo'], $reg, $c['condicion'] ?? 'Nuevo', true);
             // El SIM ya lo pone InventarioCatalogo::atributos (desde el equipo) con su etiqueta pública; aquí solo lo propio.
             $extra = array_filter([
                 'capacidad' => $c['capacidad'] ?: null,
@@ -237,6 +240,7 @@ class ImportarProveedor extends Command
             'usd'       => (float) $caro['usd'],
             'proveedor' => $caro['proveedor'],
             'sim'       => $caro['sim'] ?? null,
+            'condicion' => $caro['condicion'] ?? 'Nuevo',
             'colores'   => $grupo->pluck('color')->filter()->unique()->values()->all(),
         ];
     }

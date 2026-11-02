@@ -67,6 +67,7 @@ function FilterPanel({ categories, filters, onClose }) {
                         { value: 'Nuevo', label: 'Nuevo' },
                         { value: 'Seminuevo', label: 'Seminuevo' },
                         { value: 'Open Box', label: 'Open Box' },
+                        { value: 'Reacondicionado', label: 'Reacondicionado' },
                     ].map(({ value, label }) => (
                         <button
                             key={value}
@@ -203,7 +204,7 @@ function CatalogInner({ products, categories, categoria, filters, pagination }) 
         || filters.condition !== 'todos' || filters.priceMin > 0 || filters.priceMax > 0;
 
     const conditionLabel = {
-        todos: null, Nuevo: 'Nuevo', Seminuevo: 'Seminuevo', 'Open Box': 'Open Box',
+        todos: null, Nuevo: 'Nuevo', Seminuevo: 'Seminuevo', 'Open Box': 'Open Box', Reacondicionado: 'Reacondicionado',
     };
 
     return (

@@ -20,7 +20,7 @@
     {"tipo": "producto_apple", "modelo": "Apple TV 4K", "capacidad": "64 GB", "colores": [], "usd": 140},
     {"tipo": "producto_apple", "modelo": "AirPods 4 con cancelación activa de ruido", "capacidad": "", "colores": [], "usd": 190},
     {"tipo": "producto_apple", "modelo": "AirPods (2.ª generación)", "capacidad": "", "colores": [], "usd": 120},
-    {"tipo": "producto_apple", "modelo": "Apple Watch Ultra", "capacidad": "49 mm", "colores": [], "usd": 490},
+    {"tipo": "producto_apple", "modelo": "Apple Watch Ultra", "capacidad": "49 mm", "colores": [], "condicion": "Reacondicionado", "usd": 490},
     {"tipo": "producto_apple", "modelo": "Apple Watch Series 11", "capacidad": "46 mm", "colores": ["Negro"], "usd": 420},
     {"tipo": "producto_apple", "modelo": "Apple Watch Series 11", "capacidad": "42 mm", "colores": ["Gold Pink"], "usd": 390},
     {"tipo": "producto_apple", "modelo": "Apple Pencil Pro", "capacidad": "", "colores": [], "usd": 140},

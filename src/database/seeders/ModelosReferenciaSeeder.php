@@ -23,6 +23,9 @@ use RuntimeException;
  */
 class ModelosReferenciaSeeder extends Seeder
 {
+    /** Modelos que ya no se consiguen: se cargan pero quedan inactivos (fuera del comparador y las páginas de modelo). */
+    public const OCULTOS = ['iphone-14', 'iphone-16e'];
+
     /** Todas las fichas de los archivos de datos, en orden. */
     public static function modelos(): array
     {
@@ -96,7 +99,9 @@ class ModelosReferenciaSeeder extends Seeder
             ModeloReferencia::updateOrCreate(
                 ['slug' => $modelo['slug']],
                 Arr::only($modelo, ['tipo', 'familia', 'nombre', 'alias', 'specs', 'datos', 'anio', 'autonomia_video_horas'])
-                    + ['orden' => $orden, 'activo' => true],
+                    // Los modelos de OCULTOS quedan inactivos: fuera del comparador y de las páginas de modelo (ya no se
+                    // consiguen). El resto, activos. Antes el seeder forzaba true y no se podía ocultar ninguno.
+                    + ['orden' => $orden, 'activo' => ! in_array($modelo['slug'] ?? '', self::OCULTOS, true)],
             );
         }
     }

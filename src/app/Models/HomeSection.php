@@ -105,7 +105,7 @@ class HomeSection extends Model
             'category_products'  => \App\Support\Catalogo\OrdenModelo::aplicar($disponibles->where('is_myskin', false)->where('category', $settings['categoria'] ?? '')),
             'product_collection' => self::enOrdenDeColeccion($disponibles, $coleccion),
             'myskin'             => $disponibles->where('is_myskin', true)->sortByDesc('id')->values(),
-            'semiused'           => $disponibles->whereIn('condition', ['Seminuevo', 'Open Box'])->sortByDesc('id')->values(),
+            'semiused'           => $disponibles->whereIn('condition', \App\Models\CatalogoPublicacion::USADAS)->sortByDesc('id')->values(),
             'new_arrivals'       => $disponibles->sortByDesc('id')->values(),
             'offers'             => $disponibles->whereNotNull('promo_price')->sortByDesc('id')->values(),
             default              => collect(),

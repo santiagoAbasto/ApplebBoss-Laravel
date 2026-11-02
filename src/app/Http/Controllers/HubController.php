@@ -17,7 +17,7 @@ class HubController extends Controller
         $all      = $this->publicaciones();
         // Orden «como Apple»: modelo más nuevo primero y, dentro del modelo, más capacidad primero.
         $nuevos   = OrdenModelo::aplicar($all->where('category', 'celulares')->where('condition', 'Nuevo'));
-        $usados   = OrdenModelo::aplicar($all->where('category', 'celulares')->whereIn('condition', ['Seminuevo', 'Open Box']));
+        $usados   = OrdenModelo::aplicar($all->where('category', 'celulares')->whereIn('condition', \App\Models\CatalogoPublicacion::USADAS));
         $myskin   = $all->where('is_myskin', true)->take(4)->values();
 
         $modelos = $nuevos->merge($usados)
@@ -69,7 +69,7 @@ class HubController extends Controller
     public function seminuevos(): Response
     {
         $all      = $this->publicaciones();
-        $sem      = $all->whereIn('condition', ['Seminuevo', 'Open Box'])->values();
+        $sem      = $all->whereIn('condition', \App\Models\CatalogoPublicacion::USADAS)->values();
         $celulares = OrdenModelo::aplicar($sem->where('category', 'celulares'))->take(8)->values();
         $mac       = $sem->where('category', 'computadoras')->take(4)->values();
         $otros     = $sem->whereNotIn('category', ['celulares', 'computadoras'])->take(4)->values();
@@ -90,7 +90,7 @@ class HubController extends Controller
 
         return Inertia::render('Store/Hubs/Mac', [
             'nuevas'  => $macs->where('condition', 'Nuevo')->take(8)->values(),
-            'usadas'  => $macs->whereIn('condition', ['Seminuevo', 'Open Box'])->take(8)->values(),
+            'usadas'  => $macs->whereIn('condition', \App\Models\CatalogoPublicacion::USADAS)->take(8)->values(),
             'total'   => $macs->count(),
             'fichas'  => self::paginasDeModelos('mac'),
         ]);

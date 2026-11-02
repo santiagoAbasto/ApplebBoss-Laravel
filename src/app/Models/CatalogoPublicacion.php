@@ -97,6 +97,10 @@ class CatalogoPublicacion extends Model
     // Condiciones permitidas
     public const CONDICIONES = ['Nuevo', 'Seminuevo', 'Open Box', 'Reacondicionado'];
 
+    /** Las condiciones «usadas» (no nuevas). Van juntas en las vitrinas de seminuevos y al navegar usados, para que
+     *  un reacondicionado (CPO) no se pierda ni quede fuera de donde el cliente busca equipos que no son nuevos. */
+    public const USADAS = ['Seminuevo', 'Open Box', 'Reacondicionado'];
+
     /**
      * Datos de inventario cargados en lote (precargarInventario). No se guardan en la base.
      * Evita una consulta por producto al listar cientos de publicaciones.

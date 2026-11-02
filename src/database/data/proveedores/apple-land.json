@@ -66,8 +66,8 @@
     {"tipo": "producto_apple", "modelo": "Magic Keyboard para iPad Air (M3/M4)", "capacidad": "", "colores": [], "usd": 345},
     {"tipo": "producto_apple", "modelo": "Magic Keyboard para iPad Pro 11 (M4/M5)", "capacidad": "", "colores": [], "usd": 365},
 
-    {"tipo": "producto_apple", "modelo": "iPad (11.ª generación)", "capacidad": "128 GB", "colores": ["Plata", "Rosa", "Amarillo", "Azul"], "usd": 470},
-    {"tipo": "producto_apple", "modelo": "iPad (11.ª generación)", "capacidad": "256 GB", "colores": ["Plata", "Rosa", "Amarillo", "Azul"], "usd": 560},
+    {"tipo": "producto_apple", "modelo": "iPad (A16)", "capacidad": "128 GB", "colores": ["Plata", "Rosa", "Amarillo", "Azul"], "usd": 470},
+    {"tipo": "producto_apple", "modelo": "iPad (A16)", "capacidad": "256 GB", "colores": ["Plata", "Rosa", "Amarillo", "Azul"], "usd": 560},
     {"tipo": "producto_apple", "modelo": "iPad Air de 13 pulgadas (M3)", "capacidad": "128 GB", "colores": ["Negro"], "usd": 750},
     {"tipo": "producto_apple", "modelo": "iPad Air de 11 pulgadas (M4)", "capacidad": "128 GB", "colores": ["Lila", "Negro", "Azul", "Starlight"], "usd": 780},
     {"tipo": "producto_apple", "modelo": "iPad Air de 11 pulgadas (M4)", "capacidad": "256 GB", "colores": ["Lila", "Negro", "Azul", "Starlight"], "usd": 890},
