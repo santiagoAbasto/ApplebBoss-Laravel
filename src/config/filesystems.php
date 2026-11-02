@@ -47,6 +47,17 @@ return [
             'report' => false,
         ],
 
+        // Listas de proveedor (Panel → Listas de proveedor). Disco propio con raíz en storage/app, para que no dependa
+        // del disco por defecto (en producción quedó en 'google', sin driver, y reventaba la subida) y para escribir el
+        // .json exactamente donde ImportarProveedor::listasVigentes() lo lee: storage/app/proveedores. throw=true porque
+        // es una herramienta de admin: un fallo de escritura debe verse, no quedar en silencio.
+        'proveedores' => [
+            'driver' => 'local',
+            'root' => storage_path('app'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

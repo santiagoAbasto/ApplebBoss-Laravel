@@ -21,6 +21,10 @@ class ProveedorController extends Controller
 {
     private const TEMP = 'proveedores-temp';
 
+    // Disco propio (raíz storage/app): no usar el disco por defecto, que en producción quedó en 'google' sin driver y
+    // reventaba la subida. Escribe el .json en storage/app/proveedores, que es donde ImportarProveedor lo lee.
+    private const DISK = 'proveedores';
+
     public function index()
     {
         return Inertia::render('Admin/Proveedores/Index', [
@@ -39,8 +43,8 @@ class ProveedorController extends Controller
             'archivo.max'   => 'El archivo no puede pesar más de 10 MB.',
         ]);
 
-        $token = $request->file('archivo')->store(self::TEMP);
-        $leido = LectorLista::leer(Storage::path($token));
+        $token = $request->file('archivo')->store(self::TEMP, self::DISK);
+        $leido = LectorLista::leer(Storage::disk(self::DISK)->path($token));
         $cotejo = Cotejo::preparar($leido['items'], self::listaActual($datos['proveedor']));
 
         return Inertia::render('Admin/Proveedores/Index', [
@@ -65,22 +69,22 @@ class ProveedorController extends Controller
         ]);
 
         // El token tiene que ser un temporal nuestro que exista (no una ruta arbitraria).
-        if (! str_starts_with($datos['token'], self::TEMP . '/') || ! Storage::exists($datos['token'])) {
+        if (! str_starts_with($datos['token'], self::TEMP . '/') || ! Storage::disk(self::DISK)->exists($datos['token'])) {
             return back()->with('error', 'El archivo de la vista previa venció. Súbelo de nuevo.');
         }
 
-        $leido = LectorLista::leer(Storage::path($datos['token']));
+        $leido = LectorLista::leer(Storage::disk(self::DISK)->path($datos['token']));
         $cotejo = Cotejo::preparar($leido['items'], self::listaActual($datos['proveedor']));
         if (! $cotejo['items']) {
             return back()->with('error', 'No se reconoció ningún producto en el archivo.');
         }
 
         $slug = Str::slug($datos['proveedor']) ?: 'proveedor';
-        Storage::put("proveedores/{$slug}.json", json_encode(
+        Storage::disk(self::DISK)->put("proveedores/{$slug}.json", json_encode(
             ['proveedor' => $datos['proveedor'], 'items' => $cotejo['items']],
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         ));
-        Storage::delete($datos['token']);
+        Storage::disk(self::DISK)->delete($datos['token']);
 
         $codigo = Artisan::call('catalogo:importar-proveedor');
         if ($codigo !== 0) {
