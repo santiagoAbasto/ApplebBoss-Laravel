@@ -437,7 +437,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
         ? { initial: false }
         : { initial: { opacity: 0, ...desde }, animate: { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0, rotateX: 0 }, transition: { duration: 1.1, delay: retraso, ease: SUAVE } });
 
-    const boton = 'inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm';
+    const boton = 'inline-flex h-12 items-center gap-2 rounded-full px-5 text-sm sm:px-6';
     const lugares = ancha ? LUGARES_ANCHA : LUGARES_MOVIL;
 
     const bloqueTexto = (
@@ -466,7 +466,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                 </AnimatePresence>
             </div>
 
-            <motion.div {...entra(0.3, { y: 16 })} className={`mt-7 flex flex-wrap items-center gap-3 ${ancha ? '' : 'justify-center'}`}>
+            <motion.div {...entra(0.3, { y: 16 })} className={`mt-5 flex flex-wrap items-center gap-3 sm:mt-7 ${ancha ? '' : 'justify-center'}`}>
                 <motion.a {...destino(ctaUrl)} whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}
                     className={`${boton} font-black shadow-[0_16px_36px_-14px_rgba(198,203,54,0.75)]`} style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}>
                     {cmsSettings.cta_label || 'Ver catálogo'} <ArrowRight className="h-4 w-4" />
@@ -490,12 +490,17 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
     );
 
     const pestanas = (
-        <motion.div {...entra(ancha ? 0.6 : 1.1, { y: 16 })} className={`relative z-30 flex max-w-full items-center gap-2 overflow-x-auto px-1 pb-1 ${ancha ? 'mt-6' : 'mt-6 self-stretch'}`}
+        <motion.div {...entra(ancha ? 0.6 : 1.1, { y: 16 })} className={`relative z-30 flex max-w-full flex-wrap items-center gap-2 pb-1 ${ancha ? 'mt-6 px-1' : 'mt-5 self-stretch justify-center px-1'}`}
             >
-            <div role="tablist" aria-label="Destacados por categoría" className="flex shrink-0 items-center gap-2">
-            {laminas.map((l, i) => {
+            {/* En celular los chips se centran y MYSKIN baja a su propia fila centrada (iPhone·Mac·Más Apple arriba,
+                MYSKIN al medio abajo): nunca se corta ni lo tapa el WhatsApp. En computadora van en línea, a la izquierda. */}
+            <div role="tablist" aria-label="Destacados por categoría" className={`flex flex-wrap items-center gap-2 ${ancha ? '' : 'w-full justify-center'}`}>
+            {laminas.flatMap((l, i) => {
                 const esta = i === activa;
-                return (
+                // Salto de línea antes de MYSKIN (el 4.º) en celular: queda solo y centrado debajo de los otros tres.
+                const salto = (! ancha && i === 3) ? [<div key={`salto-${l.clave}`} className="basis-full" aria-hidden="true" />] : [];
+                return [
+                    ...salto,
                     <button key={l.clave} type="button" role="tab" aria-selected={esta} onClick={() => setActiva(i)}
                         className="relative shrink-0 overflow-hidden rounded-full border px-4 py-2 text-[13px] font-bold backdrop-blur transition-colors"
                         style={esta ? { background: tinta, color: tema.oscuro ? '#011446' : '#fff', borderColor: tinta } : vidrio}>
@@ -507,11 +512,11 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                                 transition={{ duration: corre ? DURACION : 0, ease: 'linear' }}
                                 onAnimationComplete={() => { if (corre) ir(1); }} />
                         )}
-                    </button>
-                );
+                    </button>,
+                ];
             })}
             </div>
-            {!quieto && (
+            {!quieto && ancha && (
                 <button type="button" onClick={() => setEnPausa((p) => !p)} aria-label={enPausa ? 'Seguir pasando los destacados' : 'Pausar los destacados'}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-full border backdrop-blur" style={vidrio}>
                     {enPausa ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -554,7 +559,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
     return (
         <section ref={seccion} aria-label="Portada" onPointerMove={mover} onPointerLeave={() => { mx.set(0); my.set(0); }} onKeyDown={teclas}
             className="relative isolate overflow-hidden"
-            style={{ background: tema.fondo, minHeight: ancha ? 'calc(100svh - var(--alto-header, 170px))' : undefined }}>
+            style={{ background: tema.fondo, minHeight: 'calc(100svh - var(--alto-header, 170px))' }}>
 
             {/* ── Luces de fondo: toman el color de la lámina y se mueven despacio ── */}
             <motion.div aria-hidden="true" className="pointer-events-none absolute -z-10 rounded-full blur-[120px]"
@@ -603,7 +608,7 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                 /* Computadora: la columna del texto arranca donde arranca el resto de la página; la MacBook, entera, a la derecha */
                 <div className="relative grid items-center gap-10 py-10"
                     style={{
-                        minHeight: 'inherit', gridTemplateColumns: 'minmax(0, 0.66fr) minmax(0, 1.34fr)',
+                        minHeight: 'inherit', gridTemplateColumns: 'minmax(0, 0.82fr) minmax(0, 1.18fr)',
                         paddingLeft: 'max(40px, calc((100vw - 1224px) / 2 + 40px))',
                         paddingRight: 'max(32px, calc((100vw - 1224px) / 2 - 40px))',
                     }}>
@@ -614,10 +619,10 @@ export default function HeroMac({ featured = [], totalAvailable = 0, cmsSettings
                     {escenario}
                 </div>
             ) : (
-                <div className="relative flex flex-col items-center px-4 pb-10 pt-8 sm:px-7 md:px-10">
+                <div className="relative flex min-h-[inherit] flex-col items-center justify-center px-4 pb-6 pt-4 sm:px-7 md:px-10">
                     {bloqueTexto}
-                    <div className="mt-10 w-full max-w-[760px]">{escenario}</div>
-                    <div className="mt-12 flex w-full max-w-[420px] justify-center">
+                    <div className="mt-4 w-[74%] max-w-[400px]">{escenario}</div>
+                    <div className="mt-4 flex w-full max-w-[400px] justify-center">
                         <Destacado lamina={lamina} producto={productos[activa]} quieto={quieto} vidrio={vidrio} tinta={tinta} tintaSuave={tintaSuave} fotoPantalla={foto} />
                     </div>
                     {pestanas}

@@ -400,7 +400,7 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                         {/* Menú — celular y tablet, a la derecha */}
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
-                            className="grid h-11 w-11 place-items-center rounded-full transition-colors active:bg-black/10 [@media(hover:hover)]:hover:bg-black/5 lg:hidden"
+                            className="grid h-11 w-11 place-items-center rounded-full transition-colors active:bg-black/10 [@media(hover:hover)]:hover:bg-black/5 xl:hidden"
                             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
                             aria-expanded={menuOpen}
                             style={{ color: 'var(--text-primary)' }}
@@ -411,8 +411,9 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                 </StoreContainer>
             </div>
 
-            {/* Category mega menu — full width bg, container content */}
-            <div className="hidden border-t lg:block" style={{ borderColor: 'var(--border-light)' }}>
+            {/* Category mega menu — full width bg, container content. Solo a ≥1280 (xl): a 1024 no entran todos los ítems
+                y la barra se corta, así que ahí va la hamburguesa. */}
+            <div className="hidden border-t xl:block" style={{ borderColor: 'var(--border-light)' }}>
                 <StoreContainer className="flex items-center">
                     {headerItems.map((item) => (
                         <MegaMenuItem key={item.href} item={item} />
@@ -447,7 +448,7 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
             {menuOpen && (
                 <nav
                     aria-label="Menú principal"
-                    className="max-h-[calc(100dvh-110px)] overflow-y-auto border-t lg:hidden"
+                    className="max-h-[calc(100dvh-110px)] overflow-y-auto border-t xl:hidden"
                     style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}
                 >
                     <StoreContainer className="pb-5 pt-2">
