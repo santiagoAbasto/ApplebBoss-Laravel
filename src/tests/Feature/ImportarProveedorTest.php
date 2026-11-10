@@ -92,6 +92,26 @@ class ImportarProveedorTest extends TestCase
         $this->assertSame('catalogo/foto-16.jpg', $pub2->imagenes()->first()?->ruta_original);
     }
 
+    public function test_la_foto_sigue_al_equipo_aunque_la_tarjeta_cambie_de_titulo(): void
+    {
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        // La tarjeta común del 18 Pro Max (Negro/Silver, sin color en el título) tiene foto
+        $comun = Celular::where('es_proveedor', true)->where('modelo', 'iPhone 18 Pro Max')->where('color', '')->firstOrFail();
+        CatalogoPublicacion::where('producto_tipo', 'celular')->where('producto_id', $comun->id)->firstOrFail()
+            ->imagenes()->create(['nombre_original' => 'f.jpg', 'ruta_original' => 'catalogo/18pm.jpg', 'orden' => 0, 'es_principal' => true]);
+
+        // La lista nueva trae solo el Negro: la tarjeta pasa a llamarse «… Negro» y la foto la sigue
+        file_put_contents($this->dir . '/a.json', json_encode(['proveedor' => 'Apple Land', 'items' => [
+            ['tipo' => 'celular', 'modelo' => 'iPhone 18 Pro Max', 'capacidad' => '256 GB', 'sim' => 'eSIM', 'colores' => ['Negro'], 'usd' => 1500],
+        ]]));
+        unlink($this->dir . '/b.json');
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        $pub = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 18 Pro Max%Negro%')->firstOrFail();
+        $this->assertSame('catalogo/18pm.jpg', $pub->imagenes()->first()?->ruta_original);
+    }
+
     public function test_el_chip_fisico_y_el_esim_son_tarjetas_distintas(): void
     {
         $dir = sys_get_temp_dir() . '/provsim_' . uniqid();

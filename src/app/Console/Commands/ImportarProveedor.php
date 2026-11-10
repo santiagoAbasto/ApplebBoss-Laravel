@@ -169,52 +169,83 @@ class ImportarProveedor extends Command
     private function capturarFotos(): array
     {
         $fotos = [];
-        foreach (self::MODELOS as $tipo => $clase) {
-            $ids = $clase::where('es_proveedor', true)->where('estado', 'disponible')->pluck('id');
-            if ($ids->isEmpty()) {
+        foreach ($this->tarjetasDeProveedor(true) as [$pub, $reg]) {
+            if ($pub->imagenes->isEmpty()) {
                 continue;
             }
-            $pubs = CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $ids)->with('imagenes')->get();
-            foreach ($pubs as $pub) {
-                if ($pub->imagenes->isEmpty()) {
-                    continue;
-                }
-                $fotos[$this->claveFoto($pub->titulo)] = $pub->imagenes->map(fn ($img) => collect($img->getAttributes())->only([
+            $fotos[] = [
+                'titulo' => $this->claveFoto($pub->titulo),
+                'equipo' => $this->claveEquipo($reg),
+                'imgs'   => $pub->imagenes->map(fn ($img) => collect($img->getAttributes())->only([
                     'nombre_original', 'ruta_original', 'ruta_thumb', 'ruta_card', 'ruta_medium', 'ruta_detail', 'alt', 'orden', 'es_principal', 'metadata',
-                ])->all())->all();
-            }
+                ])->all())->all(),
+            ];
         }
 
         return $fotos;
     }
 
-    /** Vuelve a colgar las fotos guardadas de la tarjeta de proveedor cuyo título (sin el SIM) coincide. */
+    /**
+     * Vuelve a colgar las fotos guardadas: primero de la tarjeta con el mismo título (sin el SIM). Si una tarjeta con
+     * foto cambió de título (p. ej. ahora dice su único color), su foto pasa a las tarjetas del mismo equipo
+     * (modelo + capacidad) que se quedaron sin foto, para que el dueño no pierda lo que subió.
+     */
     private function restaurarFotos(array $fotos): void
     {
         if (! $fotos) {
             return;
         }
+        $tarjetas = $this->tarjetasDeProveedor(false);
+        $titulos = array_flip(array_map(fn ($t) => $this->claveFoto($t[0]->titulo), $tarjetas));
+
+        $porTitulo = [];
+        $huerfanas = [];   // equipo => fotos de una tarjeta cuyo título ya no existe
+        foreach ($fotos as $f) {
+            $porTitulo[$f['titulo']] = $f['imgs'];
+            if (! isset($titulos[$f['titulo']])) {
+                $huerfanas[$f['equipo']] ??= $f['imgs'];
+            }
+        }
+
         $ok = 0;
-        foreach (self::MODELOS as $tipo => $clase) {
-            $ids = $clase::where('es_proveedor', true)->where('estado', 'disponible')->pluck('id');
-            if ($ids->isEmpty()) {
+        foreach ($tarjetas as [$pub, $reg]) {
+            $imgs = $porTitulo[$this->claveFoto($pub->titulo)] ?? $huerfanas[$this->claveEquipo($reg)] ?? null;
+            if (! $imgs || $pub->imagenes()->exists()) {
                 continue;
             }
-            $pubs = CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $ids)->get();
-            foreach ($pubs as $pub) {
-                $imgs = $fotos[$this->claveFoto($pub->titulo)] ?? null;
-                if (! $imgs || $pub->imagenes()->exists()) {
-                    continue;
-                }
-                foreach ($imgs as $img) {
-                    $pub->imagenes()->create($img);
-                }
-                $ok++;
+            foreach ($imgs as $img) {
+                $pub->imagenes()->create($img);
             }
+            $ok++;
         }
         if ($ok) {
             $this->info("Fotos re-enlazadas a {$ok} tarjetas (no se pierden al re-importar).");
         }
+    }
+
+    /** @return list<array{0: CatalogoPublicacion, 1: \Illuminate\Database\Eloquent\Model}> las tarjetas de proveedor disponibles con su equipo */
+    private function tarjetasDeProveedor(bool $conImagenes): array
+    {
+        $lista = [];
+        foreach (self::MODELOS as $tipo => $clase) {
+            $regs = $clase::where('es_proveedor', true)->where('estado', 'disponible')->get()->keyBy('id');
+            if ($regs->isEmpty()) {
+                continue;
+            }
+            $pubs = CatalogoPublicacion::where('producto_tipo', $tipo)->whereIn('producto_id', $regs->keys())
+                ->when($conImagenes, fn ($q) => $q->with('imagenes'))->get();
+            foreach ($pubs as $pub) {
+                $lista[] = [$pub, $regs[$pub->producto_id]];
+            }
+        }
+
+        return $lista;
+    }
+
+    /** El equipo sin color ni SIM: «iphone 18 pro|256 gb». */
+    private function claveEquipo($reg): string
+    {
+        return mb_strtolower(trim(($reg->modelo ?? $reg->nombre) . '|' . ($reg->capacidad ?? $reg->almacenamiento)));
     }
 
     /**

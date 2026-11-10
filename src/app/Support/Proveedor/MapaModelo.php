@@ -121,6 +121,7 @@ final class MapaModelo
             str_contains($t, 'max') && str_contains($t, '2026') => 'AirPods Max (USB-C) 2026',
             str_contains($t, 'max')                             => 'AirPods Max (USB-C)',
             (bool) preg_match('/pro\s*3|3\s*(ra|era)?\s*gen/u', $t) => 'AirPods Pro 3',
+            (bool) preg_match('/\b5\s*(ta|a)?\b/u', $t)         => 'AirPods 5',
             str_contains($t, '4') && str_contains($t, 'con')    => 'AirPods 4 con cancelación activa de ruido',
             str_contains($t, '4')                               => 'AirPods 4',
             (bool) preg_match('/2\s*(da|nd)?\s*gen/u', $t)       => 'AirPods (2.ª generación)',
@@ -170,7 +171,7 @@ final class MapaModelo
             str_contains($t, 'pro') && str_contains($t, '11')                            => 'iPad Pro de 11 pulgadas (M5)',
             str_contains($t, 'air') && str_contains($t, '13')                            => 'iPad Air de 13 pulgadas (M3)',
             str_contains($t, 'air') && str_contains($t, '11')                            => 'iPad Air de 11 pulgadas (M4)',
-            (bool) preg_match('/\ba16\b|11\s*va|11\.?a/u', $t)                            => 'iPad (11.ª generación)',
+            (bool) preg_match('/\ba16\b|11\s*va|11\.?a/u', $t)                            => 'iPad (A16)', // el mismo equipo que «iPad (11.ª generación)»: un solo nombre
             (bool) preg_match('/10\s*(th|ma)/u', $t)                                      => 'iPad (10.ª generación)',
             default                                                                       => null,
         };

@@ -40,6 +40,11 @@ class ExportController extends Controller
             ]);
         }
 
+        // dompdf guarda todo el documento en memoria (~0,19 MB por fila): 1.424 productos rondan 380 MB y el límite
+        // general es 512. Solo para estos PDF del panel se le da más aire (el servidor tiene ~3 GB libres).
+        // ponytail: si el inventario pasa de ~4.000 filas, paginar el PDF o exportar a Excel.
+        ini_set('memory_limit', '1024M');
+
         return $pdf->stream($filename);
     }
 

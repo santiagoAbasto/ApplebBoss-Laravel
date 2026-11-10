@@ -137,7 +137,7 @@
 <body>
 
   <div class="brand">
-    <img src="{{ public_path('images/logo.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">
+    <img src="{{ public_path('images/pdf/logo.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">
   </div>
 
   <h1 class="title-top">APPLE BOSS</h1>
@@ -163,6 +163,10 @@
 </h2>
 
 
+{{-- dompdf arma en memoria la grilla de cada tabla entera: con 1.400 filas en una sola pasaba los 512 MB y daba error 500.
+     En bloques de 100 filas cada tabla se cierra antes de la siguiente; el encabezado se repite y el # sigue corrido. --}}
+@php $fila = 0; @endphp
+@foreach($productos->chunk(100) as $bloque)
 <table>
   <thead>
   <tr>
@@ -223,9 +227,9 @@
   </tr>
 </thead>
   <tbody>
-  @foreach($productos as $p)
+  @foreach($bloque as $p)
     <tr>
-      <td>{{ $loop->iteration }}</td>
+      <td>{{ ++$fila }}</td>
 
       @if($tipo === 'celular')
         <td>{{ $p->modelo }}</td>
@@ -288,6 +292,7 @@
 
   </tbody>
 </table>
+@endforeach
 
 @php
   $valorInvertido = $productos->sum('precio_costo');
@@ -313,7 +318,7 @@
 
   <div class="firma">
     <div class="firma-box">
-      <img src="{{ public_path('images/firma.png') }}" alt="Firma de {{ $tienda['nombre'] ?? 'Apple Boss' }}">
+      <img src="{{ public_path('images/pdf/firma.png') }}" alt="Firma de {{ $tienda['nombre'] ?? 'Apple Boss' }}">
 
       <div style="height: 20px;"></div>
 
@@ -325,13 +330,13 @@
   <footer>
     <div class="footer-left">
       @if (! empty($tienda['telefono']))
-        <p><img src="{{ public_path('images/icon-phone.png') }}" alt=""> {{ $tienda['telefono'] }}</p>
+        <p><img src="{{ public_path('images/pdf/icon-phone.png') }}" alt=""> {{ $tienda['telefono'] }}</p>
       @endif
-      <p><img src="{{ public_path('images/icon-instagram.png') }}" alt=""> @apple_boss_bol</p>
-      <p><img src="{{ public_path('images/icon-facebook.png') }}" alt=""> Apple Boss</p>
-      <p><img src="{{ public_path('images/icon-tiktok.png') }}" alt=""> @apple_boss_bo</p>
+      <p><img src="{{ public_path('images/pdf/icon-instagram.png') }}" alt=""> @apple_boss_bol</p>
+      <p><img src="{{ public_path('images/pdf/icon-facebook.png') }}" alt=""> Apple Boss</p>
+      <p><img src="{{ public_path('images/pdf/icon-tiktok.png') }}" alt=""> @apple_boss_bo</p>
       @if (! empty($tienda['direccion']))
-        <p><img src="{{ public_path('images/icon-location.png') }}" alt=""> {{ $tienda['direccion'] }}</p>
+        <p><img src="{{ public_path('images/pdf/icon-location.png') }}" alt=""> {{ $tienda['direccion'] }}</p>
       @endif
     </div>
     <div class="footer-right">
