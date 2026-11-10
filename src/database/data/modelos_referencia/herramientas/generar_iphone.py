@@ -209,7 +209,7 @@ TRECE = mezclar(DOCE, {
     'frontal': {'dolby_vision_fps': 60, 'hdr_fotos': 'HDR Inteligente 4', 'retrato': CP_ENFOQUE, 'estilos_fotograficos': ESTILOS, 'modo_cine': CINE},
     'bateria': {'video_h': 19, 'streaming_h': 15, 'magsafe_w': 15},
     'conectividad': {'sim': DOBLE_ESIM},
-    'diseno': {'grosor_mm': 7.65, 'peso_g': 174, 'colores': ['Verde', 'Rosa', 'Azul', 'Medianoche', 'Blanco estrella', '(PRODUCT)RED'],
+    'diseno': {'grosor_mm': 7.65, 'peso_g': 174, 'colores': ['(PRODUCT)RED', 'Blanco estelar', 'Medianoche', 'Azul', 'Rosa', 'Verde'],
                'capacidades_gb': [128, 256, 512]},
     'sistema': {'anio': 2021, 'ios_lanzamiento': 'iOS 15', 'ios_maximo': None, 'numeros_modelo': None},
 })
@@ -345,7 +345,7 @@ DIECISEIS_PLUS = mezclar(QUINCE_PLUS, {
     'bateria': {'video_h': 27, 'streaming_h': 24, 'magsafe_w': 25, 'qi_w': None, 'carga_rapida_magsafe': '50 % en 35 min', 'carga_rapida_magsafe_w': 30},
     'conectividad': {'wifi': X['conectividad']['wifi'].replace('5', '7'), 'thread': True},
     'diseno': {'alto_mm': 160.9, 'ancho_mm': 77.8, 'grosor_mm': 7.8, 'peso_g': 199, 'boton_accion': True, 'control_camara': True,
-               'colores': ['Azul ultramar', 'Verde azulado', 'Rosa', 'Blanco', 'Negro']},
+               'colores': ['Negro', 'Blanco', 'Rosa', 'Verde azulado', 'Ultramarino']},
     'sistema': {'anio': 2024, 'ios_lanzamiento': 'iOS 18', 'apple_intelligence': True},
 })
 DIECISEIS_E = mezclar(DIECISEIS_PLUS, {
@@ -421,7 +421,7 @@ DIECISIETE = mezclar(DIECISEIS, {
                 'carga_rapida_magsafe': '50 % en 30 min', 'carga_rapida_magsafe_w': 30},
     'conectividad': {'bluetooth': '6', 'gnss': GNSS_DOBLE},
     'diseno': {'frente': CERAMIC_2, 'alto_mm': 149.6, 'ancho_mm': 71.5, 'grosor_mm': 7.95, 'peso_g': 177,
-               'colores': ['Lavanda', 'Verde salvia', 'Azul neblina', 'Blanco', 'Negro'], 'capacidades_gb': [256, 512]},
+               'colores': ['Negro', 'Blanco', 'Azul neblina', 'Salvia', 'Lavanda'], 'capacidades_gb': [256, 512]},
     'sistema': {'anio': 2025, 'ios_lanzamiento': 'iOS 26'},
 })
 AIR = mezclar(DIECISIETE, {
@@ -442,7 +442,7 @@ DIECISIETE_E = mezclar(DIECISEIS_E, {
     'camaras': {'retrato': RETRATOS},
     'frontal': {'retrato': RETRATOS},
     'bateria': {'magsafe_w': 15, 'qi2': True, 'qi_w': None},
-    'diseno': {'frente': CERAMIC_2, 'peso_g': 170, 'colores': ['Rosa palo', 'Blanco', 'Negro'], 'capacidades_gb': [256, 512]},
+    'diseno': {'frente': CERAMIC_2, 'peso_g': 170, 'colores': ['Negro', 'Blanco', 'Rosa pálido'], 'capacidades_gb': [256, 512]},
     'sistema': {'anio': 2026, 'ios_lanzamiento': 'iOS 26'},
 })
 
@@ -459,7 +459,7 @@ DIECISIETE_PRO = mezclar(DIECISEIS_PRO, {
                 'carga_rapida_magsafe': '50 % en 30 min', 'carga_rapida_magsafe_w': 30},
     'conectividad': {'bluetooth': '6', 'gnss': GNSS_DOBLE},
     'diseno': {'estructura': 'Unibody de aluminio', 'frente': CERAMIC_2, 'dorso': 'Ceramic Shield', 'alto_mm': 150.0, 'ancho_mm': 71.9,
-               'grosor_mm': 8.75, 'peso_g': 204, 'colores': ['Naranja cósmico', 'Azul oscuro', 'Plata'], 'capacidades_gb': [256, 512, 1024]},
+               'grosor_mm': 8.75, 'peso_g': 204, 'colores': ['Plata', 'Naranja cósmico', 'Azul profundo'], 'capacidades_gb': [256, 512, 1024]},
     'sistema': {'anio': 2025, 'ios_lanzamiento': 'iOS 26'},
 })
 DIECISIETE_PRO_MAX = mezclar(DIECISIETE_PRO, {
@@ -484,7 +484,7 @@ DIECIOCHO_PRO = mezclar(DIECISIETE_PRO, {
     'frontal': {'estilos_fotograficos': ESTILOS_3, 'enfoque_inteligente': True, 'poca_luz': True, 'efectos_cine': True, 'time_lapse': TIME_LAPSE},
     'bateria': {'video_h': 34, 'streaming_h': 31, 'carga_rapida': '50 % en unos 15 min', 'carga_rapida_w': 60,
                 'carga_rapida_voltaje_ajustable': True, 'carga_rapida_magsafe': '50 % en 30 min', 'carga_rapida_magsafe_w': 35},
-    'diseno': {'grosor_mm': 8.75, 'peso_g': 211, 'colores': ['Burdeos', 'Azul glacial', 'Plata', 'Negro'], 'capacidades_gb': [256, 512, 1024, 2048]},
+    'diseno': {'grosor_mm': 8.75, 'peso_g': 211, 'colores': ['Negro', 'Plata', 'Glaciar', 'Borgoña'], 'capacidades_gb': [256, 512, 1024, 2048]},
     'sistema': {'anio': 2026, 'ios_lanzamiento': 'iOS 27'},
 })
 DIECIOCHO_PRO_MAX = mezclar(DIECIOCHO_PRO, {

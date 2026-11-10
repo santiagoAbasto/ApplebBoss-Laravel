@@ -5,9 +5,11 @@ namespace App\Console\Commands;
 use App\Models\CatalogoPublicacion;
 use App\Models\Celular;
 use App\Models\Computadora;
+use App\Models\ModeloReferencia;
 use App\Models\ProductoApple;
 use App\Support\Celulares\Marcas;
 use App\Support\InventarioCatalogo;
+use App\Support\Proveedor\Colores;
 use Illuminate\Console\Command;
 
 /**
@@ -37,7 +39,13 @@ class ImportarProveedor extends Command
      * columna de precio y su foto, y el cliente lo busca como color aparte. Pegado al negro/plata/azul quedaba escondido
      * detrás de la foto de los otros (pasó el 10-11-2026 con 5 versiones).
      */
-    private const APARTE = ['Vino'];
+    private const APARTE = ['Borgoña', 'Vino'];
+
+    /** @var array<string, ?ModeloReferencia> la ficha de cada tipo|modelo de las listas */
+    private array $fichas = [];
+
+    /** @var array<string, true> colores del proveedor que no se pudieron llevar al nombre de Apple («modelo: color») */
+    private array $sinNombreOficial = [];
 
     /**
      * Fotos del dueño por título de tarjeta, guardadas entre importaciones: una tarjeta que sale de la lista y vuelve
@@ -66,7 +74,8 @@ class ImportarProveedor extends Command
             foreach ($data['items'] ?? [] as $it) {
                 $entradas->push([
                     'tipo' => $it['tipo'], 'modelo' => $it['modelo'], 'capacidad' => $it['capacidad'] ?? '',
-                    'colores' => $it['colores'] ?? [], 'usd' => (float) $it['usd'], 'sim' => self::normalizarSim($it['sim'] ?? null), 'proveedor' => $prov,
+                    // Con el nombre de la página de Apple: así «Rosa» de uno y «Gold Pink» de otro son el mismo color y compiten
+                    'colores' => $this->coloresOficiales($it['tipo'], $it['modelo'], $it['colores'] ?? []), 'usd' => (float) $it['usd'], 'sim' => self::normalizarSim($it['sim'] ?? null), 'proveedor' => $prov,
                     // Condición de la lista: casi todo es 'Nuevo'; un equipo marcado CPO (Certified Pre-Owned) entra como 'Reacondicionado'.
                     'condicion' => $it['condicion'] ?? 'Nuevo',
                 ]);
@@ -118,6 +127,9 @@ class ImportarProveedor extends Command
         });
 
         $this->info("Tarjetas: {$cards->count()} (desde " . count($archivos) . ' listas, por color)');
+        if ($this->sinNombreOficial) {
+            $this->warn('Colores sin nombre en la ficha de Apple (quedan como los escribió el proveedor): ' . implode(' · ', array_keys($this->sinNombreOficial)));
+        }
 
         if ($this->option('dry')) {
             foreach ($cards as $c) {
@@ -276,6 +288,35 @@ class ImportarProveedor extends Command
         }
 
         return is_array($crudo) ? $crudo : null;
+    }
+
+    /**
+     * Los colores de una entrada con el nombre que usa Apple, según la ficha del modelo (Colores::oficial). Lo que no
+     * se puede llevar queda como lo escribió el proveedor y se avisa al final.
+     *
+     * @param list<string> $colores
+     * @return list<string>
+     */
+    private function coloresOficiales(string $tipo, string $modelo, array $colores): array
+    {
+        if (! $colores || ! in_array($tipo, ['celular', 'producto_apple'], true)) {
+            return $colores;
+        }
+        $clave = "{$tipo}|{$modelo}";
+        if (! array_key_exists($clave, $this->fichas)) {
+            $equipo = new (self::MODELOS[$tipo])(['modelo' => $modelo]);
+            $this->fichas[$clave] = ModeloReferencia::deInventario($tipo, $equipo);
+        }
+        $oficiales = $this->fichas[$clave]?->coloresOficiales() ?? [];
+
+        return collect($colores)->map(function (string $color) use ($oficiales, $modelo) {
+            $oficial = Colores::oficial($color, $oficiales);
+            if ($oficial === null) {
+                $this->sinNombreOficial["{$modelo}: {$color}"] = true;
+            }
+
+            return $oficial ?? $color;
+        })->unique()->values()->all();
     }
 
     /** El equipo sin color ni SIM: «iphone 18 pro|256 gb». */

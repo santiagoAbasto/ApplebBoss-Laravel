@@ -337,11 +337,16 @@ class ModeloReferencia extends Model
      * El nombre oficial del color del equipo si el inventario lo nombra sin dudas: en inglés («Silver» → «Plata») o por el
      * comienzo de un solo color del modelo («gris» → «Gris espacial»). Si no, null (queda el del inventario).
      */
+    /** Los colores del modelo tal como los nombra Apple en su página (los productos Apple los llevan en `sistema.colores`). */
+    public function coloresOficiales(): array
+    {
+        return $this->datos['diseno']['colores'] ?? (is_array($this->datos['sistema']['colores'] ?? null) ? $this->datos['sistema']['colores'] : []);
+    }
+
     public function colorDelEquipo(?string $color): ?string
     {
         $t = self::textoPlano($color);
-        // Los productos Apple llevan sus colores en `sistema.colores`
-        $colores = $this->datos['diseno']['colores'] ?? (is_array($this->datos['sistema']['colores'] ?? null) ? $this->datos['sistema']['colores'] : []);
+        $colores = $this->coloresOficiales();
         if ($t === '' || ! $colores) {
             return null;
         }

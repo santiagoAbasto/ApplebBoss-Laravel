@@ -22,6 +22,57 @@ final class Colores
         };
     }
 
+    /**
+     * Cómo llama cada proveedor a un color que en la página de Apple tiene otro nombre. Cada entrada es una lista de
+     * nombres oficiales posibles: vale el primero que tenga ese modelo (el «negro» de un iPad Air es «Gris espacial»,
+     * el de un iPhone 13 es «Medianoche»). Verificado contra apple.com/la y support.apple.com/es-lamr el 10-11-2026.
+     * «crema» → «Oro claro» es deducción: el Watch Series 12 de aluminio tiene 4 colores y el proveedor nombra 4.
+     */
+    private const SINONIMOS = [
+        'silver' => ['Plata'], 'starlight' => ['Blanco estelar'], 'midnight' => ['Medianoche'],
+        'cosmic' => ['Naranja cósmico'], 'deep' => ['Azul profundo'],
+        'vino' => ['Borgoña'], 'borbona' => ['Borgoña'], 'burgundy' => ['Borgoña'],
+        'azul' => ['Glaciar', 'Ultramarino'], 'blue' => ['Azul', 'Glaciar', 'Ultramarino'],
+        'teal' => ['Verde azulado'], 'sage' => ['Salvia'], 'verde' => ['Salvia'],
+        'lila' => ['Lavanda', 'Morado'], 'purple' => ['Morado', 'Lavanda'],
+        'rosado' => ['Rosa', 'Rosa pálido'], 'gold pink' => ['Oro rosa'],
+        'negro' => ['Negro espacial', 'Negro azabache', 'Medianoche', 'Gris espacial'],
+        'black' => ['Negro', 'Negro espacial', 'Negro azabache', 'Medianoche', 'Gris espacial'],
+        'plomo' => ['Gris espacial'], 'gris' => ['Gris espacial'], 'crema' => ['Oro claro'],
+        'white' => ['Blanco'], 'white gray' => ['Blanco'],
+    ];
+
+    /**
+     * El nombre que usa Apple para el color que escribió el proveedor, entre los colores oficiales del modelo: el mismo
+     * nombre; si no, el único oficial que lo contiene («azul» → «Azul neblina»); si no, un sinónimo. Null si no hay
+     * cómo saberlo (entonces queda el del proveedor y la importación lo avisa): no se inventa un color.
+     *
+     * @param list<string> $oficiales
+     */
+    public static function oficial(string $color, array $oficiales): ?string
+    {
+        $n = fn (string $s) => trim((string) preg_replace(['/^color\s+/', '/\s+/'], ['', ' '], mb_strtolower(\Illuminate\Support\Str::ascii(trim($s)))));
+        $porNombre = collect($oficiales)->keyBy($n);
+        $c = $n($color);
+        if ($c === '' || $porNombre->isEmpty()) {
+            return null;
+        }
+        if ($porNombre->has($c)) {
+            return $porNombre[$c];
+        }
+        $contienen = $porNombre->filter(fn ($o, string $k) => preg_match('/\b' . preg_quote($c, '/') . '\b/u', $k) === 1);
+        if ($contienen->count() === 1) {
+            return $contienen->first();
+        }
+        foreach (self::SINONIMOS[$c] ?? [] as $candidato) {
+            if ($porNombre->has($n($candidato))) {
+                return $porNombre[$n($candidato)];
+            }
+        }
+
+        return null;
+    }
+
     /** La columna COLORES del PDF de Planet ("NEGRO, BLUE, LAVERDER, SAGE, WHITE") → nombres del catálogo. */
     public static function deTexto(string $texto, string $modelo = ''): array
     {

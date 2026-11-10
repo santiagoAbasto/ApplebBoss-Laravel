@@ -29,7 +29,7 @@ return [
                 'excluir'   => false,
                 'celular'   => null,
                 'video_h'   => false,
-                'colores'   => ['Negro azabache', 'Oro rosa', 'Plata', 'Space Gray'],
+                'colores'   => ['Oro rosa', 'Plata', 'Gris espacial', 'Negro azabache'],
             ],
             'ficha'     => [
                 'tamano_caja'        => '42 mm y 46 mm',
@@ -93,7 +93,7 @@ return [
                 'excluir'   => false,
                 'celular'   => null,
                 'video_h'   => false,
-                'colores'   => ['Negro azabache', 'Oro rosa', 'Plata', 'Space Gray'],
+                'colores'   => ['Bronce oscuro', 'Oro claro', 'Negro', 'Gris espacial'],
             ],
             'ficha'     => [
                 'tamano_caja'        => '42 mm y 46 mm',
@@ -157,7 +157,7 @@ return [
                 'excluir'   => false,
                 'celular'   => null,
                 'video_h'   => false,
-                'colores'   => ['Titanio natural', 'Titanio negro'],
+                'colores'   => ['Natural', 'Negro'],
             ],
             'ficha'     => [
                 'tamano_caja'        => '49 mm',
@@ -221,7 +221,7 @@ return [
                 'excluir'   => false,
                 'celular'   => null,
                 'video_h'   => false,
-                'colores'   => ['Titanio natural', 'Titanio negro'],
+                'colores'   => ['Natural', 'Negro'],
             ],
             'ficha'     => [
                 'tamano_caja'        => '49 mm',
@@ -349,7 +349,7 @@ return [
                 'excluir'   => false,
                 'celular'   => null,
                 'video_h'   => false,
-                'colores'   => ['Medianoche', 'Blanco estelar', 'Plata'],
+                'colores'   => ['Medianoche', 'Blanco estelar'],
             ],
             'ficha'     => [
                 'tamano_caja'        => '40 mm y 44 mm',
