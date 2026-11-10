@@ -29,7 +29,7 @@ class EsquemaFichaComputadoraTest extends TestCase
     public function test_todas_las_fichas_de_mac_estan_completas(): void
     {
         $macs = array_filter(ModelosReferenciaSeeder::modelos(), fn ($m) => $m['tipo'] === 'computadora' && $m['familia'] === 'mac');
-        $this->assertCount(16, $macs);
+        $this->assertCount(18, $macs);   // + MacBook Pro 16" M5 Pro y 14" M5 Max (23-10-2026, productos de proveedor)
 
         foreach ($macs as $modelo) {
             [$errores, $pendientes] = EsquemaComputadora::revisar($modelo);

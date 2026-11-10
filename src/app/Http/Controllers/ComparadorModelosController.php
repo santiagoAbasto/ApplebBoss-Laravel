@@ -117,7 +117,7 @@ class ComparadorModelosController extends Controller
     public static function modelosDe(string $familia): Collection
     {
         $config  = self::FAMILIAS[$familia];
-        $modelos = ModeloReferencia::delTipo($config['tipo']);
+        $modelos = ModeloReferencia::delTipo($config['tipo'], soloVisibles: true);
         if ($config['familia'] !== null) {
             $modelos = $modelos->where('familia', $config['familia'])->values();
         }
@@ -142,9 +142,12 @@ class ComparadorModelosController extends Controller
         ];
     }
 
-    /** La comparativa en la que entra un modelo (la clave de FAMILIAS), o null si no entra en ninguna. */
+    /** La comparativa en la que entra un modelo (la clave de FAMILIAS), o null si no entra en ninguna (un modelo oculto, en ninguna). */
     public static function familiaDe(ModeloReferencia $modelo): ?string
     {
+        if (! $modelo->activo) {
+            return null;
+        }
         $familia = collect(self::FAMILIAS)->search(fn (array $f) => $f['tipo'] === $modelo->tipo
             && in_array($f['familia'], [$modelo->familia, null], true)
             && ! in_array($modelo->familia, $f['excluir'] ?? [], true));

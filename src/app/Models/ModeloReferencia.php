@@ -106,11 +106,16 @@ class ModeloReferencia extends Model
         return preg_replace('/[^a-z0-9]+/', '', $t);
     }
 
-    public static function delTipo(string $tipo): Collection
+    /**
+     * Los modelos de un tipo. Un modelo oculto (`activo = false`, ver ModelosReferenciaSeeder::OCULTOS) ya no se consigue
+     * nuevo, pero los clientes lo siguen teniendo: se reconoce en el inventario, en la parte de pago y en el servicio
+     * técnico. Solo la comparativa y la página de cada modelo piden `$soloVisibles`.
+     */
+    public static function delTipo(string $tipo, bool $soloVisibles = false): Collection
     {
         return self::query()
             ->where('tipo', $tipo)
-            ->where('activo', true)
+            ->when($soloVisibles, fn ($q) => $q->where('activo', true))
             ->orderByDesc('anio')
             ->orderBy('orden')
             ->orderBy('nombre')

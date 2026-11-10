@@ -6,7 +6,6 @@
 
     {"tipo": "celular", "modelo": "iPhone 17", "capacidad": "256 GB", "sim": "eSIM", "colores": ["Lila", "Negro", "Verde", "Azul", "Blanco"], "usd": 910},
     {"tipo": "celular", "modelo": "iPhone 17", "capacidad": "256 GB", "sim": "chip", "colores": ["Verde", "Azul", "Blanco", "Negro", "Lila"], "usd": 910},
-    {"tipo": "celular", "modelo": "iPhone 17 Air", "capacidad": "256 GB", "sim": "eSIM", "colores": [], "usd": 910},
 
     {"tipo": "celular", "modelo": "iPhone 17 Pro", "capacidad": "256 GB", "sim": "chip", "colores": ["Cosmic", "Deep"], "usd": 1205},
     {"tipo": "celular", "modelo": "iPhone 17 Pro", "capacidad": "256 GB", "sim": "chip", "colores": ["Silver"], "usd": 1250},
@@ -49,8 +48,8 @@
     {"tipo": "producto_apple", "modelo": "Apple Watch SE (3.ª generación)", "capacidad": "40 mm", "colores": ["Starlight"], "usd": 280},
     {"tipo": "producto_apple", "modelo": "Apple Watch SE (3.ª generación)", "capacidad": "44 mm", "colores": ["Midnight"], "usd": 310},
 
-    {"tipo": "producto_apple", "modelo": "AirPods Max (USB-C)", "capacidad": "", "colores": ["Naranja", "Lila"], "usd": 440},
-    {"tipo": "producto_apple", "modelo": "AirPods Max (USB-C)", "capacidad": "", "colores": ["Morado", "Starlight", "Cosmic", "Azul"], "usd": 470},
+    {"tipo": "producto_apple", "modelo": "AirPods Max (USB-C)", "capacidad": "", "colores": ["Morado", "Naranja"], "usd": 440},
+    {"tipo": "producto_apple", "modelo": "AirPods Max (USB-C)", "capacidad": "", "colores": ["Starlight", "Azul"], "usd": 470},
     {"tipo": "producto_apple", "modelo": "AirPods Max (USB-C) 2026", "capacidad": "", "colores": ["Azul", "Morado", "Starlight", "Midnight"], "usd": 560},
     {"tipo": "producto_apple", "modelo": "AirPods Pro 3", "capacidad": "", "colores": [], "usd": 245},
     {"tipo": "producto_apple", "modelo": "AirPods 5", "capacidad": "", "colores": [], "usd": 210},

@@ -136,8 +136,8 @@ class ModeloReferenciaController extends Controller
     {
         $familias = array_flip(\App\Support\FichaTecnica\EsquemaAccesorio::FAMILIAS);
 
+        // Todos, también los ocultos de la comparativa: siguen enlazados a equipos del inventario y su foto se ve ahí.
         return ModeloReferencia::query()
-            ->where('activo', true)
             ->orderBy('tipo')
             ->orderByDesc('anio')
             ->orderBy('orden')

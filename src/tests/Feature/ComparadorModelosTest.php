@@ -50,7 +50,9 @@ class ComparadorModelosTest extends TestCase
                 ->where('familia.tipo', 'celular')
                 ->where('familia.version_actual', 'iOS 27')
                 ->where('maximo', 4)
-                ->has('opciones', ModeloReferencia::where('tipo', 'celular')->count())
+                // Los ocultos (iPhone 14, 16e: ya no se consiguen) no se ofrecen en la comparativa
+                ->has('opciones', ModeloReferencia::where('tipo', 'celular')->where('activo', true)->count())
+                ->where('opciones', fn ($o) => collect($o)->pluck('slug')->doesntContain('iphone-14'))
                 ->has('seleccion', 4)
                 ->where('seleccion.0.slug', 'iphone-14-plus')
                 ->where('seleccion.1.slug', 'iphone-16')
