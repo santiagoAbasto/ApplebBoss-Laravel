@@ -29,8 +29,24 @@ class ImportarProveedor extends Command
         'producto_apple' => ProductoApple::class,
     ];
 
-    /** Colores cuyo costo difiere en más de esto (USD) van en tarjetas distintas; uno más caro (Vino) queda aparte. */
+    /** Colores cuyo costo difiere en más de esto (USD) van en tarjetas distintas. */
     private const UMBRAL = 40;
+
+    /**
+     * Colores que van SIEMPRE en su propia tarjeta, cueste lo que cueste: el Vino (Borgoña) del iPhone 18 Pro tiene su
+     * columna de precio y su foto, y el cliente lo busca como color aparte. Pegado al negro/plata/azul quedaba escondido
+     * detrás de la foto de los otros (pasó el 10-11-2026 con 5 versiones).
+     */
+    private const APARTE = ['Vino'];
+
+    /**
+     * Fotos del dueño por título de tarjeta, guardadas entre importaciones: una tarjeta que sale de la lista y vuelve
+     * recupera su foto. Con --dir (pruebas), junto a esas listas y sin la extensión .json para que no se lea como lista.
+     */
+    private function archivoFotos(): string
+    {
+        return $this->option('dir') ? rtrim($this->option('dir'), '/') . '/.fotos-proveedor' : storage_path('app/fotos-proveedor.json');
+    }
 
     public function handle(): int
     {
@@ -77,9 +93,13 @@ class ImportarProveedor extends Command
         });
 
         // 3) Dentro de cada modelo+capacidad, agrupar colores de costo parecido; el precio del grupo = el costo MÁS ALTO
-        //    (así ningún color pierde margen). Un color notablemente más caro (Vino) queda en su propia tarjeta.
+        //    (así ningún color pierde margen). Un color de APARTE (Vino) va siempre en su propia tarjeta.
         $cards = collect();
         $porColor->groupBy(fn ($f) => $this->clave($f))->each(function ($g) use ($cards) {
+            [$aparte, $g] = $g->partition(fn ($f) => in_array($f['color'], self::APARTE, true));
+            foreach ($aparte as $f) {
+                $cards->push($this->armarCard(collect([$f])));
+            }
             $orden = $g->sortBy('usd')->values();
             $grupo = collect();
             $base = null;
@@ -169,16 +189,14 @@ class ImportarProveedor extends Command
     private function capturarFotos(): array
     {
         $fotos = [];
+        // También las tarjetas SIN foto (imgs vacío): así una foto que el dueño quitó no vuelve desde lo guardado.
         foreach ($this->tarjetasDeProveedor(true) as [$pub, $reg]) {
-            if ($pub->imagenes->isEmpty()) {
-                continue;
-            }
             $fotos[] = [
                 'titulo' => $this->claveFoto($pub->titulo),
                 'equipo' => $this->claveEquipo($reg),
                 'imgs'   => $pub->imagenes->map(fn ($img) => collect($img->getAttributes())->only([
-                    'nombre_original', 'ruta_original', 'ruta_thumb', 'ruta_card', 'ruta_medium', 'ruta_detail', 'alt', 'orden', 'es_principal', 'metadata',
-                ])->all())->all(),
+                    'nombre_original', 'ruta_original', 'ruta_thumb', 'ruta_card', 'ruta_medium', 'ruta_detail', 'alt', 'orden', 'es_principal',
+                ])->all() + ['metadata' => self::metadatos($img->getRawOriginal('metadata'))])->all(),
             ];
         }
 
@@ -192,17 +210,16 @@ class ImportarProveedor extends Command
      */
     private function restaurarFotos(array $fotos): void
     {
-        if (! $fotos) {
-            return;
-        }
+        // Lo guardado de importaciones anteriores (una tarjeta que hoy no está en la lista conserva su foto para cuando
+        // vuelva); lo capturado ahora pisa lo viejo del mismo título.
+        $porTitulo = json_decode((string) @file_get_contents($this->archivoFotos()), true) ?: [];
         $tarjetas = $this->tarjetasDeProveedor(false);
         $titulos = array_flip(array_map(fn ($t) => $this->claveFoto($t[0]->titulo), $tarjetas));
 
-        $porTitulo = [];
         $huerfanas = [];   // equipo => fotos de una tarjeta cuyo título ya no existe
         foreach ($fotos as $f) {
             $porTitulo[$f['titulo']] = $f['imgs'];
-            if (! isset($titulos[$f['titulo']])) {
+            if ($f['imgs'] && ! isset($titulos[$f['titulo']])) {
                 $huerfanas[$f['equipo']] ??= $f['imgs'];
             }
         }
@@ -217,6 +234,12 @@ class ImportarProveedor extends Command
                 $pub->imagenes()->create($img);
             }
             $ok++;
+        }
+        $porTitulo = array_filter($porTitulo);
+        // Guardar las fotos es una ayuda, no parte de la importación: si no se puede escribir, se avisa y se sigue.
+        if (($porTitulo || is_file($this->archivoFotos()))
+            && @file_put_contents($this->archivoFotos(), json_encode($porTitulo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)) === false) {
+            $this->warn('No se pudieron guardar las fotos para la próxima importación: ' . $this->archivoFotos());
         }
         if ($ok) {
             $this->info("Fotos re-enlazadas a {$ok} tarjetas (no se pierden al re-importar).");
@@ -240,6 +263,19 @@ class ImportarProveedor extends Command
         }
 
         return $lista;
+    }
+
+    /**
+     * Los metadatos de una foto como arreglo. Se copiaban crudos (texto JSON) y el cast `array` los volvía a codificar en
+     * cada importación: llegaron a estar codificados tres veces. Se desenvuelve hasta llegar al arreglo, así se sanan.
+     */
+    private static function metadatos(mixed $crudo): ?array
+    {
+        while (is_string($crudo) && ($d = json_decode($crudo, true)) !== null) {
+            $crudo = $d;
+        }
+
+        return is_array($crudo) ? $crudo : null;
     }
 
     /** El equipo sin color ni SIM: «iphone 18 pro|256 gb». */

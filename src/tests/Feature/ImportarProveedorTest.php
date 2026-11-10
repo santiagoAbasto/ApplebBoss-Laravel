@@ -38,6 +38,7 @@ class ImportarProveedorTest extends TestCase
     protected function tearDown(): void
     {
         array_map('unlink', glob($this->dir . '/*'));
+        @unlink($this->dir . '/.fotos-proveedor');
         @rmdir($this->dir);
         parent::tearDown();
     }
@@ -83,13 +84,71 @@ class ImportarProveedorTest extends TestCase
             'ruta_original'   => 'catalogo/foto-16.jpg',
             'orden'           => 0,
             'es_principal'    => true,
+            'metadata'        => ['width' => 1000, 'mime' => 'image/png'],
         ]);
 
         // Re-importar borra y recrea los productos, pero la foto se re-engancha a la tarjeta equivalente
         $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
 
         $pub2 = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail();
         $this->assertSame('catalogo/foto-16.jpg', $pub2->imagenes()->first()?->ruta_original);
+        // Los metadatos siguen siendo un arreglo tras dos importaciones (antes se codificaban de nuevo cada vez)
+        $this->assertSame(['width' => 1000, 'mime' => 'image/png'], $pub2->imagenes()->first()?->metadata);
+    }
+
+    public function test_el_vino_va_siempre_en_su_tarjeta_aunque_cueste_casi_lo_mismo(): void
+    {
+        file_put_contents($this->dir . '/a.json', json_encode(['proveedor' => 'Apple Land', 'items' => [
+            ['tipo' => 'celular', 'modelo' => 'iPhone 18 Pro Max', 'capacidad' => '256 GB', 'sim' => 'eSIM', 'colores' => ['Negro', 'Silver', 'Azul'], 'usd' => 1530],
+            ['tipo' => 'celular', 'modelo' => 'iPhone 18 Pro Max', 'capacidad' => '256 GB', 'sim' => 'eSIM', 'colores' => ['Vino'], 'usd' => 1560],
+        ]]));
+        unlink($this->dir . '/b.json');
+
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        // Solo 30 USD más caro, pero el Borgoña tiene su tarjeta (su foto y su precio); los otros tres, al suyo
+        $this->assertSame(1560.0, Celular::where('es_proveedor', true)->where('color', 'Vino')->sole()->costo_usd);
+        $this->assertSame(1530.0, Celular::where('es_proveedor', true)->where('color', '')->sole()->costo_usd);
+    }
+
+    public function test_una_tarjeta_que_sale_de_la_lista_y_vuelve_recupera_su_foto(): void
+    {
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+        $vino = Celular::where('es_proveedor', true)->where('color', 'Vino')->firstOrFail();
+        CatalogoPublicacion::where('producto_tipo', 'celular')->where('producto_id', $vino->id)->firstOrFail()
+            ->imagenes()->create(['nombre_original' => 'v.png', 'ruta_original' => 'catalogo/vino.png', 'orden' => 0, 'es_principal' => true]);
+
+        // Una semana sin Vino en las listas: la tarjeta se va…
+        $sinVino = fn (string $f) => json_encode(array_merge($l = json_decode(file_get_contents($f), true), [
+            'items' => array_values(array_filter($l['items'], fn ($i) => $i['colores'] !== ['Vino'])),
+        ]));
+        $a = file_get_contents($this->dir . '/a.json');
+        $b = file_get_contents($this->dir . '/b.json');
+        file_put_contents($this->dir . '/a.json', $sinVino($this->dir . '/a.json'));
+        file_put_contents($this->dir . '/b.json', $sinVino($this->dir . '/b.json'));
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+        $this->assertSame(0, Celular::where('es_proveedor', true)->where('color', 'Vino')->count());
+
+        // …y cuando vuelve, vuelve con su foto
+        file_put_contents($this->dir . '/a.json', $a);
+        file_put_contents($this->dir . '/b.json', $b);
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+        $pub = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', '%Vino%')->firstOrFail();
+        $this->assertSame('catalogo/vino.png', $pub->imagenes()->first()?->ruta_original);
+    }
+
+    public function test_una_foto_que_el_dueno_quito_no_vuelve(): void
+    {
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+        $pub = CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail();
+        $pub->imagenes()->create(['nombre_original' => 'f.jpg', 'ruta_original' => 'catalogo/foto-16.jpg', 'orden' => 0, 'es_principal' => true]);
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);   // queda guardada
+
+        CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail()->imagenes()->delete();
+        $this->artisan('catalogo:importar-proveedor', ['--dir' => $this->dir])->assertExitCode(0);
+
+        $this->assertFalse(CatalogoPublicacion::where('producto_tipo', 'celular')->where('titulo', 'like', 'iPhone 16%')->firstOrFail()->imagenes()->exists());
     }
 
     public function test_la_foto_sigue_al_equipo_aunque_la_tarjeta_cambie_de_titulo(): void
