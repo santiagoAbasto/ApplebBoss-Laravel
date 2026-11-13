@@ -181,7 +181,10 @@ class DatosEstructurados
         return trim($sobrante, " \t\n\r,.-") === '' ? null : $direccion;
     }
 
-    /** El sitio, para que Google entienda la entidad y el buscador interno. */
+    /**
+     * El sitio, para que Google entienda la entidad. Sin SearchAction: Google retiró el cuadro de búsqueda de sitelinks
+     * (2024) y su plantilla `?q={search_term_string}` solo le daba una URL bloqueada por robots.txt.
+     */
     public static function sitio(): array
     {
         return [
@@ -189,13 +192,9 @@ class DatosEstructurados
             '@id'   => UrlPublica::de() . '#sitio',
             'url'   => UrlPublica::de(),
             'name'  => config('seo.negocio.nombre', 'Apple Boss'),
+            'alternateName' => ['AppleBoss', 'Apple Boss Cochabamba'],
             'inLanguage' => 'es-BO',
             'publisher'  => ['@id' => UrlPublica::de() . '#tienda'],
-            'potentialAction' => [
-                '@type'       => 'SearchAction',
-                'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => UrlPublica::de('catalogo') . '?q={search_term_string}'],
-                'query-input' => 'required name=search_term_string',
-            ],
         ];
     }
 

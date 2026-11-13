@@ -247,12 +247,17 @@ class PublicCatalogController extends Controller
         ]);
     }
 
-    public function show(string $slug): Response
+    public function show(string $slug): Response|\Illuminate\Http\RedirectResponse
     {
         $pub = CatalogoPublicacion::with(['imagenes', 'compatibilidades.target'])
             ->publicadoAhora()
             ->where('slug', $slug)
-            ->firstOrFail();
+            ->first();
+
+        // Un equipo vendido o despublicado: 301 a la página de su modelo (que sigue en pie), no un 404 (GSC: 9 así)
+        if (! $pub) {
+            return ($destino = self::paginaDelModelo($slug)) ? redirect($destino, 301) : abort(404);
+        }
 
         $price     = $pub->precioVigente();
         $available = $pub->productoDisponible();
@@ -440,6 +445,22 @@ class PublicCatalogController extends Controller
      * Enlace a la comparativa del modelo de la publicación, si su familia tiene comparador. Un accesorio se compara con
      * los que la comparativa muestra al entrar (el cargador certificado, con el original de 20 W y el de 40 W).
      */
+    /**
+     * La página del modelo de un producto que ya no se publica: por su modelo cargado o, si la publicación ya no existe
+     * (slug cambiado), por el modelo cuyo slug encabeza el del producto («iphone-18-pro-max-1-tb-vino» → iphone-18-pro-max).
+     */
+    public static function paginaDelModelo(string $slug): ?string
+    {
+        $id = CatalogoPublicacion::where('slug', $slug)->value('modelo_referencia_id');
+
+        $hallados = collect(HubController::FAMILIAS_CON_PAGINA)
+            ->flatMap(fn ($familia) => ComparadorModelosController::modelosDe($familia)->map(fn ($m) => [$familia, $m]))
+            ->filter(fn ($par) => $id ? $par[1]->id === $id : str_starts_with($slug, $par[1]->slug . '-'))
+            ->sortByDesc(fn ($par) => strlen($par[1]->slug));
+
+        return ($par = $hallados->first()) ? "/{$par[0]}/{$par[1]->slug}" : null;
+    }
+
     private function compararModelo(CatalogoPublicacion $pub): ?array
     {
         $modelo = $pub->modeloReferencia;

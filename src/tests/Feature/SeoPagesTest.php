@@ -52,7 +52,7 @@ class SeoPagesTest extends TestCase
     {
         $html = $this->get('/catalogo')->assertOk()->getContent();
 
-        $this->assertStringContainsString('<title data-inertia>Catálogo — Apple Boss Cochabamba</title>', $html);
+        $this->assertStringContainsString('<title data-inertia>Catálogo y precios de productos Apple en Bolivia — Apple Boss</title>', $html);
         $this->assertStringContainsString('property="og:title"', $html);
         $this->assertStringContainsString('name="robots" content="index,follow"', $html);
         $this->assertStringContainsString('rel="canonical" href="' . url('/catalogo') . '"', $html);

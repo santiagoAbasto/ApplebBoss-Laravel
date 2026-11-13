@@ -28,6 +28,8 @@ class RobotsController extends Controller
             'Disallow: /sanctum/',
             'Disallow: /horizon',
             'Disallow: /telescope',
+            // Cloudflare (protección de correos): no son páginas del sitio y Google las reportaba como 404
+            'Disallow: /cdn-cgi/',
             // Búsqueda interna: no genera páginas útiles para Google
             'Disallow: /*?q=',
             '',
@@ -110,12 +112,17 @@ class RobotsController extends Controller
             $lineas[] = '- [Comparar ' . ($familia['nombre'] ?? $slug) . '](' . $u('comparar/' . $slug) . '): fichas técnicas lado a lado, con precio y stock de la tienda.';
         }
 
-        // Una página por modelo: ficha técnica completa y, del inventario, precio y stock de hoy
+        // Una página por modelo: ficha técnica completa y, del inventario, precio y stock de hoy. El precio va en la línea
+        // para que un buscador de IA pueda responder «cuánto está el iPhone X en Bolivia» citando esta tienda.
         foreach (['iphone' => 'iPhone', 'mac' => 'Mac', 'apple' => 'iPad, Apple Watch, AirPods y accesorios Apple'] as $slug => $nombre) {
+            $modelos = ComparadorModelosController::modelosDe($slug);
+            $ofertas = ComparadorModelosController::ofertas($modelos, ComparadorModelosController::FAMILIAS[$slug]['categoria']);
             $lineas[] = '';
             $lineas[] = '## Modelos de ' . $nombre;
-            foreach (HubController::paginasDeModelos($slug) as $modelo) {
-                $lineas[] = '- [' . $modelo['nombre'] . '](' . $u(ltrim((string) parse_url($modelo['url'], PHP_URL_PATH), '/')) . ')';
+            foreach ($modelos as $modelo) {
+                $o = $ofertas[$modelo->id] ?? null;
+                $lineas[] = '- [' . $modelo->nombre . '](' . $u($slug . '/' . $modelo->slug) . ')'
+                    . ($o ? ': desde ' . $bs($o['desde']) . ', ' . $o['unidades'] . ($o['unidades'] === 1 ? ' disponible' : ' disponibles') . ' hoy' : '');
             }
         }
 

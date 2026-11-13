@@ -30,11 +30,11 @@ class Seo
     /** Valores por defecto (español de Bolivia, sin afirmaciones no verificadas). */
     public const DEFAULTS = [
         'store.home'            => ['title' => 'Apple Boss — Tienda de productos Apple en Cochabamba', 'description' => 'Tienda de productos Apple en Cochabamba: iPhone, Mac, iPad, Apple Watch y accesorios, nuevos y seminuevos, con servicio técnico, garantía y asesoría en cada paso.'],
-        'store.catalog'         => ['title' => 'Catálogo — Apple Boss Cochabamba', 'description' => 'Catálogo de equipos Apple disponibles en Apple Boss Cochabamba: iPhone, Mac, iPad, accesorios y fundas MYSKIN.'],
-        'hub.iphone'            => ['title' => 'iPhone — Apple Boss Cochabamba', 'description' => 'Compra tu iPhone en Apple Boss. Equipos nuevos y seminuevos, revisados antes de la entrega. Cochabamba, Bolivia.'],
-        'hub.mac'               => ['title' => 'Mac — Apple Boss Cochabamba', 'description' => 'MacBook y Mac en Apple Boss. Nuevas y seminuevas. Cochabamba, Bolivia.'],
+        'store.catalog'         => ['title' => 'Catálogo y precios de productos Apple en Bolivia — Apple Boss', 'description' => 'Precios en bolivianos de los equipos Apple disponibles hoy en Apple Boss Cochabamba: iPhone, Mac, iPad, Apple Watch, AirPods, accesorios y fundas MYSKIN.'],
+        'hub.iphone'            => ['title' => 'Precios de iPhone en Bolivia — Apple Boss Cochabamba', 'description' => 'Precios de iPhone en Bolivia, nuevos y seminuevos, en Apple Boss Cochabamba. Todos los modelos con su ficha técnica y lo disponible hoy, revisado antes de la entrega.'],
+        'hub.mac'               => ['title' => 'Precios de MacBook y Mac en Bolivia — Apple Boss Cochabamba', 'description' => 'Precios de MacBook Air, MacBook Pro y Mac en Bolivia, nuevas y seminuevas, en Apple Boss Cochabamba. Cada modelo con su ficha técnica y lo disponible hoy.'],
         'hub.myskin'            => ['title' => 'Fundas MYSKIN — Apple Boss Cochabamba', 'description' => 'Fundas MYSKIN para iPhone en Apple Boss. Protección con diseño. Encuentra la funda para tu modelo.'],
-        'hub.seminuevos'        => ['title' => 'Seminuevos — Apple Boss Cochabamba', 'description' => 'iPhone y Mac seminuevos en Apple Boss. Equipos revisados, con condición y estado de batería informados. Cochabamba, Bolivia.'],
+        'hub.seminuevos'        => ['title' => 'iPhone y Mac seminuevos (usados) en Cochabamba — Apple Boss', 'description' => 'iPhone y Mac seminuevos en Apple Boss. Equipos revisados, con condición y estado de batería informados. Cochabamba, Bolivia.'],
         'trade-in.index'        => ['title' => 'Trade-In: cotiza tu equipo — Apple Boss Cochabamba', 'description' => 'Usa tu equipo actual como parte de pago en Apple Boss: iPhone, Mac y todo Apple, celulares Android, laptops, PC gamer, consolas y más. Cotiza en línea, sin costo y sin compromiso.'],
         'servicio-tecnico.index' => ['title' => 'Servicio técnico de iPhone y Mac en Cochabamba — Apple Boss', 'description' => 'Diagnóstico sin costo y reparación de iPhone y Mac en Apple Boss, Cochabamba: pantalla, batería, puerto de carga, tapa trasera y cámara. Pide la revisión en línea.'],
         'novedades.index'       => ['title' => 'Novedades — Apple Boss Cochabamba', 'description' => 'Lo último que publicamos en Apple Boss, Cochabamba.'],
@@ -133,16 +133,21 @@ class Seo
      * de los 60. Se prueba de la forma más completa a la más corta, y el nombre se compacta sin perder lo que distingue
      * al modelo (dos MacBook Pro de 13" de distinto año nunca comparten título).
      */
-    public static function tituloDeModelo(string $nombre): string
+    public static function tituloDeModelo(string $nombre, ?float $desde = null): string
     {
         $corto = self::nombreCompacto($nombre);
+        // Así lo buscan («iphone 18 pro max precio bolivia»): con «Bolivia» y, si hay stock, el precio a la vista (GSC: CTR 1 % sin él)
+        $precio = $desde > 0 ? 'Bs ' . number_format($desde, 0, ',', '.') : null;
 
-        foreach ([
-            "{$nombre} en Cochabamba: precio y ficha técnica",
-            "{$nombre}: precio en Cochabamba",
-            "{$corto}: precio en Cochabamba",
+        foreach (array_filter([
+            $precio ? "{$nombre} precio en Bolivia: desde {$precio}" : null,
+            $precio ? "{$corto} precio en Bolivia: desde {$precio}" : null,
+            $precio ? "{$corto} desde {$precio} en Bolivia" : null,
+            "{$nombre}: precio en Bolivia y ficha técnica",
+            "{$nombre}: precio en Bolivia",
+            "{$corto}: precio en Bolivia",
             "{$corto} · Apple Boss",
-        ] as $candidato) {
+        ]) as $candidato) {
             if (mb_strlen($candidato) <= 65) {
                 return $candidato;
             }

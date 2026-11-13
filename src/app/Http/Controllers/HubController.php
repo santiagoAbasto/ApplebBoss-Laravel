@@ -122,16 +122,16 @@ class HubController extends Controller
 
         app(Seo::class)->context([
             'titulo'      => $titulo,
-            'seo_title'   => Seo::tituloDeModelo($modelo->nombre),   // nunca más de 65 caracteres (Bing avisaba en 24 modelos)
+            'seo_title'   => Seo::tituloDeModelo($modelo->nombre, $oferta['desde'] ?? null),   // nunca más de 65 caracteres (Bing avisaba en 24 modelos)
             'imagen'      => $ficha['imagen'],
+            // Lo primero que se lee es lo que se busca: el precio en Bolivia (Google corta cerca de los 155 caracteres)
             'descripcion' => collect([
                 $oferta
-                    ? "{$titulo} desde Bs " . number_format($oferta['desde'], 0, ',', '.') . ": {$oferta['unidades']} "
-                        . ($oferta['unidades'] === 1 ? 'disponible' : 'disponibles') . ' hoy en Apple Boss'
+                    ? "Precio del {$modelo->nombre} en Bolivia: desde Bs " . number_format($oferta['desde'], 0, ',', '.')
+                        . " en Apple Boss, Cochabamba. {$oferta['unidades']} " . ($oferta['unidades'] === 1 ? 'disponible' : 'disponibles') . ' hoy'
                         . ($oferta['condiciones'] ? ' (' . implode(', ', $oferta['condiciones']) . ')' : '')
-                    : "{$titulo}: ficha técnica completa y disponibilidad en Apple Boss",
+                    : "{$modelo->nombre}: precio en Bolivia, ficha técnica completa y disponibilidad en Apple Boss, Cochabamba",
                 $resumen ? ucfirst($resumen) : null,
-                'Compáralo con otros modelos lado a lado',
             ])->filter()->implode('. ') . '.',
             // Para los datos estructurados (App\Support\Seo\DatosEstructurados)
             'modelo'      => ['nombre' => $modelo->nombre, 'familia' => $familia, 'familia_nombre' => $config['nombre'], 'oferta' => $oferta],

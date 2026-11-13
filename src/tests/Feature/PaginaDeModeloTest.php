@@ -57,8 +57,10 @@ class PaginaDeModeloTest extends TestCase
                 ->has('otros'));
 
         $html = $respuesta->getContent();
-        $this->assertStringContainsString('<title data-inertia>iPhone 14 Plus en Cochabamba: precio y ficha técnica</title>', $html);
-        $this->assertMatchesRegularExpression('/<meta name="description" content="iPhone 14 Plus en Cochabamba desde Bs 4\.500: 1 disponible hoy/u', $html);
+        // Como se busca («iphone 14 plus precio bolivia»), con el precio a la vista
+        $this->assertStringContainsString('<title data-inertia>iPhone 14 Plus precio en Bolivia: desde Bs 4.500</title>', $html);
+        $this->assertMatchesRegularExpression('/<meta name="description" content="Precio del iPhone 14 Plus en Bolivia: desde Bs 4\.500 en Apple Boss, Cochabamba\. 1 disponible hoy/u', $html);
+        $this->assertStringContainsString('- [iPhone 14 Plus](https://appleboss.com.bo/iphone/iphone-14-plus): desde Bs 4.500, 1 disponible hoy', $this->get('/llms.txt')->getContent());
         // AggregateOffer con lowPrice Y highPrice: Google marca «falta highPrice» si no está (con un solo equipo, iguales).
         $this->assertStringContainsString('"@type":"AggregateOffer","priceCurrency":"BOB","lowPrice":"4500.00","highPrice":"4500.00","offerCount":1', $html);
         $this->assertStringContainsString('"name":"iPhone 14 Plus","item":"https://appleboss.com.bo/iphone/iphone-14-plus"', $html);
@@ -119,6 +121,16 @@ class PaginaDeModeloTest extends TestCase
         if ($otra = ModeloReferencia::where('familia', 'otra_marca')->first()) {
             $this->get("/apple/{$otra->slug}")->assertNotFound();
         }
+    }
+
+    public function test_un_producto_que_ya_no_se_publica_redirige_301_a_la_pagina_de_su_modelo(): void
+    {
+        $this->publicar('iphone-14-plus')->update(['publicado' => false]);
+        $this->get('/productos/iphone-14-plus-128gb-azul')->assertStatus(301)->assertRedirect('/iphone/iphone-14-plus');
+
+        // Sin publicación (el slug cambió): por el modelo que encabeza el slug, el más largo que calce
+        $this->get('/productos/iphone-14-plus-256-gb-vino')->assertStatus(301)->assertRedirect('/iphone/iphone-14-plus');
+        $this->get('/productos/mando-dualshock-4-dragon-ball')->assertNotFound();
     }
 
     public function test_el_sitemap_llms_y_el_hub_enlazan_las_paginas_de_los_modelos(): void
