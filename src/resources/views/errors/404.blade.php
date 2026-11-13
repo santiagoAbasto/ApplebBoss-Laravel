@@ -1,0 +1,1 @@
+@include('errors.layout', ['codigo' => 404, 'titulo' => 'No encontramos esa página', 'texto' => 'La dirección puede estar mal escrita o el producto ya no está publicado. Prueba desde el inicio o el catálogo.'])

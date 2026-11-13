@@ -116,6 +116,23 @@ class Temporada
         return $ahora->greaterThanOrEqualTo($desde) && $ahora->lessThan($hasta);
     }
 
+    /**
+     * La campaña para las páginas de error estáticas (errores/*.blade.php), que no pasan por Inertia ni por la
+     * prop `temporada`. Si la base o la caché no responden, devuelve null: el error se ve con el aspecto de siempre.
+     */
+    public static function paraErrores(): ?array
+    {
+        try {
+            $ajustes = self::ajustes();
+
+            return self::activa($ajustes) && $ajustes['navidad_publico']
+                ? ['intensidad' => $ajustes['navidad_intensidad_publico'], 'luces' => $ajustes['navidad_luces'], 'animaciones' => $ajustes['navidad_animaciones']]
+                : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /** El panel (administrador y vendedor) usa su propia intensidad; todo lo demás es la tienda. */
     public static function superficie(Request $request): string
     {

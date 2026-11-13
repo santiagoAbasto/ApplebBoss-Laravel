@@ -629,3 +629,14 @@ html[data-season="christmas"][data-season-surface="admin"][data-season-intensity
 .nv-panel-bienvenida { position: relative; padding-top: 2.6rem; }
 .nv-panel-bienvenida > .nv-luces { position: absolute; left: 0; right: 0; top: 0; }
 .nv-panel-bienvenida > .nv-vuelo { bottom: 6px; width: 120px; }
+
+/* ═════════════════════════════════════ ERRORES Y AGRADECIMIENTOS ═══════════════════════════════════ */
+/* Número del error: rayas de bastón de caramelo, como el marco de las tarjetas */
+html[data-season="christmas"][data-season-surface="publico"] .nv-error-codigo {
+  background: repeating-linear-gradient(135deg, var(--nv-burdeos) 0 .2em, var(--nv-marfil) .2em .4em);
+  -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-stroke: 2px var(--nv-burdeos);
+}
+/* Escena de agradecimiento: confirmación de pago y de Trade-In */
+.nv-gracias { width: 190px; margin: 0 auto 0.75rem; }
+.nv-gracias-lado { position: absolute; right: 4%; bottom: 0; width: 220px; margin: 0; opacity: 0.95; display: none; }
+@media (min-width: 900px) { .nv-gracias-lado { display: block; } }

@@ -113,6 +113,40 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->header('X-Robots-Tag', 'noindex, nofollow');
         });
 
+        // La tienda: 404, 403, 419 y 429 con el layout completo (menú, carrito, pie y, si está encendida, la Navidad).
+        // El panel y la API tienen su propio manejo arriba y abajo; 500 y 503 usan las páginas estáticas de
+        // resources/views/errors, que no dependen de la base ni de la caché.
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($request->is('api/*', 'admin', 'admin/*', 'vendedor', 'vendedor/*', 'dashboard', 'profile', 'register')
+                || $request->expectsJson() && ! $request->header('X-Inertia')) {
+                return null;
+            }
+            $estado = match (true) {
+                $e instanceof \Illuminate\Session\TokenMismatchException => 419,
+                $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException => 404,
+                $e instanceof \Illuminate\Auth\Access\AuthorizationException => 403,
+                $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface => $e->getStatusCode(),
+                default => null,
+            };
+            if (! in_array($estado, [403, 404, 419, 429], true)) {
+                return null;
+            }
+
+            try {
+                // Una ruta que no existe nunca pasa por el middleware de Inertia (solo corre en rutas encontradas):
+                // se comparten a mano los mismos datos (menú, tienda, carrito y la campaña) para que el error salga completo.
+                $inertia = app(\App\Http\Middleware\HandleInertiaRequests::class);
+                \Inertia\Inertia::setRootView($inertia->rootView($request));
+                \Inertia\Inertia::share($inertia->share($request));
+
+                return \Inertia\Inertia::render('Errores/Tienda', ['estado' => $estado])->toResponse($request)
+                    ->setStatusCode($estado)
+                    ->header('X-Robots-Tag', 'noindex, nofollow');
+            } catch (\Throwable) {
+                return null; // si ni la página de error puede armarse, queda la estática
+            }
+        });
+
         // API de integración: todo error sale como {"error": {"code", "message", "details"}}, sin trazas ni datos internos
         $exceptions->render(function (\Throwable $e, Request $request) {
             if (! $request->is('api/v1/integration', 'api/v1/integration/*')) {

@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { Ilustracion } from '@/Components/Temporada';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import StoreLayout, { StoreContainer, useWhatsApp } from '@/Layouts/StoreLayout';
@@ -45,6 +46,7 @@ export default function TradeInConfirmacion({ codigo, tipo, equipo, nombre, tele
                 <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full" style={{ background: 'rgba(88,94,159,0.35)' }} />
                 <span aria-hidden="true" className="pointer-events-none absolute -bottom-10 left-[20%] h-28 w-28 rounded-full" style={{ background: 'rgba(198,203,54,0.16)' }} />
                 <StoreContainer className="relative py-12 md:py-16">
+                    <Ilustracion nombre="EscenaGracias" className="nv-gracias nv-gracias-lado" />
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="max-w-2xl">
                         <span className="grid h-14 w-14 place-items-center rounded-full" style={{ background: 'rgba(198,203,54,0.18)', color: 'var(--ab-lime)' }}>
                             <Check className="h-7 w-7" strokeWidth={2.4} />

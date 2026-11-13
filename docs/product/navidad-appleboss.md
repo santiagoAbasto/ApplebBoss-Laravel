@@ -100,3 +100,16 @@ Lo que quedó después de las pasadas con el dueño. Donde contradiga lo de arri
 
 Reglas que dejó el dueño: la foto del producto no se cubre con adornos (salvo la tapa, que se quita con un clic);
 las luces no cruzan el texto; el gorro va en la hojita; en celular todo tiene que verse igual de prolijo.
+
+## Errores y agradecimientos (cierre del 13-11-2026, noche)
+- **404, 403, 419 y 429 de la tienda:** página `Errores/Tienda` con el layout completo (menú, carrito, pie y, con la
+  campaña, el tema entero y una escena por error: duende con lupa, duende, reno). Las arma `bootstrap/app.php`;
+  como una ruta inexistente no pasa por el middleware de Inertia, se comparten a mano los mismos datos. Llevan
+  `X-Robots-Tag: noindex`. El panel y la API conservan su manejo propio.
+- **500, 503 y cualquier otro estado:** páginas estáticas `resources/views/errors/*.blade.php` (layout común en
+  `errors/layout.blade.php`). No usan Vite, Inertia ni la base: si la campaña está encendida se visten (gorro, luces,
+  árbol, número en rayas de caramelo); si algo falla al consultarla, salen con el aspecto de siempre.
+- **Escena de agradecimiento** (`EscenaGracias`): en la pantalla de «¡Pago confirmado!» y en la de «Solicitud
+  recibida» de Trade-In. En el seguimiento no se agregó: ya tiene sus propias escenas por estado.
+- Pruebas: `tests/Feature/PaginasDeErrorTest.php` (5). Suite completa: 909 pruebas, OK.
+- No cubierto: correos transaccionales y PDF (boletas, cotizaciones); no llevan la campaña.

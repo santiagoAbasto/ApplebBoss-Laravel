@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
+import { Ilustracion } from '@/Components/Temporada';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import StoreLayout, { StoreContainer, money, useStoreCart } from '@/Layouts/StoreLayout';
@@ -124,6 +125,8 @@ function PagoInterno({ pedido, token, qr, transferencia, binance, metodo }) {
                                     style={{ background: 'var(--ab-lime)' }}>
                                     <Check className="h-8 w-8" style={{ color: 'var(--text-on-lime)' }} />
                                 </motion.div>
+                                {/* Navidad: la escena de agradecimiento solo aparece con el pago ya confirmado (este bloque) */}
+                                <Ilustracion nombre="EscenaGracias" className="nv-gracias" />
                                 <h1 className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>¡Pago confirmado!</h1>
                                 <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                                     Tu pedido <strong>{pedido.codigo}</strong> ya está pagado. Ahora puedes ver los datos de tu equipo.
