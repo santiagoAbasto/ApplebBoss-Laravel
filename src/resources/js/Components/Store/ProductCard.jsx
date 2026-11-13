@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { TapaDeRegalo } from '@/Components/Temporada';
 import { Plus, GitCompare } from '@/Components/Store/Icons';
 import ProductVisual from './ProductVisual';
 import { useCompare } from './CompareContext';
@@ -87,6 +88,8 @@ export default function ProductCard({ product, onAdd, priority = false }) {
                     priority={priority}
                 />
             </Link>
+            {/* Navidad: la tapa de regalo cubre la foto hasta el primer clic (Components/Temporada) */}
+            <TapaDeRegalo id={product.slug ?? product.url} nombre={product.name} />
 
             {/* Info — slots de alto fijo (título 2 líneas, specs 1 línea) para que todas las cards queden parejas sin huecos */}
             <div className="pt-3.5">

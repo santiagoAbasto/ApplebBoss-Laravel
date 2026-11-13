@@ -1,0 +1,582 @@
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+   CAMPAÑA DE NAVIDAD — capa de temporada
+   Todo cuelga de html[data-season="christmas"], que escribe el servidor (App\Support\Temporada → app.blade.php)
+   y mantiene resources/js/temporada.js. Sin ese atributo, ninguna regla de este archivo se aplica: apagar la
+   campaña devuelve la web a su aspecto de siempre sin tocar plantillas.
+
+   · data-season-surface  = publico | admin      (la tienda y el panel se visten distinto)
+   · data-season-intensity = festiva | discreta  (festiva cambia superficies; discreta, solo acentos y adornos)
+   · data-season-still                           (sin movimiento: lo pidió el panel o la persona)
+   ═══════════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+html[data-season="christmas"] {
+  --nv-pino:           #143D2B;
+  --nv-pino-claro:     #1F5A40;
+  --nv-burdeos:        #A42635;
+  --nv-burdeos-oscuro: #7E1B28;
+  --nv-oro:            #B88A44;   /* decorativo: no se usa en texto chico */
+  --nv-oro-claro:      #E2BC72;
+  --nv-marfil:         #FFF8EE;
+  --nv-marfil-2:       #F6ECDD;
+  --nv-brillo:         rgba(226, 188, 114, 0.55);
+}
+
+/* ── Piezas SVG: nunca capturan clics ni foco ─────────────────────────────────────────────────────── */
+.nv-svg { display: block; pointer-events: none; user-select: none; overflow: visible; flex-shrink: 0; }
+/* Sin especificidad: cualquier clase de tamaño (h-5 w-5, un width en línea) le gana */
+:where(.nv-svg) { width: 100%; height: auto; }
+.nv-ilustracion > .nv-svg { width: 100%; height: 100%; }
+.nv-ilustracion { display: block; pointer-events: none; flex-shrink: 0; }
+
+/* ═════════════════════════════════════ TIENDA ═════════════════════════════════════════════════════ */
+
+/* Acentos (las dos intensidades): el foco y los enlaces pasan a burdeos; el lima de marca, a oro cálido. */
+html[data-season="christmas"][data-season-surface="publico"] {
+  --ab-periwinkle: var(--nv-burdeos);
+  --ab-lime:       var(--nv-oro-claro);
+  --ms-lime:       var(--nv-oro-claro);
+}
+
+/* Festiva: además cambian las superficies. El azul de marca cede el lugar al verde pino y el fondo, al marfil.
+   Los contrastes se mantienen: blanco sobre pino 12:1, texto principal sobre marfil 17:1. */
+html[data-season="christmas"][data-season-surface="publico"][data-season-intensity="festiva"] {
+  --ab-navy:        var(--nv-pino);
+  --ab-deep-violet: var(--nv-pino-claro);
+  --ms-navy:        var(--nv-pino);
+  --surface-dark:   var(--nv-pino);
+  --surface-page:   var(--nv-marfil);
+  --surface-muted:  var(--nv-marfil-2);
+  --border-light:   rgba(20, 61, 43, 0.14);
+  --border-medium:  rgba(20, 61, 43, 0.24);
+  --shadow-card:    0 1px 3px rgba(20,61,43,0.08), 0 4px 12px rgba(20,61,43,0.06);
+  --shadow-raised:  0 4px 16px rgba(20,61,43,0.14), 0 1px 4px rgba(20,61,43,0.08);
+}
+
+/* Botón primario de la tienda (los que pintan su fondo con el color de marca): filete dorado y un realce breve
+   al pasar el cursor o al recibir el foco. No cambia tamaño, posición ni etiqueta. Los deshabilitados no brillan. */
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button)[style*="background: var(--ab-navy)"],
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button)[style*="background-color: var(--ab-navy)"] {
+  box-shadow: inset 0 0 0 1px var(--nv-brillo), 0 6px 16px -10px rgba(20, 61, 43, 0.7);
+  transition: filter 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button)[style*="background: var(--ab-navy)"]:is(:hover, :focus-visible):not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: inset 0 0 0 1.5px var(--nv-oro-claro), 0 8px 18px -10px rgba(20, 61, 43, 0.8);
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button)[style*="background: var(--ab-navy)"]:disabled { box-shadow: none; }
+
+/* Foco visible de temporada en controles de la tienda (el color no es el único indicador: sigue el anillo). */
+html[data-season="christmas"][data-season-surface="publico"] :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--nv-burdeos);
+  outline-offset: 1px;
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--nv-pino); }
+html[data-season="christmas"][data-season-surface="publico"] ::selection { background: var(--nv-oro-claro); color: #0D0D1A; }
+
+/* Encabezado: una cinta fina burdeos y oro en el borde de abajo. No cambia el alto. */
+html[data-season="christmas"] [data-header-tienda] {
+  border-bottom-color: transparent !important;
+  background-image: linear-gradient(90deg, var(--nv-burdeos) 0 33%, var(--nv-oro-claro) 33% 66%, var(--nv-pino) 66% 100%);
+  background-size: 100% 3px;
+  background-position: bottom;
+  background-repeat: no-repeat;
+}
+
+/* Franja de campaña (texto del panel) */
+.nv-franja { background: var(--nv-burdeos); color: #fff; }
+.nv-franja-contenido {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  max-width: 1224px; margin: 0 auto; padding: 0.5rem 1rem;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.01em; color: #fff; text-decoration: none;
+}
+a.nv-franja-contenido:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.nv-franja-estrella { width: 12px; height: 12px; flex-shrink: 0; }
+.nv-franja-ver { flex-shrink: 0; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Luces bajo el encabezado: cuelgan sin ocupar alto */
+.nv-luces { display: flex; overflow: hidden; pointer-events: none; }
+.nv-luces-tramo { flex: 0 0 240px; width: 240px; height: 30px; }
+.nv-luces-encabezado { position: absolute; left: 0; right: 0; top: 100%; height: 30px; z-index: 1; }
+.nv-luces-compacta { justify-content: center; }
+.nv-foco { transform-box: fill-box; transform-origin: center; }
+html[data-season="christmas"]:not([data-season-still]) .nv-foco { animation: nv-brilla 4.8s ease-in-out infinite; }
+html[data-season="christmas"]:not([data-season-still]) .nv-foco-2 { animation-delay: -1.2s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-foco-3 { animation-delay: -2.4s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-foco-4 { animation-delay: -3.6s; }
+@keyframes nv-brilla { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* Gorro sobre el logotipo */
+/* El gorro cae sobre la hojita del logotipo (arriba, al 57 % del ancho de la imagen). En porcentajes: acompaña
+   al logo en cualquier tamaño sin mover nada más. */
+.nv-gorro { position: absolute; width: 31%; height: auto; left: 42.5%; top: -12%; transform: rotate(9deg); transform-origin: 40% 100%; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
+html[data-season="christmas"]:not([data-season-still]) a:hover > .nv-gorro { animation: nv-gorro 600ms cubic-bezier(0.23, 1, 0.32, 1); }
+@keyframes nv-gorro { 0%, 100% { rotate: 0deg; } 35% { rotate: -9deg; } 70% { rotate: 5deg; } }
+.nv-gorro-panel { width: 19px; left: 13px; top: 9px; transform: rotate(-20deg); }
+.nv-gorro-acceso { width: 40px; top: -14px; left: -12px; }
+
+/* Cinta de sección: rama + rótulo chico */
+.nv-cinta {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--nv-burdeos);
+}
+.nv-cinta-rama { width: 44px; height: 18px; flex-shrink: 0; }
+
+/* Bloque de bienvenida de la portada */
+.nv-bienvenida {
+  position: relative; overflow: hidden;
+  display: grid; align-items: center; gap: 1.25rem;
+  border-radius: 24px; padding: 1.5rem;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(226, 188, 114, 0.20), transparent 55%),
+    linear-gradient(135deg, #143D2B 0%, #1F5A40 100%);
+  color: #fff;
+}
+@media (min-width: 768px) { .nv-bienvenida { grid-template-columns: minmax(0, 1fr) 300px; padding: 2rem 2.5rem; } }
+.nv-bienvenida-titulo { font-family: "Barlow Condensed", Barlow, system-ui, sans-serif; font-weight: 800; line-height: 1; font-size: clamp(2rem, 4.5vw, 3.25rem); letter-spacing: -0.01em; }
+.nv-bienvenida-texto { margin-top: 0.75rem; max-width: 34rem; font-size: 15px; line-height: 1.55; color: rgba(255, 248, 238, 0.86); }
+.nv-bienvenida-boton {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.25rem;
+  border-radius: 9999px; padding: 0.8rem 1.4rem; min-height: 44px;
+  background: var(--nv-oro-claro); color: #0D0D1A; font-size: 14px; font-weight: 800; text-decoration: none;
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), background-color 180ms;
+}
+.nv-bienvenida-boton:hover { background: #EBCB8B; }
+.nv-bienvenida-boton:active { transform: scale(0.97); }
+.nv-bienvenida-boton:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.nv-bienvenida-escena { width: 220px; margin: 0 auto; }
+@media (min-width: 768px) { .nv-bienvenida-escena { width: 300px; } }
+.nv-bienvenida .nv-cinta { color: var(--nv-oro-claro); }
+
+/* Entrada del personaje y saludo: solo en la portada, una vez */
+html[data-season="christmas"]:not([data-season-still]) .nv-bienvenida .nv-entrada { animation: nv-entra 700ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes nv-entra { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+.nv-saludo { transform-box: fill-box; transform-origin: 100% 100%; }
+html[data-season="christmas"]:not([data-season-still]) .nv-bienvenida .nv-saludo { animation: nv-saluda 3.2s ease-in-out 800ms 2; }
+@keyframes nv-saluda { 0%, 100% { rotate: 0deg; } 25% { rotate: -9deg; } 55% { rotate: 6deg; } 80% { rotate: -5deg; } }
+
+/* Regalos: el lazo se levanta apenas al pasar el cursor o enfocar el contenedor */
+.nv-lazo { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1); }
+html[data-season="christmas"]:not([data-season-still]) :is(a, button):is(:hover, :focus-visible) .nv-lazo { transform: translateY(-1.5px) scale(1.08); }
+
+/* Estados vacíos de temporada */
+.nv-vacio { width: 180px; margin: 0 auto 0.75rem; }
+.nv-vacio-chico { width: 132px; margin: 0 auto 0.5rem; }
+
+/* Encabezado de página interior (catálogo, hubs, trade-in, servicio…): rama en la esquina del bloque */
+.nv-esquina { position: absolute; right: 0; top: 0; width: 120px; opacity: 0.9; pointer-events: none; }
+@media (max-width: 639px) { .nv-esquina { width: 84px; } }
+
+/* Tarjeta de producto: una etiqueta de regalo chica en la esquina. No toca la foto ni el estado del equipo. */
+.nv-etiqueta { position: absolute; right: 10px; top: 10px; width: 22px; height: 22px; z-index: 2; opacity: 0.95; }
+
+/* Pie: remate de ramas sobre el borde de arriba */
+.nv-remate { position: relative; height: 0; pointer-events: none; }
+.nv-remate > .nv-svg { position: absolute; bottom: -6px; width: 130px; height: auto; }
+.nv-remate > .nv-svg:first-child { left: 4%; }
+.nv-remate > .nv-svg:last-child { right: 4%; }
+@media (max-width: 639px) { .nv-remate > .nv-svg { width: 92px; } }
+
+/* Control visible para reducir efectos */
+.nv-control {
+  display: inline-flex; align-items: center; gap: 0.4rem; min-height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 9999px; padding: 0.3rem 0.8rem;
+  background: transparent; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.nv-control:hover { background: rgba(255, 255, 255, 0.1); }
+.nv-control:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.nv-control-icono { width: 11px; height: 11px; }
+.nv-control-panel { width: 100%; justify-content: center; border-color: rgba(255, 255, 255, 0.18); color: rgba(255, 255, 255, 0.8); }
+
+/* WhatsApp: conserva su verde y su forma; solo gana un filete dorado */
+html[data-season="christmas"] .ab-wa-boton { box-shadow: 0 0 0 2px var(--nv-oro-claro), 0 10px 24px -8px rgba(0, 0, 0, 0.35); }
+
+/* Nieve opcional (apagada por defecto): 14 copos, solo transform y opacity */
+.nv-nieve { position: fixed; inset: 0; z-index: 30; overflow: hidden; pointer-events: none; }
+.nv-nieve > span {
+  position: absolute; top: -12px; width: var(--nv-copo, 4px); height: var(--nv-copo, 4px);
+  border-radius: 9999px; background: #fff; opacity: 0.75; box-shadow: 0 0 0 1px rgba(20, 61, 43, 0.08);
+  animation: nv-cae linear infinite;
+}
+@keyframes nv-cae { to { transform: translate3d(18px, 105vh, 0); } }
+html[data-season-still] .nv-nieve { display: none; }
+
+/* Aviso de vista previa (solo quien administra la tienda) */
+.nv-previa {
+  position: fixed; left: 50%; bottom: 14px; translate: -50% 0; z-index: 9990;
+  max-width: calc(100vw - 24px); border-radius: 9999px; padding: 0.55rem 1rem;
+  background: #0D0D1A; color: #fff; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
+.nv-previa span { color: var(--nv-oro-claro); text-decoration: underline; }
+.nv-previa:focus-visible { outline: 2px solid var(--nv-oro-claro); outline-offset: 2px; }
+
+/* ═════════════════════════════════════ PANEL (administrador y vendedor) ═════════════════════════════ */
+
+/* El acento del panel pasa a burdeos: foco de inputs, selección, enlaces y pestañas lo toman solos. */
+html[data-season="christmas"][data-season-surface="admin"] {
+  --ab-acento: #A42635;
+  --ab-acento-rgb: 164 38 53;
+}
+
+/* Botón primario del panel: verde pino con filete dorado. Peligro, éxito y secundarios no cambian de significado. */
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\] {
+  background-color: var(--nv-pino);
+  box-shadow: inset 0 0 0 1px var(--nv-brillo), 0 8px 18px -10px rgba(20, 61, 43, 0.7);
+}
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:hover:not(:disabled) { background-color: var(--nv-pino-claro); }
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:disabled { box-shadow: none; }
+
+/* Encabezados de página y de tarjeta: filete de temporada a la izquierda del título */
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin h1.text-\[\#011446\] {
+  padding-left: 0.7rem;
+  border-left: 4px solid var(--nv-burdeos);
+  border-image: linear-gradient(180deg, var(--nv-burdeos), var(--nv-oro-claro)) 1;
+}
+
+/* Encabezados de tabla: un tono marfil apenas visible; las cifras y los colores de estado no se tocan */
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin thead th { box-shadow: inset 0 -2px 0 rgba(184, 138, 68, 0.35); }
+
+/* Casillas, radios y selección de texto */
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--nv-pino); }
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin ::selection { background: var(--nv-oro-claro); color: #0D0D1A; }
+
+/* Barra de arriba: la misma cinta fina que la tienda */
+html[data-season="christmas"][data-season-surface="admin"] .nv-topbar { position: relative; }
+html[data-season="christmas"][data-season-surface="admin"] .nv-topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; pointer-events: none;
+  background: linear-gradient(90deg, var(--nv-burdeos) 0 33%, var(--nv-oro-claro) 33% 66%, var(--nv-pino) 66% 100%);
+}
+
+/* Menú lateral: el ítem activo marca con oro en vez de lima; festiva lo viste de pino */
+html[data-season="christmas"][data-season-surface="admin"] .ab-sidebar .nv-activo-barra { background: var(--nv-oro-claro) !important; }
+html[data-season="christmas"][data-season-surface="admin"] .ab-sidebar .nv-activo-icono { color: var(--nv-oro-claro) !important; }
+html[data-season="christmas"][data-season-surface="admin"] .ab-sidebar .nv-insignia { color: var(--nv-oro-claro) !important; }
+html[data-season="christmas"][data-season-surface="admin"][data-season-intensity="festiva"] .ab-sidebar {
+  background: linear-gradient(180deg, #143D2B 0%, #1F5A40 100%) !important;
+}
+.nv-sidebar-remate { position: relative; padding: 0 0.75rem 0.5rem; }
+.nv-sidebar-remate .nv-luces { margin-bottom: 0.4rem; opacity: 0.9; }
+
+/* Bienvenida del Resumen: escena chica que no desplaza las métricas */
+.nv-panel-bienvenida {
+  display: flex; align-items: center; gap: 1rem; overflow: hidden;
+  border-radius: 16px; border: 1px solid rgba(20, 61, 43, 0.14); padding: 0.75rem 1rem;
+  background: linear-gradient(90deg, #FFF8EE 0%, #fff 70%);
+}
+.nv-panel-bienvenida-escena { width: 64px; }
+.nv-panel-bienvenida p { margin: 0; }
+
+/* Acceso (ingresar, crear cuenta, recuperar): el personaje acompaña sin empujar el formulario */
+.nv-acceso-personaje { position: absolute; right: 18px; bottom: 0; width: 96px; pointer-events: none; }
+@media (max-width: 1023px) { .nv-acceso-personaje { display: none; } }
+
+/* ═════════════════════════════════════ MOVIMIENTO ═════════════════════════════════════════════════ */
+
+/* Quien pide menos movimiento en su sistema no ve ninguna animación de la campaña, aunque estén encendidas. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] :is(.nv-foco, .nv-saludo, .nv-entrada, .nv-lazo, .nv-bienvenida-boton) { animation: none !important; transition: none !important; }
+  html[data-season="christmas"] .nv-nieve { display: none; }
+}
+
+/* Tira de temporada de las páginas interiores (entre el encabezado y el contenido) */
+.nv-tira { background: var(--nv-marfil-2, #F6ECDD); border-bottom: 1px solid rgba(20, 61, 43, 0.12); }
+html[data-season-intensity="discreta"] .nv-tira { background: #fff; }
+.nv-tira-contenido {
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  max-width: 1224px; margin: 0 auto; padding: 0 1rem; min-height: 48px; padding-top: 14px;
+}
+.nv-tira p { margin: 0; font-size: 13px; font-weight: 700; color: var(--nv-pino, #143D2B); text-align: center; }
+.nv-tira-rama { width: 64px; height: 26px; flex-shrink: 0; }
+.nv-tira-adorno { width: 24px; height: 24px; flex-shrink: 0; }
+.nv-tira-personaje { height: 40px; align-self: flex-end; }
+@media (max-width: 479px) { .nv-tira-rama { display: none; } }
+
+/* Acceso: en festiva, el panel de marca y la franja del celular pasan al verde pino */
+html[data-season="christmas"][data-season-intensity="festiva"] .nv-acceso-marca { background: linear-gradient(160deg, #143D2B 0%, #1F5A40 100%) !important; }
+html[data-season="christmas"] .nv-acceso-titulo { color: var(--nv-pino) !important; }
+html[data-season="christmas"][data-season-intensity="discreta"] .nv-acceso-titulo { color: inherit !important; }
+
+/* ═════════════════════════════════════ MÁS TEMÁTICA (13-11-2026) ═══════════════════════════════════ */
+
+/* Luces más ricas: focos grandes con halo y colgantes entre foco y foco */
+.nv-luces-tramo { flex: 0 0 240px; width: 240px; height: 46px; }
+.nv-luces-encabezado { height: 46px; }
+.nv-halo { transform-box: fill-box; transform-origin: center; }
+html[data-season="christmas"]:not([data-season-still]) .nv-halo { animation: nv-halo 4.8s ease-in-out infinite; }
+@keyframes nv-halo { 0%, 100% { opacity: 0.34; transform: scale(1.15); } 50% { opacity: 0.08; transform: scale(0.8); } }
+.nv-pendulo { transform-box: fill-box; transform-origin: 50% 0; }
+html[data-season="christmas"]:not([data-season-still]) .nv-pendulo { animation: nv-pendulo 5.2s ease-in-out infinite; }
+html[data-season="christmas"]:not([data-season-still]) .nv-pendulo-b { animation-duration: 6.4s; animation-delay: -1.6s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-pendulo-c { animation-duration: 4.4s; animation-delay: -2.8s; }
+@keyframes nv-pendulo { 0%, 100% { rotate: -5deg; } 50% { rotate: 5deg; } }
+.nv-tira-contenido { padding-top: 30px; min-height: 68px; }
+
+/* Trineo que cruza: en la tira de cada página y en el cielo del paisaje del pie */
+.nv-tira { position: relative; overflow: hidden; }
+.nv-tira-contenido { position: relative; }
+.nv-vuelo { position: absolute; left: 0; bottom: 4px; width: 132px; opacity: 0.95; translate: -160px 0; }
+.nv-vuelo-alto { bottom: auto; top: 6px; width: 190px; }
+html[data-season="christmas"]:not([data-season-still]) .nv-vuelo { animation: nv-vuelo 26s linear infinite; }
+html[data-season="christmas"]:not([data-season-still]) .nv-vuelo-alto { animation-duration: 34s; animation-delay: -9s; }
+@keyframes nv-vuelo { 0% { translate: -200px 0; } 55%, 100% { translate: calc(100vw + 60px) 0; } }
+html[data-season-still] .nv-vuelo { translate: 12vw 0; }
+.nv-galope { transform-box: fill-box; }
+html[data-season="christmas"]:not([data-season-still]) .nv-galope { animation: nv-galope 0.7s ease-in-out infinite alternate; }
+html[data-season="christmas"]:not([data-season-still]) .nv-galope-b { animation-delay: -0.35s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-galope-c { animation-duration: 1.4s; }
+@keyframes nv-galope { from { translate: 0 0; } to { translate: 0 -3px; } }
+.nv-pata { transform-box: fill-box; transform-origin: 50% 0; }
+html[data-season="christmas"]:not([data-season-still]) .nv-pata-a { animation: nv-pata 0.7s ease-in-out infinite alternate; }
+html[data-season="christmas"]:not([data-season-still]) .nv-pata-b { animation: nv-pata 0.7s ease-in-out infinite alternate-reverse; }
+@keyframes nv-pata { from { rotate: -16deg; } to { rotate: 16deg; } }
+
+/* Paisaje del pie */
+.nv-paisaje { position: relative; height: 150px; overflow: hidden; pointer-events: none; }
+.nv-paisaje-suelo { position: absolute; left: 0; right: 0; bottom: -1px; height: 120px; width: 100%; aspect-ratio: auto !important; }
+html[data-season="christmas"]:not([data-season-still]) .nv-paseo { animation: nv-paseo 48s linear infinite; }
+@keyframes nv-paseo { from { translate: -80px 0; } to { translate: 1240px 0; } }
+html[data-season-still] .nv-paseo { translate: 560px 0; }
+@media (max-width: 639px) { .nv-paisaje { height: 110px; } .nv-paisaje-suelo { height: 84px; } .nv-vuelo-alto { width: 130px; } }
+
+/* Colgantes en los márgenes vacíos: solo en pantallas anchas, donde sobra espacio a los lados del contenido */
+.nv-margen { display: none; }
+@media (min-width: 1500px) {
+  .nv-margen { display: block; position: fixed; top: var(--alto-header, 180px); width: 120px; z-index: 20; }
+  .nv-margen-izq { left: calc(50% - 612px - 132px); }
+  .nv-margen-der { right: calc(50% - 612px - 132px); transform: scaleX(-1); }
+}
+
+/* Botones-reno: los botones principales llevan astas. No cambia su tamaño ni su texto. Se excluyen los que ya
+   están posicionados (absolute/fixed/sticky): a esos no se les toca `position`. */
+html[data-season="christmas"] {
+  --nv-asta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20' fill='none' stroke='%23B88A44' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 19C14 12 10 8 4 4M11.500 11C8 11 5 9 2 10M13.500 14C16 11 17 7 16 2'/%3E%3C/svg%3E");
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton):not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]),
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]):not([role="radio"]) {
+  position: relative;
+  overflow: visible;
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton):not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"])::before,
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton):not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"])::after,
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]):not([role="radio"])::before,
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]):not([role="radio"])::after {
+  content: "";
+  position: absolute; top: -13px; left: 8%; width: 18px; height: 15px;
+  background: var(--nv-asta) center / contain no-repeat;
+  pointer-events: none;
+  transform-origin: 80% 100%;
+  transition: rotate 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton):not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"])::after,
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]:not([class*="absolute"]):not([class*="fixed"]):not([class*="sticky"]):not([role="radio"])::after {
+  left: auto; right: 8%; scale: -1 1; transform-origin: 20% 100%;
+}
+/* Solo las astas se mueven: la regla no alcanza a ningún otro ::before/::after (por ejemplo, el marco de las tarjetas) */
+html[data-season="christmas"]:not([data-season-still]) :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton, .bg-\[\#011446\]):is(:hover, :focus-visible)::before { rotate: -12deg; }
+html[data-season="christmas"]:not([data-season-still]) :is(a, button):is([style*="background: var(--ab-navy)"], [style*="background: var(--ab-lime)"], .nv-bienvenida-boton, .bg-\[\#011446\]):is(:hover, :focus-visible)::after { rotate: -12deg; }
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]::before,
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(button, a).bg-\[\#011446\]::after { width: 14px; height: 12px; top: -10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] :is(.nv-halo, .nv-pendulo, .nv-vuelo, .nv-galope, .nv-pata, .nv-paseo) { animation: none !important; }
+  html[data-season="christmas"] .nv-vuelo { translate: 12vw 0; }
+  html[data-season="christmas"] .nv-paseo { translate: 560px 0; }
+}
+
+
+/* ═════════════════════════════════════ CARRITO DE TEMPORADA ════════════════════════════════════════ */
+.nv-carrito-icono { width: 26px; height: 26px; }
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito-contador { animation: nv-rebote 420ms cubic-bezier(0.23, 1, 0.32, 1); }
+@keyframes nv-rebote { 0% { scale: 0.4; } 60% { scale: 1.25; } 100% { scale: 1; } }
+html[data-season="christmas"]:not([data-season-still]) button:hover > .nv-carrito-icono { animation: nv-gorro 600ms cubic-bezier(0.23, 1, 0.32, 1); transform-origin: 50% 100%; }
+
+.nv-carrito { background: var(--nv-marfil) !important; }
+.nv-carrito .nv-carrito-cabecera {
+  border-bottom: 0 !important; padding-left: 4.75rem;
+  background: radial-gradient(120% 160% at 100% 0%, rgba(226, 188, 114, 0.22), transparent 55%), linear-gradient(135deg, #143D2B 0%, #1F5A40 100%);
+}
+.nv-carrito .nv-carrito-cabecera p:first-child { color: #fff !important; }
+.nv-carrito .nv-carrito-cabecera p + p { color: rgba(255, 248, 238, 0.8) !important; }
+.nv-carrito .nv-carrito-cabecera button { color: #fff !important; }
+.nv-carrito .nv-carrito-cabecera button:focus-visible { outline: 2px solid var(--nv-oro-claro); outline-offset: 2px; }
+.nv-carrito-saco { position: absolute; left: 1.25rem; top: 50%; translate: 0 -50%; width: 40px; height: 40px; }
+.nv-carrito-luces { position: absolute; left: 0; right: 0; top: 100%; z-index: 1; }
+.nv-carrito .nv-carrito-cabecera + div { padding-top: 2.75rem; }
+
+.nv-carrito .nv-carrito-fila {
+  margin-bottom: 0.6rem; padding: 0.75rem !important; border: 1px solid rgba(20, 61, 43, 0.12) !important; border-radius: 16px;
+  background: #fff; box-shadow: 0 1px 2px rgba(20, 61, 43, 0.06);
+  background-image: linear-gradient(180deg, var(--nv-burdeos), var(--nv-oro-claro)); background-size: 4px 60%; background-repeat: no-repeat; background-position: left center;
+}
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito .nv-carrito-fila { animation: nv-fila 360ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito .nv-carrito-fila:nth-child(2) { animation-delay: 50ms; }
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito .nv-carrito-fila:nth-child(3) { animation-delay: 100ms; }
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito .nv-carrito-fila:nth-child(n+4) { animation-delay: 150ms; }
+@keyframes nv-fila { from { opacity: 0; translate: 16px 0; } to { opacity: 1; translate: 0 0; } }
+
+.nv-carrito .nv-carrito-pie { position: relative; background: #fff; border-top: 2px dashed rgba(184, 138, 68, 0.55) !important; }
+.nv-carrito-cielo { position: relative; height: 44px; margin: -0.5rem -1.5rem 0.5rem; overflow: hidden; pointer-events: none; }
+.nv-carrito-trineo { position: absolute; left: 0; bottom: 2px; width: 120px; translate: -140px 0; }
+html[data-season="christmas"]:not([data-season-still]) .nv-carrito-trineo { animation: nv-vuelo-carrito 11s linear infinite; }
+@keyframes nv-vuelo-carrito { 0% { translate: -140px 0; } 70%, 100% { translate: 480px 0; } }
+html[data-season-still] .nv-carrito-trineo { translate: 40px 0; }
+.nv-carrito .nv-carrito-total { border-radius: 14px; padding: 0.7rem 0.9rem; background: var(--nv-marfil); border: 1px solid rgba(184, 138, 68, 0.4); align-items: center; }
+.nv-carrito .nv-vacio { width: 210px; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] :is(.nv-carrito-fila, .nv-carrito-trineo, .nv-carrito-contador, .nv-gorro, .nv-carrito-icono) { animation: none !important; }
+  html[data-season="christmas"] .nv-carrito-trineo { translate: 40px 0; }
+}
+
+/* Carrito reconocible: un carrito de compras (trazo del color del texto) con un regalo adentro */
+.nv-carrito-icono { width: 28px; height: 28px; }
+.nv-carrito-saco { color: #fff; width: 38px; height: 38px; }
+
+/* ═════════════════════════════════════ CAMPOS Y TARJETAS ═══════════════════════════════════════════ */
+
+/* Campos de la tienda: borde dorado suave y, al enfocar, anillo burdeos. Los campos con error conservan su rojo. */
+html[data-season="christmas"][data-season-surface="publico"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]), select, textarea):not([aria-invalid="true"]):not([class*="red"]) {
+  border-color: rgba(184, 138, 68, 0.6) !important;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+html[data-season="christmas"][data-season-surface="publico"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea):not([aria-invalid="true"]):not([class*="red"]):focus {
+  border-color: var(--nv-burdeos) !important;
+  box-shadow: 0 0 0 3px rgba(164, 38, 53, 0.16);
+  outline: none;
+}
+/* El buscador del encabezado: mismo borde dorado en su cápsula */
+html[data-season="christmas"][data-season-surface="publico"] [data-header-tienda] :is(button, div)[class*="rounded-full"][class*="border"] { border-color: rgba(184, 138, 68, 0.55) !important; }
+
+/* Tarjetas de producto y de novedad: todo el borde es un bastón de caramelo. Al pasar el cursor la tarjeta se
+   vuelve un regalo: se levanta, aparecen las cintas y el moño cae arriba. Las cintas son finas y translúcidas:
+   la foto, el precio y el estado del equipo se siguen viendo. */
+html[data-season="christmas"][data-season-surface="publico"] article.group { position: relative; }
+html[data-season="christmas"][data-season-surface="publico"] article.group > a:first-child {
+  position: relative;
+  border-color: transparent !important;
+  transition: box-shadow 300ms, translate 260ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+html[data-season="christmas"][data-season-surface="publico"] article.group > a:first-child::before {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; padding: 5px;
+  background: repeating-linear-gradient(135deg, var(--nv-burdeos) 0 9px, var(--nv-marfil) 9px 18px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+/* La foto va siempre limpia: nada la cubre. La tarjeta se reconoce como regalo por el marco de caramelo y un
+   moñito apoyado en el borde de arriba. El movimiento es del moño, no de la foto:
+   · con cursor: al acercarse, el moño se sacude y la tarjeta se levanta apenas;
+   · en pantallas táctiles: al tocar, la tarjeta cede un poco y el moño rebota (no existe «pasar por encima»). */
+html[data-season="christmas"][data-season-surface="publico"] article.group::before {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 46px; height: 29px; margin-left: -23px; z-index: 3; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 40'%3E%3Cpath d='M32 30C22 6 2 6 6 22C8 31 22 32 32 30Z' fill='%23B88A44'/%3E%3Cpath d='M32 30C42 6 62 6 58 22C56 31 42 32 32 30Z' fill='%23B88A44'/%3E%3Cpath d='M32 30C25 14 12 12 12 21C12 27 24 30 32 30Z' fill='%23E2BC72'/%3E%3Cpath d='M32 30C39 14 52 12 52 21C52 27 40 30 32 30Z' fill='%23E2BC72'/%3E%3Ccircle cx='32' cy='29' r='6.500' fill='%23A42635'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform-origin: 50% 85%;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+@media (hover: hover) {
+  html[data-season="christmas"][data-season-surface="publico"]:not([data-season-still]) article.group:hover::before { animation: nv-mono 620ms cubic-bezier(0.23, 1, 0.32, 1); }
+  html[data-season="christmas"][data-season-surface="publico"]:not([data-season-still]) article.group:hover > a:first-child { translate: 0 -4px; box-shadow: 0 16px 28px -16px rgba(20, 61, 43, 0.4); }
+}
+@media (hover: none) {
+  html[data-season="christmas"][data-season-surface="publico"]:not([data-season-still]) article.group:active::before { animation: nv-mono 520ms cubic-bezier(0.23, 1, 0.32, 1); }
+  html[data-season="christmas"][data-season-surface="publico"]:not([data-season-still]) article.group:active > a:first-child { scale: 0.98; transition: scale 120ms ease-out; }
+}
+@keyframes nv-mono { 0% { scale: 1; rotate: 0deg; } 30% { scale: 1.22; rotate: -10deg; } 60% { scale: 1.08; rotate: 8deg; } 100% { scale: 1; rotate: 0deg; } }
+/* En el celular: marco más fino y moño más chico, para que la grilla de dos columnas quede igual de prolija */
+@media (max-width: 639px) {
+  html[data-season="christmas"][data-season-surface="publico"] article.group > a:first-child::before { padding: 4px; background: repeating-linear-gradient(135deg, var(--nv-burdeos) 0 7px, var(--nv-marfil) 7px 14px); }
+  html[data-season="christmas"][data-season-surface="publico"] article.group::before { width: 34px; height: 22px; margin-left: -17px; top: -7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] article.group::before { animation: none !important; }
+}
+
+/* Tarjetas del panel: el mismo filete, más fino. No se anima nada dentro de tablas ni formularios. */
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin section[class*="rounded-2xl"][class*="border"][class*="bg-white"] {
+  background-image: repeating-linear-gradient(135deg, var(--nv-burdeos) 0 7px, var(--nv-marfil) 7px 14px);
+  background-size: 100% 3px; background-repeat: no-repeat; background-position: top;
+  border-color: rgba(184, 138, 68, 0.38);
+}
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)[class*="rounded-xl"][class*="border-slate-200"] { border-color: rgba(184, 138, 68, 0.5); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] article.group > a:first-child { translate: none !important; }
+}
+
+/* Arriba de todo, la tira de luces va completa. Al bajar (resources/js/temporada.js pone data-season-scrolled)
+   deja libre la columna del contenido —los 1224 px del centro— y queda solo en los márgenes, así no cruza títulos
+   ni formularios. En pantallas de 1224 px o menos, al bajar desaparece entera. */
+.nv-luces-encabezado { transition: opacity 220ms ease; }
+html[data-season-scrolled] .nv-luces-encabezado {
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 640px), transparent calc(50% - 612px), transparent calc(50% + 612px), #000 calc(50% + 640px), #000 100%);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(50% - 640px), transparent calc(50% - 612px), transparent calc(50% + 612px), #000 calc(50% + 640px), #000 100%);
+}
+@media (max-width: 1279px) { html[data-season-scrolled] .nv-luces-encabezado { opacity: 0; } }
+
+
+/* Luces que parpadean: cada foco se enciende y se apaga a su turno, suave y lento (menos de un parpadeo por
+   segundo: no es un destello brusco). */
+html[data-season="christmas"]:not([data-season-still]) .nv-luces .nv-foco { animation: nv-parpadea 2.4s ease-in-out infinite; }
+html[data-season="christmas"]:not([data-season-still]) .nv-luces .nv-halo { animation: nv-halo-parpadea 2.4s ease-in-out infinite; }
+html[data-season="christmas"]:not([data-season-still]) .nv-luces .nv-foco-2 { animation-delay: -0.6s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-luces .nv-foco-3 { animation-delay: -1.2s; }
+html[data-season="christmas"]:not([data-season-still]) .nv-luces .nv-foco-4 { animation-delay: -1.8s; }
+@keyframes nv-parpadea { 0%, 38%, 100% { opacity: 1; } 50%, 88% { opacity: 0.28; } }
+@keyframes nv-halo-parpadea { 0%, 38%, 100% { opacity: 0.42; transform: scale(1.25); } 50%, 88% { opacity: 0; transform: scale(0.7); } }
+
+/* Botón de la música */
+.nv-musica {
+  position: fixed; left: 16px; bottom: 16px; z-index: 190;
+  display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0 0.95rem 0 0.8rem;
+  border: 1px solid rgba(184, 138, 68, 0.7); border-radius: 9999px; cursor: pointer;
+  background: var(--nv-pino, #143D2B); color: #fff; font-size: 13px; font-weight: 700;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms;
+}
+.nv-musica[aria-pressed="false"] { background: #fff; color: #143D2B; }
+.nv-musica:active { transform: scale(0.97); }
+.nv-musica:focus-visible { outline: 3px solid var(--nv-oro-claro, #E2BC72); outline-offset: 2px; }
+.nv-musica-nota { width: 20px; height: 20px; flex-shrink: 0; }
+html[data-season="christmas"]:not([data-season-still]) .nv-musica-suena { animation: nv-nota 1.1s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+@keyframes nv-nota { from { rotate: -8deg; } to { rotate: 8deg; } }
+@media (max-width: 639px) { .nv-musica span { display: none; } .nv-musica { padding: 0; width: 44px; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-season="christmas"] :is(.nv-musica-nota, article.group > a:first-child) { animation: none !important; rotate: none !important; }
+}
+
+/* ═════════════════════════════════════ TAPA DE REGALO DEL CATÁLOGO ═════════════════════════════════ */
+/* Cubre exactamente el recuadro cuadrado de la foto. Roja, con la cruz de cinta y el moño dorados. El primer clic
+   la levanta y no vuelve (la visita la recuerda). Debajo quedan la foto limpia, el marco de caramelo y el moñito. */
+.nv-tapa {
+  position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1 / 1; z-index: 4;
+  display: grid; place-items: center; padding: 0; border: 0; cursor: pointer; border-radius: 16px; overflow: hidden;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 13px), #B88A44 calc(50% - 13px), #E2BC72 calc(50% - 9px), #F0D08E 50%, #E2BC72 calc(50% + 9px), #B88A44 calc(50% + 13px), transparent calc(50% + 13px)),
+    linear-gradient(0deg, transparent calc(50% - 13px), #B88A44 calc(50% - 13px), #E2BC72 calc(50% - 9px), #F0D08E 50%, #E2BC72 calc(50% + 9px), #B88A44 calc(50% + 13px), transparent calc(50% + 13px)),
+    radial-gradient(120% 120% at 20% 10%, rgba(255, 255, 255, 0.22), transparent 45%),
+    linear-gradient(145deg, #B92C3D 0%, #A42635 45%, #7E1B28 100%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14), inset 0 -14px 24px -14px rgba(0, 0, 0, 0.35), 0 8px 18px -12px rgba(126, 27, 40, 0.7);
+  transition: translate 240ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 240ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.nv-tapa:focus-visible { outline: 3px solid #E2BC72; outline-offset: 3px; }
+.nv-tapa-mono { width: 46%; max-width: 120px; height: auto; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); transform-origin: 50% 75%; translate: 0 -6%; }
+.nv-tapa-pista {
+  position: absolute; left: 50%; bottom: 9%; translate: -50% 0; white-space: nowrap;
+  border-radius: 9999px; padding: 0.3rem 0.7rem; background: rgba(255, 248, 238, 0.94); color: #7E1B28; font-size: 11px; font-weight: 800;
+}
+@media (hover: hover) {
+  html:not([data-season-still]) .nv-tapa:hover { translate: 0 -4px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.14), inset 0 -14px 24px -14px rgba(0, 0, 0, 0.35), 0 16px 26px -14px rgba(126, 27, 40, 0.8); }
+  html:not([data-season-still]) .nv-tapa:hover .nv-tapa-mono { animation: nv-mono 620ms cubic-bezier(0.23, 1, 0.32, 1); }
+}
+html:not([data-season-still]) .nv-tapa:active { scale: 0.98; }
+/* destapar: la tapa sube, se inclina y se va */
+.nv-tapa-saliendo { pointer-events: none; animation: nv-destapa 560ms cubic-bezier(0.5, 0, 0.75, 0) forwards; }
+@keyframes nv-destapa { 0% { translate: 0 0; rotate: 0deg; opacity: 1; } 25% { translate: 0 -6%; rotate: 2deg; opacity: 1; } 100% { translate: 8% -115%; rotate: 12deg; opacity: 0; } }
+html[data-season-still] .nv-tapa-saliendo { animation: nv-destapa-quieta 200ms ease forwards; }
+@keyframes nv-destapa-quieta { to { opacity: 0; } }
+/* mientras la tapa está puesta, el moñito del marco no se dibuja (la tapa ya trae el suyo) */
+html[data-season="christmas"] article.group:has(> .nv-tapa:not(.nv-tapa-saliendo))::before { display: none; }
+@media (max-width: 639px) { .nv-tapa-pista { font-size: 10px; padding: 0.22rem 0.55rem; } }
+@media (prefers-reduced-motion: reduce) {
+  .nv-tapa, .nv-tapa-mono { animation: none !important; transition: none !important; }
+  .nv-tapa-saliendo { animation: nv-destapa-quieta 200ms ease forwards !important; }
+}

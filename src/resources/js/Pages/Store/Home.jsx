@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { BienvenidaNavidad } from '@/Components/Temporada';
 import {
     ArrowRight, BadgeCheck, ChevronDown, Exchange,
     MapPin, MessageCircle, Scan, ShieldCheck, Smartphone, Watch, Wrench,
@@ -439,7 +440,8 @@ function SectionRenderer({ section, products, tone, featured, categories, totalA
     const nombre = useNombreTienda();
     switch (section.type) {
         case 'hero':
-            return <HeroMac featured={featured} totalAvailable={totalAvailable} cmsSettings={s} />;
+            // Con la campaña de Navidad encendida, su bloque de bienvenida va justo debajo del hero
+            return <><HeroMac featured={featured} totalAvailable={totalAvailable} cmsSettings={s} /><BienvenidaNavidad /></>;
         case 'trust':
             return <TrustBar />;
         case 'featured':

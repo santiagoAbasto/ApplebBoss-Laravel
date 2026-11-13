@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { Ilustracion } from '@/Components/Temporada';
 import { Search, SlidersHorizontal, X } from '@/Components/Store/Icons';
 import { useEffect, useRef, useState } from 'react';
 import StoreLayout, { StoreContainer, useStoreCart } from '@/Layouts/StoreLayout';
@@ -369,6 +370,7 @@ function CatalogInner({ products, categories, categoria, filters, pagination }) 
                             </div>
                         ) : (
                             <div className="py-24 text-center">
+                                <Ilustracion nombre="EscenaSinResultados" className="nv-vacio" />
                                 <h2
                                     className="text-2xl font-black"
                                     style={{ color: 'var(--text-primary)' }}

@@ -1,5 +1,5 @@
 import {
-  CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, FileUp, Hammer, House, Images, Laptop,
+  CalendarCheck, ChartLine, CircleHelp, ClipboardCheck, Contact, FileDown, FileText, FileUp, Gift, Hammer, House, Images, Laptop,
   Layers, LayoutDashboard, List, MailOpen, MapPin, Newspaper, Package, Receipt, Repeat, Search, Send, Settings,
   Plug, ShoppingCart, SlidersHorizontal, Smartphone, Star, Stethoscope, Store, Tablet, Tag, Truck, UserRound, Users, Wallet,
   Wrench,
@@ -50,6 +50,7 @@ const NAV = [
     { r: 'admin.trade-in.index', icon: Repeat, label: 'Trade-In', aviso: 'trade_in', modulo: 'tienda' },
     { r: 'admin.solicitudes-servicio.index', icon: Wrench, label: 'Solicitudes de servicio', aviso: 'solicitud_servicio', modulo: 'tienda' },
     { r: 'admin.configuracion.tienda.edit', icon: Settings, label: 'Configuración', modulo: 'tienda' },
+    { r: 'admin.configuracion.navidad.edit', icon: Gift, label: 'Campaña de Navidad', modulo: 'tienda' },
   ] },
   { key: 'marketing', label: 'Marketing y Google', items: [
     { r: 'admin.newsletter.campaigns.index', icon: Send, label: 'Campañas', modulo: 'marketing' },

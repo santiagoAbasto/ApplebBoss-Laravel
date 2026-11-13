@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { GorroDeMarca, PersonajeDeAcceso } from '@/Components/Temporada';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { IPhone, MacBook, Watch } from '@/Components/Store/FloatingDevices';
@@ -43,7 +44,8 @@ function Floating({ children, className, style, delay = 0, dur = 7, rot = 0 }) {
 
 function Logo({ className = '' }) {
     return (
-        <Link href="/" className={`inline-flex items-center gap-2.5 ${className}`}>
+        <Link href="/" className={`relative inline-flex items-center gap-2.5 ${className}`}>
+            <GorroDeMarca className="nv-gorro-acceso" />
             <img src="/images/logo-appleboss.png" alt="" className="h-9 w-9 object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
             <span className="text-xl font-extrabold tracking-tight text-white" style={DISPLAY}>Apple Boss</span>
         </Link>
@@ -64,7 +66,7 @@ export default function AuthShell({ title, pageTitle, subtitle, icon: Icon, back
             {/* Barlow se carga una sola vez en app.blade.php */}
 
             {/* ── Panel de marca ── */}
-            <aside className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-14" style={{ background: `linear-gradient(160deg, ${BRAND.navy} 0%, ${BRAND.navy2} 100%)` }}>
+            <aside className="nv-acceso-marca relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-14" style={{ background: `linear-gradient(160deg, ${BRAND.navy} 0%, ${BRAND.navy2} 100%)` }}>
                 {/* Círculos de marca */}
                 <span aria-hidden="true" className="absolute -right-24 -top-24 h-80 w-80 rounded-full" style={{ background: 'rgba(88,94,159,0.35)' }} />
                 <span aria-hidden="true" className="absolute -bottom-16 left-[30%] h-40 w-40 rounded-full" style={{ background: 'rgba(198,203,54,0.12)' }} />
@@ -107,12 +109,13 @@ export default function AuthShell({ title, pageTitle, subtitle, icon: Icon, back
                 </motion.div>
 
                 <p className="relative text-xs text-white/50">© {year} Apple Boss · Cochabamba, Bolivia</p>
+                <PersonajeDeAcceso />
             </aside>
 
             {/* ── Formulario ── */}
             <main className="flex min-h-screen flex-col">
                 {/* Franja de marca en celular */}
-                <div className="flex items-center justify-between px-5 py-4 lg:hidden" style={{ background: BRAND.navy }}>
+                <div className="nv-acceso-marca flex items-center justify-between px-5 py-4 lg:hidden" style={{ background: BRAND.navy }}>
                     <Logo />
                 </div>
 
@@ -134,7 +137,7 @@ export default function AuthShell({ title, pageTitle, subtitle, icon: Icon, back
                                 <Icon className="h-6 w-6" />
                             </span>
                         )}
-                        <h1 className="text-[34px] font-extrabold leading-tight tracking-tight" style={{ ...DISPLAY, color: BRAND.navy }}>{title}</h1>
+                        <h1 className="nv-acceso-titulo text-[34px] font-extrabold leading-tight tracking-tight" style={{ ...DISPLAY, color: BRAND.navy }}>{title}</h1>
                         {subtitle && <p className="mt-2 text-[15px] leading-relaxed text-slate-500">{subtitle}</p>}
 
                         <div className="mt-8">{children}</div>

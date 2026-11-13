@@ -1,5 +1,7 @@
 import './polyfills';
 import '../css/app-vite.css';
+import '../css/navidad.css';
+import { iniciarTemporada } from './temporada';
 import { route } from 'ziggy-js';
 
 import { createInertiaApp } from '@inertiajs/react';
@@ -18,6 +20,9 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         const root = createRoot(el);
+
+        // Campaña de temporada: deja en <html> lo mismo que escribió el servidor y lo actualiza al navegar
+        iniciarTemporada(props.initialPage);
 
         root.render(<App {...props} />);
 

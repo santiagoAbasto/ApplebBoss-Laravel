@@ -1,4 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { ControlDeMusica, CabeceraDelCarrito, CieloDelCarrito, IconoDeCarrito, AdornosDeMargen, PaisajeDelPie, AvisoDeVistaPrevia, ControlDeEfectos, EnNavidad, FranjaDeCampana, GorroDeMarca, Ilustracion, LucesDeEncabezado, Nieve, Rama, TiraDeTemporada, useTemporada } from '@/Components/Temporada';
 import { Check, ChevronDown, ChevronRight, Exchange, GitCompare, Mail, Menu, Search, ShieldCheck, ShoppingBag, Trash2, Wrench, X } from '@/Components/Store/Icons';
 import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ProductVisual from '@/Components/Store/ProductVisual';
@@ -325,14 +326,18 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                 </div>
             )}
 
+            {/* Campaña de Navidad: su texto y su enlace salen del panel. Apagada o sin texto, no se dibuja. */}
+            <FranjaDeCampana />
+
             {/* Main header: logo a la izquierda; búsqueda, cuenta, carrito y menú a la derecha */}
             <div>
                 <StoreContainer className="flex h-[76px] items-center gap-3 sm:h-[100px]">
                     <Link
                         href="/"
-                        className="flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#585E9F]/35 focus-visible:ring-offset-2"
+                        className="relative flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#585E9F]/35 focus-visible:ring-offset-2"
                         aria-label={`${nombre} — inicio`}
                     >
+                        <GorroDeMarca />
                         <img
                             src="/images/logo-appleboss-320.png"
                             alt={nombre}
@@ -386,10 +391,11 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
                             aria-label={`Carrito, ${cart.length} productos`}
                             style={{ color: 'var(--text-primary)' }}
                         >
-                            <ShoppingBag className="h-[22px] w-[22px]" />
+                            <IconoDeCarrito><ShoppingBag className="h-[22px] w-[22px]" /></IconoDeCarrito>
                             {cart.length > 0 && (
                                 <span
-                                    className="absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold"
+                                    key={cart.length}
+                                    className="nv-carrito-contador absolute right-0.5 top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold"
                                     style={{ background: 'var(--ab-lime)', color: 'var(--text-on-lime)' }}
                                 >
                                     {cart.length}
@@ -503,12 +509,14 @@ function StoreHeader({ cart, cartOpen, setCartOpen, menuOpen, setMenuOpen, abrir
 
             {/* Search overlay — rendered as portal-like fixed element */}
             <SearchOverlay open={searchOpen} onClose={closeSearch} />
+            <LucesDeEncabezado />
         </header>
     );
 }
 
 // ─── Cart Drawer ──────────────────────────────────────────────────────────────
 function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
+    const temporada = useTemporada();
     const wa = useWhatsApp();
     const availableItems = cart.filter((i) => i.available !== false);
     const cartMsg = `${wa.saludo} quiero cotizar:\n\n${availableItems.map((item, i) => `${i + 1}. ${item.name} — ${money(item.price)}`).join('\n')}\n\nTotal referencial: ${money(total)}`;
@@ -520,12 +528,13 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
                 <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} aria-hidden="true" />
             )}
             <aside
-                className={`fixed right-0 top-0 z-[60] flex h-full w-full max-w-sm flex-col shadow-2xl transition-transform sm:max-w-md ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                className={`fixed right-0 top-0 z-[60] flex h-full w-full max-w-sm flex-col shadow-2xl transition-transform sm:max-w-md ${temporada ? 'nv-carrito' : ''} ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
                 style={{ background: 'var(--surface-white)', transitionDuration: '280ms', transitionTimingFunction: 'cubic-bezier(.32,.72,0,1)' }}
                 aria-hidden={!isOpen} inert={!isOpen || undefined}
                 aria-label="Carrito de compras"
             >
-                <div className="flex items-center justify-between border-b px-6 py-5" style={{ borderColor: 'var(--border-light)' }}>
+                <div className="nv-carrito-cabecera relative flex items-center justify-between border-b px-6 py-5" style={{ borderColor: 'var(--border-light)' }}>
+                    <CabeceraDelCarrito />
                     <div>
                         <p className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>Tu selección</p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{cart.length} {cart.length === 1 ? 'producto' : 'productos'}</p>
@@ -538,7 +547,9 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                     {cart.length === 0 ? (
                         <div className="grid h-full place-content-center text-center">
-                            <ShoppingBag className="mx-auto mb-4 h-10 w-10" style={{ color: 'var(--text-muted)' }} />
+                            {temporada?.personajes
+                                ? <Ilustracion nombre="EscenaCarritoVacio" className="nv-vacio" />
+                                : <ShoppingBag className="mx-auto mb-4 h-10 w-10" style={{ color: 'var(--text-muted)' }} />}
                             <p className="font-bold" style={{ color: 'var(--text-primary)' }}>Tu carrito está vacío</p>
                             <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>Agrega equipos para recibir una cotización.</p>
                             <Link href="/catalogo" onClick={onClose} className="mt-5 inline-block rounded-full px-6 py-3 text-sm font-bold text-white" style={{ background: 'var(--ab-navy)' }}>
@@ -549,7 +560,7 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
                         cart.map((item) => {
                             const unavailable = item.available === false;
                             return (
-                                <div key={item.key} className="flex gap-4 border-b py-4" style={{ borderColor: 'var(--border-light)', opacity: unavailable ? 0.5 : 1 }}>
+                                <div key={item.key} className="nv-carrito-fila flex gap-4 border-b py-4" style={{ borderColor: 'var(--border-light)', opacity: unavailable ? 0.5 : 1 }}>
                                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl">
                                         <ProductVisual product={item} compact className="h-full w-full" />
                                     </div>
@@ -574,8 +585,9 @@ function CartDrawer({ cart, remove, total, isOpen, onClose, syncing }) {
                 </div>
 
                 {cart.length > 0 && (
-                    <div className="border-t p-6" style={{ borderColor: 'var(--border-light)' }}>
-                        <div className="mb-4 flex justify-between">
+                    <div className="nv-carrito-pie border-t p-6" style={{ borderColor: 'var(--border-light)' }}>
+                        <CieloDelCarrito />
+                        <div className="nv-carrito-total mb-4 flex justify-between">
                             <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Total referencial</span>
                             <span className="text-lg font-black tabular-nums" style={{ color: 'var(--ab-navy)' }}>{money(total)}</span>
                         </div>
@@ -797,6 +809,8 @@ function StoreFooter({ abrirAcceso }) {
 
     return (
         <footer style={{ background: 'var(--ab-navy)' }}>
+            {/* Remate de temporada: dos ramas apoyadas sobre el borde del pie. No ocupa alto. */}
+            <EnNavidad><div className="nv-remate" aria-hidden="true"><Rama /><Rama espejo /></div></EnNavidad>
             {/* Main footer grid */}
             <StoreContainer className="py-14">
                 <div className={`grid gap-10 ${gridCols}`}>
@@ -920,6 +934,7 @@ function StoreFooter({ abrirAcceso }) {
                             ))}
                         </span>
                     )}
+                    <ControlDeEfectos />
                     <CreditoBurrow />
                 </StoreContainer>
             </div>
@@ -1061,10 +1076,13 @@ export default function StoreLayout({ children }) {
 
                     <StoreHeader cart={cart} cartOpen={cartOpen} setCartOpen={setCartOpen} menuOpen={menuOpen} setMenuOpen={setMenuOpen} abrirAcceso={abrirAcceso} />
 
+                    <TiraDeTemporada />
+
                     <main id="main-content">
                         {children}
                     </main>
 
+                    <PaisajeDelPie />
                     <NewsletterBar />
                     <StoreFooter abrirAcceso={abrirAcceso} />
 
@@ -1076,6 +1094,10 @@ export default function StoreLayout({ children }) {
 
                     <AccesoModal abierto={accesoAbierto} onCerrar={cerrarAcceso} />
                     <AvisoCookies />
+                    <Nieve />
+                    <ControlDeMusica />
+                    <AdornosDeMargen />
+                    <AvisoDeVistaPrevia />
                 </div>
             </CompareProvider>
         </CartContext.Provider>

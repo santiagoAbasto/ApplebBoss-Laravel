@@ -280,6 +280,15 @@ Route::middleware(['auth', 'verified', 'permiso'])
         Route::get('/configuracion/tienda', [ConfiguracionTiendaController::class, 'edit'])->name('configuracion.tienda.edit');
         Route::post('/configuracion/tienda', [ConfiguracionTiendaController::class, 'update'])->name('configuracion.tienda.update');
 
+        // Campaña de Navidad: la apariencia de temporada de la tienda y del panel (App\Support\Temporada)
+        Route::prefix('configuracion/navidad')->name('configuracion.navidad.')->controller(\App\Http\Controllers\Admin\CampanaNavidadController::class)->group(function () {
+            Route::get('/', 'edit')->name('edit');
+            Route::post('/', 'update')->name('update');
+            Route::post('/vista-previa', 'vistaPrevia')->name('vista-previa');
+            Route::delete('/vista-previa', 'salirDeVistaPrevia')->name('vista-previa.salir');
+            Route::post('/apagar', 'apagar')->name('apagar');
+        });
+
         // ========================
         // 📣 MARKETING: NEWSLETTER + SEO POR PÁGINA
         // ========================

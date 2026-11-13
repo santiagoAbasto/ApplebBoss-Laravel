@@ -80,6 +80,8 @@ class HandleInertiaRequests extends Middleware
             // en ese caso la tienda muestra solo bolivianos, nunca una conversión inventada.
             'tipoCambio' => fn () => \App\Support\Pagos\TipoDeCambio::paraLaVista(),
             'tienda'  => fn () => static::publicStoreSettings(),
+            // Campaña de Navidad: null si está apagada o no corresponde a esta superficie (App\Support\Temporada)
+            'temporada' => fn () => \App\Support\Temporada::paraLaVista($request),
             'navMenu' => fn () => static::navMenuData(),
             // Contadores del menú del panel (solo para administradores): solicitudes de Trade-In y de servicio técnico sin responder
             'avisosAdmin' => fn () => $request->user()?->rol === 'admin' ? static::avisosAdmin() : null,

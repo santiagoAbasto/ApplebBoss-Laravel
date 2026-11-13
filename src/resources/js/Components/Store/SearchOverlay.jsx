@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { Ilustracion, useTemporada } from '@/Components/Temporada';
 import { createPortal } from 'react-dom';
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion';
@@ -207,6 +208,7 @@ function VistaPrevia({ item, reduce, onAbrir }) {
 }
 
 export default function SearchOverlay({ open, onClose }) {
+    const temporada = useTemporada();
     const reduce = useReducedMotion();
     const [query, setQuery] = useState('');
     const [categoria, setCategoria] = useState('');
@@ -568,9 +570,11 @@ export default function SearchOverlay({ open, onClose }) {
 
                                 {sinResultados && (
                                     <div className="px-6 py-14 text-center">
+                                        {temporada?.personajes ? <Ilustracion nombre="EscenaSinResultados" className="nv-vacio-chico" /> : (
                                         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full" style={{ background: 'var(--surface-muted)' }}>
                                             <Search className="h-6 w-6" style={{ color: 'var(--text-muted)' }} />
                                         </div>
+                                        )}
                                         <p className="mt-4 text-[16px] font-bold" style={{ color: 'var(--text-primary)' }}>
                                             No encontramos «{query.trim()}»
                                         </p>

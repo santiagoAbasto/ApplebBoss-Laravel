@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+{{-- La campaña de temporada viste la página desde el primer byte: el atributo sale del servidor (App\Support\Temporada)
+     y resources/js/temporada.js lo mantiene igual al navegar. Apagada, no se escribe nada. --}}
+@php($temporada = $page['props']['temporada'] ?? null)
+@php($atributosDeTemporada = $temporada
+    ? ' data-season="' . e($temporada['nombre']) . '" data-season-surface="' . e($temporada['superficie']) . '" data-season-intensity="' . e($temporada['intensidad']) . '"' . ($temporada['animaciones'] ? '' : ' data-season-still')
+    : '')
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"{!! $atributosDeTemporada !!}>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

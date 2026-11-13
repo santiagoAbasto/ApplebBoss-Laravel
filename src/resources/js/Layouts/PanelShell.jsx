@@ -1,4 +1,5 @@
 import '@/bootstrap'; // window.axios con X-Requested-With para los formularios del panel (la tienda no lo carga)
+import { BienvenidaDelPanel, GorroDeMarca, RemateDelMenu } from '@/Components/Temporada';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -97,10 +98,10 @@ function NavGroup({ group, onNavigate }) {
                                     className="absolute inset-0 rounded-xl bg-white/[0.16]"
                                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                                 >
-                                    <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full" style={{ background: AB.lime }} />
+                                    <span className="nv-activo-barra absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full" style={{ background: AB.lime }} />
                                 </motion.span>
                             )}
-                            <Icon className={`relative h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'text-[#C6CB36]' : ''}`} />
+                            <Icon className={`relative h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:scale-110 ${active ? 'nv-activo-icono text-[#C6CB36]' : ''}`} />
                             <span className="relative truncate">{item.label}</span>
                             {/* Pendientes del módulo (por ejemplo, solicitudes de Trade-In sin responder) */}
                             {item.aviso && avisosAdmin?.[item.aviso] > 0 && (
@@ -198,13 +199,14 @@ function Sidebar({ nav, homeRoute, insignia, filtrarPorPermisos, tema, open, isD
             <div className="relative h-16 shrink-0"
                 style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.16) 0%, rgba(0,0,0,0) 100%)' }}>
                 <Link href={safeHref(homeRoute) ?? '/'} className="group flex h-full items-center justify-center px-14" onClick={onClose}>
+                    <GorroDeMarca className="nv-gorro-panel" />
                     <img src="/images/logo-appleboss-marca.png" alt="" width="31" height="36"
                         className="absolute left-5 top-1/2 h-9 w-auto -translate-y-1/2 transition-transform duration-300 ease-out group-hover:scale-105"
                         style={{ filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.25))' }} />
                     <span className="min-w-0 text-center">
                         <span className="block truncate text-[22px] font-extrabold leading-none tracking-tight text-white" style={{ fontFamily: DISPLAY_FONT }}>Apple Boss</span>
                         {insignia && (
-                            <span className="mt-1 block pl-[0.18em] text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: AB.lime }}>{insignia}</span>
+                            <span className="nv-insignia mt-1 block pl-[0.18em] text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: AB.lime }}>{insignia}</span>
                         )}
                     </span>
                 </Link>
@@ -221,6 +223,9 @@ function Sidebar({ nav, homeRoute, insignia, filtrarPorPermisos, tema, open, isD
             <nav ref={scrollRef} onScroll={onScroll} className="ab-scroll relative flex-1 overflow-y-auto overscroll-contain px-3 pb-4 pt-2">
                 {grupos.map((g) => <NavGroup key={g.key} group={g} onNavigate={isDesktop ? undefined : onClose} />)}
             </nav>
+
+            {/* Campaña de Navidad: luces y el control para bajar los efectos, en la zona libre del menú */}
+            <RemateDelMenu />
 
             <div className="relative shrink-0 border-t border-white/10 p-3">
                 <button
@@ -302,7 +307,7 @@ function Topbar({ nav, migaPorDefecto, tema, onMenu, onLogout }) {
     }, [nav]);
 
     return (
-        <header className="ab-reset sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8">
+        <header className="nv-topbar ab-reset sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8">
             <button type="button" onClick={onMenu} className="grid h-10 w-10 place-items-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú">
                 <Menu className="h-5 w-5" />
             </button>
@@ -336,6 +341,8 @@ export default function PanelShell({
     const t = TEMAS[tema] ?? TEMAS.admin;
     const { post } = useForm();
     const { url } = usePage();
+    // El saludo de temporada va solo en el Resumen (la pantalla de inicio de cada panel)
+    const esInicio = (() => { try { return new URL(safeHref(homeRoute), window.location.origin).pathname === url.split('?')[0]; } catch { return false; } })();
     const reduce = useReducedMotion();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -421,6 +428,7 @@ export default function PanelShell({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                     >
+                        {esInicio && <BienvenidaDelPanel />}
                         {children}
                     </motion.main>
                 </div>
