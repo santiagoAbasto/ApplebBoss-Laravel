@@ -370,7 +370,7 @@ function recordarRegalo(id) {
  * del <article>, que es `relative`): un botón de verdad, con nombre y foco, que el primer clic destapa. Mientras
  * está puesta, ese clic no abre el producto: lo abre el siguiente, ya sobre la foto.
  */
-export function TapaDeRegalo({ id, nombre }) {
+export function TapaDeRegalo({ id, nombre, completa = false }) {
     const temporada = useTemporada();
     const [estado, setEstado] = useState(() => { leerRegalos(); return abiertos.has(id) ? 'abierta' : 'puesta'; });
     if (!temporada?.tapas || !id || estado === 'abierta') return null;
@@ -383,7 +383,7 @@ export function TapaDeRegalo({ id, nombre }) {
     };
 
     return (
-        <button type="button" className={`nv-tapa ${estado === 'saliendo' ? 'nv-tapa-saliendo' : ''}`} onClick={destapar}
+        <button type="button" className={`nv-tapa ${completa ? 'nv-tapa-completa' : ''} ${estado === 'saliendo' ? 'nv-tapa-saliendo' : ''}`} onClick={destapar}
             aria-label={`Abrir el regalo: ${nombre}`} disabled={estado === 'saliendo'}>
             <svg className="nv-tapa-mono" viewBox="0 0 64 40" aria-hidden="true">
                 <path d="M32 30C22 6 2 6 6 22C8 31 22 32 32 30Z" fill="#B88A44" /><path d="M32 30C42 6 62 6 58 22C56 31 42 32 32 30Z" fill="#B88A44" />

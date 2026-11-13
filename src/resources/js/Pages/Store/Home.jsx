@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { BienvenidaNavidad } from '@/Components/Temporada';
+import { BienvenidaNavidad, TapaDeRegalo } from '@/Components/Temporada';
 import {
     ArrowRight, BadgeCheck, ChevronDown, Exchange,
     MapPin, MessageCircle, Scan, ShieldCheck, Smartphone, Watch, Wrench,
@@ -115,7 +115,9 @@ function ProductSpotlight({ product, onAdd }) {
     return (
         <div className="overflow-hidden rounded-2xl border" style={{ borderColor: 'var(--border-light)', background: 'var(--surface-white)' }}>
             <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="flex items-center justify-center bg-gray-50 p-6" style={{ minHeight: 220 }}>
+                <div className="nv-marco relative flex items-center justify-center bg-gray-50 p-6" style={{ minHeight: 220 }}>
+                    {/* Navidad: la misma tapa de regalo que las tarjetas del catálogo, cubriendo todo el recuadro de la foto */}
+                    <TapaDeRegalo id={product.slug ?? product.url} nombre={product.name} completa />
                     {img ? (
                         <img src={img.url_medium ?? img.url_card} alt={img.alt ?? product.name} width={img.ancho ?? undefined} height={img.alto ?? undefined} fetchPriority="high" decoding="async" className="max-h-[220px] w-auto object-contain" />
                     ) : (

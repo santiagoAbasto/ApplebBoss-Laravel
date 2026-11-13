@@ -580,3 +580,14 @@ html[data-season="christmas"] article.group:has(> .nv-tapa:not(.nv-tapa-saliendo
   .nv-tapa, .nv-tapa-mono { animation: none !important; transition: none !important; }
   .nv-tapa-saliendo { animation: nv-destapa-quieta 200ms ease forwards !important; }
 }
+
+/* Producto destacado de la portada (foto a la izquierda, datos a la derecha): misma tapa y mismo marco que las
+   tarjetas del catálogo, a la medida de su recuadro (que no es cuadrado). */
+.nv-tapa-completa { inset: 0; width: auto; height: auto; aspect-ratio: auto; border-radius: 0; }
+.nv-tapa-completa .nv-tapa-mono { width: 30%; max-width: 150px; }
+html[data-season="christmas"][data-season-surface="publico"] .nv-marco::before {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; padding: 6px;
+  background: repeating-linear-gradient(135deg, var(--nv-burdeos) 0 9px, var(--nv-marfil) 9px 18px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
