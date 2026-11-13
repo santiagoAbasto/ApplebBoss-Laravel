@@ -74,3 +74,29 @@ Pedido del dueño tras ver la primera versión («está muy simple»):
 Nada de esto se monta en checkout ni en pedido. Todo se detiene con «Reducir efectos», con el interruptor
 «Animaciones» o con `prefers-reduced-motion`. Verificado en navegador: /iphone y /catalogo a 1600 px, /catalogo a
 375 px (sin desborde) y Ventas del panel.
+
+## Estado final del 13-11-2026 (en producción, commit b082204)
+Lo que quedó después de las pasadas con el dueño. Donde contradiga lo de arriba, vale esto.
+
+- **Gorro:** cae sobre la hojita del logo. Posición en porcentajes en la tienda (`.nv-gorro`) y medida contra
+  cada imagen en el panel (`.nv-gorro-panel`) y en el acceso (`.nv-gorro-acceso`).
+- **Luces:** parpadean por turnos. Arriba de la página van completas; al bajar dejan libre la columna de 1224 px
+  y quedan solo en los márgenes (`data-season-scrolled`, lo pone `temporada.js`).
+- **Tarjetas de producto:** la foto va siempre limpia. Marco de bastón de caramelo y un moñito arriba.
+- **Tapas de regalo** (`TapaDeRegalo`, interruptor `navidad_tapas`): cada foto aparece tapada con una caja roja
+  con cruz y moño dorados. El primer clic la destapa (no abre el producto) y queda abierta toda la visita
+  (`sessionStorage`, clave `appleboss:navidad-regalos`). Está en `ProductCard` y en los destacados de la portada
+  (`ProductSpotlight`).
+- **Carrito:** ícono de carrito con un regalo, cabecera pino con luces, filas como tarjetas con cinta y el trineo
+  sobre el total.
+- **Campos:** borde dorado y foco burdeos; los campos con error conservan su rojo.
+- **Música** (interruptor `navidad_musica`): la pista del dueño, `src/public/audio/navidad.mp3` («December
+  Morning Swing», generada con Lyria; 112 kbps, 2,5 MB). En bucle, a volumen bajo, arranca con el primer gesto,
+  no se descarga hasta que va a sonar y cada visitante la apaga con un botón fijo. Se descartaron tres versiones
+  sintetizadas. Nunca se usan canciones con derechos.
+- **Panel (administrador y vendedor):** tematizado por completo en las dos intensidades: menú y bloque de
+  bienvenida en verde pino, lila → burdeos, lima → oro, tarjetas con filete de caramelo, luces y trineo en el
+  saludo del Resumen. Festiva suma el fondo marfil. Éxito, peligro y aviso no cambian de color.
+
+Reglas que dejó el dueño: la foto del producto no se cubre con adornos (salvo la tapa, que se quita con un clic);
+las luces no cruzan el texto; el gorro va en la hojita; en celular todo tiene que verse igual de prolijo.

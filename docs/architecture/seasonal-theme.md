@@ -45,3 +45,16 @@ Solo `transform`/`opacity`/`filter` en CSS, sin temporizadores de JS. Se apaga c
 «Animaciones» del panel, el control «Reducir efectos de Navidad» (pie de la tienda y menú del panel; se guarda en
 `localStorage`), o `prefers-reduced-motion`. La nieve (apagada por defecto) son 14 copos en CSS y no se monta en
 checkout, pedido, seguimiento ni panel.
+
+## Añadidos posteriores (13-11-2026)
+- Claves nuevas: `navidad_musica` y `navidad_tapas` (por defecto encendidas). Salen en la prop `temporada` solo
+  para la tienda (`musica`, `tapas`); en el panel valen siempre `false`.
+- `resources/js/Components/Temporada/musica.js`: un `<audio>` único fuera de React (sobrevive a la navegación de
+  Inertia). `temporada.js` lo importa de forma perezosa solo si la campaña trae música.
+- `temporada.js` también pone `data-season-scrolled` en `<html>` al bajar (un listener pasivo que solo existe con
+  la campaña encendida); `navidad.css` lo usa para recortar las luces del encabezado.
+- Panel: `navidad.css` pisa las clases de color fijo de Tailwind (`bg-[#011446]`, `text-[#585E9F]`…) y los
+  estilos en línea por su valor (`[style*="rgb(1, 20, 70)"]`), siempre dentro de
+  `html[data-season][data-season-surface="admin"] .ab-admin`.
+- Despliegue: los scripts de `scripts-servidor/` se copian con `scp` y se corren como archivo con `< /dev/null`.
+  Pasados por la entrada estándar (`ssh … 'bash -s' < script`), `docker compose exec -T` se come el resto.

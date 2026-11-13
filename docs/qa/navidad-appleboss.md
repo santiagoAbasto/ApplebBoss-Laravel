@@ -49,3 +49,9 @@ caramelo, música (Web Audio, con botón para apagarla) y tapas de regalo en las
   al recargar y al cambiar de página).
 - No verificado: el sonido en sí (no se puede oír desde la revisión automática), el rebote táctil con un dedo
   real, checkout/pago/seguimiento con un pedido de prueba, el panel del vendedor, Safari y Firefox.
+
+## Producción (13-11-2026, noche)
+Servidor en `b082204`, verificado desde afuera: portada, catálogo e iPhone 200; `<html>` con `data-season`
+(campaña encendida por el dueño); `/audio/navidad.mp3` 200; la hoja publicada trae `nv-tapa-completa` y el menú
+del panel en pino; título del iPhone 18 Pro Max sin cambios; 0 errores en el log.
+No verificado en producción: el panel con sesión iniciada y el sonido.
