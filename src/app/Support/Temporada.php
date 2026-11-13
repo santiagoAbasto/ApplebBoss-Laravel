@@ -42,11 +42,12 @@ class Temporada
         'navidad_nieve'               => '0',
         'navidad_musica'              => '1',
         'navidad_tapas'               => '1',
+        'navidad_documentos'          => '1',
         'navidad_texto'               => null,
         'navidad_enlace'              => null,
     ];
 
-    private const INTERRUPTORES = ['navidad_publico', 'navidad_admin', 'navidad_personajes', 'navidad_luces', 'navidad_animaciones', 'navidad_nieve', 'navidad_musica', 'navidad_tapas'];
+    private const INTERRUPTORES = ['navidad_publico', 'navidad_admin', 'navidad_personajes', 'navidad_luces', 'navidad_animaciones', 'navidad_nieve', 'navidad_musica', 'navidad_tapas', 'navidad_documentos'];
 
     /** Los ajustes guardados, con sus tipos ya resueltos (los interruptores como booleanos). */
     public static function ajustes(): array
@@ -130,6 +131,23 @@ class Temporada
                 : null;
         } catch (\Throwable) {
             return null;
+        }
+    }
+
+    /**
+     * ¿Los correos, los PDF y las páginas de documentos se visten de Navidad? Solo con la campaña activa y su
+     * interruptor encendido. Se consulta en el momento de armar cada documento (los correos en cola, al enviarse;
+     * los PDF, al pedirse): apagar la campaña en el panel los devuelve a su aspecto de siempre desde ese instante.
+     * Ante cualquier falla devuelve false: un documento nunca deja de salir por culpa del adorno.
+     */
+    public static function enDocumentos(): bool
+    {
+        try {
+            $ajustes = self::ajustes();
+
+            return self::activa($ajustes) && $ajustes['navidad_documentos'];
+        } catch (\Throwable) {
+            return false;
         }
     }
 

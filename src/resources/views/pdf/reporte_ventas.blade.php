@@ -126,6 +126,7 @@ th{
 </head>
 
 <body>
+@include('pdf.partials.navidad', [])
 
 <header>
 <img src="{{ public_path('images/logo.png') }}">

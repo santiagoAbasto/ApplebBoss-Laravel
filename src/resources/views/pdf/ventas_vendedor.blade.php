@@ -125,6 +125,7 @@
 </head>
 
 <body>
+@include('pdf.partials.navidad', [])
 
   <!-- HEADER -->
   <div class="header">

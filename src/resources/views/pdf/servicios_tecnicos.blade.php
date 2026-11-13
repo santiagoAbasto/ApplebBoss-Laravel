@@ -124,6 +124,7 @@
 </head>
 
 <body>
+@include('pdf.partials.navidad', [])
 
   <div class="brand">
     <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">

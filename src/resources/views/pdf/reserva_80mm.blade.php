@@ -30,6 +30,7 @@
 </head>
 
 <body>
+@include('pdf.partials.navidad', ['compacto' => true])
     <div class="wrapper">
         <div class="logo">
             <img src="{{ public_path('images/logo.png') }}" alt="Apple Boss">

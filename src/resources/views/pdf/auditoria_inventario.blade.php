@@ -239,6 +239,7 @@ tr:nth-child(even) td { background: #f9fafb; }
 </style>
 </head>
 <body>
+@include('pdf.partials.navidad', [])
 
 {{-- ═══════════════════════════════ HEADER ═══════════════════════════════ --}}
 <div class="page-header">

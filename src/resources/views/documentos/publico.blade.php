@@ -49,6 +49,7 @@
 </head>
 <body>
 <main class="tarjeta">
+@include('partials.navidad-pagina')
     <div class="cabeza">
         <div class="marca">
             <img src="{{ $base }}/images/correo/logo-animado.gif" alt="Apple Boss" width="52" height="52">

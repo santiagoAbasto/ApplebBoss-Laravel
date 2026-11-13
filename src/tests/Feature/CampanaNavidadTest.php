@@ -32,6 +32,7 @@ class CampanaNavidadTest extends TestCase
         'navidad_nieve'              => false,
         'navidad_musica'             => true,
         'navidad_tapas'              => true,
+        'navidad_documentos'         => true,
         'navidad_texto'              => 'Esta Navidad, regala tecnología',
         'navidad_enlace'             => '/catalogo',
     ];

@@ -94,6 +94,7 @@ export default function Navidad({ ajustes, activa, vistaPrevia, zona, ahora, lar
     navidad_nieve: ajustes.navidad_nieve,
     navidad_musica: ajustes.navidad_musica,
     navidad_tapas: ajustes.navidad_tapas,
+    navidad_documentos: ajustes.navidad_documentos,
     navidad_texto: ajustes.navidad_texto ?? '',
     navidad_enlace: ajustes.navidad_enlace ?? '',
   });
@@ -191,6 +192,7 @@ export default function Navidad({ ajustes, activa, vistaPrevia, zona, ahora, lar
                 <Interruptor checked={data.navidad_animaciones} onChange={(v) => setData('navidad_animaciones', v)} titulo="Animaciones" ayuda="El saludo de la portada, el brillo de las luces y de los botones. Quien pide menos movimiento en su equipo no las ve nunca." />
                 <Interruptor checked={data.navidad_nieve} onChange={(v) => setData('navidad_nieve', v)} titulo="Nieve (opcional)" ayuda="Unos pocos copos sobre la tienda. Nunca cae sobre el pago, el seguimiento ni el panel." />
                 <Interruptor checked={data.navidad_tapas} onChange={(v) => setData('navidad_tapas', v)} titulo="Tapas de regalo en el catálogo" ayuda="Cada foto de producto aparece tapada con una caja de regalo roja con cinta y moño dorados. El primer clic la destapa y queda abierta hasta que el visitante cierre la web. Ojo: mientras está tapada no se ve el producto, solo su nombre y su precio." />
+                <Interruptor checked={data.navidad_documentos} onChange={(v) => setData('navidad_documentos', v)} titulo="Correos y documentos" ayuda="Los correos (pedidos, bienvenida, boletín…), los PDF (boletas, cotizaciones, recibos, reportes) y las páginas de documentos llevan los colores y el saludo de Navidad. Al apagar la campaña vuelven solos a su aspecto de siempre." />
                 <Interruptor checked={data.navidad_musica} onChange={(v) => setData('navidad_musica', v)} titulo="Música navideña" ayuda="Villancicos suaves en la tienda. Empiezan con el primer clic del visitante (los navegadores no dejan antes) y cada persona puede apagarlos con un botón que queda a la vista." />
               </div>
             </StepCard>

@@ -135,6 +135,7 @@
   </style>
 </head>
 <body>
+@include('pdf.partials.navidad', [])
 
   <div class="brand">
     <img src="{{ public_path('images/pdf/logo.png') }}" alt="{{ $tienda['nombre'] ?? 'Apple Boss' }}">

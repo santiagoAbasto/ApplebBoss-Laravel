@@ -158,6 +158,7 @@ td:last-child {
 </head>
 
 <body>
+@include('pdf.partials.navidad', ['compacto' => true])
 
 <div class="wrapper">
 

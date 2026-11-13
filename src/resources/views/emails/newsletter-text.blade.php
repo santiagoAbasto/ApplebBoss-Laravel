@@ -38,3 +38,7 @@
 @endif
 Recibes este correo porque te suscribiste al newsletter de Apple Boss.
 Darte de baja: {{ $unsubscribeUrl }}
+@if(\App\Support\Temporada::enDocumentos())
+
+Felices fiestas de parte de Apple Boss.
+@endif

@@ -17,6 +17,8 @@
   </table>
 </div>
 
+@include('pdf.partials.navidad')
+
 <table>
   <tr>
     <td style="width: 74px;"><div class="sello"><img src="{{ public_path('images/logo-pdf.png') }}" alt=""></div></td>

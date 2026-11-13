@@ -111,3 +111,16 @@
   .pie td { vertical-align: middle; }
   .pie .ico { margin-right: 5px; }
 </style>
+{{-- Navidad: con la campaña activa el lima pasa a oro y el negro de fichas y píldoras a verde pino. Mismo tamaño y
+     misma disposición: solo cambian los colores. Apagada, este bloque no se escribe. --}}
+@if(\App\Support\Temporada::enDocumentos())
+<style>
+  .sello, .bola, .cuadro { background: #E2BC72; }
+  .ficha, .pildora { background: #143D2B; }
+  .ficha .tipo { color: #E2BC72; }
+  .tarjeta, .ficha-producto { border-color: #143D2B; }
+  .total, .pie { background: #143D2B; }
+  .total .monto { color: #E2BC72; }
+  .banda.lima { background: #E2BC72; border-color: #E2BC72; }
+</style>
+@endif

@@ -107,6 +107,7 @@ class CampanaNavidadController extends Controller
             'navidad_nieve'              => ['required', 'boolean'],
             'navidad_musica'             => ['required', 'boolean'],
             'navidad_tapas'              => ['required', 'boolean'],
+            'navidad_documentos'         => ['required', 'boolean'],
             'navidad_texto'              => ['nullable', 'string', 'max:' . self::LARGO_TEXTO],
             'navidad_enlace'             => ['nullable', 'string', 'max:200', function (string $atributo, mixed $valor, \Closure $falla) {
                 if (! Temporada::esEnlaceInterno($valor)) {
@@ -121,7 +122,7 @@ class CampanaNavidadController extends Controller
             'navidad_texto.max'          => 'El texto de campaña no puede pasar de :max caracteres.',
         ]);
 
-        foreach (['navidad_publico', 'navidad_admin', 'navidad_personajes', 'navidad_luces', 'navidad_animaciones', 'navidad_nieve', 'navidad_musica', 'navidad_tapas'] as $clave) {
+        foreach (['navidad_publico', 'navidad_admin', 'navidad_personajes', 'navidad_luces', 'navidad_animaciones', 'navidad_nieve', 'navidad_musica', 'navidad_tapas', 'navidad_documentos'] as $clave) {
             $data[$clave] = (bool) $data[$clave];
         }
         $texto = trim(strip_tags((string) ($data['navidad_texto'] ?? '')));

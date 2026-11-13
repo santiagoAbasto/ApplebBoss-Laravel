@@ -11,6 +11,10 @@
     $wa     = $local?->whatsapp ? 'https://wa.me/' . preg_replace('/\D+/', '', $local->whatsapp) : null;
     $redes  = (array) config('seo.negocio.redes', []);
     $nombre = ['facebook' => 'Facebook', 'instagram' => 'Instagram', 'tiktok' => 'TikTok'];
+    // Navidad: con la campaña activa la cabecera pasa al verde pino y los acentos al oro. Se decide al armar el correo.
+    $nv      = \App\Support\Temporada::enDocumentos();
+    $cabeza  = $nv ? '#143D2B' : '#011446';
+    $acento  = $nv ? '#E2BC72' : '#C6CB36';
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -31,8 +35,10 @@
 <tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;">
 
+        @include('emails.partials.navidad')
+
         {{-- Cabecera de marca --}}
-        <tr><td style="background:#011446;padding:26px 28px 24px;">
+        <tr><td style="background:{{ $cabeza }};padding:26px 28px 24px;">
             <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                     <td style="vertical-align:middle;">
@@ -47,7 +53,7 @@
             @hasSection('etiqueta')
                 <span style="display:inline-block;margin-top:22px;background:rgba(198,203,54,0.16);color:#E3E86A;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;padding:6px 12px;border-radius:999px;">@yield('etiqueta')</span>
             @endif
-            <h1 style="margin:@hasSection('etiqueta') 14px @else 24px @endif 0 0;font-size:26px;line-height:1.2;color:#ffffff;letter-spacing:-0.4px;">@yield('titulo')<span class="ab-punto" style="color:#C6CB36;">.</span></h1>
+            <h1 style="margin:@hasSection('etiqueta') 14px @else 24px @endif 0 0;font-size:26px;line-height:1.2;color:#ffffff;letter-spacing:-0.4px;">@yield('titulo')<span class="ab-punto" style="color:{{ $acento }};">.</span></h1>
         </td></tr>
 
         {{-- Contenido --}}

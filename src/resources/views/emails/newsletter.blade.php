@@ -17,6 +17,8 @@
             <td align="center" style="padding:24px 12px;">
                 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;">
 
+                    @include('emails.partials.navidad')
+
                     @if($esPrueba)
                         <tr><td style="background:#C6CB36;color:#0D0D1A;font-size:12px;font-weight:700;text-align:center;padding:8px;">CORREO DE PRUEBA — no se envió a los suscriptores</td></tr>
                     @endif

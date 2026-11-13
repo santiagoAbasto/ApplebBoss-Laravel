@@ -8,3 +8,7 @@ Hola {{ $nombre }},
 
 Apple Boss · Cochabamba, Bolivia
 appleboss.com.bo
+@if(\App\Support\Temporada::enDocumentos())
+
+Felices fiestas de parte de Apple Boss.
+@endif

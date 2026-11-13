@@ -40,6 +40,11 @@ class IconoPdf
 
     public static function uri(string $nombre, string $color = '#01295c'): string
     {
+        // Navidad: los iconos lima de los documentos pasan a oro mientras la campaña viste los documentos
+        if (strtolower($color) === '#c8f902' && Temporada::enDocumentos()) {
+            $color = Navidad\AdornoPdf::ORO;
+        }
+
         return 'data:image/svg+xml;base64,' . base64_encode(
             '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="' . $color
             . '" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' . (self::TRAZOS[$nombre] ?? self::TRAZOS['caja']) . '</svg>'
