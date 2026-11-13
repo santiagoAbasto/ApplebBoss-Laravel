@@ -176,8 +176,8 @@ export default function Navidad({ ajustes, activa, vistaPrevia, zona, ahora, lar
                   </Field>
                 </div>
                 <div className="space-y-3">
-                  <Interruptor checked={data.navidad_admin} onChange={(v) => setData('navidad_admin', v)} titulo="Panel (administrador y vendedor)" ayuda="Menú, barra de arriba, botones y encabezados. Las tablas y los formularios no se animan." />
-                  <Field label="Intensidad en el panel" error={errors.navidad_intensidad_admin} hint="Discreta mantiene el menú azul con detalles de temporada. Festiva lo viste de verde pino.">
+                  <Interruptor checked={data.navidad_admin} onChange={(v) => setData('navidad_admin', v)} titulo="Panel (administrador y vendedor)" ayuda="Todo el panel: menú, barra de arriba, botones, tarjetas, encabezados y el Resumen. Las tablas y los formularios no se animan." />
+                  <Field label="Intensidad en el panel" error={errors.navidad_intensidad_admin} hint="En las dos el panel va de verde pino, burdeos y oro. Festiva suma el fondo marfil.">
                     <Segmented options={INTENSIDADES} value={data.navidad_intensidad_admin} onChange={(v) => setData('navidad_intensidad_admin', v)} ariaLabel="Intensidad en el panel" />
                   </Field>
                 </div>

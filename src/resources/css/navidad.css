@@ -111,8 +111,8 @@ html[data-season="christmas"]:not([data-season-still]) .nv-foco-4 { animation-de
 .nv-gorro { position: absolute; width: 31%; height: auto; left: 42.5%; top: -12%; transform: rotate(9deg); transform-origin: 40% 100%; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.18)); }
 html[data-season="christmas"]:not([data-season-still]) a:hover > .nv-gorro { animation: nv-gorro 600ms cubic-bezier(0.23, 1, 0.32, 1); }
 @keyframes nv-gorro { 0%, 100% { rotate: 0deg; } 35% { rotate: -9deg; } 70% { rotate: 5deg; } }
-.nv-gorro-panel { width: 19px; left: 13px; top: 9px; transform: rotate(-20deg); }
-.nv-gorro-acceso { width: 40px; top: -14px; left: -12px; }
+.nv-gorro-panel { width: 15px; left: 32px; top: 5px; transform: rotate(9deg); }
+.nv-gorro-acceso { width: 12px; left: 15px; top: -5px; }
 
 /* Cinta de sección: rama + rótulo chico */
 .nv-cinta {
@@ -591,3 +591,41 @@ html[data-season="christmas"][data-season-surface="publico"] .nv-marco::before {
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
+
+
+/* ═════════════════════════════════════ PANEL TEMATIZADO POR COMPLETO ═══════════════════════════════ */
+/* Administrador y vendedor: el azul (y el morado del vendedor) pasan a verde pino, el lila a burdeos y el lima a
+   oro, en las dos intensidades. El panel pinta con clases de Tailwind de color fijo y con estilos en línea, así
+   que se pisan por nombre de clase y por el valor del estilo. Verde de éxito, rojo de peligro y ámbar de aviso no
+   se tocan: siguen significando lo mismo. */
+html[data-season="christmas"][data-season-surface="admin"] .ab-sidebar { background: linear-gradient(180deg, #143D2B 0%, #1F5A40 100%) !important; }
+html[data-season="christmas"][data-season-surface="admin"] .ab-admin {
+  /* azul → pino */
+  & .bg-\[\#011446\], & .bg-\[\#0A1F5C\], & .hover\:bg-\[\#0A1F5C\]:hover:not(:disabled) { background-color: var(--nv-pino); }
+  & .hover\:bg-\[\#0A1F5C\]:hover:not(:disabled) { background-color: var(--nv-pino-claro); }
+  & [class*="bg-[#011446]/"] { background-color: rgba(20, 61, 43, 0.09); }
+  & .text-\[\#011446\], & .text-\[\#28224F\] { color: var(--nv-pino); }
+  & .border-\[\#011446\] { border-color: var(--nv-pino); }
+  & [style*="background: rgb(1, 20, 70)"] { background: var(--nv-pino) !important; }
+  & [style*="background: linear-gradient(135deg, rgb(1, 20, 70)"] { background: radial-gradient(120% 140% at 100% 0%, rgba(226, 188, 114, 0.18), transparent 55%), linear-gradient(135deg, #143D2B 0%, #1F5A40 100%) !important; }
+  & [style*="color: rgb(1, 20, 70)"]:not([style*="background"]) { color: var(--nv-pino) !important; }
+  /* lila → burdeos */
+  & .text-\[\#585E9F\], & .text-\[\#3F4585\] { color: var(--nv-burdeos); }
+  & .bg-\[\#585E9F\] { background-color: var(--nv-burdeos); }
+  & [class*="bg-[#585E9F]/"] { background-color: rgba(164, 38, 53, 0.09); }
+  & .border-\[\#585E9F\] { border-color: var(--nv-burdeos); }
+  & .ring-\[\#585E9F\] { --tw-ring-color: var(--nv-burdeos); }
+  /* lima → oro */
+  & .bg-\[\#C6CB36\], & [style*="background: rgb(198, 203, 54)"] { background: var(--nv-oro-claro) !important; }
+  & .text-\[\#C6CB36\], & [style*="color: rgb(198, 203, 54)"]:not([style*="background"]) { color: var(--nv-oro-claro) !important; }
+}
+/* Festiva: además, el fondo del panel pasa al marfil */
+html[data-season="christmas"][data-season-surface="admin"][data-season-intensity="festiva"]:has(.ab-admin),
+html[data-season="christmas"][data-season-surface="admin"][data-season-intensity="festiva"]:has(.ab-admin) body,
+html[data-season="christmas"][data-season-surface="admin"][data-season-intensity="festiva"] .ab-admin { background: var(--nv-marfil) !important; }
+html[data-season="christmas"][data-season-surface="admin"][data-season-intensity="festiva"] .ab-admin .bg-\[\#F5F6FA\] { background-color: var(--nv-marfil-2); }
+
+/* Saludo del Resumen: luces arriba y el trineo que cruza. Solo en esa pantalla. */
+.nv-panel-bienvenida { position: relative; padding-top: 2.6rem; }
+.nv-panel-bienvenida > .nv-luces { position: absolute; left: 0; right: 0; top: 0; }
+.nv-panel-bienvenida > .nv-vuelo { bottom: 6px; width: 120px; }

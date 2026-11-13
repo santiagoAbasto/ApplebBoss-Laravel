@@ -226,6 +226,8 @@ export function BienvenidaDelPanel() {
 
     return (
         <div className="nv-panel-bienvenida ab-reset mx-auto mb-5 max-w-[1400px]">
+            {temporada.luces && <Luces />}
+            {temporada.personajes && <Ilustracion nombre="Trineo" className="nv-vuelo" />}
             {temporada.personajes
                 ? <Ilustracion nombre="Duende" className="nv-panel-bienvenida-escena" />
                 : <Campana className="h-10 w-10 shrink-0" />}
