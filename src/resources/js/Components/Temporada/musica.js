@@ -1,4 +1,4 @@
-// Música de la campaña de Navidad: un villancico tradicional (dominio público) a ritmo de salay, sintetizado en el navegador.
+// Música de la campaña de Navidad: un villancico andino propio (zampoña, charango y bombo), sintetizado en el navegador.
 // No hay archivo de audio: se generan con Web Audio, así no pesa nada ni depende de licencias.
 //
 // Reglas:
@@ -8,32 +8,37 @@
 const CLAVE = 'appleboss:navidad-musica';
 const AVISO = 'appleboss:navidad-musica-cambio';
 
-// «Jingle Bells» (tradicional, dominio público) a ritmo de SALAY, al estilo de Bolivia: charango rasgueado en
-// «tán-taka», bombo, bajo de guitarra y la melodía en zampoña, con cascabeles para lo navideño.
-// Es un arreglo propio: la melodía y los acordes son los del villancico, no los de ninguna canción con derechos.
+// Villancico andino ORIGINAL de Apple Boss (no es ninguna canción existente): melodía en la escala pentatónica
+// menor de los Andes (la, do, re, mi, sol), con frases que se repiten y bajan como en un huayño, tocada en
+// zampoña. La acompañan charango en «tán-taka», bombo, bajo de guitarra, triángulo y cascabeles de Navidad.
 // Todo cuantizado en semicorcheas (16 por compás de 4 tiempos). [nota MIDI, tiempos]; 0 = silencio.
-const G4 = 67, A4 = 69, B4 = 71, C5 = 72, D5 = 74, E5 = 76, F5 = 77, G5 = 79, A5 = 81;
-const ESTROFA = {
-    melodia: [
-        [G4, 1], [E5, 1], [D5, 1], [C5, 1], [G4, 3], [G4, 0.5], [G4, 0.5], [G4, 1], [E5, 1], [D5, 1], [C5, 1], [A4, 4],
-        [A4, 1], [F5, 1], [E5, 1], [D5, 1], [B4, 4], [G5, 1], [G5, 1], [F5, 1], [D5, 1], [E5, 4],
-        [G4, 1], [E5, 1], [D5, 1], [C5, 1], [G4, 3], [G4, 0.5], [G4, 0.5], [G4, 1], [E5, 1], [D5, 1], [C5, 1], [A4, 4],
-        [A4, 1], [F5, 1], [E5, 1], [D5, 1], [G5, 1], [G5, 1], [G5, 1], [G5, 1], [A5, 1], [G5, 1], [F5, 1], [D5, 1], [C5, 2], [G5, 2],
-    ],
-    acordes: ['C', 'C', 'C', 'F', 'Dm', 'G', 'G', 'C', 'C', 'C', 'C', 'F', 'Dm', 'G', 'G', 'C'],
-};
-const ESTRIBILLO = {
-    melodia: [
-        [E5, 1], [E5, 1], [E5, 2], [E5, 1], [E5, 1], [E5, 2], [E5, 1], [G5, 1], [C5, 1.5], [D5, 0.5], [E5, 4],
-        [F5, 1], [F5, 1], [F5, 1.5], [F5, 0.5], [F5, 1], [E5, 1], [E5, 1], [E5, 0.5], [E5, 0.5], [E5, 1], [D5, 1], [D5, 1], [E5, 1], [D5, 2], [G5, 2],
-        [E5, 1], [E5, 1], [E5, 2], [E5, 1], [E5, 1], [E5, 2], [E5, 1], [G5, 1], [C5, 1.5], [D5, 0.5], [E5, 4],
-        [F5, 1], [F5, 1], [F5, 1.5], [F5, 0.5], [F5, 1], [E5, 1], [E5, 1], [E5, 0.5], [E5, 0.5], [G5, 1], [G5, 1], [F5, 1], [D5, 1], [C5, 4],
-    ],
-    acordes: ['C', 'C', 'C', 'C', 'F', 'C', 'Dm', 'G', 'C', 'C', 'C', 'C', 'F', 'C', 'G', 'C'],
-};
-const ACORDES = { C: [60, 64, 67], F: [60, 65, 69], G: [59, 62, 67], Dm: [62, 65, 69] };
-const BAJOS = { C: 36, F: 41, G: 43, Dm: 38 };
-const TEMPO = 132;   // el salay es rápido y saltado
+const G4 = 67, A4 = 69, C5 = 72, D5 = 74, E5 = 76, G5 = 79, A5 = 81;
+const COPLA = [
+    [E5, 0.5], [E5, 0.5], [G5, 1], [E5, 0.5], [D5, 0.5], [C5, 1],
+    [D5, 0.5], [E5, 0.5], [D5, 0.5], [C5, 0.5], [A4, 2],
+    [C5, 0.5], [C5, 0.5], [D5, 1], [E5, 0.5], [D5, 0.5], [C5, 1],
+    [A4, 0.5], [C5, 0.5], [A4, 0.5], [G4, 0.5], [A4, 2],
+    [A5, 0.5], [A5, 0.5], [G5, 1], [E5, 0.5], [G5, 0.5], [E5, 1],
+    [D5, 0.5], [E5, 0.5], [G5, 0.5], [E5, 0.5], [D5, 2],
+    [E5, 0.5], [D5, 0.5], [C5, 1], [D5, 0.5], [C5, 0.5], [A4, 1],
+    [G4, 0.5], [A4, 0.5], [C5, 0.5], [A4, 0.5], [A4, 2],
+];
+const FIESTA = [
+    [C5, 1], [E5, 1], [G5, 1], [E5, 1],
+    [G5, 0.5], [A5, 0.5], [G5, 0.5], [E5, 0.5], [D5, 2],
+    [C5, 1], [D5, 1], [E5, 1], [D5, 0.5], [C5, 0.5],
+    [D5, 0.5], [C5, 0.5], [A4, 1], [A4, 2],
+    [C5, 1], [E5, 1], [G5, 1], [A5, 1],
+    [G5, 0.5], [E5, 0.5], [G5, 0.5], [A5, 0.5], [G5, 2],
+    [E5, 0.5], [G5, 0.5], [E5, 0.5], [D5, 0.5], [C5, 0.5], [D5, 0.5], [E5, 1],
+    [D5, 0.5], [C5, 0.5], [A4, 1], [A4, 2],
+];
+// Cada parte se toca dos veces, como en el folklore
+const ESTROFA = { melodia: [...COPLA, ...COPLA], acordes: ['Am', 'Am', 'C', 'Am', 'C', 'G', 'C', 'Am', 'Am', 'Am', 'C', 'Am', 'C', 'G', 'C', 'Am'] };
+const ESTRIBILLO = { melodia: [...FIESTA, ...FIESTA], acordes: ['C', 'G', 'C', 'Am', 'C', 'G', 'C', 'Am', 'C', 'G', 'C', 'Am', 'C', 'G', 'C', 'Am'] };
+const ACORDES = { Am: [57, 60, 64], C: [60, 64, 67], G: [59, 62, 67] };
+const BAJOS = { Am: 33, C: 36, G: 31 };
+const TEMPO = 108;   // paso de huayño: saltado pero cantable
 const PASO = 60 / TEMPO / 4;   // una semicorchea
 
 // Cada sección ya «compilada»: en qué semicorchea arranca cada nota de la melodía
@@ -119,22 +124,25 @@ function charango(acorde, cuando, fuerte) {
     const notas = [...ACORDES[acorde], ACORDES[acorde][0] + 12, ACORDES[acorde][1] + 12];
     notas.forEach((midi, i) => {
         const t = cuando + i * 0.006;
-        voz({ tipo: 'triangle', frecuencia: hz(midi + 12), cuando: t, dura: 0.13, nivel: fuerte ? 0.075 : 0.045, ataque: 0.002 });
+        voz({ tipo: 'triangle', frecuencia: hz(midi + 12), cuando: t, dura: 0.13, nivel: fuerte ? 0.055 : 0.032, ataque: 0.002 });
         voz({ tipo: 'sawtooth', frecuencia: hz(midi + 24), cuando: t, dura: 0.07, nivel: fuerte ? 0.022 : 0.013, ataque: 0.002, filtro: 5200 });
     });
     golpe({ cuando, dura: 0.03, nivel: fuerte ? 0.06 : 0.035, tipo: 'bandpass', frecuencia: 3200, q: 1.2 });   // el roce de la mano
 }
 
-// Zampoña: una nota soplada (ataque suave, un poco de aire al entrar) doblada a la octava, como tocan las tropas
+// Zampoña: un tubo cerrado, así que suena la nota y casi solo sus armónicos impares, envuelta en aire. Va
+// doblada a la octava grave (como tocan las tropas de sikus) y con un soplido al entrar cada nota.
 function zampona(midi, cuando, dura) {
-    voz({ tipo: 'sine', frecuencia: hz(midi), cuando, dura, nivel: 0.2, ataque: 0.03, a: eco });
-    voz({ tipo: 'triangle', frecuencia: hz(midi + 12), cuando, dura: dura * 0.9, nivel: 0.085, ataque: 0.035, a: eco });
-    voz({ tipo: 'sine', frecuencia: hz(midi) * 2.01, cuando, dura: dura * 0.7, nivel: 0.03, ataque: 0.04, a: eco });
-    golpe({ cuando, dura: 0.07, nivel: 0.07, tipo: 'bandpass', frecuencia: 2600, q: 1.5 });   // el soplido
+    const f = hz(midi);
+    voz({ tipo: 'sine', frecuencia: f, cuando, dura, nivel: 0.3, ataque: 0.035, a: eco });
+    voz({ tipo: 'sine', frecuencia: f * 3, cuando, dura: dura * 0.8, nivel: 0.045, ataque: 0.04, a: eco });
+    voz({ tipo: 'sine', frecuencia: f / 2, cuando, dura, nivel: 0.14, ataque: 0.04, a: eco });
+    golpe({ cuando, dura: Math.max(0.12, dura * 0.9), nivel: 0.1, tipo: 'bandpass', frecuencia: f, q: 14 });        // el aire dentro del tubo
+    golpe({ cuando, dura: 0.06, nivel: 0.12, tipo: 'bandpass', frecuencia: f * 2.5, q: 2 });                          // el soplido
 }
 
 /**
- * Ritmo de salay (2/4, de Cochabamba): cada tiempo lleva la célula «tán-taka» —una corchea y dos
+ * Ritmo de huayño / salay (de los Andes bolivianos): cada tiempo lleva la célula «tán-taka» —una corchea y dos
  * semicorcheas— en el charango, el bombo marca el tiempo y el bajo de guitarra alterna tónica y quinta.
  */
 function tocarPaso(n, cuando) {
@@ -163,11 +171,14 @@ function tocarPaso(n, cuando) {
     // cascabeles suaves en cada tiempo: lo navideño (en el estribillo, también en el contratiempo)
     if (enTiempo || (estribillo && sub === 2)) golpe({ cuando, dura: 0.06, nivel: enTiempo ? 0.11 : 0.07, tipo: 'bandpass', frecuencia: 9000, q: 6 });
 
+    // triángulo de villancico: un «tin» en el segundo y el cuarto tiempo
+    if (enTiempo && tiempo % 2 === 1) { voz({ tipo: 'sine', frecuencia: 4200, cuando, dura: 0.35, nivel: 0.05, ataque: 0.002 }); voz({ tipo: 'sine', frecuencia: 6350, cuando, dura: 0.25, nivel: 0.025, ataque: 0.002 }); }
+
     // melodía en zampoña
     const nota = notas.get(n);
     if (nota) {
         const [midi, largo] = nota;
-        zampona(midi, cuando, Math.min(0.75, Math.max(0.18, largo * PASO * 0.92)));
+        zampona(midi, cuando, Math.min(1.1, Math.max(0.2, largo * PASO * 0.95)));
     }
 }
 
