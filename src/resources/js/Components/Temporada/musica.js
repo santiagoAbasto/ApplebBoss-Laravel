@@ -1,4 +1,4 @@
-// Música de la campaña de Navidad: un villancico tradicional (dominio público) en versión pop, sintetizado en el navegador.
+// Música de la campaña de Navidad: un villancico tradicional (dominio público) a ritmo de salay, sintetizado en el navegador.
 // No hay archivo de audio: se generan con Web Audio, así no pesa nada ni depende de licencias.
 //
 // Reglas:
@@ -8,9 +8,10 @@
 const CLAVE = 'appleboss:navidad-musica';
 const AVISO = 'appleboss:navidad-musica-cambio';
 
-// «Jingle Bells» (tradicional, dominio público) en versión pop: bombo a cuatro tiempos, palmas, platillos,
-// bajo que rebota, acordes punteados a contratiempo y la melodía con un sintetizador brillante y eco.
-// Todo cuantizado en semicorcheas (16 por compás). [nota MIDI, tiempos]; 0 = silencio.
+// «Jingle Bells» (tradicional, dominio público) a ritmo de SALAY, al estilo de Bolivia: charango rasgueado en
+// «tán-taka», bombo, bajo de guitarra y la melodía en zampoña, con cascabeles para lo navideño.
+// Es un arreglo propio: la melodía y los acordes son los del villancico, no los de ninguna canción con derechos.
+// Todo cuantizado en semicorcheas (16 por compás de 4 tiempos). [nota MIDI, tiempos]; 0 = silencio.
 const G4 = 67, A4 = 69, B4 = 71, C5 = 72, D5 = 74, E5 = 76, F5 = 77, G5 = 79, A5 = 81;
 const ESTROFA = {
     melodia: [
@@ -32,7 +33,7 @@ const ESTRIBILLO = {
 };
 const ACORDES = { C: [60, 64, 67], F: [60, 65, 69], G: [59, 62, 67], Dm: [62, 65, 69] };
 const BAJOS = { C: 36, F: 41, G: 43, Dm: 38 };
-const TEMPO = 118;
+const TEMPO = 132;   // el salay es rápido y saltado
 const PASO = 60 / TEMPO / 4;   // una semicorchea
 
 // Cada sección ya «compilada»: en qué semicorchea arranca cada nota de la melodía
@@ -113,34 +114,60 @@ function golpe({ cuando, dura, nivel, tipo, frecuencia, q = 1 }) {
     fuente.start(cuando, Math.random() * 0.5, dura + 0.02);
 }
 
+// Rasgueo de charango: cinco cuerdas dobles, agudas, que no suenan a la vez sino barridas en unos milisegundos
+function charango(acorde, cuando, fuerte) {
+    const notas = [...ACORDES[acorde], ACORDES[acorde][0] + 12, ACORDES[acorde][1] + 12];
+    notas.forEach((midi, i) => {
+        const t = cuando + i * 0.006;
+        voz({ tipo: 'triangle', frecuencia: hz(midi + 12), cuando: t, dura: 0.13, nivel: fuerte ? 0.075 : 0.045, ataque: 0.002 });
+        voz({ tipo: 'sawtooth', frecuencia: hz(midi + 24), cuando: t, dura: 0.07, nivel: fuerte ? 0.022 : 0.013, ataque: 0.002, filtro: 5200 });
+    });
+    golpe({ cuando, dura: 0.03, nivel: fuerte ? 0.06 : 0.035, tipo: 'bandpass', frecuencia: 3200, q: 1.2 });   // el roce de la mano
+}
+
+// Zampoña: una nota soplada (ataque suave, un poco de aire al entrar) doblada a la octava, como tocan las tropas
+function zampona(midi, cuando, dura) {
+    voz({ tipo: 'sine', frecuencia: hz(midi), cuando, dura, nivel: 0.2, ataque: 0.03, a: eco });
+    voz({ tipo: 'triangle', frecuencia: hz(midi + 12), cuando, dura: dura * 0.9, nivel: 0.085, ataque: 0.035, a: eco });
+    voz({ tipo: 'sine', frecuencia: hz(midi) * 2.01, cuando, dura: dura * 0.7, nivel: 0.03, ataque: 0.04, a: eco });
+    golpe({ cuando, dura: 0.07, nivel: 0.07, tipo: 'bandpass', frecuencia: 2600, q: 1.5 });   // el soplido
+}
+
+/**
+ * Ritmo de salay (2/4, de Cochabamba): cada tiempo lleva la célula «tán-taka» —una corchea y dos
+ * semicorcheas— en el charango, el bombo marca el tiempo y el bajo de guitarra alterna tónica y quinta.
+ */
 function tocarPaso(n, cuando) {
     const { notas, acordes } = SECCIONES[seccion];
     const enCompas = n % 16;
+    const enTiempo = enCompas % 4 === 0;
+    const sub = enCompas % 4;              // 0 = tán, 2 y 3 = ta-ka
+    const tiempo = Math.floor(enCompas / 4);
     const acorde = acordes[Math.floor(n / 16)];
     const estribillo = seccion === 1;
 
-    // batería
-    if (enCompas % 4 === 0) voz({ tipo: 'sine', frecuencia: 150, hasta: 46, cuando, dura: 0.16, nivel: 0.9 });
-    if (enCompas === 4 || enCompas === 12) golpe({ cuando, dura: 0.13, nivel: 0.42, tipo: 'bandpass', frecuencia: 1700, q: 0.9 });
-    if (enCompas % 2 === 0) golpe({ cuando, dura: 0.04, nivel: enCompas % 4 === 2 ? 0.16 : 0.07, tipo: 'highpass', frecuencia: 7500 });
-    // cascabeles: en el estribillo, en cada semicorchea
-    if (estribillo || enCompas % 4 === 2) golpe({ cuando, dura: 0.05, nivel: estribillo ? 0.07 : 0.05, tipo: 'bandpass', frecuencia: 9500, q: 7 });
+    // bombo: grave y redondo en cada tiempo (más fuerte el primero de cada par), con el golpe de aro en el «taka»
+    if (enTiempo) {
+        voz({ tipo: 'sine', frecuencia: 120, hasta: 52, cuando, dura: 0.22, nivel: tiempo % 2 === 0 ? 0.9 : 0.55 });
+        golpe({ cuando, dura: 0.05, nivel: 0.12, tipo: 'lowpass', frecuencia: 500 });
+    }
+    if (sub === 2 || sub === 3) golpe({ cuando, dura: 0.035, nivel: sub === 2 ? 0.1 : 0.07, tipo: 'bandpass', frecuencia: 1100, q: 2 });
 
-    // bajo: tónica en los tiempos, octava a contratiempo
-    if (enCompas % 4 === 0) voz({ tipo: 'triangle', frecuencia: hz(BAJOS[acorde] + 12), cuando, dura: 0.2, nivel: 0.42 });
-    if (enCompas % 4 === 2) voz({ tipo: 'triangle', frecuencia: hz(BAJOS[acorde] + 24), cuando, dura: 0.12, nivel: 0.24 });
+    // charango: tán-taka en todos los tiempos
+    if (sub === 0) charango(acorde, cuando, true);
+    if (sub === 2 || sub === 3) charango(acorde, cuando, false);
 
-    // acordes punteados a contratiempo
-    if (enCompas % 4 === 2) ACORDES[acorde].forEach((midi) => voz({ tipo: 'sawtooth', frecuencia: hz(midi + 12), cuando, dura: 0.18, nivel: 0.055, filtro: 2200 }));
+    // bajo de guitarra: tónica en un tiempo, quinta en el siguiente
+    if (enTiempo) voz({ tipo: 'triangle', frecuencia: hz(BAJOS[acorde] + 12 + (tiempo % 2 === 0 ? 0 : 7)), cuando, dura: 0.24, nivel: 0.44 });
 
-    // melodía: dos osciladores apenas desafinados, con eco
+    // cascabeles suaves en cada tiempo: lo navideño (en el estribillo, también en el contratiempo)
+    if (enTiempo || (estribillo && sub === 2)) golpe({ cuando, dura: 0.06, nivel: enTiempo ? 0.11 : 0.07, tipo: 'bandpass', frecuencia: 9000, q: 6 });
+
+    // melodía en zampoña
     const nota = notas.get(n);
     if (nota) {
         const [midi, largo] = nota;
-        const dura = Math.min(0.9, Math.max(0.16, largo * PASO * 0.9));
-        voz({ tipo: 'square', frecuencia: hz(midi), cuando, dura, nivel: 0.1, filtro: 3400, a: eco });
-        voz({ tipo: 'sawtooth', frecuencia: hz(midi) * 1.006, cuando, dura, nivel: 0.08, filtro: 3000, a: eco });
-        voz({ tipo: 'sine', frecuencia: hz(midi + 12), cuando, dura: dura * 0.6, nivel: 0.05, a: eco });
+        zampona(midi, cuando, Math.min(0.75, Math.max(0.18, largo * PASO * 0.92)));
     }
 }
 
@@ -165,8 +192,8 @@ function prepararAudio() {
     eco = ctx.createGain();
     const retardo = ctx.createDelay(1);
     const vuelta = ctx.createGain();
-    retardo.delayTime.value = PASO * 3;
-    vuelta.gain.value = 0.26;
+    retardo.delayTime.value = PASO * 2;   // una corchea
+    vuelta.gain.value = 0.16;
     eco.connect(salida);
     eco.connect(retardo).connect(vuelta).connect(retardo);
     vuelta.connect(salida);
