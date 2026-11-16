@@ -1,198 +1,308 @@
-# Apple Boss
+<div align="center">
+<img src="docs/readme/banner.svg" alt="Apple Boss — Ventas, inventario, reservas y servicio técnico, con tienda en línea" width="100%">
+<br/>
 
-Sistema web de gestión comercial e inventario con tienda pública para un negocio de productos y servicios tecnológicos.
+**Sistema de gestión comercial e inventario, con tienda pública, para un negocio de productos y servicios tecnológicos.**
 
-## Descripción
+<img alt="En producción" src="https://img.shields.io/badge/EN_PRODUCCI%C3%93N-appleboss.com.bo-E2BC72?style=for-the-badge&labelColor=011446">
+<img alt="Pruebas" src="https://img.shields.io/badge/pruebas-827_PHPUnit-1F5A40?style=for-the-badge&labelColor=011446">
+<img alt="Sin CI/CD" src="https://img.shields.io/badge/CI%2FCD-no_configurado-585E9F?style=for-the-badge&labelColor=011446">
+<br/>
+<img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square&logo=laravel&logoColor=white">
+<img alt="PHP 8.5" src="https://img.shields.io/badge/PHP-8.5-777BB4?style=flat-square&logo=php&logoColor=white">
+<img alt="React 19" src="https://img.shields.io/badge/React-19-149eca?style=flat-square&logo=react&logoColor=white">
+<img alt="Inertia 3" src="https://img.shields.io/badge/Inertia-3-9553E9?style=flat-square">
+<img alt="PostgreSQL 18" src="https://img.shields.io/badge/PostgreSQL-18-4169e1?style=flat-square&logo=postgresql&logoColor=white">
+<img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ed?style=flat-square&logo=docker&logoColor=white">
+</div>
 
-Apple Boss centraliza ventas, reservas, clientes, cotizaciones, inventario, egresos y servicio técnico. Está orientado a administración y vendedores, y mantiene trazabilidad sobre productos identificados por código, IMEI o número de serie.
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-También incluye una tienda pública administrable con catálogo, búsqueda, comparación, páginas de contenido y configuración comercial. Está en producción en appleboss.com.bo (despliegues documentados desde el 18-09-2026 en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)) y sigue en evolución activa. No tiene CI/CD: la suite completa se corre antes de cada despliegue.
+## 📑 Contenido
 
-## Funcionalidades principales
+- [El problema](#-el-problema)
+- [La solución](#-la-solución)
+- [Funcionalidades](#-funcionalidades)
+- [Arquitectura](#%EF%B8%8F-arquitectura)
+- [Flujos de trabajo](#-flujos-de-trabajo)
+- [Modelo de datos](#%EF%B8%8F-modelo-de-datos)
+- [Criterios y decisiones](#-criterios-y-decisiones)
+- [Stack](#%EF%B8%8F-stack)
+- [Estructura del repo](#%EF%B8%8F-estructura-del-repo)
+- [Puesta en marcha](#-puesta-en-marcha)
+- [Pruebas y calidad](#-pruebas-y-calidad)
+- [Despliegue](#-despliegue)
+- [Estado y pendientes](#-estado-y-pendientes)
+- [Licencia y autoría](#-licencia-y-autoría)
 
-- Autenticación por sesión, verificación de correo, recuperación de contraseña y registro de cuentas restringido a administradores.
-- Autorización por roles `admin` y `vendedor`, con paneles y rutas diferenciadas.
-- Gestión de celulares, computadoras, productos Apple y productos generales.
-- Registro y edición de ventas con actualización de stock, permutas, métodos de pago y comprobantes PDF.
-- Reservas con ítems, estados y comprobantes en formato estándar y 80 mm.
-- Gestión de clientes, egresos, cotizaciones y servicios técnicos.
-- Envío de cotizaciones por correo, publicación opcional de PDF en Google Drive y preparación de enlaces de WhatsApp.
-- Reportes comerciales, dashboards, exportaciones PDF y notificaciones internas.
-- Auditorías de inventario por escaneo, conciliación de faltantes/novedades y generación asíncrona del PDF final.
-- Tienda pública con inicio configurable, catálogo filtrable, búsqueda, fichas de producto, comparación y sincronización de carrito contra precio y disponibilidad del servidor.
-- Base de fichas técnicas por modelo (38 iPhone, 16 Mac, una laptop gamer Lenovo y 58 tipos de accesorio) tomadas de las fichas oficiales de cada marca y validadas por esquema. Alimenta las fichas de producto (los accesorios se reconocen por su nombre y salen con descripción, ficha con íconos SVG y compatibilidad) y los comparadores públicos `/comparar/iphone`, `/comparar/mac`, `/comparar/cargadores` y `/comparar/vidrios`, cuyo precio y stock calcula el servidor desde el inventario.
-- Administración de publicaciones, imágenes, categorías, colecciones, compatibilidades, menús, páginas, preguntas frecuentes, servicios y ubicaciones.
-- SEO técnico básico mediante slugs, metadatos, `robots.txt` y sitemap XML.
-- Automatizaciones n8n para respaldo de PostgreSQL y generación de reportes comerciales asistidos por IA (entorno local).
-- En producción, `docker/production/respaldo-db.sh` respalda la base cada noche y los archivos subidos cada domingo (cron del VPS).
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-## Arquitectura
+## 🧩 El problema
 
-La aplicación sigue una arquitectura monolítica modular. Laravel concentra rutas, seguridad, reglas de negocio, datos e integraciones. Inertia.js conecta los controladores con React sin una API REST independiente para cada pantalla. Eloquent persiste el dominio; Docker usa PostgreSQL 18.
+Un negocio de equipos Apple y tecnología vende unidades **únicas**: cada celular, computadora o accesorio tiene su código, su IMEI o su número de serie. Antes del sistema, el stock, las reservas, las permutas y las reparaciones vivían en planillas y en la memoria del equipo de ventas. Eso producía dobles ventas sobre el mismo equipo, costos y procedencias visibles para quien no debía verlos, y reportes que no coincidían con la caja.
 
-Las APIs JSON se reservan para búsqueda y carrito públicos, consultas privadas de stock y comunicación con automatizaciones. Las colas procesan tareas como la generación de auditorías PDF. n8n funciona como orquestador externo para respaldos y reportes inteligentes. (Nota: el `docker-compose` corre PostgreSQL 18.)
+## 💡 La solución
+
+**Apple Boss** centraliza ventas, reservas, clientes, cotizaciones, inventario, egresos y servicio técnico en un solo panel, y publica una **tienda en línea** con el mismo inventario, sin exponer datos internos.
+
+| Rol | Qué hace en el sistema |
+|---|---|
+| **Administrador** | Ve todo: costos, ganancias, procedencia, usuarios, reportes, auditorías y configuración de la tienda. |
+| **Vendedor** | Registra ventas, reservas, clientes, cotizaciones y servicios. Nunca ve costo, ganancia ni procedencia: se quitan en el servidor. |
+| **Cliente de la tienda** | Navega el catálogo, compara modelos, arma su carrito, paga y sigue su pedido. |
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## ✨ Funcionalidades
+
+<details open>
+<summary><b>Panel interno (administrador y vendedor)</b></summary>
+
+- **Ventas**: registro y edición con actualización de stock, permutas, métodos de pago y comprobantes PDF (formato estándar y 80 mm).
+- **Reservas** con ítems, estados y comprobantes; al concretarse se convierten en venta.
+- **Inventario por tipo**: celulares, computadoras, productos Apple y productos generales, identificados por código, IMEI o número de serie.
+- **Clientes, cotizaciones** con PDF, envío por correo en cola y publicación opcional en Google Drive.
+- **Servicio técnico**: recepción, diagnóstico o reparación directa, presupuesto y entrega.
+- **Egresos, reportes comerciales, dashboards** y exportaciones PDF.
+- **Auditorías de inventario** por escaneo, con conciliación de faltantes, novedades y salidas justificadas, y PDF final generado en cola.
+- **Notificaciones internas** y roles (`admin`, `vendedor`) con permisos por módulo.
+
+</details>
+
+<details open>
+<summary><b>Tienda pública</b></summary>
+
+- Inicio configurable, catálogo filtrable, búsqueda y fichas de producto con galería.
+- **Comparadores** de iPhone, Mac, cargadores y vidrios; el precio y el stock los calcula el servidor desde el inventario.
+- Fichas técnicas por modelo (38 iPhone, 16 Mac, una laptop gaming y 58 tipos de accesorio), validadas por esquema y tomadas de las fichas oficiales de cada marca.
+- Carrito que vuelve a consultar precio, publicación y disponibilidad en el servidor antes de cobrar.
+- Checkout con pedidos y seguimiento; páginas de contenido, preguntas frecuentes, novedades y cotizador de **trade-in**.
+- SEO técnico: slugs, metadatos, datos estructurados, `robots.txt` y sitemap XML.
+
+</details>
+
+<details>
+<summary><b>Automatización</b></summary>
+
+- **Respaldo** de PostgreSQL con n8n en entorno local, y en producción un script nocturno de respaldo más un respaldo semanal de archivos subidos.
+- **Reporte comercial semanal con IA**: Laravel calcula las cifras; OpenAI solo redacta el análisis en JSON. Si la respuesta no es válida, se guarda un resumen factual de respaldo. Queda como notificación para revisión humana.
+- **API de integración** con tokens de automatización que se comparan en tiempo constante, con límite de solicitudes y un token separado para la exportación financiera.
+
+</details>
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🏗️ Arquitectura
+
+<p align="center">
+  <img src="docs/readme/flujo.svg" alt="Cómo viaja una petición: navegador, Laravel con Inertia, PostgreSQL y colas con PDF" width="100%">
+</p>
+
+Es un **monolito modular**: Laravel concentra rutas, seguridad, reglas de negocio, datos e integraciones; Inertia.js conecta los controladores con React sin una API REST para cada pantalla. Las APIs JSON quedan para la búsqueda y el carrito públicos, las consultas de stock y la comunicación con automatizaciones.
+
+```mermaid
+flowchart LR
+    U(["Vendedor / Administrador"]) -->|"panel interno"| L["Laravel 13 + Inertia<br/>rutas, roles, políticas"]
+    C(["Cliente de la tienda"]) -->|"catálogo y checkout"| L
+    L --> M["Controladores y Services<br/>reglas de negocio"]
+    M --> E[("PostgreSQL 18<br/>Eloquent")]
+    M --> Q["Colas<br/>PDF de auditorías y cotizaciones"]
+    M --> G["Google Drive<br/>opcional"]
+    M --> R["Correo<br/>Laravel Mail"]
+    N["n8n<br/>respaldos y reportes"] -->|"X-AUTOMATION-TOKEN"| L
+    N -->|"API de OpenAI"| AI(["OpenAI"])
+    L --> F["React 19 + TypeScript<br/>páginas Inertia"]
+```
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🔄 Flujos de trabajo
+
+### Venta con control de stock
+
+Dos vendedores no pueden vender la misma unidad: la selección del inventario se hace dentro de una transacción con bloqueo de fila.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant V as Vendedor
+    participant UI as Panel (Inertia)
+    participant C as VentaController
+    participant DB as PostgreSQL
+    V->>UI: Registra venta (equipo, cliente, pago, permuta)
+    UI->>C: POST venta
+    C->>DB: BEGIN
+    C->>DB: SELECT ... FOR UPDATE (unidad de inventario)
+    alt la unidad ya no está disponible
+        DB-->>C: sin stock
+        C-->>UI: error de validación
+    else disponible
+        C->>DB: INSERT venta e ítems (snapshots de nombre, costo y precio)
+        C->>DB: marcar unidad como vendida
+        C->>DB: COMMIT
+        C-->>UI: venta registrada y comprobante PDF
+    end
+```
+
+### Estados de un pedido de la tienda
+
+```mermaid
+stateDiagram-v2
+    [*] --> PendientePago
+    PendientePago --> PagoEnRevision: el cliente sube el comprobante
+    PendientePago --> Cancelado
+    PagoEnRevision --> Pagado: se confirma el pago
+    PagoEnRevision --> Cancelado
+    Pagado --> Preparando
+    Preparando --> Enviado
+    Enviado --> Entregado
+    Entregado --> [*]
+    Cancelado --> [*]
+```
+
+### Estados de un servicio técnico
+
+El camino depende del modo de ingreso: la **reparación directa** salta el diagnóstico y el presupuesto.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Recibido
+    Recibido --> EnDiagnostico: modo diagnóstico
+    Recibido --> EnReparacion: reparación directa
+    EnDiagnostico --> Presupuesto
+    Presupuesto --> EnReparacion: el cliente acepta
+    Presupuesto --> Rechazado: el cliente rechaza
+    EnReparacion --> Reparado
+    Reparado --> Entregado
+    Entregado --> [*]
+    Rechazado --> [*]
+```
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🗃️ Modelo de datos
+
+Las tablas se generan con migraciones Eloquent; los productos de inventario tienen una tabla por tipo y las ventas y reservas apuntan a la tabla correspondiente.
+
+```mermaid
+erDiagram
+    USUARIO ||--o{ VENTA : registra
+    USUARIO ||--o{ RESERVA : registra
+    USUARIO ||--o{ PEDIDO : realiza
+    CLIENTE ||--o{ COTIZACION : recibe
+    USUARIO ||--o{ COTIZACION : emite
+    VENTA ||--o{ VENTA_ITEM : contiene
+    RESERVA ||--o{ RESERVA_ITEM : contiene
+    RESERVA |o--o| VENTA : "puede convertirse en"
+    VENTA ||--o{ SERVICIO_TECNICO : "genera"
+    PEDIDO ||--o{ PEDIDO_ITEM : contiene
+    PEDIDO ||--o{ PEDIDO_EVENTO : registra
+    INVENTARIO_AUDITORIA ||--o{ INVENTARIO_AUDITORIA_ITEM : contiene
+    VENTA_ITEM }o--|| CELULAR : "referencia"
+    VENTA_ITEM }o--|| COMPUTADORA : "referencia"
+    VENTA_ITEM }o--|| PRODUCTO_GENERAL : "referencia"
+    VENTA_ITEM }o--|| PRODUCTO_APPLE : "referencia"
+
+    USUARIO { bigint id PK }
+    CLIENTE { bigint id PK }
+    VENTA { bigint id PK string estado }
+    VENTA_ITEM { bigint id PK bigint producto_id }
+    RESERVA { bigint id PK string estado }
+    RESERVA_ITEM { bigint id PK bigint producto_id }
+    SERVICIO_TECNICO { bigint id PK string estado }
+    COTIZACION { bigint id PK }
+    PEDIDO { bigint id PK string estado }
+    PEDIDO_ITEM { bigint id PK }
+    PEDIDO_EVENTO { bigint id PK string estado }
+    INVENTARIO_AUDITORIA { bigint id PK }
+    INVENTARIO_AUDITORIA_ITEM { bigint id PK }
+    CELULAR { bigint id PK }
+    COMPUTADORA { bigint id PK }
+    PRODUCTO_GENERAL { bigint id PK }
+    PRODUCTO_APPLE { bigint id PK }
+```
+
+Los ítems de venta guardan **snapshots** de nombre, categoría, costo y precio, así que un reporte histórico no cambia cuando cambia el producto.
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🧭 Criterios y decisiones
+
+| Decisión | Por qué |
+|---|---|
+| **Monolito Laravel + Inertia + React** | Una sola aplicación desplegable que comparte rutas, validación y autorización con el frontend, sin duplicar una API para cada pantalla. |
+| **Tienda separada del inventario operativo** | La publicación pública tiene su propio modelo y solo expone campos permitidos. Costo, IMEI y número de serie nunca llegan a una página pública. |
+| **Transacciones y bloqueos pesimistas** | Una unidad de inventario se vende una sola vez; `lockForUpdate()` coordina ventas y reservas. |
+| **La IA no calcula cifras** | Laravel calcula facturación, utilidad, margen y período; el workflow vuelve a imponerlos sobre la respuesta del modelo antes de guardarla. |
+| **Ficha técnica con doble fuente** | Lo que publica el fabricante entra primero. Lo que no publica se carga solo si lo confirman dos fuentes externas; si no, queda pendiente. |
+| **Tailwind 3 y no 4** | La versión 4 no funciona en iPhone con iOS anterior a 16.4. `vite.config.js` fija navegadores objetivo y se agregan polyfills para iOS 14 y 15. |
+| **Vendedor sin costos** | Se quitan en el servidor (`SinCostos`) en listados, API de stock, registro de ventas y reservas, no solo en la pantalla. |
+| **Horario de ingreso del vendedor** | Solo puede iniciar sesión en horario laboral (`America/La_Paz`), configurable en `config/horario.php`. El administrador no tiene esa restricción. |
+
+**Seguridad**, en resumen:
+
+- Las áreas internas exigen sesión y middleware de rol. El registro público está deshabilitado.
+- Límites de solicitudes en ingreso, recuperación, verificación de correo y rutas de automatización. Los proxies de confianza se declaran explícitamente (`TRUSTED_PROXIES`, por defecto ninguno).
+- Política de contraseñas estricta, con comprobación de contraseñas comprometidas en el alta de usuarios.
+- El contenido enriquecido se limpia con lista permitida de etiquetas y enlaces; hay pruebas contra `script`, atributos de evento, iframes y URLs `javascript:`.
+- Subidas limitadas a JPG, JPEG, PNG o WebP de hasta 10 MB; cabeceras CSP, HSTS en producción y anti-clickjacking.
+
+Auditoría de extremo a extremo (caja negra, caja blanca y carga con k6): 6 hallazgos, todos corregidos y verificados. Ver [`docs/seguridad/`](docs/seguridad/README.md).
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🛠️ Stack
+
+| Capa | Tecnología | Versión |
+|---|---|---|
+| Backend | Laravel · PHP | 13 (13.32 en `composer.lock`) · 8.5 en producción y desarrollo; `composer.json` admite desde 8.3 |
+| Autenticación y API | Sesión, Sanctum, Ziggy | Sanctum 4 · Ziggy 2 |
+| Frontend | React · Inertia · TypeScript | 19.3 · 3.7 · JavaScript con React (TypeScript no aparece en `package.json`) |
+| Estilos | Tailwind CSS | 3.x (se mantiene en la 3) |
+| Build | Vite | 8.3 |
+| Datos | PostgreSQL | 18 (Docker Compose) |
+| PDF | Dompdf (`barryvdh/laravel-dompdf`) | 3.1 |
+| Integraciones | Google API Client y Flysystem (Drive) · Laravel Mail · OpenAI vía n8n | n8n 2.39 |
+| Pruebas | PHPUnit · SQLite en memoria | 12.5 |
+| Infraestructura | Docker Compose · Caddy · Cloudflare | Apache con PHP 8.5 en la imagen |
+
+<img src="docs/readme/divider.svg" alt="" width="100%">
+
+## 🗂️ Estructura del repo
 
 ```text
-Usuarios públicos                  Admin / Vendedor
-       |                                  |
-       +---------- Navegador -------------+
-                          |
-                Laravel + Inertia
-                 |       |       |
-              React   Eloquent  Colas
-                         |       |
-                    PostgreSQL  PDF
-                         |
-            n8n ---- APIs protegidas
-             |              |
-          OpenAI       correo / Google Drive
+.
+├── Dockerfile · Dockerfile.production   imagen de desarrollo y de producción
+├── docker-compose.yml                   entorno local: app, cola, PostgreSQL, Adminer, n8n
+├── docker-compose.production.yml        producción: app, cola, programador, PostgreSQL, Caddy
+├── docker/                              imágenes auxiliares y scripts de respaldo
+├── n8n/workflows/                       respaldo y reporte semanal con IA
+├── docs/                                despliegue, seguridad, integraciones, admin-ui y diagramas
+└── src/                                 aplicación Laravel
+    ├── app/Http/Controllers/            ventas, reservas, tienda, pedidos, API e integraciones
+    ├── app/Models/                      entidades Eloquent
+    ├── app/Services/ · app/Support/     códigos, fichas técnicas, SEO y reglas compartidas
+    ├── database/migrations/             esquema y restricciones únicas
+    ├── resources/js/                    páginas y componentes React (Inertia)
+    ├── resources/views/                 shell Blade, correos y plantillas PDF
+    ├── routes/                          web, autenticación, API y automatización
+    └── tests/                           pruebas Feature y Unit
 ```
 
-No se encontró implementación multi-tenant.
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-## Stack tecnológico
+## 🚀 Puesta en marcha
 
-### Backend
-
-- Laravel 13 (13.32.0 en `composer.lock`) con PHP 8.5 en producción (`php:8.5-apache`, desde el 19-10-2026) y en el Docker de desarrollo. `composer.json` pide PHP `^8.3` y fija la plataforma en 8.3.0, así que las dependencias sirven desde PHP 8.3 (ver «Actualización del stack»).
-- Eloquent ORM, autenticación por sesión y Laravel Breeze.
-- Inertia Laravel 3, Ziggy y Laravel Sanctum instalado.
-- Dompdf para comprobantes, cotizaciones, auditorías y reportes.
-- Colas de Laravel y comandos Artisan.
-
-### Frontend
-
-- React 19.3, Inertia React 3 y Vite 8 (Rolldown).
-- Tailwind CSS 3.4 (se queda en la 3 a propósito: la 4 no funciona en iPhone con iOS anterior a 16.4). Bootstrap Icons y flag-icons para íconos; Bootstrap, React Bootstrap y Styled Components están instalados pero el código no los usa.
-- Framer Motion 13 para interacción visual e íconos lucide-react 1.
-- Los gráficos del panel son SVG propios (`Components/Admin/charts`); Chart.js, ApexCharts y Recharts están instalados pero sin uso.
-
-### Base de datos
-
-- PostgreSQL 18 en Docker Compose.
-- SQLite en memoria para el entorno de pruebas.
-
-### Testing
-
-- PHPUnit 12.5 mediante la integración de pruebas de Laravel.
-- Pruebas unitarias y, principalmente, pruebas feature con base aislada en memoria.
-
-### DevOps / Infraestructura
-
-- Docker y Docker Compose.
-- Apache con PHP 8.5 (producción y desarrollo), contenedor de aplicación, worker de colas y programador.
-- Producción: VPS con Docker detrás de Cloudflare y Caddy.
-- PostgreSQL, Node 24/Vite, Adminer, n8n 2.39 y Cloudflare Tunnel.
-
-### IA
-
-- API de OpenAI Chat Completions, invocada desde un workflow de n8n.
-- Salida JSON estructurada para reportes comerciales.
-
-### Integraciones
-
-- Google Drive mediante Google API Client y Flysystem.
-- Correo mediante Laravel Mail y trabajos en cola.
-- WhatsApp mediante enlaces de envío; no se observó una integración directa con la API oficial.
-- n8n para orquestación y Cloudflare Tunnel para exposición controlada del entorno.
-
-## Modelo de datos
-
-El dominio usa Eloquent ORM. Sus entidades principales son usuarios, clientes, ventas e ítems, reservas e ítems, servicios técnicos, cotizaciones, egresos y cuatro familias de inventario. La capa pública usa publicaciones, imágenes, categorías jerárquicas, colecciones, compatibilidades, páginas, menús, FAQ, servicios, ubicaciones y secciones del inicio.
-
-Los ítems de venta conservan snapshots de nombre, categoría, costo y precio. Existen restricciones únicas para correos, códigos, IMEI, números de serie, slugs y períodos de reporte, además de claves foráneas e índices para catálogo, navegación, auditorías y consultas por usuario/fecha.
-
-Ventas, reservas y auditorías usan transacciones; la selección de inventario emplea `lockForUpdate()` para reducir carreras. Los reportes automáticos guardan JSONB y metadatos de motor, prompt y período. No se observó borrado lógico general ni auditoría transversal; la auditoría de inventario sí registra quién inicia, cierra y escanea.
-
-## Seguridad
-
-- Las áreas internas requieren autenticación; los paneles administrativos y de vendedor aplican middleware de rol.
-- El registro público está deshabilitado y la creación de usuarios exige sesión de administrador.
-- Login, registro, recuperación, confirmación y verificación de correo tienen límites de solicitudes específicos.
-- La política de contraseña exige al menos ocho caracteres, mayúsculas y minúsculas, números y símbolos; el alta de usuarios comprueba además contraseñas comprometidas.
-- Las rutas de automatización requieren `X-AUTOMATION-TOKEN`, comparado con `hash_equals`; si el secreto no está configurado, el middleware rechaza la solicitud. Estas rutas tienen rate limiting. El token de n8n (test, top-products, reports) está separado del export financiero, que usa un token propio (`AUTOMATION_EXPORT_TOKEN`, cerrado por defecto); el middleware acepta varios tokens para rotar sin cortar n8n (`php artisan automation:token`).
-- Detrás de un proxy/túnel, los proxies de confianza se declaran en `TRUSTED_PROXIES` (por defecto ninguno), para que nadie falsee la IP con `X-Forwarded-For` y se salte los límites por IP o el bloqueo de login.
-- El vendedor nunca recibe costo, ganancia ni procedencia: se quitan en el servidor (`App\Support\SinCostos`) en listados, API de stock, registrar/editar venta y reservas activas. El admin sí los ve.
-- El vendedor solo inicia sesión dentro del horario laboral (09:00–13:00 y 14:00–19:00, `America/La_Paz`), configurable en `config/horario.php`; el admin no tiene restricción.
-- Las rutas web usan la protección CSRF del grupo `web` de Laravel. Las consultas se realizan principalmente con Eloquent y Query Builder, que utilizan bindings parametrizados.
-- Las páginas públicas proyectan campos permitidos y las pruebas verifican que no se expongan costo, IMEI, número de serie ni otros datos internos. El carrito vuelve a consultar precio, publicación y disponibilidad en el servidor.
-- El contenido enriquecido del catálogo se limpia con una lista permitida de etiquetas y enlaces; existen pruebas contra `script`, atributos de evento, estilos, iframes y URLs `javascript:`/`data:`.
-- Los uploads de catálogo aceptan únicamente JPG, JPEG, PNG o WebP y limitan cada archivo a 10 MB.
-- Un middleware añade CSP por entorno, HSTS bajo HTTPS en producción, protección anti-clickjacking/anti-MIME y cabeceras anti-caché para áreas privadas.
-- Los secretos se obtienen desde variables de entorno y los patrones de `.gitignore` excluyen entornos locales, credenciales de Google, claves, backups y dependencias.
-
-Se realizó una auditoría de seguridad de extremo a extremo (caja negra + caja blanca + carga con k6) documentada en **[`docs/seguridad/`](docs/seguridad/README.md)**: 6 hallazgos, todos corregidos y verificados, más el blindaje público y el horario del vendedor. Ahí están el reporte, los diagramas y la guía para reproducir las pruebas.
-
-## APIs e integraciones
-
-La mayor parte de la interfaz usa solicitudes Inertia. Los endpoints JSON implementados cubren:
-
-- búsqueda pública y sincronización de carrito, ambas con rate limiting;
-- consultas autenticadas de stock por tipo e identificadores;
-- lectura y marcado de reportes automáticos para usuarios autenticados;
-- endpoints de automatización para obtener datos comerciales, guardar reportes y exportar información, protegidos por token y límite de solicitudes.
-
-Las cotizaciones pueden generar PDF, enviarse por correo en cola y, cuando existe configuración OAuth válida, subirse a Google Drive. Los flujos de WhatsApp construyen mensajes/enlaces para envío individual o por lote sin publicar credenciales ni depender de un SDK de mensajería en el backend.
-
-## Inteligencia Artificial
-
-El workflow `intelligent-weekly-report.json` obtiene datos consolidados desde Laravel y solicita a OpenAI un informe JSON con resumen, análisis por categoría, riesgos, oportunidades, recomendaciones y productos destacados.
-
-La IA se limita a interpretación y redacción: Laravel calcula las cifras y el workflow vuelve a imponer facturación, utilidad, margen y período desde la fuente. Si la respuesta es inválida o incompleta, conserva una estructura factual de respaldo. El reporte guarda motor y prompt, se persiste como JSONB y genera una notificación para revisión humana. No se observan RAG, embeddings ni agentes autónomos.
-
-## Testing y calidad
-
-El repositorio contiene 106 archivos de prueba con 827 pruebas, casi todas feature. Cubren autenticación, autorización y roles, ventas, servicios, reservas, secuencias, stock, auditorías, configuración, catálogo y privacidad pública, checkout y pedidos, correos al cliente y sus enlaces, API de integración, XSS, SEO y el constructor del inicio.
-
-La configuración de PHPUnit usa SQLite en memoria, cache/sesiones en memoria, correo simulado y cola síncrona. El script `composer test` limpia la configuración y ejecuta `php artisan test`. La suite completa pasa (827 pruebas, verificado el 19-10-2026) y se corre antes de cada despliegue. Un aviso de obsolescencia de PHP hace fallar la prueba (`tests/TestCase.php` usa `withoutDeprecationHandling()`): así se detecta antes de subir el código que la próxima versión de PHP rompería. No hay workflows de GitHub Actions, GitLab CI ni Jenkins.
-
-Comandos disponibles:
-
-```bash
-cd src
-composer test
-npm run build
-```
-
-## DevOps y despliegue
-
-`docker-compose.yml` define aplicación Apache/PHP, worker de colas, PostgreSQL 18, Vite, Adminer, n8n y dos modalidades de Cloudflare Tunnel. Los servicios persistentes usan volúmenes y la base incluye healthcheck. El workflow de respaldo ejecuta una copia programada de PostgreSQL; el workflow inteligente se ejecuta semanalmente y entrega el reporte a Laravel.
-
-No hay manifiestos Kubernetes/Helm ni CI/CD. Producción corre en un VPS con `docker-compose.production.yml` (aplicación, cola, programador, PostgreSQL y Caddy) detrás de Cloudflare. Cada despliegue respalda la base y comprueba que el respaldo se restaura, etiqueta la imagen anterior para volver atrás y verifica el sitio al terminar (ver [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)). La base se respalda además cada noche en el VPS; todavía no hay copia fuera del servidor.
-
-### Actualización del stack (2026-09-16)
-
-PHP 8.5 (desarrollo; producción desde el 19-10-2026), Laravel 13, Inertia 3, React 19, Vite 8, PHPUnit 12, PostgreSQL 18 y n8n 2.39, verificado paso a paso (575 tests, 120 capturas antes/después de la tienda y los dos paneles, 21 interacciones en navegador, CSRF y conteos de la base). Lo que conviene saber al tocar el proyecto:
-
-- **Tailwind sigue en la 3.4** a propósito: la 4 no funciona en iPhone con iOS anterior a 16.4.
-- `vite.config.js` fija los navegadores de antes (`safari14`, `chrome87`…) y minifica el CSS con esbuild; `resources/js/polyfills.js` agrega `Object.hasOwn` para iOS 14 y 15.
-- Las etiquetas SEO de `app.blade.php` usan `data-inertia` (Inertia 3), no `inertia`.
-- `composer.json` fija la plataforma en PHP 8.3: las dependencias sirven en cualquier servidor con PHP 8.3 o más.
-- PostgreSQL 18 usa el volumen `appleboss_db_data_pg18` montado en `/var/lib/postgresql`; el de la 15 quedó sin usar como respaldo.
-
-Detalle, respaldos y cómo volver atrás: [`docs/admin-ui/informes/actualizacion-stack-2026-09-16.md`](docs/admin-ui/informes/actualizacion-stack-2026-09-16.md).
-
-## Instalación local
-
-### Con Docker Compose
-
-1. Clonar el repositorio y ubicarse en su raíz.
-2. Crear/configurar los archivos de entorno requeridos sin versionar secretos. Docker usa PostgreSQL y exige credenciales para la base y el token de automatización; OpenAI, Google Drive y Cloudflare son opcionales según los servicios utilizados.
-3. Construir e iniciar los servicios:
+**Con Docker Compose**
 
 ```bash
 docker compose up --build
-```
-
-4. Ejecutar migraciones dentro del contenedor de aplicación:
-
-```bash
 docker compose exec app php artisan migrate
 ```
 
-### Sin Docker
+Antes hay que crear el archivo de entorno a partir de la plantilla `.env.example` y completar las variables de base de datos y del token de automatización. OpenAI, Google Drive y Cloudflare son opcionales según los servicios que se usen. Ningún secreto se versiona.
 
-Requiere PHP 8.3+ (en desarrollo y en producción corre 8.5), Composer, Node.js/npm y una base compatible con las migraciones. La plantilla `src/.env.example` debe revisarse porque sus valores locales de base de datos no coinciden con PostgreSQL de Docker.
+**Sin Docker** (requiere PHP 8.3 o superior, Composer, Node.js y una base compatible con las migraciones)
 
 ```bash
 cd src
@@ -201,136 +311,52 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-composer run dev
+composer run dev   # servidor Laravel, cola, visor de logs y Vite
 ```
 
-`composer run dev` inicia el servidor Laravel, el listener de cola, el visor de logs y Vite. Para compilar assets de producción se usa `npm run build`.
+Para compilar los assets de producción: `npm run build` dentro de `src/`.
 
-## Estructura del proyecto
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-```text
-.
-├── Dockerfile                  # Apache, PHP y extensiones
-├── docker-compose.yml          # Entorno multi-servicio
-├── docker/n8n/                 # Imagen auxiliar de automatización
-├── docs/admin-ui/              # Documentación, diagramas, grafo del código e informes
-├── n8n/workflows/              # Backup y reporte con IA
-└── src/
-    ├── app/
-    │   ├── Console/Commands/   # Mantenimiento de datos
-    │   ├── Http/               # Controladores, middleware y requests
-    │   ├── Jobs/               # Procesamiento asíncrono
-    │   ├── Mail/               # Correos de cotización
-    │   ├── Models/             # Entidades Eloquent
-    │   └── Services/           # Códigos e imágenes de productos
-    ├── database/migrations/    # Esquema y restricciones
-    ├── docs/                   # Documentación y checklists
-    ├── resources/js/           # Páginas, layouts y componentes React
-    ├── resources/views/        # Shell Blade, correos y plantillas PDF
-    ├── routes/                 # Web, autenticación y API
-    ├── scripts/                # Build de frontend
-    └── tests/                  # Pruebas unitarias y feature
+## 🧪 Pruebas y calidad
+
+```bash
+cd src
+composer test      # limpia la configuración y ejecuta php artisan test
+npm run build
 ```
 
-## Documentación y memoria del proyecto
+- **827 pruebas** en 106 archivos, casi todas Feature. Cubren autenticación y roles, ventas, servicios, reservas, stock, auditorías, configuración, catálogo y privacidad pública, checkout, correos, API de integración, XSS, SEO y el constructor del inicio.
+- La suite usa SQLite en memoria, caché y sesiones en memoria, correo simulado y cola síncrona.
+- `tests/TestCase.php` usa `withoutDeprecationHandling()`: un aviso de obsolescencia de PHP hace fallar la prueba, para detectar antes una incompatibilidad con la siguiente versión.
+- Según la documentación del repositorio, la suite pasó completa el 19-10-2026 y se corre antes de cada despliegue. **No se volvió a ejecutar para este README.**
+- No hay pipeline de CI (ni GitHub Actions, GitLab CI o Jenkins).
 
-- **Guía por módulo:** [`docs/admin-ui/README.md`](docs/admin-ui/README.md), con el traspaso para retomar el trabajo en [`docs/admin-ui/TRASPASO.md`](docs/admin-ui/TRASPASO.md).
-- **Diagramas:** HTML interactivos generados con archify en [`docs/admin-ui/diagramas/`](docs/admin-ui/diagramas/), por ejemplo `modelos-referencia.html`, `computadoras-mac.html` y `accesorios.html`.
-- **Grafo del código:** generado con graphify en `docs/admin-ui/grafo/graphify-out/` (`graph.html`, `GRAPH_REPORT.md`).
-- **Informes de datos:** fuentes y pendientes de cada ficha en [`docs/admin-ui/informes/`](docs/admin-ui/informes/), por ejemplo [`computadoras-2026-09-15.md`](docs/admin-ui/informes/computadoras-2026-09-15.md) y [`accesorios-2026-09-15.md`](docs/admin-ui/informes/accesorios-2026-09-15.md) (cargadores, vidrios, fundas y accesorios de marca, con las comparativas de cargadores y de vidrios).
-- **Memoria entre sesiones:** memanto en modo local (servidor Moorcheh en `127.0.0.1:8095`, agente `apple-boss`). Guarda decisiones y reglas, no bitácoras.
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-## Decisiones técnicas destacables
+## 🐳 Despliegue
 
-- Uso de Inertia para mantener una sola aplicación desplegable y compartir rutas, validación y autorización de Laravel con React.
-- Separación entre inventario operativo y publicaciones públicas, evitando exponer directamente atributos internos de cada producto.
-- Transacciones y bloqueos pesimistas para coordinar cambios de estado en unidades de inventario durante ventas y reservas.
-- Snapshots en ítems de venta para que los reportes históricos no dependan de cambios posteriores en productos.
-- Cálculo determinístico de indicadores comerciales antes de delegar a IA únicamente el análisis narrativo.
-- Fichas técnicas generadas desde datos validados por esquema. Primero va la fuente oficial del fabricante. Lo que no publica se carga solo si lo confirman dos fuentes externas; si no, queda pendiente. La base no depende del stock, así que la ficha de un equipo vendido se conserva.
+- Producción corre en un VPS con Docker, detrás de Cloudflare y Caddy (HTTPS). Tres procesos salen de la misma imagen: aplicación, worker de colas y programador.
+- Cada despliegue hace respaldo de la base, comprueba que el respaldo se restaura, etiqueta la imagen anterior para volver atrás y verifica el sitio al terminar.
+- Respaldo nocturno de la base y respaldo semanal de archivos subidos (cron del VPS, script en `docker/production/`).
+- Procedimiento completo en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
+- No hay manifiestos de Kubernetes ni Helm.
 
-## Desafíos técnicos resueltos
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-- **Problema:** evitar dobles ventas o reservas sobre inventario unitario. **Solución:** transacciones, consultas con bloqueo y validación del estado disponible antes de persistir.
-- **Problema:** publicar catálogo sin filtrar costos ni identificadores privados. **Solución:** modelo de publicación separado, proyecciones públicas, resincronización del carrito en servidor y pruebas de privacidad.
-- **Problema:** conciliar inventario físico mientras ocurren ventas o nuevas recepciones. **Solución:** snapshot al iniciar la auditoría, registro de escaneos y clasificación diferenciada de faltantes, novedades y salidas justificadas.
+## 📌 Estado y pendientes
 
-## Estado del proyecto
+- **En producción** según [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) (despliegues documentados desde el 18-09-2026). No verificado desde este README.
+- Último commit del repositorio: **13-11-2026**, campaña de temporada de la tienda (correos, PDF y páginas), con apagado desde el panel.
+- Pendiente documentado: **no hay copia de la base fuera del servidor**; los respaldos viven solo en el VPS.
+- Pendiente de CI/CD: la suite se corre a mano antes de cada despliegue.
+- Documento histórico: `CURRENT_ARCHITECTURE.md` describe el sistema de septiembre de 2026 y está marcado como tal; lo vigente está en este README y en `docs/`.
 
-**En producción** en appleboss.com.bo: tienda en línea con checkout, panel interno de ventas, inventario y servicio técnico, correos al cliente y API de integración. Sigue en evolución activa. No tiene CI/CD: la suite completa (827 pruebas) se corre antes de cada despliegue.
+<img src="docs/readme/divider.svg" alt="" width="100%">
 
-## Mi contribución
+## 📄 Licencia y autoría
 
-Mi contribución reflejada en el repositorio abarca el diseño e implementación de una aplicación full stack con Laravel, Inertia y React; la modelación de ventas, inventario, reservas y servicio técnico; la separación segura entre datos internos y catálogo público; la autorización por roles; la generación de documentos; y la automatización de reportes y respaldos con n8n. También incluye controles de concurrencia para stock, pruebas feature sobre flujos críticos y una integración de IA donde las métricas permanecen bajo lógica determinística.
+Desarrollado por el **Ing. Santiago Abasto**.
 
-## Resumen para portfolio
 
-### Portfolio Summary
-
-Nombre:
-Apple Boss
-
-Tipo:
-Sistema de gestión comercial con tienda en línea, en producción
-
-Rol:
-Desarrollo full stack y diseño técnico verificable en el repositorio
-
-Descripción corta:
-Aplicación para administrar inventario unitario, ventas, reservas, clientes, cotizaciones, servicios técnicos, reportes y publicaciones de una tienda tecnológica.
-
-Stack principal:
-PHP 8.5, Laravel 13, React 19, Inertia.js 3, PostgreSQL 18, Tailwind CSS 3.4, Vite 8 y Docker Compose
-
-Arquitectura:
-Monolito modular Laravel/Inertia con frontend React, APIs JSON específicas, colas y automatizaciones externas en n8n
-
-Seguridad:
-Sesiones, roles, CSRF, rate limiting, validación, sanitización XSS, CSP/cabeceras HTTP, secretos por entorno y control explícito de datos públicos
-
-Testing:
-PHPUnit con 827 pruebas unitarias/feature; pasan todas (`php artisan test`, verificado el 2026-10-19)
-
-DevOps:
-Docker Compose; producción en VPS detrás de Cloudflare y Caddy, con despliegue por script (respaldo verificado, imagen de vuelta y verificación) y respaldo nocturno; sin CI/CD
-
-IA:
-OpenAI orquestado por n8n para reportes JSON, con KPIs determinísticos, validación/fallback y revisión desde el panel
-
-5 habilidades clave:
-1\. Arquitectura full stack Laravel, Inertia y React
-2. Modelado relacional con Eloquent y PostgreSQL
-3. Seguridad web y autorización basada en roles
-4. Transacciones y control de concurrencia de inventario
-5. Automatización e integración de IA con n8n
-
-3 logros o aportes verificables:
-
-- Implementación de flujos integrados de ventas, reservas, inventario y servicio técnico con documentos PDF.
-- Construcción de una tienda pública desacoplada de los campos privados del inventario y cubierta por pruebas de privacidad.
-- Automatización de reportes comerciales con datos determinísticos y salida estructurada de OpenAI.
-
-Nivel de madurez:
-Sistema interno funcional en evolución activa
-
-Elementos que no deben publicarse:
-
-- Archivos `.env`, credenciales OAuth, tokens de Google/OpenAI/Cloudflare/n8n y contraseñas de base de datos.
-- Logs, sesiones, backups, PDFs generados y datos reales de clientes, ventas o inventario.
-- URLs privadas, identificadores de infraestructura y valores internos de configuración.
-
-## Evidencia técnica
-
-| Afirmación | Evidencia |
-| ---------- | --------- |
-| Laravel 13, PHP 8.3+ (8.5 en Docker), Inertia 3 y dependencias backend | `src/composer.json`, `src/composer.lock` |
-| React 19, Vite 8 y librerías frontend | `src/package.json` |
-| Rutas públicas, internas, roles y APIs | `src/routes/web.php`, `src/routes/auth.php`, `src/routes/api.php` |
-| Dominio y relaciones Eloquent | `src/app/Models/`, `src/database/migrations/` |
-| Transacciones y bloqueo de inventario | `src/app/Http/Controllers/VentaController.php`, `src/app/Http/Controllers/ReservaController.php` |
-| Privacidad, XSS, autenticación y flujos de negocio probados | `src/tests/Feature/` |
-| Cabeceras, roles y token de automatización | `src/app/Http/Middleware/` |
-| Docker, PostgreSQL, worker, n8n y túneles | `Dockerfile`, `docker-compose.yml` |
-| Automatización e integración OpenAI | `n8n/workflows/intelligent-weekly-report.json` |
-| Google Drive, correo y PDFs | `src/app/Http/Controllers/Admin/CotizacionController.php`, `src/app/Mail/`, `src/resources/views/pdf/` |
-| Fichas por modelo, esquemas y comparadores | `src/database/data/modelos_referencia/`, `src/app/Support/FichaTecnica/`, `src/app/Http/Controllers/ComparadorModelosController.php` |
+Código propietario del cliente. El repositorio no incluye archivo de licencia; no se publica ni se distribuye sin autorización.
