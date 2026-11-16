@@ -5,7 +5,7 @@
 **Sistema de gestión comercial e inventario, con tienda pública, para un negocio de productos y servicios tecnológicos.**
 
 <img alt="En producción" src="https://img.shields.io/badge/EN_PRODUCCI%C3%93N-appleboss.com.bo-E2BC72?style=for-the-badge&labelColor=011446">
-<img alt="Pruebas" src="https://img.shields.io/badge/pruebas-827_PHPUnit-1F5A40?style=for-the-badge&labelColor=011446">
+<img alt="Pruebas" src="https://img.shields.io/badge/pruebas-915_PHPUnit-1F5A40?style=for-the-badge&labelColor=011446">
 <img alt="Sin CI/CD" src="https://img.shields.io/badge/CI%2FCD-no_configurado-585E9F?style=for-the-badge&labelColor=011446">
 <br/>
 <img alt="Laravel 13" src="https://img.shields.io/badge/Laravel-13-FF2D20?style=flat-square&logo=laravel&logoColor=white">
@@ -74,7 +74,7 @@ Un negocio de equipos Apple y tecnología vende unidades **únicas**: cada celul
 
 - Inicio configurable, catálogo filtrable, búsqueda y fichas de producto con galería.
 - **Comparadores** de iPhone, Mac, cargadores y vidrios; el precio y el stock los calcula el servidor desde el inventario.
-- Fichas técnicas por modelo (38 iPhone, 16 Mac, una laptop gaming y 58 tipos de accesorio), validadas por esquema y tomadas de las fichas oficiales de cada marca.
+- Fichas técnicas por modelo (160: 38 iPhone y un Pixel, 18 Mac y una laptop gaming, 44 productos Apple —iPad, Apple Watch, AirPods, Apple TV y Magic Keyboard— y 58 tipos de accesorio), validadas por esquema y tomadas de las fichas oficiales de cada marca.
 - Carrito que vuelve a consultar precio, publicación y disponibilidad en el servidor antes de cobrar.
 - Checkout con pedidos y seguimiento; páginas de contenido, preguntas frecuentes, novedades y cotizador de **trade-in**.
 - SEO técnico: slugs, metadatos, datos estructurados, `robots.txt` y sitemap XML.
@@ -326,10 +326,12 @@ composer test      # limpia la configuración y ejecuta php artisan test
 npm run build
 ```
 
-- **827 pruebas** en 106 archivos, casi todas Feature. Cubren autenticación y roles, ventas, servicios, reservas, stock, auditorías, configuración, catálogo y privacidad pública, checkout, correos, API de integración, XSS, SEO y el constructor del inicio.
+- **915 pruebas** y 7.843 aserciones en 120 clases, casi todas Feature (896 Feature y 19 Unit). Cubren autenticación y roles, ventas, servicios, reservas, stock, auditorías, configuración, catálogo y privacidad pública, checkout, correos, API de integración, XSS, SEO y el constructor del inicio.
 - La suite usa SQLite en memoria, caché y sesiones en memoria, correo simulado y cola síncrona.
 - `tests/TestCase.php` usa `withoutDeprecationHandling()`: un aviso de obsolescencia de PHP hace fallar la prueba, para detectar antes una incompatibilidad con la siguiente versión.
-- Según la documentación del repositorio, la suite pasó completa el 19-10-2026 y se corre antes de cada despliegue. **No se volvió a ejecutar para este README.**
+- La suite pasó completa el **16-11-2026**: 915 pruebas, 0 fallos (PHP 8.5.12, 2 min 38 s). Se corre antes de cada despliegue.
+- Necesita el `memory_limit` de 1 GB que fija `src/docker/php.ini`: con los 128 MB por defecto de PHP, la exportación de PDF con dompdf se queda sin memoria a mitad de la suite.
+- PHPUnit reporta 2 avisos de obsolescencia de PHP 8.5 en `config/database.php` (líneas 61 y 81): la constante `PDO::MYSQL_ATTR_SSL_CA` de las conexiones MySQL y MariaDB, que el sistema no usa (corre en PostgreSQL 18). Se disparan al cargar la configuración, antes de que actúe `withoutDeprecationHandling()`, así que no hacen fallar la suite.
 - No hay pipeline de CI (ni GitHub Actions, GitLab CI o Jenkins).
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
