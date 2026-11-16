@@ -18,17 +18,17 @@
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 📑 Contenido
+## <img src="docs/readme/ic-indice.svg" width="24" height="24" alt=""> Contenido
 
 - [El problema](#-el-problema)
 - [La solución](#-la-solución)
 - [Funcionalidades](#-funcionalidades)
-- [Arquitectura](#%EF%B8%8F-arquitectura)
+- [Arquitectura](#-arquitectura)
 - [Flujos de trabajo](#-flujos-de-trabajo)
-- [Modelo de datos](#%EF%B8%8F-modelo-de-datos)
+- [Modelo de datos](#-modelo-de-datos)
 - [Criterios y decisiones](#-criterios-y-decisiones)
-- [Stack](#%EF%B8%8F-stack)
-- [Estructura del repo](#%EF%B8%8F-estructura-del-repo)
+- [Stack](#-stack)
+- [Estructura del repo](#-estructura-del-repo)
 - [Puesta en marcha](#-puesta-en-marcha)
 - [Pruebas y calidad](#-pruebas-y-calidad)
 - [Despliegue](#-despliegue)
@@ -37,11 +37,11 @@
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🧩 El problema
+## <img src="docs/readme/ic-problema.svg" width="24" height="24" alt=""> El problema
 
 Un negocio de equipos Apple y tecnología vende unidades **únicas**: cada celular, computadora o accesorio tiene su código, su IMEI o su número de serie. Antes del sistema, el stock, las reservas, las permutas y las reparaciones vivían en planillas y en la memoria del equipo de ventas. Eso producía dobles ventas sobre el mismo equipo, costos y procedencias visibles para quien no debía verlos, y reportes que no coincidían con la caja.
 
-## 💡 La solución
+## <img src="docs/readme/ic-solucion.svg" width="24" height="24" alt=""> La solución
 
 **Apple Boss** centraliza ventas, reservas, clientes, cotizaciones, inventario, egresos y servicio técnico en un solo panel, y publica una **tienda en línea** con el mismo inventario, sin exponer datos internos.
 
@@ -53,7 +53,7 @@ Un negocio de equipos Apple y tecnología vende unidades **únicas**: cada celul
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## ✨ Funcionalidades
+## <img src="docs/readme/ic-funcionalidades.svg" width="24" height="24" alt=""> Funcionalidades
 
 <details open>
 <summary><b>Panel interno (administrador y vendedor)</b></summary>
@@ -92,7 +92,7 @@ Un negocio de equipos Apple y tecnología vende unidades **únicas**: cada celul
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🏗️ Arquitectura
+## <img src="docs/readme/ic-arquitectura.svg" width="24" height="24" alt=""> Arquitectura
 
 <p align="center">
   <img src="docs/readme/flujo.svg" alt="Cómo viaja una petición: navegador, Laravel con Inertia, PostgreSQL y colas con PDF" width="100%">
@@ -116,7 +116,7 @@ flowchart LR
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🔄 Flujos de trabajo
+## <img src="docs/readme/ic-flujos.svg" width="24" height="24" alt=""> Flujos de trabajo
 
 ### Venta con control de stock
 
@@ -180,7 +180,7 @@ stateDiagram-v2
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🗃️ Modelo de datos
+## <img src="docs/readme/ic-datos.svg" width="24" height="24" alt=""> Modelo de datos
 
 Las tablas se generan con migraciones Eloquent; los productos de inventario tienen una tabla por tipo y las ventas y reservas apuntan a la tabla correspondiente.
 
@@ -226,7 +226,7 @@ Los ítems de venta guardan **snapshots** de nombre, categoría, costo y precio,
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🧭 Criterios y decisiones
+## <img src="docs/readme/ic-criterios.svg" width="24" height="24" alt=""> Criterios y decisiones
 
 | Decisión | Por qué |
 |---|---|
@@ -251,7 +251,7 @@ Auditoría de extremo a extremo (caja negra, caja blanca y carga con k6): 6 hall
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🛠️ Stack
+## <img src="docs/readme/ic-stack.svg" width="24" height="24" alt=""> Stack
 
 | Capa | Tecnología | Versión |
 |---|---|---|
@@ -268,7 +268,7 @@ Auditoría de extremo a extremo (caja negra, caja blanca y carga con k6): 6 hall
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🗂️ Estructura del repo
+## <img src="docs/readme/ic-estructura.svg" width="24" height="24" alt=""> Estructura del repo
 
 ```text
 .
@@ -291,7 +291,7 @@ Auditoría de extremo a extremo (caja negra, caja blanca y carga con k6): 6 hall
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🚀 Puesta en marcha
+## <img src="docs/readme/ic-arranque.svg" width="24" height="24" alt=""> Puesta en marcha
 
 **Con Docker Compose**
 
@@ -318,7 +318,7 @@ Para compilar los assets de producción: `npm run build` dentro de `src/`.
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🧪 Pruebas y calidad
+## <img src="docs/readme/ic-pruebas.svg" width="24" height="24" alt=""> Pruebas y calidad
 
 ```bash
 cd src
@@ -336,7 +336,7 @@ npm run build
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 🐳 Despliegue
+## <img src="docs/readme/ic-despliegue.svg" width="24" height="24" alt=""> Despliegue
 
 - Producción corre en un VPS con Docker, detrás de Cloudflare y Caddy (HTTPS). Tres procesos salen de la misma imagen: aplicación, worker de colas y programador.
 - Cada despliegue hace respaldo de la base, comprueba que el respaldo se restaura, etiqueta la imagen anterior para volver atrás y verifica el sitio al terminar.
@@ -346,7 +346,7 @@ npm run build
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 📌 Estado y pendientes
+## <img src="docs/readme/ic-estado.svg" width="24" height="24" alt=""> Estado y pendientes
 
 - **En producción** según [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) (despliegues documentados desde el 18-09-2026). No verificado desde este README.
 - Último commit del repositorio: **13-11-2026**, campaña de temporada de la tienda (correos, PDF y páginas), con apagado desde el panel.
@@ -356,7 +356,7 @@ npm run build
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
 
-## 📄 Licencia y autoría
+## <img src="docs/readme/ic-licencia.svg" width="24" height="24" alt=""> Licencia y autoría
 
 Desarrollado por el **Ing. Santiago Abasto**.
 
