@@ -300,7 +300,7 @@ docker compose up --build
 docker compose exec app php artisan migrate
 ```
 
-Antes hay que crear el archivo de entorno a partir de la plantilla `.env.example` y completar las variables de base de datos y del token de automatización. OpenAI, Google Drive y Cloudflare son opcionales según los servicios que se usen. Ningún secreto se versiona.
+Antes hay que crear los dos archivos de entorno a partir de sus plantillas: `.env.example` en la raíz (la base PostgreSQL de Compose) y `src/.env.example` (Laravel, que ya apunta al servicio `db`). La contraseña de la base tiene que ser la misma en los dos. Después, completar el token de automatización. OpenAI, Google Drive y Cloudflare son opcionales según los servicios que se usen. Ningún secreto se versiona.
 
 **Sin Docker** (requiere PHP 8.3 o superior, Composer, Node.js y una base compatible con las migraciones)
 
@@ -331,7 +331,7 @@ npm run build
 - `tests/TestCase.php` usa `withoutDeprecationHandling()`: un aviso de obsolescencia de PHP hace fallar la prueba, para detectar antes una incompatibilidad con la siguiente versión.
 - La suite pasó completa el **16-11-2026**: 915 pruebas, 0 fallos (PHP 8.5.12, 2 min 38 s). Se corre antes de cada despliegue.
 - Necesita el `memory_limit` de 1 GB que fija `src/docker/php.ini`: con los 128 MB por defecto de PHP, la exportación de PDF con dompdf se queda sin memoria a mitad de la suite.
-- PHPUnit reporta 2 avisos de obsolescencia de PHP 8.5 en `config/database.php` (líneas 61 y 81): la constante `PDO::MYSQL_ATTR_SSL_CA` de las conexiones MySQL y MariaDB, que el sistema no usa (corre en PostgreSQL 18). Se disparan al cargar la configuración, antes de que actúe `withoutDeprecationHandling()`, así que no hacen fallar la suite.
+- Sin avisos de obsolescencia de PHP 8.5. Los dos que daba `config/database.php` (`PDO::MYSQL_ATTR_SSL_CA`) se corrigieron con `Pdo\Mysql::ATTR_SSL_CA`, como en el esqueleto actual de Laravel. Ojo: un aviso que salta al cargar la configuración ocurre antes de que actúe `withoutDeprecationHandling()` y no hace fallar la suite; hay que mirarlo en el resumen de PHPUnit.
 - No hay pipeline de CI (ni GitHub Actions, GitLab CI o Jenkins).
 
 <img src="docs/readme/divider.svg" alt="" width="100%">
