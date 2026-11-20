@@ -56,7 +56,7 @@
       }
 
       $lineas[] = ['nombre' => $it['nombre'] ?? 'Producto', 'detalles' => implode(' · ', $detalles), 'cantidad' => $cantidad,
-          'unitario' => $unitario, 'descuento' => $descuento, 'neta' => $neta];
+          'unitario' => $unitario, 'descuento' => $descuento, 'neta' => $neta, 'con_factura' => round($neta + $iva + $it3, 2)];
 
       $suma['base']      += $base;
       $suma['descuento'] += $descuento;
@@ -114,12 +114,13 @@
   <table class="cobertura">
     <thead>
     <tr>
-      <th style="width: 24px;">#</th>
+      <th style="width: 22px;">#</th>
       <th>Producto o servicio</th>
-      <th class="der" style="width: 46px;">Cant.</th>
-      <th class="der" style="width: 92px;">P. unitario</th>
-      <th class="der" style="width: 86px;">Descuento</th>
-      <th class="der" style="width: 96px;">Subtotal</th>
+      <th class="der" style="width: 40px;">Cant.</th>
+      <th class="der" style="width: 78px;">P. unitario</th>
+      <th class="der" style="width: 70px;">Descuento</th>
+      <th class="der" style="width: 92px;">Sin factura</th>
+      <th class="der" style="width: 96px;">Con factura</th>
     </tr>
     </thead>
     @forelse ($lineas as $n => $linea)
@@ -132,11 +133,12 @@
       <td class="der">{{ $linea['cantidad'] }}</td>
       <td class="der nowrap">{{ $bs($linea['unitario']) }}</td>
       <td class="der nowrap">{{ $linea['descuento'] > 0 ? '- ' . $bs($linea['descuento']) : '---' }}</td>
-      <td class="der nowrap"><b>{{ $bs($linea['neta']) }}</b></td>
+      <td class="der nowrap">{{ $bs($linea['neta']) }}</td>
+      <td class="der nowrap"><b>{{ $bs($linea['con_factura']) }}</b></td>
     </tr>
     @empty
     <tr class="ultima">
-      <td colspan="6" class="gris">Esta cotización todavía no tiene productos cargados.</td>
+      <td colspan="7" class="gris">Esta cotización todavía no tiene productos cargados.</td>
     </tr>
     @endforelse
   </table>
