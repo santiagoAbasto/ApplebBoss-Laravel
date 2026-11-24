@@ -74,6 +74,44 @@ services:
     networks:
       - edge
 
+  # n8n: motor de automatización (reporte IA con Claude + respaldo de base).
+  # Solo localhost (127.0.0.1): se administra por túnel SSH, nunca expuesto a internet.
+  # Los workflows usan http://app y la red backend; no toca app/queue/db/caddy.
+  n8n:
+    build:
+      context: .
+      dockerfile: docker/n8n/Dockerfile
+    image: appleboss-n8n:production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - TZ=America/La_Paz
+      - GENERIC_TIMEZONE=America/La_Paz
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_SECURE_COOKIE=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - NODES_EXCLUDE=["n8n-nodes-base.localFileTrigger"]
+      - PGHOST=db
+      - PGPORT=5432
+      - PGDATABASE=${POSTGRES_DB}
+      - PGUSER=${POSTGRES_USER}
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - appleboss_n8n_data:/home/node/.n8n
+      - appleboss_n8n_backups:/backups/database
+      - ./n8n/workflows:/workflows:ro
+    networks:
+      - backend
+
 networks:
   edge:
   backend:
@@ -83,3 +121,5 @@ volumes:
   appleboss_storage:
   caddy_data:
   caddy_config:
+  appleboss_n8n_data:
+  appleboss_n8n_backups:
