@@ -347,6 +347,11 @@ Route::middleware(['auth', 'verified', 'permiso'])
                 Route::get('/latest-weekly', [AutomationReportController::class, 'latestWeekly'])
                     ->name('latestWeekly');
 
+                // Generar el análisis con IA al instante (botón del panel)
+                Route::post('/generar', [AutomationReportController::class, 'generarAhora'])
+                    ->middleware('throttle:6,1')
+                    ->name('generar');
+
                 Route::post('/{report}/mark-viewed', [AutomationReportController::class, 'markViewed'])
                     ->name('markViewed');
 

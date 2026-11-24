@@ -10,6 +10,7 @@ import axios from 'axios';
 import TrendChart from '@/Components/Admin/charts/TrendChart';
 import AllocationDonut from '@/Components/Admin/charts/AllocationDonut';
 import IosNotification from '@/Components/IosNotification';
+import ReporteIAWidget from '@/Components/Admin/ReporteIAWidget';
 import {
   ArrowRight, BadgePercent, Bell, BellOff, Boxes, CalendarRange, ChartLine, Check, CheckCheck, ChevronDown,
   CircleDollarSign, DollarSign, Hammer, Laptop, Minus, Package, PencilLine, PiggyBank, Receipt, Repeat, ShoppingCart,
@@ -330,8 +331,13 @@ export default function Dashboard({
           </div>
         </motion.section>
 
+        {/* ============ Asistente comercial con IA ============ */}
+        <div className="mt-6">
+          <ReporteIAWidget />
+        </div>
+
         {/* ================= CUERPO ================= */}
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-6">
             {/* Período */}
             <form onSubmit={handleFiltrar} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">

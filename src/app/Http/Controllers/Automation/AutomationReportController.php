@@ -7,10 +7,44 @@ use Illuminate\Http\Request;
 use App\Models\AutomationReport;
 use App\Models\AutomationReportView;
 use App\Models\SystemNotification;
+use App\Services\ReporteInteligenteService;
 use Illuminate\Support\Facades\Schema;
 
 class AutomationReportController extends Controller
 {
+    /**
+     * 🤖 Genera el análisis con IA al instante (botón del panel admin).
+     * Devuelve un resumen para la animación + el id para ver el informe completo.
+     */
+    public function generarAhora(Request $request, ReporteInteligenteService $svc)
+    {
+        if ((auth()->user()->rol ?? null) !== 'admin') {
+            abort(403);
+        }
+
+        $v = $request->validate([
+            'fecha_inicio' => ['nullable', 'date'],
+            'fecha_fin'    => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+        ]);
+
+        $r = $svc->generar($v['fecha_inicio'] ?? null, $v['fecha_fin'] ?? null);
+        $c = $r->content;
+
+        return response()->json([
+            'ok' => true,
+            'report_id' => $r->id,
+            'generado' => now()->format('d/m/Y H:i'),
+            'period_start' => optional($r->period_start)->toDateString() ?? data_get($c, 'period_start'),
+            'period_end' => optional($r->period_end)->toDateString() ?? data_get($c, 'period_end'),
+            'sin_datos' => (float) data_get($c, 'resumen_ejecutivo.facturacion_total', 0) <= 0,
+            'resumen' => data_get($c, 'resumen_ejecutivo.descripcion'),
+            'facturacion' => (float) data_get($c, 'resumen_ejecutivo.facturacion_total', 0),
+            'utilidad' => (float) data_get($c, 'resumen_ejecutivo.utilidad_total', 0),
+            'margen' => (float) data_get($c, 'resumen_ejecutivo.margen_global_pct', 0),
+            'recomendaciones' => collect(data_get($c, 'recomendaciones_ejecutivas', []))
+                ->take(3)->values()->all(),
+        ]);
+    }
     private function latestClosedReport()
     {
         return AutomationReport::whereDate('period_end', '<=', now())

@@ -21,6 +21,9 @@ Artisan::command('resenas:google', function () {
 
 \Illuminate\Support\Facades\Schedule::command('resenas:google')->dailyAt('07:00')->withoutOverlapping();
 
+// Análisis comercial con IA (Claude) — todos los días a las 20:00 (cierre de la tienda)
+\Illuminate\Support\Facades\Schedule::command('reporte:inteligente')->dailyAt('20:00')->withoutOverlapping();
+
 // API de integración: el registro de solicitudes se guarda 90 días. Medición de la tienda: 14 meses (política de privacidad)
 \Illuminate\Support\Facades\Schedule::command('model:prune', ['--model' => [\App\Models\IntegracionSolicitud::class, \App\Models\EventoWeb::class, \App\Models\Carrito::class]])->dailyAt('03:30');
 
