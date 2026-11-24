@@ -417,7 +417,10 @@ class TopProductsController extends Controller
                 : 0,
             'color_mas_vendido' => $this->topSummaryByField($celularesItems, 'color', 1)[0] ?? null,
             'capacidad_mas_vendida' => $this->topSummaryByField($celularesItems, 'capacidad', 1)[0] ?? null,
-            'bateria_promedio_vendida' => round((float) $celularesItems->filter(fn ($item) => filled($item['bateria']))->avg('bateria'), 2),
+            'bateria_promedio_vendida' => round((float) $celularesItems
+                ->map(fn ($item) => $item['bateria'] ?? null)
+                ->filter(fn ($v) => is_numeric($v))
+                ->avg(), 2),
             'modelos_mas_rentables' => $this->topProfitabilityByField($celularesItems, 'modelo'),
             'modelos_mayor_rotacion' => $this->topSummaryByField($celularesItems, 'modelo'),
             'colores_mas_vendidos' => $this->topSummaryByField($celularesItems, 'color'),
