@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 // 📦 Controladores usados
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\JuradoController;
 use App\Http\Controllers\CelularController;
 use App\Http\Controllers\ProductoGeneralController;
 use App\Http\Controllers\ComputadoraController;
@@ -1121,3 +1122,19 @@ Route::middleware(['auth', 'verified', 'rol:admin|vendedor', 'throttle:60,1'])->
 });
 
 require __DIR__ . '/auth.php';
+
+/*
+|--------------------------------------------------------------------------
+| Acceso de demostración del jurado (defensa de grado)
+|--------------------------------------------------------------------------
+| Cada jurado escanea su QR -> /jurado/{n}/{token} y elige rol. El autologin
+| entra a una cuenta de SOLO LECTURA (demo=true). Rutas públicas (sin auth),
+| protegidas por el token del QR.
+*/
+Route::prefix('jurado')->group(function () {
+    Route::get('{n}/{token}', [JuradoController::class, 'landing'])
+        ->whereNumber('n')->where('token', '[A-Za-z0-9]+')->name('jurado.landing');
+    Route::get('{n}/{token}/entrar/{rol}', [JuradoController::class, 'entrar'])
+        ->whereNumber('n')->where('token', '[A-Za-z0-9]+')->where('rol', 'admin|vendedor')
+        ->name('jurado.entrar');
+});

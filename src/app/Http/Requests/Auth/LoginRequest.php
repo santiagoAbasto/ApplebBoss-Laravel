@@ -82,7 +82,7 @@ class LoginRequest extends FormRequest
 
         // El vendedor solo puede entrar dentro del horario laboral; el admin no tiene restricción.
         // Se valida DESPUÉS de las credenciales (para saber el rol) y se cierra la sesión recién abierta.
-        if ((Auth::user()->rol ?? null) === 'vendedor' && ! \App\Support\HorarioLaboral::permitido()) {
+        if ((Auth::user()->rol ?? null) === 'vendedor' && ! Auth::user()->demo && ! \App\Support\HorarioLaboral::permitido()) {
             Auth::logout();
             RateLimiter::clear($this->throttleKey());
 
